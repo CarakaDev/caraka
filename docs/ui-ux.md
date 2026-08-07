@@ -72,7 +72,7 @@ Ketik biasa. Tidak perlu prefiks, tidak perlu perintah. **Topic adalah konteksny
 | `/switch <agent>` | topic sesi | ganti coding agent | dispesifikasikan, belum di v0.2 |
 | `/mode read-only\|assisted` | topic sesi | turunkan/naikkan izin | dispesifikasikan, belum di v0.2 |
 | `/pin` `/unpin` | topic sesi | kecualikan dari auto-hapus | dispesifikasikan, belum di v0.2 |
-| `/ingat <teks>` `/lupakan <id>` `/memori` | mana saja | kelola memori | dispesifikasikan, belum di v0.2 |
+| `/ingat <teks>` `/lupakan <id>` `/memori` | mana saja → dijawab di General | kelola memori | terpasang |
 
 Perintah sengaja sedikit. Kalau butuh dokumentasi untuk memakainya, terlalu banyak.
 

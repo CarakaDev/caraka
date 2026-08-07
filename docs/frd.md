@@ -148,7 +148,7 @@
 
 | ID | P | Kebutuhan |
 |---|---|---|
-| FR-MEM-01 | P0 | Interface `MemoryProvider`: `remember`, `recall`, `forget`, `pin`, `unpin`, `export`. |
+| FR-MEM-01 | P0 | Interface `MemoryProvider`: `observe`, `compile`, `feedback`, `trace`, `forget` (`docs/design.md` §13). Baris ini dulu memuat bentuk v0.1 (`remember`/`recall`/`pin`/`export`); diamendemen 8 Agustus 2026 oleh pekerjaan `memori-v03`. |
 | FR-MEM-02 | P0 | Provider tersedia: **`titen` (default)**, `local` (fallback), `none`. P1: `mcp` generik. |
 | FR-MEM-03 | P0 | Provider `titen` bekerja **tanpa LLM** — konsolidasi Titen bersifat deterministik (*rules first, model only if it must*). Pemetaan: transcript & tool event → **observation**; keputusan/preferensi → **claim**; injeksi prompt → **context**. |
 | FR-MEM-03b | P0 | Provider `local` adalah fallback minimal (SQLite + FTS5, tanpa embedding) untuk kasus Titen tidak terpasang. |

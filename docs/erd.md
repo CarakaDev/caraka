@@ -1,7 +1,7 @@
 # ERD — Model Data
 
 **Produk:** Caraka · **Versi:** 0.2 · **Tanggal:** 7 Agustus 2026
-**Basis data:** SQLite tunggal di `~/.caraka/caraka.db` (WAL mode) + ekstensi `sqlite-vec` untuk vektor dan FTS5 untuk pencarian leksikal.
+**Basis data:** SQLite tunggal di `~/.caraka/caraka.db` (WAL mode) + FTS5 untuk pencarian leksikal. Sebutan `sqlite-vec` dihapus 8 Agustus 2026: tidak ada vektor di proses kita — embedding, bila dipakai, hidup di Titen.
 
 ---
 
@@ -18,8 +18,7 @@
                              │        └──∞── artifact
                              └──∞── message
 
-  workspace ──1──∞── memory ──1──1── memory_vec   (virtual, sqlite-vec)
-                       └────────────── memory_fts (virtual, FTS5)
+  workspace ──1──∞── memory_local ──1──1── memory_local_fts (virtual, FTS5)
 
   agent_preset ──1──∞── session
   audit_event   (standalone, append-only)
@@ -207,6 +206,8 @@ Index: `(container_id, thread_ref)` UNIQUE · `(workspace_id, state)` · `(state
 
 > **Perubahan penting v0.2.** Memori tidak lagi disimpan di skema kita. Titen memiliki *observation*, *claim*, dan *context* beserta content hash, `supersede`, `expire`, dan provenance-nya. Kita hanya menyimpan **penunjuk** agar dapat menampilkan dan menelusurinya.
 
+> **Ditunda di v0.3** (pekerjaan `memori-v03`). Tidak ada perilaku v0.3 yang membaca tabel ini — `/memori` bertanya langsung ke provider — jadi ia belum dibuat. Yang ada di skema adalah `memory_local` + FTS5 untuk provider `local`.
+
 | Kolom | Tipe | Ket |
 |---|---|---|
 | `id` | TEXT PK | |
@@ -218,7 +219,7 @@ Index: `(container_id, thread_ref)` UNIQUE · `(workspace_id, state)` · `(state
 | `pinned` | INTEGER | |
 | `created_at` | INTEGER | |
 
-Bila provider `none` atau `local` dipakai, tabel ini kosong atau menunjuk ke tabel lokal sederhana (`memory_local`: `id, scope, text, created_at` + FTS5). Tidak ada vektor, tidak ada claim graph — fallback memang sengaja dangkal.
+Bila provider `none` atau `local` dipakai, tabel ini kosong atau menunjuk ke tabel lokal sederhana (`memory_local`: `id, scope, kind, text, created_at` + FTS5, seperti yang dibangun v0.3). Tidak ada vektor, tidak ada claim graph — fallback memang sengaja dangkal.
 
 ### `audit_event` — append-only
 | Kolom | Tipe | Ket |

@@ -209,25 +209,24 @@ User menambahkan satu baris ke rules file agent-nya (`AGENTS.md` / `.clinerules`
 
 ```ts
 interface MemoryProvider {
-  remember(e: { scope: Scope; kind: Kind; text: string; meta?: object }): Promise<string>;
-  recall(q: { scope: Scope; query: string; k: number; budgetTokens: number }): Promise<Memory[]>;
+  observe(e: { scope: Scope; kind: string; text: string; meta?: object }): Promise<string>;
+  compile(q: { scope: Scope; task: string; budgetTokens: number }): Promise<CompiledContext>;
+  feedback(contextId: string, outcome: Outcome): Promise<void>;
+  trace(claimId: string): Promise<Evidence[]>;
   forget(idOrFilter: string | Filter): Promise<number>;
-  pin(id: string, on: boolean): Promise<void>;
-  export(scope: Scope): Promise<Memory[]>;
 }
 ```
 
-### Provider `local` (default, tanpa LLM)
+Bagian ini dulu memuat bentuk v0.1 — `remember`/`recall`/`pin`/`export` dengan
+pipeline embedding dan skoring hybrid di sisi kita. Bentuk itu digantikan lima
+method di atas, yang dirinci beserta pemetaan endpoint-nya di §13; diamendemen
+8 Agustus 2026 oleh pekerjaan `memori-v03` supaya kontradiksi dengan §13 tidak
+diwariskan.
 
-```
-tulis:  segmentasi → ekstraksi heuristik (path, perintah, error signature,
-        keputusan bertanda, preferensi eksplisit) → embed lokal → dedup(>0.92)
-        → simpan SQLite
-baca:   skor = α·cosineNorm + β·bm25Norm + γ·recency + δ·pinned
-        → ambil top-k dalam budget token
-```
+### Provider `local` (fallback, tanpa LLM)
 
-`cosine` adalah *lower-is-better* pada jarak vektor; normalisasi dulu sebelum digabung dengan BM25 yang *higher-is-better*.
+SQLite + FTS5 saja: tanpa embedding, tanpa claim graph, tanpa skor di luar
+FTS5. Segala yang lebih pintar dari itu milik Titen (§13).
 
 ### Injection budget & keamanan konteks
 
@@ -243,9 +242,10 @@ Memori disuntik sebagai blok bertanda, **bukan instruksi**:
 Default maksimum 6 item / 800 token.
 
 ### Degradasi
-`recall` timeout 500 ms → lanjut tanpa memori, catat `memory_degraded`. **Memory tidak pernah memblokir balasan.**
+`compile` timeout 500 ms → lanjut tanpa memori, catat `memory_degraded`. **Memory tidak pernah memblokir balasan.**
 
 ### Provider lain
+- `titen` — default, lewat tawaran wizard (§13)
 - `mcp` — generik, sambungkan memory MCP server apa pun (mem0, Supermemory, TencentDB Agent Memory)
 - `none` — nonaktif
 

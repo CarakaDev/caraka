@@ -186,7 +186,7 @@ Pemakaian lewat `npx` tidak membuat instalasi global. Config dan audit sengaja t
 
 ## Batas rilis ini
 
-Belum tersedia: banyak operator, banyak workspace, lampiran, memori, dan agent selain Claude Code. Batas itu dicatat agar instalasi tidak menjanjikan fitur roadmap sebagai fitur yang sudah tersedia.
+Belum tersedia: banyak operator, banyak workspace, lampiran, dan agent selain Claude Code. Memori hadir sejak v0.3: provider `local` bekerja tanpa apa pun, Titen ditawarkan saat `init`. Batas itu dicatat agar instalasi tidak menjanjikan fitur roadmap sebagai fitur yang sudah tersedia.
 
 **Service latar.** Rilis ini tidak memasang service, dan Caraka tidak akan pernah memasangnya sendiri. Paket tidak punya hook `postinstall` dan keluaran Caraka tidak pernah memuat kata `sudo`. Yang ada di v0.2 adalah `caraka service --print systemd|launchd|schtasks`, yang **mencetak** unit ke stdout untuk kamu pasang sendiri, lalu mencetak langkah manualnya.
 

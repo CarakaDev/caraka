@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { chmod, mkdtemp, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import { stringify } from "yaml";
 import { gatewayCommands, splitTelegramText, Telegram } from "../src/channels/telegram.js";
@@ -25,6 +26,9 @@ import {
 } from "../src/core/security.js";
 import { claudeEnvironment } from "../src/drivers/claude-acp.js";
 import { catalogs, defaultLanguage, translator } from "../src/i18n.js";
+import { withTimeout } from "../src/memory/index.js";
+import { LocalMemory } from "../src/memory/local.js";
+import { TitenMemory } from "../src/memory/titen.js";
 import { isServiceKind, serviceKinds, serviceUnit } from "../src/service.js";
 import { Store } from "../src/store/db.js";
 
@@ -313,6 +317,10 @@ test("config accepts the language field, and a v0.1 file without it still loads"
     assert.equal(old.config.version, 1);
     assert.equal(old.config.language, undefined);
     assert.deepEqual(old.config.telegram.allowChats, []);
+    // AC-2.1: a file written before v0.3 never chose a memory provider, and
+    // parses as `local` with the loopback endpoint.
+    assert.equal(old.config.memory.provider, "local");
+    assert.equal(old.config.memory.endpoint, "http://127.0.0.1:7717");
     assert.equal(translator(old.config.language ?? "en")("stop.none"), catalogs.en["stop.none"]);
     await writeFile(paths.config, stringify({ ...config, language: "fr" }));
     await assert.rejects(loadConfig());
@@ -489,6 +497,206 @@ test("the package has no install lifecycle script", async () => {
   ) as { scripts: Record<string, string> };
   for (const name of ["preinstall", "install", "postinstall"])
     assert.equal(name in manifest.scripts, false, name);
+});
+
+test("node:sqlite carries FTS5, the ground the local provider stands on", () => {
+  // Plan memori-v03 step 1: measured on Node v24.18.0 on 8 August 2026. This
+  // repeats the measurement wherever the suite runs, so a Node build without
+  // FTS5 fails here instead of quietly inside compile.
+  const db = new DatabaseSync(":memory:");
+  db.exec("CREATE VIRTUAL TABLE probe USING fts5(text)");
+  db.prepare("INSERT INTO probe(text) VALUES (?)").run("caraka remembers the lockfile");
+  const hit = db.prepare("SELECT count(*) AS n FROM probe WHERE probe MATCH ?").get("lockfile") as {
+    n: number;
+  };
+  assert.equal(hit.n, 1);
+  db.close();
+});
+
+test("withTimeout hands back a fast value, cuts a hang, and keeps the original error", async () => {
+  // AC-4.1's mechanism at the unit: the bound is an argument, so the test
+  // passes a small one instead of racing a real half second.
+  assert.equal(await withTimeout(Promise.resolve("fast"), 50), "fast");
+  await assert.rejects(withTimeout(new Promise<never>(() => {}), 10), /passed 10 ms/);
+  await assert.rejects(
+    withTimeout(Promise.reject(new Error("inner failure")), 50),
+    /inner failure/,
+  );
+});
+
+test("the memory block accepts its providers and rejects one it does not know", async () => {
+  // AC-2.2.
+  const oldHome = process.env.CARAKA_HOME;
+  const root = await mkdtemp(join(tmpdir(), "caraka-memcfg-"));
+  process.env.CARAKA_HOME = root;
+  try {
+    const config = defaultConfig(root, "caraka_test_bot", "42", true, "en", "titen");
+    const paths = await saveConfig(config, "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi");
+    assert.equal((await loadConfig()).config.memory.provider, "titen");
+    // A block naming only the provider still gets the loopback endpoint.
+    await writeFile(paths.config, stringify({ ...config, memory: { provider: "none" } }));
+    const bare = await loadConfig();
+    assert.equal(bare.config.memory.provider, "none");
+    assert.equal(bare.config.memory.endpoint, "http://127.0.0.1:7717");
+    await writeFile(paths.config, stringify({ ...config, memory: { provider: "vector" } }));
+    await assert.rejects(loadConfig());
+  } finally {
+    if (oldHome === undefined) delete process.env.CARAKA_HOME;
+    else process.env.CARAKA_HOME = oldHome;
+  }
+});
+
+test("the local provider stores scrubbed rows, searches within budget, and forgets by id", async () => {
+  // AC-10.1, AC-10.2, AC-10.3, and AC-5.3 on the local path.
+  const root = await mkdtemp(join(tmpdir(), "caraka-localmem-"));
+  const store = new Store(join(root, "test.db"), createScrubber());
+  const memory = new LocalMemory(store);
+  const scope = { kind: "workspace" as const, id: "/srv/app" };
+
+  // AC-10.1: the row lands with its scope and time.
+  const id = await memory.observe({ scope, kind: "note", text: "prefer pnpm here" });
+  const row = store.db
+    .prepare("SELECT scope, kind, text, created_at FROM memory_local WHERE id = ?")
+    .get(id) as { scope: string; kind: string; text: string; created_at: number };
+  assert.equal(row.scope, "workspace:/srv/app");
+  assert.equal(row.kind, "note");
+  assert.equal(row.text, "prefer pnpm here");
+  assert.ok(row.created_at > 0);
+
+  // AC-5.3: a secret-shaped note is scrubbed before it reaches the file.
+  await memory.observe({ scope, kind: "note", text: "CARAKA_TOKEN=super-secret-token-value" });
+  const texts = (store.db.prepare("SELECT text FROM memory_local").all() as Array<{ text: string }>)
+    .map((entry) => entry.text)
+    .join("\n");
+  assert.equal(texts.includes("super-secret-token-value"), false);
+  assert.match(texts, /CARAKA_TOKEN=\[REDACTED\]/);
+
+  // AC-10.2: seven matching rows, at most six back, inside the budget.
+  for (let index = 0; index < 7; index += 1)
+    await memory.observe({ scope, kind: "note", text: `pnpm note number ${index}` });
+  const context = await memory.compile({ scope, task: "anything about pnpm", budgetTokens: 800 });
+  assert.ok(context.items.length >= 1 && context.items.length <= 6);
+  for (const item of context.items) assert.match(item.text, /pnpm/);
+  assert.ok(context.tokensUsed <= 800);
+  // A budget of five tokens fits exactly one of these rows.
+  const tight = await memory.compile({ scope, task: "pnpm", budgetTokens: 5 });
+  assert.equal(tight.items.length, 1);
+  assert.ok(tight.tokensUsed <= 5);
+  // A scope the store never saw returns nothing.
+  const other = await memory.compile({
+    scope: { kind: "workspace", id: "/elsewhere" },
+    task: "pnpm",
+    budgetTokens: 800,
+  });
+  assert.deepEqual(other.items, []);
+
+  // AC-10.3: forgetting by id deletes exactly that row.
+  assert.equal(await memory.forget(id), 1);
+  assert.equal(store.db.prepare("SELECT id FROM memory_local WHERE id = ?").get(id), undefined);
+  assert.equal(await memory.forget("feedbeef"), 0);
+  assert.equal(await memory.forget({ kind: "note" }), 0);
+  store.close();
+});
+
+test("a database from before v0.3 gains the memory tables and keeps its rows", async () => {
+  // AC-10.4. The constructor's CREATE TABLE IF NOT EXISTS block is the only
+  // migration there is, so an old file has to pass through it unharmed.
+  const root = await mkdtemp(join(tmpdir(), "caraka-olddb-"));
+  const path = join(root, "test.db");
+  const store = new Store(path, createScrubber());
+  const session = store.createSession({
+    principal: "42",
+    chatId: "42",
+    threadId: "",
+    title: "old work",
+  });
+  store.close();
+  // Rewind the file to the v0.2 shape: the memory tables did not exist then.
+  const raw = new DatabaseSync(path);
+  raw.exec("DROP TABLE memory_local; DROP TABLE IF EXISTS memory_local_fts;");
+  raw.close();
+  const reopened = new Store(path, createScrubber());
+  const kept = reopened.db.prepare("SELECT title FROM sessions WHERE id = ?").get(session.id) as {
+    title: string;
+  };
+  assert.equal(kept.title, "old work");
+  const id = reopened.memoryInsert("workspace:/x", "note", "fresh row");
+  assert.equal(reopened.memoryDelete(id), 1);
+  reopened.close();
+});
+
+test("the titen adapter maps its five operations to the documented routes", async () => {
+  // AC-11.1, AC-11.2, and AC-5.3 on the HTTP path.
+  const requests: Array<{ method: string; path: string; body: string | undefined }> = [];
+  const json = (payload: unknown) =>
+    new Response(JSON.stringify(payload), { headers: { "content-type": "application/json" } });
+  let answer = () => json({});
+  const fetcher: typeof fetch = async (input, init) => {
+    requests.push({
+      method: init?.method ?? "GET",
+      path: new URL(String(input)).pathname,
+      body: init?.body === undefined ? undefined : String(init.body),
+    });
+    return answer();
+  };
+  const memory = new TitenMemory(createScrubber(), "http://127.0.0.1:7717", fetcher);
+  const scope = { kind: "workspace" as const, id: "/srv/app" };
+
+  answer = () => json({ data: { observation_id: "obs-7" } });
+  const observed = await memory.observe({
+    scope,
+    kind: "note",
+    text: "CARAKA_TOKEN=super-secret-token-value",
+  });
+  assert.equal(observed, "obs-7");
+  assert.equal(requests[0]?.method, "POST");
+  assert.equal(requests[0]?.path, "/v1/observations");
+  // AC-5.3: the body is scrubbed before it crosses the process boundary, and
+  // the scrub keeps the body parseable — a redaction that ate the closing
+  // quote would make Titen reject the request and lose the observation.
+  const observeBody = JSON.parse(requests[0]?.body ?? "") as { scope: unknown; text: string };
+  assert.deepEqual(observeBody.scope, scope);
+  assert.equal(observeBody.text, "CARAKA_TOKEN=[REDACTED]");
+
+  answer = () =>
+    json({ data: { context_id: "ctx-9", items: [{ text: "t", source: "s" }], tokensUsed: 3 } });
+  const context = await memory.compile({ scope, task: "t", budgetTokens: 800 });
+  assert.equal(requests[1]?.method, "POST");
+  assert.equal(requests[1]?.path, "/v1/context/compile");
+  assert.deepEqual(context, { id: "ctx-9", items: [{ text: "t", source: "s" }], tokensUsed: 3 });
+
+  answer = () => json({});
+  await memory.feedback("ctx-9", { ok: true });
+  assert.equal(requests[2]?.method, "POST");
+  assert.equal(requests[2]?.path, "/v1/context/ctx-9/feedback");
+
+  answer = () => json({ data: { evidence: [{ id: "ev-1", text: "seen", source: "run" }] } });
+  const evidence = await memory.trace("claim-1");
+  assert.equal(requests[3]?.method, "GET");
+  assert.equal(requests[3]?.path, "/v1/claims/claim-1/evidence");
+  assert.deepEqual(evidence, [{ id: "ev-1", text: "seen", source: "run" }]);
+
+  // AC-11.2: forget purges the observation; 404 is zero; a Filter never calls.
+  answer = () => json({});
+  assert.equal(await memory.forget("obs-7"), 1);
+  assert.equal(requests[4]?.method, "DELETE");
+  assert.equal(requests[4]?.path, "/v1/observations/obs-7");
+  answer = () => new Response("", { status: 404 });
+  assert.equal(await memory.forget("gone"), 0);
+  assert.equal(await memory.forget({ kind: "note" }), 0);
+  assert.equal(requests.length, 6);
+});
+
+test("the memory commands are in the help text and the Telegram menu", () => {
+  // AC-7.8's static half; the dispatch chain itself is proved end to end.
+  for (const [language, catalog] of Object.entries(catalogs))
+    for (const name of ["/ingat", "/lupakan", "/memori"])
+      assert.ok(catalog["help.body"].includes(name), `${language} ${name}`);
+  for (const name of ["ingat", "lupakan", "memori"])
+    assert.ok(
+      gatewayCommands.some((entry) => entry.command === name),
+      name,
+    );
 });
 
 test("no Indonesian string survives outside the catalog", async () => {

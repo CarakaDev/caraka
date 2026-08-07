@@ -75,15 +75,17 @@ pengungkapan yang dinyatakan, bukan dengan kerahasiaan yang dijanjikan.
 
 **Pertanyaan:** apakah memori benar-benar meningkatkan kualitas, atau hanya menambah kebisingan?
 
-- [ ] `MemoryProvider` + adapter `titen` (observe / consolidate / compile / feedback / trace)
-- [ ] Pemetaan: transcript & tool event → *observation*; keputusan & preferensi → *claim*; injeksi prompt → *context* dengan budget
-- [ ] Provider `local` sebagai fallback minimal (SQLite + FTS5, tanpa embedding)
-- [ ] Degradasi: `recall` timeout 500 ms → lanjut tanpa memori
-- [ ] `/ingat`, `/lupakan`, `/memori` + tautan trace ke claim
-- [ ] Titen ditawarkan (bukan diwajibkan) di wizard
-- [ ] Opsional: sambungkan MCP Titen langsung ke Claude Code
+- [x] `MemoryProvider` + adapter `titen` (observe / compile / feedback / trace / forget; konsolidasi bukan method interface — ia langkah internal Titen, `spec/memori-v03.md`)
+- [x] Pemetaan: transcript & tool event → *observation*; keputusan & preferensi → *claim*; injeksi prompt → *context* dengan budget
+- [x] Provider `local` sebagai fallback minimal (SQLite + FTS5, tanpa embedding)
+- [x] Degradasi: `recall` timeout 500 ms → lanjut tanpa memori
+- [x] `/ingat`, `/lupakan`, `/memori` + tautan trace ke claim
+- [x] Titen ditawarkan (bukan diwajibkan) di wizard
+- [ ] Opsional: sambungkan MCP Titen langsung ke Claude Code — ditunda ke fase berikutnya (`spec/memori-v03.md`)
 
 **Definition of done:** uji A/B pribadi pada 20 tugas, dengan vs tanpa memori. Kalau tidak terasa lebih baik — **kurangi** memori, jangan tambah.
+
+Gerbang A/B itu belum dijalankan saat `v0.3.0` dirilis; ia dipindah menjadi validasi pasca-rilis atas keputusan pemilik 8 Agustus 2026 (`spec/v10.md`). Hasilnya dicatat di sini begitu ada.
 
 ---
 

@@ -6,6 +6,8 @@ import { parse, stringify } from "yaml";
 import { z } from "zod";
 import type { Language } from "./i18n.js";
 
+const TITEN_ENDPOINT = "http://127.0.0.1:7717";
+
 const configSchema = z.object({
   version: z.literal(1),
   // Absent in every v0.1 file on disk. English is the answer when nobody chose.
@@ -27,6 +29,14 @@ const configSchema = z.object({
     adapter: z.literal("claude-agent-acp"),
     adapterVersion: z.literal("0.63.0"),
   }),
+  // Absent in every file written before v0.3. Nobody chose a memory provider
+  // then, and `local` works with no extra process, so absence reads as `local`.
+  memory: z
+    .object({
+      provider: z.enum(["titen", "local", "none"]).default("local"),
+      endpoint: z.string().default(TITEN_ENDPOINT),
+    })
+    .default({ provider: "local", endpoint: TITEN_ENDPOINT }),
 });
 
 export type CarakaConfig = z.infer<typeof configSchema>;
@@ -89,6 +99,7 @@ export function defaultConfig(
   principal: string,
   topics: boolean,
   language: Language = "en",
+  memory: CarakaConfig["memory"]["provider"] = "local",
 ): CarakaConfig {
   const path = resolve(workspace);
   return {
@@ -97,6 +108,7 @@ export function defaultConfig(
     workspace: { name: basename(path), path },
     telegram: { botUsername, allowFrom: [principal], allowChats: [principal], topics },
     agent: { adapter: "claude-agent-acp", adapterVersion: "0.63.0" },
+    memory: { provider: memory, endpoint: TITEN_ENDPOINT },
   };
 }
 

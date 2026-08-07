@@ -11,10 +11,12 @@ import { Gateway } from "./core/gateway.js";
 import { createScrubber, parseDuration, trustLimitMinutes } from "./core/security.js";
 import { ClaudeAcp } from "./drivers/claude-acp.js";
 import { defaultLanguage, translator, type Language, type Translate } from "./i18n.js";
+import { LocalMemory } from "./memory/local.js";
+import { TitenMemory } from "./memory/titen.js";
 import { isServiceKind, serviceUnit } from "./service.js";
 import { Store } from "./store/db.js";
 
-const VERSION = "0.2.1";
+const VERSION = "0.3.0";
 
 let t: Translate = translator(defaultLanguage());
 
@@ -198,12 +200,29 @@ async function init(args: string[]) {
 
   await telegram.deleteWebhook(true);
 
+  // The memory step (FR-SETUP-01e): one offer, after pairing and before the
+  // config is written. Declining, or an install that does not finish, falls
+  // back to `local` and init completes either way.
+  const rlMemory = createInterface({ input: stdin, output: stdout });
+  const memoryAnswer = await rlMemory.question(t("cli.memoryOffer"));
+  rlMemory.close();
+  let memoryProvider: "titen" | "local" = "local";
+  if (pairingConfirmed(memoryAnswer)) {
+    const install = spawnSync("bash", ["-c", "curl -fsSL https://titen.dev/install.sh | bash"], {
+      stdio: "inherit",
+    });
+    if (install.status === 0) memoryProvider = "titen";
+    else console.log(t("cli.memoryInstallFailed"));
+  }
+  console.log(t(memoryProvider === "titen" ? "cli.memoryTiten" : "cli.memoryLocal"));
+
   const config = defaultConfig(
     workspace,
     bot.username,
     String(paired.id),
     bot.has_topics_enabled === true,
     language,
+    memoryProvider,
   );
   const paths = await saveConfig(config, token);
   console.log(t("cli.ready", { path: paths.config }));
@@ -240,6 +259,31 @@ async function doctor() {
   checks.push(["Token mode", await privateFile(loaded.paths.token), "must be 0600"]);
   checks.push(["Approval key mode", await privateFile(loaded.paths.approvalKey), "must be 0600"]);
   checks.push(["Allowlist", loaded.config.telegram.allowFrom.length > 0, "run init again"]);
+  // A Titen that is configured gets a health probe; any other provider is a
+  // choice, not a fault, so its row can never turn the exit code red.
+  const memory = loaded.config.memory;
+  if (memory.provider === "titen") {
+    const healthy = await fetch(new URL("/health", memory.endpoint), {
+      signal: AbortSignal.timeout(2000),
+    })
+      .then((response) => response.ok)
+      .catch(() => false);
+    checks.push(["Titen memory", healthy, "run `titen serve`"]);
+    let loopback = false;
+    try {
+      loopback = ["127.0.0.1", "localhost", "[::1]", "::1"].includes(
+        new URL(memory.endpoint).hostname,
+      );
+    } catch {
+      loopback = false;
+    }
+    if (!loopback)
+      console.log(
+        `Memory endpoint ${memory.endpoint} is not loopback: memory data leaves this machine.`,
+      );
+  } else {
+    checks.push([`Memory (${memory.provider})`, true, ""]);
+  }
   try {
     const me = await new Telegram(loaded.token, fetch, undefined, t).getMe();
     checks.push([
@@ -290,6 +334,14 @@ async function start() {
   const scrub = createScrubber([loaded.token, loaded.approvalKey.toString("base64url")]);
   const store = new Store(loaded.paths.database, scrub);
   const language = translator(loaded.config.language ?? "en");
+  // `none` builds no provider at all; the gateway treats its absence as the
+  // provider.
+  const memory =
+    loaded.config.memory.provider === "titen"
+      ? new TitenMemory(scrub, loaded.config.memory.endpoint)
+      : loaded.config.memory.provider === "local"
+        ? new LocalMemory(store)
+        : undefined;
   const gateway = new Gateway(
     loaded.config,
     loaded.approvalKey,
@@ -298,6 +350,8 @@ async function start() {
     store,
     scrub,
     VERSION,
+    undefined,
+    memory,
   );
   console.log(
     t("cli.running", {

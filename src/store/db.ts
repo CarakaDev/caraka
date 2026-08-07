@@ -39,6 +39,7 @@ type Scrubber = ReturnType<typeof createScrubber>;
 
 export class Store {
   readonly db: DatabaseSync;
+  private fts = true;
 
   constructor(
     path: string,
@@ -104,7 +105,73 @@ export class Store {
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
       ) STRICT;
+      CREATE TABLE IF NOT EXISTS memory_local (
+        id TEXT PRIMARY KEY,
+        scope TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        text TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      ) STRICT;
     `);
+    // FTS5 is present in the Node builds this repo targets (measured on Node
+    // v24.18.0; a unit test repeats the probe). A build without it keeps the
+    // Store usable and drops `memorySearch` to LIKE matching.
+    try {
+      this.db.exec(
+        "CREATE VIRTUAL TABLE IF NOT EXISTS memory_local_fts USING fts5(id UNINDEXED, text);",
+      );
+    } catch {
+      this.fts = false;
+    }
+  }
+
+  memoryInsert(scope: string, kind: string, text: string) {
+    const id = randomBytes(6).toString("hex");
+    const clean = this.scrub(text);
+    this.db
+      .prepare("INSERT INTO memory_local(id, scope, kind, text, created_at) VALUES (?, ?, ?, ?, ?)")
+      .run(id, scope, kind, clean, Date.now());
+    if (this.fts)
+      this.db.prepare("INSERT INTO memory_local_fts(id, text) VALUES (?, ?)").run(id, clean);
+    return id;
+  }
+
+  memorySearch(scope: string, terms: string[], limit: number) {
+    if (terms.length === 0) return this.memoryRecent(scope, limit);
+    if (this.fts) {
+      const match = terms.map((term) => `"${term.replaceAll('"', '""')}"`).join(" OR ");
+      return this.db
+        .prepare(
+          `SELECT m.id, m.kind, m.text FROM memory_local_fts f
+           JOIN memory_local m ON m.id = f.id
+           WHERE memory_local_fts MATCH ? AND m.scope = ?
+           ORDER BY rank LIMIT ?`,
+        )
+        .all(match, scope, limit) as Array<{ id: string; kind: string; text: string }>;
+    }
+    // ponytail: LIKE fallback for a Node build without FTS5 — substring match,
+    // newest first, no relevance ranking. The ceiling stands until such a build
+    // stops existing.
+    const where = terms.map(() => "text LIKE '%' || ? || '%'").join(" OR ");
+    return this.db
+      .prepare(
+        `SELECT id, kind, text FROM memory_local WHERE scope = ? AND (${where})
+         ORDER BY created_at DESC LIMIT ?`,
+      )
+      .all(scope, ...terms, limit) as Array<{ id: string; kind: string; text: string }>;
+  }
+
+  memoryRecent(scope: string, limit: number) {
+    return this.db
+      .prepare(
+        "SELECT id, kind, text FROM memory_local WHERE scope = ? ORDER BY created_at DESC LIMIT ?",
+      )
+      .all(scope, limit) as Array<{ id: string; kind: string; text: string }>;
+  }
+
+  memoryDelete(id: string) {
+    if (this.fts) this.db.prepare("DELETE FROM memory_local_fts WHERE id = ?").run(id);
+    return Number(this.db.prepare("DELETE FROM memory_local WHERE id = ?").run(id).changes);
   }
 
   // A window is open only while the row says so and the clock agrees. Expiry is

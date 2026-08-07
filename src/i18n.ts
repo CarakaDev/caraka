@@ -29,13 +29,25 @@ const en = {
   "status.session": "Status: {state}.",
   "status.none": "No session in this conversation yet.",
   "help.body":
-    "Send a task as an ordinary message. Commands: /new, /status, /stop, /commands, /usage, /yolo, /lock, /help.",
+    "Send a task as an ordinary message. Commands: /new, /status, /stop, /commands, /usage, /ingat, /lupakan, /memori, /yolo, /lock, /help.",
   "help.commandsEmpty": "Claude has not sent its command list for this session yet.",
   "help.commands": "Claude commands for this session:\n{list}",
   "help.unknownCommand":
     "Caraka does not know /{name}. Send /commands for the list Claude reported.",
   "usage.none": "The agent has not reported usage for this session yet.",
   "usage.report": "Context {used}/{size} tokens. Cost {cost}.",
+  "memory.off":
+    "Memory is off for this gateway. Set memory.provider to local or titen in config.yaml, then restart.",
+  "memory.rememberUsage": "Write the note after the command: /ingat prefer pnpm here.",
+  "memory.remembered": "Saved: {id}. /lupakan {id} deletes it.",
+  "memory.forgetUsage": "Write the id after the command: /lupakan abc123. /memori lists the ids.",
+  "memory.forgotten": "Forgotten: {id}.",
+  "memory.notFound": "No memory item has the id {id}. /memori lists what is stored.",
+  "memory.list": "Memory for this workspace:\n{list}",
+  "memory.empty": "Memory is empty. /ingat <text> saves the first note.",
+  "memory.failed":
+    "Memory did not answer, so nothing changed. `npx caraka doctor` on the computer shows why.",
+  "memory.saved": "Memory saved: {id}",
   "error.report":
     "Claude could not finish the task. {details}\nTry /new or run `npx caraka doctor` on the computer.",
   "start.notice": "Caraka is up on {host}. Workspace {workspace}, version {version}.",
@@ -82,6 +94,11 @@ const en = {
   "cli.pairConfirm": "Allow {identity} (ID {id}) to send tasks? [y/N]: ",
   "cli.pairCancelled": "Pairing cancelled; no configuration was saved.",
   "cli.languagePrompt": "Interface language [en/id] ({fallback}): ",
+  "cli.memoryOffer":
+    "\nMemory. Titen keeps what Caraka learns between runs, served locally on 127.0.0.1:7717.\nInstall it now with `curl -fsSL https://titen.dev/install.sh | bash`? [y/N]: ",
+  "cli.memoryLocal": "Memory provider: local (SQLite inside Caraka's own database).",
+  "cli.memoryTiten": "Memory provider: titen.",
+  "cli.memoryInstallFailed": "The Titen install did not finish. Memory falls back to local.",
   "cli.ready": "\nReady. Configuration: {path}",
   "cli.stopped": "\nCaraka stopped: {message}\n",
   "cli.unknownError": "unknown error",
@@ -133,12 +150,24 @@ const id: Record<MessageKey, string> = {
   "status.session": "Status: {state}.",
   "status.none": "Belum ada sesi di percakapan ini.",
   "help.body":
-    "Kirim tugas sebagai pesan biasa. Perintah: /new, /status, /stop, /commands, /usage, /yolo, /lock, /help.",
+    "Kirim tugas sebagai pesan biasa. Perintah: /new, /status, /stop, /commands, /usage, /ingat, /lupakan, /memori, /yolo, /lock, /help.",
   "help.commandsEmpty": "Claude belum mengirim daftar perintah untuk sesi ini.",
   "help.commands": "Perintah Claude untuk sesi ini:\n{list}",
   "help.unknownCommand": "Caraka tidak mengenal /{name}. Kirim /commands untuk daftar dari Claude.",
   "usage.none": "Agent belum melaporkan pemakaian untuk sesi ini.",
   "usage.report": "Konteks {used}/{size} token. Biaya {cost}.",
+  "memory.off":
+    "Memori sedang nonaktif di gateway ini. Setel memory.provider ke local atau titen di config.yaml, lalu mulai ulang.",
+  "memory.rememberUsage": "Tulis catatannya setelah perintah: /ingat pakai pnpm di sini.",
+  "memory.remembered": "Tersimpan: {id}. /lupakan {id} menghapusnya.",
+  "memory.forgetUsage": "Tulis id-nya setelah perintah: /lupakan abc123. Daftar id ada di /memori.",
+  "memory.forgotten": "Terlupakan: {id}.",
+  "memory.notFound": "Tidak ada item memori ber-id {id}. /memori menampilkan daftarnya.",
+  "memory.list": "Memori workspace ini:\n{list}",
+  "memory.empty": "Memori masih kosong. /ingat <teks> menyimpan catatan pertama.",
+  "memory.failed":
+    "Memori tidak menjawab, jadi tidak ada yang berubah. `npx caraka doctor` di komputer menunjukkan sebabnya.",
+  "memory.saved": "Ingatan disimpan: {id}",
   "error.report":
     "Claude tidak dapat menyelesaikan tugas. {details}\nCoba /new atau jalankan `npx caraka doctor` di komputer.",
   "start.notice": "Caraka aktif di {host}. Workspace {workspace}, versi {version}.",
@@ -183,6 +212,11 @@ const id: Record<MessageKey, string> = {
   "cli.pairConfirm": "Izinkan {identity} (ID {id}) mengirim tugas? [y/N]: ",
   "cli.pairCancelled": "Pairing dibatalkan; tidak ada konfigurasi yang disimpan.",
   "cli.languagePrompt": "Bahasa antarmuka [en/id] ({fallback}): ",
+  "cli.memoryOffer":
+    "\nMemori. Titen menyimpan apa yang Caraka pelajari antar-run, berjalan lokal di 127.0.0.1:7717.\nPasang sekarang dengan `curl -fsSL https://titen.dev/install.sh | bash`? [y/N]: ",
+  "cli.memoryLocal": "Provider memori: local (SQLite di database Caraka sendiri).",
+  "cli.memoryTiten": "Provider memori: titen.",
+  "cli.memoryInstallFailed": "Pemasangan Titen tidak selesai. Memori memakai local.",
   "cli.ready": "\nSiap. Konfigurasi: {path}",
   "cli.stopped": "\nCaraka berhenti: {message}\n",
   "cli.unknownError": "kesalahan tidak dikenal",

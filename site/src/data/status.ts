@@ -13,7 +13,7 @@ import { r } from '../lib/anim'
 // three specification-era stats. The version is package.json's; the other three
 // were already replaced when v0.1 shipped.
 export const stats = [
-  { n: '0.2.1', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '0.3.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Preview', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   { n: 'Claude', label: 'SUPPORTED AGENT', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
   { n: '1', label: 'PRIVATE OPERATOR', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
@@ -41,9 +41,11 @@ interface Phase {
 }
 
 // Leaves the comp at Caraka Status.dc.html:245,249,253, which pulses phase 0 and
-// plans phases 1 and 2. v0.2 is published, so the pulse marks phase 2. Phase 1
-// keeps "in progress" rather than "done" because roadmap.md still holds its
-// dogfood gate open, and only one phase pulses because the comp draws one.
+// plans phases 1 and 2. v0.3 is published, so the pulse marks phase 3; only one
+// phase pulses because the comp draws one. Phases 1-3 keep "in progress" rather
+// than "done" because roadmap.md still holds their field gates open: the dogfood
+// week, the three-minute install, and phase 3's A/B — moved past the release by
+// owner decision on 8 August 2026.
 export const phases: Phase[] = [
   { n: '0', title: 'Technical spike', dur: '1 week', ...done,
     q: 'Do the three foundations behave the way the documentation says?',
@@ -53,11 +55,11 @@ export const phases: Phase[] = [
     q: 'Is this actually useful in daily work?',
     gate: 'The author uses it for a full week and finishes five real tasks without opening a laptop, and the topic list feels tidier than one flat chat. If it is annoying, fix it before adding anything.',
     range: r(1, 3, 26) },
-  { n: '2', title: 'Smooth install · v0.2', dur: '1 week', live: true, ...now,
+  { n: '2', title: 'Smooth install · v0.2', dur: '1 week', ...now,
     q: 'Can someone else install it without help?',
     gate: 'Median time from npx to first delivered message stays under three minutes, with no questions asked of the author.',
     range: r(2, 3, 26) },
-  { n: '3', title: 'Memory with Titen · v0.3', dur: '2 weeks', ...next,
+  { n: '3', title: 'Memory with Titen · v0.3', dur: '2 weeks', live: true, ...now,
     q: 'Does memory improve the answer, or just add noise?',
     gate: 'A personal A/B across twenty tasks, with and without memory. If it does not feel better, reduce memory rather than add more.',
     range: r(3, 3, 26) },
@@ -89,6 +91,24 @@ export const releases = [
         'Complete live topic and Rich Message checks with the release bot',
         'Use Caraka for one full week and finish five real tasks',
         'Record five real setup sessions from people who have never seen it',
+        'Run the personal A/B across twenty tasks, with and without memory',
+      ] },
+    ] },
+  { v: '0.3.0', state: 'preview', date: '8 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'ADDED', tone: '#8EEE98', items: [
+        "A MemoryProvider with three providers: titen, an HTTP adapter for a local Titen process; local, SQLite + FTS5 inside Caraka's own database with no embeddings; and none. A config from before v0.3 reads as local",
+        'Compiled memory rides in front of the prompt as a labelled data block, at most 6 items in 800 tokens. The bound is enforced on what the provider returns, and memory markers inside recalled text are stripped so recalled data cannot pose as instruction',
+        "Every run feeds memory back: the prompt and the agent's output become observations, tool-call titles arrive as they happen, and the injected context receives its outcome. A fast observation id closes the reply with Memory saved",
+        'Chat commands /ingat, /lupakan, and /memori, accepted from any topic and answered in General when topics are on',
+        'A compile that fails or outlives 500 ms is skipped, audited as memory_degraded, and the run continues. Text bound for a provider passes the secret scrubber before it leaves the process',
+        'The wizard offers to install Titen after pairing; declining writes provider local and finishes as usual. doctor probes Titen\u2019s health endpoint and says when the memory endpoint is not loopback',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'The titen adapter has only ever answered a mocked fetch; no check in the repository talks to a live Titen, and its routes were read from the pre-1.0 Titen v0.7.0 source',
+        'On titen, forget by filter deletes nothing, because v0.7.0 has no bulk delete route. Deleting by id works',
+        'The wizard\u2019s install command was not run while closing the release, and no automated test covers init or doctor',
+        'The A/B across twenty tasks stays open, moved past the release by owner decision on 8 August 2026',
       ] },
     ] },
   { v: '0.2.1', state: 'preview', date: '8 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
