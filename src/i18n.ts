@@ -51,6 +51,14 @@ const en = {
   "group.pairing":
     "Caraka was added to {title} ({chatId}). Adding a group to the allowlist means choosing to show that work to its members: every member sees the approval cards, file paths, diffs, and command output. Press the button to allow it.",
   "group.paired": "{title} is on the chat allowlist.",
+  // Read straight after pairing, which is the one moment the operator is
+  // looking. Privacy mode is on — Telegram simply does not deliver ordinary
+  // group messages to the bot, so silence would otherwise look like a fault.
+  "group.ready":
+    "How it works here\n\nTelegram only delivers three kinds of message to me in a group, because privacy mode is on:\n· a command addressed to me, like /new@{bot}\n· a reply to one of my own messages\n· service messages\n\nAn ordinary message in this group never reaches me. That is Telegram, not a fault.\n\nTopics: {topics}\n\nTo let me read every message you would turn privacy mode off in @BotFather, or make me an admin — an admin bot receives all messages either way. Caraka never asks for that.",
+  "group.topicsOn": "on. Each session gets its own topic here.",
+  "group.topicsOff":
+    "off. This group is not a forum, or I am not an admin with can_manage_topics — sessions run linear with a header. Granting that right makes me an admin, and an admin bot reads every message in the group. That is the trade.",
   "telegram.empty": "(Claude sent no text.)",
   "telegram.unreachable": "Telegram {method} could not be reached.",
   "telegram.refused": "Telegram refused {method}.",
@@ -146,6 +154,11 @@ const id: Record<MessageKey, string> = {
   "group.pairing":
     "Caraka ditambahkan ke {title} ({chatId}). Memasukkan grup ke allowlist berarti memilih untuk memperlihatkan pekerjaan itu kepada anggotanya: setiap anggota melihat kartu approval, path berkas, diff, dan keluaran perintah. Tekan tombol untuk mengizinkannya.",
   "group.paired": "{title} masuk allowlist chat.",
+  "group.ready":
+    "Cara kerjanya di sini\n\nDi grup, Telegram hanya mengirimkan tiga jenis pesan kepada saya, karena privacy mode menyala:\n· perintah yang ditujukan ke saya, seperti /new@{bot}\n· balasan atas pesan saya sendiri\n· service message\n\nPesan biasa di grup ini tidak pernah sampai ke saya. Itu Telegram, bukan kerusakan.\n\nTopic: {topics}\n\nAgar saya membaca semua pesan, matikan privacy mode di @BotFather, atau jadikan saya admin — bot admin menerima semua pesan. Caraka tidak pernah memintanya.",
+  "group.topicsOn": "aktif. Tiap sesi mendapat topic sendiri di sini.",
+  "group.topicsOff":
+    "tidak aktif. Grup ini bukan forum, atau saya bukan admin dengan can_manage_topics — sesi berjalan linear dengan header. Memberi hak itu menjadikan saya admin, dan bot admin membaca setiap pesan di grup. Itu pertukarannya.",
   "telegram.empty": "(Claude tidak mengirim teks.)",
   "telegram.unreachable": "Telegram {method} tidak dapat dihubungi.",
   "telegram.refused": "Telegram menolak {method}.",

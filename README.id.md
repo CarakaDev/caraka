@@ -7,7 +7,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/lisensi-MIT-8EEE98?style=flat-square&labelColor=05080C" alt="MIT"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%E2%89%A522-E2452C?style=flat-square&labelColor=05080C" alt="node >= 22"></a>
   <a href="https://agentclientprotocol.com"><img src="https://img.shields.io/badge/protokol-ACP-FF7A5E?style=flat-square&labelColor=05080C" alt="ACP"></a>
-  <a href="docs/roadmap.md"><img src="https://img.shields.io/badge/status-v0.2-FFD67E?style=flat-square&labelColor=05080C" alt="v0.1 preview"></a>
+  <a href="docs/roadmap.md"><img src="https://img.shields.io/badge/status-v0.2-FFD67E?style=flat-square&labelColor=05080C" alt="v0.2"></a>
 </p>
 
 <p align="center">
@@ -107,7 +107,7 @@ Beberapa klien coding agent bisa mempertahankan terminal interaktif untuk wizard
 
 ## Memakainya
 
-Kirim teks biasa untuk memberi Claude tugas. Sisanya cukup empat perintah:
+Kirim teks biasa untuk memberi Claude tugas. Sisanya cukup delapan perintah:
 
 | | |
 |---|---|
@@ -124,7 +124,7 @@ Permintaan izin tampil sebagai tombol **Setujui sekali** dan **Tolak**. Setiap c
 
 ## Kenapa bisa sekecil ini
 
-Satu protokol mengerjakan bagian tersulitnya. [ACP](https://agentclientprotocol.com) adalah padanan LSP untuk coding agent: JSON-RPC 2.0 lewat stdio, dibuat Zed, di-co-lead JetBrains, dengan 28+ agent di registry-nya. Menulis **satu** klien ACP itulah yang menjaga pintu ke agent lain tetap terbuka — v0.1 menjalankan Claude Code, dan sisanya tinggal preset, bukan tulis ulang.
+Satu protokol mengerjakan bagian tersulitnya. [ACP](https://agentclientprotocol.com) adalah padanan LSP untuk coding agent: JSON-RPC 2.0 lewat stdio, dibuat Zed, di-co-lead JetBrains, dengan 28+ agent di registry-nya. Menulis **satu** klien ACP itulah yang menjaga pintu ke agent lain tetap terbuka — v0.2 menjalankan Claude Code, dan sisanya tinggal preset, bukan tulis ulang.
 
 ACP juga sudah menyediakan `session/request_permission`, jadi sistem approval bukan sesuatu yang Caraka karang sendiri. Ia hanya merender permintaan izin milik protokol itu menjadi tombol di chat-mu.
 
@@ -163,17 +163,19 @@ Keduanya patuh dengan sempurna. Keduanya benar menurut instruksi yang mereka peg
 
 Itulah sebabnya proyek ini punya approval dan jejak audit. Selengkapnya di [docs/brand.md](docs/brand.md).
 
-## Yang belum ada di v0.1
+## Yang belum ada di v0.2
 
 Memori sudah dispesifikasikan dan belum dikirim. Saat tiba nanti ia memakai [Titen](https://titen.dev) — memori agent yang tidak pernah meratakan kesimpulan dengan buktinya, dengan ekstraksi claim yang deterministik dan tanpa model di dalam loop. Titen dan Caraka ditulis oleh orang yang sama: satu mengingat, satu diutus.
 
-Grup, service latar, lampiran, dan coding agent selain Claude Code juga sudah dispesifikasikan dan belum dikirim. [roadmap.md](docs/roadmap.md) memuat urutannya dan gerbang yang bisa membatalkan fase berikutnya.
+Lampiran dan coding agent selain Claude Code juga sudah dispesifikasikan dan belum dikirim. [roadmap.md](docs/roadmap.md) memuat urutannya dan gerbang yang bisa membatalkan fase berikutnya.
 
-Dua di antaranya membawa syarat yang layak diketahui sebelum kamu menunggunya.
+Dua hal yang sudah dikirim membawa syarat yang layak diketahui.
 
-**Grup.** Saat dukungan grup mendarat, memasukkan grup ke allowlist berarti memilih untuk memperlihatkan pekerjaan itu kepada anggotanya: kartu approval, path berkas, diff, dan keluaran perintah akan terbaca setiap anggota grup. Balasan ephemeral Telegram tidak bisa menyembunyikannya — ia hanya berlaku 15 detik setelah aksi yang memenuhi syarat, atau bila bot adalah admin chat, dan Caraka tidak pernah meminta hak itu. Yang tetap tertutup adalah keputusannya: tombol approval hanya sah dari akun yang ada di allowlist, jadi anggota lain bisa membaca kartunya tanpa bisa menjawabnya.
+**Grup.** Memasukkan grup ke allowlist berarti memilih untuk memperlihatkan pekerjaan itu kepada anggotanya: kartu approval, path berkas, diff, dan keluaran perintah akan terbaca setiap anggota grup. Balasan ephemeral Telegram tidak bisa menyembunyikannya — ia hanya berlaku 15 detik setelah aksi yang memenuhi syarat, atau bila bot adalah admin chat, dan Caraka tidak pernah meminta hak itu. Yang tetap tertutup adalah keputusannya: tombol approval hanya sah dari akun yang ada di allowlist pengirim, jadi anggota lain bisa membaca kartunya tanpa bisa menjawabnya.
 
-**Service latar.** Caraka akan mencetak unit systemd, launchd, atau schtasks untuk kamu pasang sendiri. Ia tidak pernah memasangnya, tidak punya hook `postinstall`, dan tidak pernah mencetak kata `sudo`.
+Privacy mode tetap menyala, dan itu sebabnya pesan biasa di grup tidak pernah sampai ke bot. Sapa ia langsung — `/new@botmu …` — atau balas salah satu pesannya. Mematikannya, atau memberi hak admin yang dibutuhkan topic grup, membuat bot menerima setiap pesan di grup. Caraka tidak pernah meminta keduanya; `/status` di grup melaporkan mana yang sedang berlaku.
+
+**Service latar.** `caraka service --print` mencetak unit systemd, launchd, atau schtasks ke stdout untuk kamu pasang sendiri. Caraka tidak pernah memasangnya, tidak punya hook `postinstall`, dan tidak pernah mencetak kata `sudo`.
 
 ## Verifikasi dari source
 

@@ -253,7 +253,11 @@ async function harness(
       sent.push({ chatId: "callback", text });
       return true;
     },
-    clearKeyboard: async () => ({ message_id: 12, chat: { id: 42, type: "private" } }),
+    clearKeyboard: async (chatId: string, messageId: number) => {
+      calls.push(`clearKeyboard:${chatId}:${messageId}`);
+      return { message_id: 12, chat: { id: 42, type: "private" } };
+    },
+    getMe: async () => ({ id: 7, is_bot: true, first_name: "Caraka", username: "carakadevbot" }),
   } as unknown as Telegram;
 
   const prompts: string[] = [];
@@ -841,4 +845,43 @@ test("a terminal bypass window is applied to the agent and never claimed as audi
   // pretends otherwise.
   assert.equal(audits(reopened, "approval.decide").length, 0);
   reopened.close();
+});
+
+test("pairing clears its buttons and says what privacy mode will not deliver", async () => {
+  const h = await harness();
+  h.feed.push({
+    my_chat_member: {
+      chat: { id: -1009990004, type: "supergroup", title: "Rama's Castle" },
+      from: { id: 42, first_name: "Rama", is_bot: false },
+      new_chat_member: { status: "member" },
+    },
+  });
+  await h.settle();
+  const confirm = h.buttons()[0]?.callback_data ?? "";
+  assert.ok(confirm.startsWith("g:"));
+
+  h.feed.push(callback(42, confirm));
+  await h.settle();
+
+  // The card is single-use, so its buttons go the moment it is answered. This
+  // is asserted on the real signature, not a fabricated one: a forged callback
+  // is rejected before any of this and would pass the assertion vacuously.
+  assert.equal(
+    h.calls.some((call) => call.startsWith("clearKeyboard:")),
+    true,
+    "the pairing keyboard is cleared",
+  );
+
+  // Privacy mode is on by design, so an ordinary group message never arrives.
+  // Saying nothing is what made a working bot look broken in the group.
+  const ready = h.sent.at(-1)?.text ?? "";
+  assert.match(ready, /\/new@carakadevbot/);
+  assert.match(ready, /never reaches me/);
+  assert.match(ready, /an admin bot receives all messages/);
+
+  // And /status in the group repeats it, since that is where it gets asked.
+  h.feed.push(message(-1009990004, 42, "/status", "supergroup"));
+  await h.settle();
+  assert.match(h.sent.at(-1)?.text ?? "", /never reaches me/);
+  await h.finish();
 });

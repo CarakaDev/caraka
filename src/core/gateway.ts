@@ -67,6 +67,7 @@ export class Gateway {
   private readonly rate = new Map<string, number[]>();
   private readonly rateNoticed = new Set<string>();
   private readonly forumChats = new Map<string, boolean>();
+  private botName = "";
   private readonly t: Translate;
   private config: CarakaConfig;
   private queue = Promise.resolve();
@@ -658,6 +659,13 @@ export class Gateway {
       await this.telegram.answerCallback(query.id, this.t("callback.denied"), true);
       return;
     }
+    // Every card here is single-use, so the buttons go the moment an allowlisted
+    // principal presses one — trust, group pairing, and approval alike. Doing it
+    // once at the fork is what stops a third handler from forgetting again.
+    if (query.message)
+      await this.telegram
+        .clearKeyboard(String(query.message.chat.id), query.message.message_id)
+        .catch(() => undefined);
     const purpose = query.data ? callbackPurpose(query.data) : null;
     if (purpose === "t") return this.confirmTrust(query.id, query.data ?? "", principal);
     if (purpose === "g") return this.confirmGroup(query.id, query.data ?? "", principal);
@@ -707,10 +715,6 @@ export class Gateway {
       query.id,
       this.t(verified.decision === "allow" ? "callback.allowed" : "callback.rejected"),
     );
-    if (message)
-      await this.telegram
-        .clearKeyboard(String(message.chat.id), message.message_id)
-        .catch(() => undefined);
   }
 
   // `/yolo` opens Caraka's own trust window and nothing else. Inside it Caraka
@@ -883,6 +887,28 @@ export class Gateway {
       undefined,
       principal,
     ).catch(() => undefined);
+    await this.sendText(
+      principal,
+      await this.groupReadiness(request.chatId),
+      "",
+      undefined,
+      principal,
+    ).catch(() => undefined);
+  }
+
+  // Pairing is the one moment the operator is watching, and privacy mode means
+  // an ordinary group message never reaches the bot at all. Saying so here is
+  // the difference between a documented boundary and a bot that looks broken.
+  private async groupReadiness(chatId: string) {
+    if (!this.botName)
+      this.botName = await this.telegram
+        .getMe()
+        .then((me) => me.username ?? "")
+        .catch(() => "");
+    return this.t("group.ready", {
+      bot: this.botName || "caraka",
+      topics: this.t(this.forumChats.get(chatId) === true ? "group.topicsOn" : "group.topicsOff"),
+    });
   }
 
   private async stopActive(message: TelegramMessage) {
@@ -917,16 +943,14 @@ export class Gateway {
   private async status(message: TelegramMessage) {
     const { chatId, threadId } = this.route(message);
     const session = this.store.sessionFor(chatId, threadId);
-    await this.sendText(
-      chatId,
-      session
-        ? `${this.header(session)}${this.t("status.session", { state: session.state })}`
-        : this.t("status.none"),
-      threadId,
-      undefined,
-      String(message.from?.id),
-      session?.id,
-    );
+    const base = session
+      ? `${this.header(session)}${this.t("status.session", { state: session.state })}`
+      : this.t("status.none");
+    // In a group the honest answer to "what is going on" includes what Telegram
+    // will and will not hand us, so `/status` repeats the pairing report.
+    const body =
+      message.chat.type === "private" ? base : `${base}\n\n${await this.groupReadiness(chatId)}`;
+    await this.sendText(chatId, body, threadId, undefined, String(message.from?.id), session?.id);
   }
 
   private help(message: TelegramMessage) {
