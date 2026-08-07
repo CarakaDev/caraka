@@ -136,7 +136,9 @@ export const releases = [
     groups: [
       { label: 'ADDED', tone: '#8EEE98', items: [
         'Full public specification: PRD, FRD, BRD, design, ERD, security model, roadmap',
-        'Eleven sourced research documents',
+        // The CHANGELOG 0.0.0 entry this was copied from wrote "Eleven"; docs/research/
+        // has held thirteen files since e090f1b, and docs.astro counts them correctly.
+        'Thirteen sourced research documents',
         'Brand: name, hanacaraka philosophy, logo book, colour system built with a differential method',
         'bin/caraka.mjs prints status and a link to the repository',
       ] },
