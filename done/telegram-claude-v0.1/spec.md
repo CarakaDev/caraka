@@ -1,7 +1,7 @@
 # Spec — Telegram ke Claude Code v0.1
 
 **Slug:** `telegram-claude-v0.1` · **Tanggal:** 7 Agustus 2026
-**Standar:** [`standards/ears.md`](../standards/ears.md)
+**Standar:** [`standards/ears.md`](../../standards/ears.md)
 
 ---
 

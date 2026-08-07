@@ -1,7 +1,7 @@
 # Plan — Telegram ke Claude Code v0.1
 
-**Spec:** [`spec/telegram-claude-v0.1.md`](../spec/telegram-claude-v0.1.md) ·
-**Standar:** [`standards/ears.md`](../standards/ears.md)
+**Spec:** [`spec.md`](spec.md) ·
+**Standar:** [`standards/ears.md`](../../standards/ears.md)
 
 ---
 
@@ -61,4 +61,95 @@ ditampilkan sebagai sudah tersedia.
 
 ## 5. Keluaran verifikasi
 
-Diisi dengan keluaran command aktual sebelum spec dan plan dipindah ke `done/`.
+**Status:** selesai · **Tanggal rilis:** 7 Agustus 2026
+
+### Runtime dan keamanan
+
+```text
+$ npm run verify
+> npm run lint && npm run typecheck && npm test && npm run e2e && npm run build
+unit: 9 passed, 0 failed
+e2e gateway: 1 passed, 0 failed
+TypeScript build: passed
+
+$ npm run smoke
+Claude ACP smoke passed: initialize, new, prompt, load, prompt.
+
+$ bash scripts/scan-secrets.sh
+clean: 153 tracked files, no credentials
+```
+
+Smoke ACP memakai Claude Code yang terpasang dan sudah login. E2E gateway
+membuktikan private allowlist, fallback topic ke linear, prompt utuh, permission
+ACP, callback HMAC sekali pakai, scrubber, audit outbound, dan shutdown
+idempoten.
+
+### Artefak npm
+
+```text
+$ npm pack --pack-destination <tmp>
+caraka@0.1.0
+package size: 32.5 kB
+unpacked size: 124.7 kB
+total files: 26
+bin/caraka.mjs: -rwxr-xr-x
+
+$ <fresh-install>/node_modules/.bin/caraka --version
+0.1.0
+
+$ npm view caraka@0.1.0 version dist-tags --json
+version: 0.1.0
+latest: 0.1.0
+
+registry install: 106 packages added
+registry CLI: 0.1.0
+tarball credential scan: clean
+```
+
+Build selalu menghapus `dist/` sebelum `tsc`, sehingga tarball final tidak
+membawa artefak `dist/src` lama.
+
+### Website
+
+```text
+$ npm run check
+astro check: 40 files, 0 errors, 0 warnings, 0 hints
+vitest: 2 files passed, 20 tests passed
+
+$ npm audit
+found 0 vulnerabilities
+
+$ npm run build
+11 pages built
+
+$ npm run e2e
+92 passed, 2 skipped, 0 failed
+```
+
+Dua skip adalah pemeriksaan tinggi dokumen yang sengaja hanya berjalan di
+Chromium. Suite lain berjalan di Chromium, Firefox, WebKit, Chrome mobile, dan
+Safari mobile.
+
+### Publikasi dan smoke produksi
+
+```text
+$ npm publish --access public
++ caraka@0.1.0
+
+$ npm run deploy
+Uploaded caraka-site
+Deployed caraka-site triggers
+caraka.dev/* (zone name: caraka.dev)
+Current Version ID: eaa56ce6-8a85-4fa7-af57-755788a3db63
+
+HTTP 200 / · copy verified
+HTTP 200 /install · command and AI prompt verified
+HTTP 200 /docs · shipped scope verified
+HTTP 200 /security · v0.1 boundary verified
+HTTP 200 /status · release state verified
+npm 0.1.0 · metadata 200 · tarball 200
+Browser /install · COPY PROMPT → COPIED · clipboard content verified
+```
+
+Commit yang dipublikasikan: `e0903eb`, `fa68dc3`, `defe833`, dan
+`3993da1`. Seluruhnya sudah berada di `origin/main`.
