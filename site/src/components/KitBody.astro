@@ -1,0 +1,436 @@
+---
+// The twelve component demos inside the UI kit sections. In the mockup each one
+// is built in JavaScript (tokens, buttons, inputs, chips, sessions, approval,
+// alerts, empties, term, loading, modal, marks) and passed through the section
+// data as `body`; here they are markup, selected by name.
+import type { KitKind } from '../data/ui-kit'
+
+interface Props {
+  kind: KitKind
+}
+const { kind } = Astro.props
+
+// The mockup's shared shells: `mono`, `pad`, `label()`, `row()`, `cell()`.
+const mono = "font-family: 'JetBrains Mono', monospace;"
+const pad = 'padding: clamp(22px,3vw,30px); background: #0C1116;'
+const cell = `${pad} border-bottom: 1px solid #171C22;`
+const label = `${mono} font-size: 9.5px; letter-spacing: .16em; color: #5D666F; margin-bottom: 12px;`
+const row = 'display: flex; flex-wrap: wrap; gap: 12px; align-items: center;'
+const rowStretch = 'display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch;'
+
+// --- 01 tokens ---------------------------------------------------------------
+const ramp: [string, string, string][] = [['400', '#FF7A5E', '#2B1612'], ['500', '#E2452C', '#FFEDE7'], ['600', '#C02F17', '#FFEDE7'], ['800', '#6F271B', '#FFC9BC'], ['950', '#2B1612', '#FF7A5E']]
+const neut: [string, string][] = [['000', '#05080C'], ['050', '#0C1116'], ['100', '#171C22'], ['200', '#292E35'], ['500', '#7A848F'], ['700', '#B2BCC6'], ['900', '#E9EDF2']]
+const scale: [string, number, number, string, string][] = [
+  ['48 / 700 / -.03em', 40, 700, '#F6F9FC', 'Display'],
+  ['28 / 700 / -.025em', 26, 700, '#F6F9FC', 'Heading'],
+  ['17 / 400', 17, 400, '#95A0AB', 'Body text runs at this size'],
+  ['13.5 / 400', 13.5, 400, '#7A848F', 'Secondary and captions'],
+  ['12 / mono', 12, 400, '#FF7A5E', '$ npx caraka init'],
+]
+
+// --- 02 buttons --------------------------------------------------------------
+const btn = `display: inline-flex; align-items: center; gap: 9px; padding: 12px 20px; border-radius: 10px; ${mono} font-size: 13px; white-space: nowrap;`
+const primaryBtns = [
+  'background: #E2452C; color: #FFEDE7;',
+  'background: #C02F17; color: #FFEDE7;',
+  'background: #952C1B; color: #FFC9BC;',
+  'background: #E2452C; color: #FFEDE7; outline: 2px solid #FF7A5E; outline-offset: 2px;',
+  'background: #292E35; color: #5D666F; cursor: not-allowed;',
+]
+const secondaryBtns: [string, string][] = [
+  ['Details', 'border: 1px solid #292E35; color: #B2BCC6;'],
+  ['Details', 'border: 1px solid #E2452C; color: #FF7A5E;'],
+  ['Details', 'border: 1px solid #171C22; color: #414950; cursor: not-allowed;'],
+  ['Cancel', 'color: #7A848F;'],
+  ['Cancel', 'color: #FF7A5E; background: #12100F;'],
+  ['Reject', 'border: 1px solid #FF93B2; color: #FF93B2;'],
+]
+
+// --- 03 inputs ---------------------------------------------------------------
+const fieldBox = `padding: 12px 14px; border-radius: 9px; background: #05070A; border: 1px solid #292E35; ${mono} font-size: 13px; color: #B2BCC6;`
+const fields: [string, string, string, string][] = [
+  ['default', '', 'Absolute path to the repository', '#5D666F'],
+  ['focus', 'border-color: #E2452C; outline: 2px solid rgba(226,69,44,.28);', 'Absolute path to the repository', '#5D666F'],
+  ['error', 'border-color: #FF93B2;', 'Not a git repository', '#FF93B2'],
+  ['disabled', 'color: #414950; background: #0C1116; border-color: #171C22;', 'Locked while a run is active', '#5D666F'],
+]
+
+// --- 04 status chips ---------------------------------------------------------
+const S: [string, string, string][] = [['running', '#6FB9F0', '▸'], ['awaiting', '#FFD67E', '⏸'], ['done', '#8EEE98', '✓'], ['failed', '#FF93B2', '✗'], ['cancelled', '#CB86DB', '⊘'], ['queued', '#7A848F', '≡']]
+const chip = `display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: #05070A; border: 1px solid #171C22; border-radius: 8px; ${mono} font-size: 12px; color: #95A0AB;`
+const deuter = ['#918BE1', '#F1F49F', '#BAB2B7', '#DFE6AA', '#B5BAC6']
+
+// --- 05 session rows ---------------------------------------------------------
+const sess: [string, string, string, string, string, string, boolean][] = [
+  ['▸', '#6FB9F0', 'toko-api · rate limit login', '#a91', '#F6F9FC', '#0C1116', true],
+  ['⏸', '#FFD67E', 'toko-api · dependency audit', '#a92', '#E9EDF2', '#12100F', true],
+  ['≡', '#7A848F', 'web · hero revision (queued #2)', '#a93', '#95A0AB', '#0C1116', false],
+  ['✓', '#8EEE98', 'toko-api · fix checkout 500', '#a88', '#7A848F', '#0C1116', false],
+  ['✗', '#FF93B2', 'api-gateway · prisma migrate', '#a84', '#7A848F', '#0C1116', false],
+  ['⊘', '#CB86DB', 'docs · restructure', '#a81', '#5D666F', '#0C1116', false],
+]
+
+// --- 06 approval -------------------------------------------------------------
+const appr = [
+  { state: 'pending', border: '#2B1612', bg: '#12100F', tone: '#FFD67E', tag: '⚠ NEEDS PERMISSION', foot: null as string | null },
+  { state: 'approved', border: '#171C22', bg: '#0C1116', tone: '#8EEE98', tag: '✓ APPROVED', foot: 'approved by @rio · 14:22' },
+  { state: 'denied', border: '#171C22', bg: '#0C1116', tone: '#FF93B2', tag: '✗ REJECTED', foot: 'rejected by @rio · 14:23' },
+  { state: 'expired', border: '#171C22', bg: '#0C1116', tone: '#5D666F', tag: '⊘ EXPIRED', foot: 'no answer in 10 minutes' },
+]
+
+// --- 07 alerts ---------------------------------------------------------------
+const alerts: [string, string, string, string, string][] = [
+  ['#6FB9F0', '#0C1116', 'i', 'Linear mode', 'Forum topics are unavailable here, so replies carry a [workspace · #id] header.'],
+  ['#8EEE98', '#0C1116', '✓', '18 tests passed', '2 files changed on branch feat/login-rate-limit.'],
+  ['#FFD67E', '#12100F', '!', 'Weekly limit approaching', 'Claude is near its ceiling. Consider /switch codex for routine work.'],
+  ['#FF93B2', '#0C1116', '✗', 'Agent stopped', 'Timeout after 30 minutes. Approved changes were kept.'],
+]
+
+// --- 08 empty ----------------------------------------------------------------
+const empties: [string, string, string, string][] = [
+  ['○', 'No sessions yet', 'Send a task from the General topic and the first tab appears here.', '@workspace <task>'],
+  ['≡', 'No workspaces', 'Point Caraka at a repository to get started.', 'caraka ws add'],
+  ['◇', 'Memory is empty', 'Nothing has been remembered for this project yet.', '/ingat <note>'],
+  ['⌕', 'No matches', 'No session matches that filter.', 'clear filter'],
+]
+
+// --- 12 mark -----------------------------------------------------------------
+const marks: [number, string][] = [[96, '#E2452C'], [64, '#E2452C'], [46, '#E2452C'], [30, '#E2452C']]
+const tiles = [32, 24, 16]
+---
+
+{
+  kind === 'tokens' && (
+    <div>
+      <div style={cell}>
+        <div style={label}>PRIMARY — KESUMBA</div>
+        <div style={row}>
+          {ramp.map(([s, h, ink]) => (
+            <div style={`flex: 1 1 88px; height: 62px; border-radius: 9px; background: ${h}; display: flex; align-items: flex-end; padding: 8px; ${mono} font-size: 10px; font-weight: 700; color: ${ink};`}>{s}</div>
+          ))}
+        </div>
+      </div>
+      <div style={cell}>
+        <div style={label}>NEUTRAL — H 250°</div>
+        <div style={row}>
+          {neut.map(([s, h]) => (
+            <div style={`flex: 1 1 68px; height: 50px; border-radius: 9px; background: ${h}; border: 1px solid #171C22; display: flex; align-items: flex-end; padding: 7px; ${mono} font-size: 9.5px; color: ${s >= '500' ? '#05080C' : '#7A848F'};`}>{s}</div>
+          ))}
+        </div>
+      </div>
+      <div style={cell}>
+        <div style={label}>TYPE SCALE</div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          {scale.map(([k, sz, w, c, t], i) => (
+            <div style="display: flex; gap: 20px; align-items: baseline; flex-wrap: wrap;">
+              <span style={`${mono} font-size: 10px; color: #414950; width: 138px; flex-shrink: 0;`}>{k}</span>
+              <span style={`font-size: ${sz}px; font-weight: ${w}; color: ${c}; letter-spacing: ${sz > 24 ? '-.025em' : '0'}; ${i === 4 ? mono : "font-family: 'Public Sans', sans-serif;"} line-height: 1.2;`}>{t}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={pad}>
+        <div style={label}>RADIUS · SPACING</div>
+        <div style={row}>
+          {[4, 8, 11, 15, 100].map((r) => (
+            <div style={`width: 62px; height: 44px; border-radius: ${r}px; background: #171C22; border: 1px solid #292E35; display: flex; align-items: center; justify-content: center; ${mono} font-size: 10px; color: #7A848F;`}>{r}</div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+{
+  kind === 'buttons' && (
+    <div>
+      <div style={cell}>
+        <div style={label}>PRIMARY</div>
+        <div style={row}>
+          {primaryBtns.map((st) => (
+            <span style={`${btn} ${st}`}>Approve</span>
+          ))}
+          <span style={`${btn} background: #E2452C; color: #FFEDE7;`}>
+            <span style="display: inline-flex; align-items: center; gap: 9px;">
+              <span style="width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid rgba(255,237,231,.35); border-top-color: #FFEDE7; animation: ck-spin .8s linear infinite;"></span>Working
+            </span>
+          </span>
+        </div>
+      </div>
+      <div style={cell}>
+        <div style={label}>SECONDARY · GHOST · DANGER</div>
+        <div style={row}>
+          {secondaryBtns.map(([t, st]) => (
+            <span style={`${btn} ${st}`}>{t}</span>
+          ))}
+        </div>
+      </div>
+      <div style={pad}>
+        <div style={label}>STATE ORDER — default · hover · active · focus · disabled · loading</div>
+        <div style="font-size: 13.5px; line-height: 1.65; color: #7A848F;">Focus is always a 2px outline offset by 2px, never a colour swap. A disabled control never changes on hover, so the cursor tells the truth before the click does.</div>
+      </div>
+    </div>
+  )
+}
+
+{
+  kind === 'inputs' && (
+    <div>
+      <div style={cell}>
+        <div style={label}>TEXT FIELD</div>
+        <div style={row}>
+          {fields.map(([l, st, hint, hintColor]) => (
+            <div style="flex: 1 1 230px; display: flex; flex-direction: column; gap: 7px;">
+              <span style={`${mono} font-size: 10.5px; color: #7A848F;`}>{l}</span>
+              <div style={`${fieldBox} ${st}`}>~/dev/toko-api</div>
+              <span style={`font-size: 11.5px; color: ${hintColor};`}>{hint}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={pad}>
+        <div style={label}>TOGGLE · SEGMENTED</div>
+        <div style={row}>
+          <div style={`display: flex; background: #05070A; border: 1px solid #292E35; border-radius: 9px; overflow: hidden; ${mono} font-size: 12px;`}>
+            {['read-only', 'assisted', 'trusted'].map((t, i) => (
+              <span style={`padding: 10px 15px; background: ${i === 1 ? '#E2452C' : 'transparent'}; color: ${i === 1 ? '#FFEDE7' : i === 2 ? '#414950' : '#95A0AB'};`}>{t}</span>
+            ))}
+          </div>
+          <span style={`display: inline-flex; align-items: center; gap: 10px; ${mono} font-size: 12px; color: #95A0AB;`}>
+            <span style="width: 38px; height: 21px; border-radius: 11px; background: #E2452C; padding: 3px; display: flex; justify-content: flex-end;"><span style="width: 15px; height: 15px; border-radius: 50%; background: #FFEDE7;"></span></span>memory on
+          </span>
+          <span style={`display: inline-flex; align-items: center; gap: 10px; ${mono} font-size: 12px; color: #5D666F;`}>
+            <span style="width: 38px; height: 21px; border-radius: 11px; background: #292E35; padding: 3px; display: flex;"><span style="width: 15px; height: 15px; border-radius: 50%; background: #5D666F;"></span></span>heartbeat off
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+{
+  kind === 'chips' && (
+    <div>
+      <div style={cell}>
+        <div style={label}>STATUS — GLYPH IS MANDATORY, COLOUR IS REINFORCEMENT</div>
+        <div style={row}>
+          {S.map(([n, c, g]) => (
+            <span style={chip}><span style={`color: ${c};`}>{g}</span>{n}</span>
+          ))}
+        </div>
+      </div>
+      <div style={cell}>
+        <div style={label}>SOLID · DOT · COUNT</div>
+        <div style={row}>
+          {S.slice(0, 4).map(([n, c, g]) => (
+            <span style={`display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; background: ${c}; border-radius: 100px; ${mono} font-size: 11.5px; color: #07090D; font-weight: 500;`}>{g}{n}</span>
+          ))}
+          <span style={`display: inline-flex; align-items: center; gap: 8px; ${mono} font-size: 12px; color: #95A0AB;`}>
+            <span style="position: relative; width: 8px; height: 8px; border-radius: 50%; background: #8EEE98;"><span style="position: absolute; inset: 0; border-radius: 50%; background: #8EEE98; animation: ck-pulse 2.4s ease-out infinite;"></span></span>connected
+          </span>
+          <span style={`padding: 4px 9px; background: #2B1612; border-radius: 100px; ${mono} font-size: 11px; color: #FF7A5E;`}>3</span>
+        </div>
+      </div>
+      <div style={pad}>
+        <div style={label}>COLOUR-BLIND CHECK — deuteranopia</div>
+        <div style={row}>
+          {S.slice(0, 5).map(([n, , g], i) => (
+            <span style={chip}><span style={`color: ${deuter[i]};`}>{g}</span>{n}</span>
+          ))}
+        </div>
+        <div style="margin-top: 12px; font-size: 13px; line-height: 1.6; color: #7A848F;">done and cancelled collapse to ΔE 2,5 here. The glyph is what still separates them.</div>
+      </div>
+    </div>
+  )
+}
+
+{
+  kind === 'sessions' && (
+    <div>
+      {sess.map(([g, c, name, id, ink, bg, bar]) => (
+        <div style={`position: relative; display: flex; align-items: center; gap: 13px; padding: 14px 18px; border-bottom: 1px solid #171C22; background: ${bg}; overflow: hidden;`}>
+          {bar && <span style={`position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: ${c};`}></span>}
+          <span style={`width: 9px; height: 9px; border-radius: 50%; background: ${c}; flex-shrink: 0;`}></span>
+          <span style={`${mono} font-size: 12.5px; color: ${c}; flex-shrink: 0;`}>{g}</span>
+          <span style={`font-size: 13.5px; color: ${ink}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;`}>{name}</span>
+          <span style={`margin-left: auto; ${mono} font-size: 11px; color: #5D666F; flex-shrink: 0;`}>{id}</span>
+        </div>
+      ))}
+      <div style={`${pad} padding-top: 18px; padding-bottom: 18px;`}>
+        <div style={label}>SKELETON — WHILE THE LIST LOADS</div>
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          {[0, 1, 2].map((i) => (
+            <div style="display: flex; align-items: center; gap: 13px;">
+              <span style="width: 9px; height: 9px; border-radius: 50%; background: #292E35;"></span>
+              <span style={`height: 11px; flex: 1; max-width: ${130 + i * 70}px; border-radius: 5px; background: linear-gradient(90deg,#171C22 0,#292E35 40%,#171C22 80%); background-size: 320px 100%; animation: ck-shimmer 1.5s linear infinite; animation-delay: ${i * 0.15}s;`}></span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+{
+  kind === 'approval' && (
+    <div style={pad}>
+      <div style={label}>APPROVAL CARD — pending · approved · rejected · expired</div>
+      <div style={rowStretch}>
+        {appr.map((m) => (
+          <div style={`flex: 1 1 268px; padding: 22px; background: ${m.bg}; border: 1px solid ${m.border}; border-radius: 13px; display: flex; flex-direction: column; gap: 13px; opacity: ${m.state === 'expired' ? 0.6 : 1};`}>
+            <span style={`${mono} font-size: 10px; letter-spacing: .16em; color: ${m.tone};`}>{m.tag}</span>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 14px; font-weight: 600; color: #F6F9FC;">Write file</span>
+              <span style={`${mono} font-size: 12px; color: #95A0AB;`}>src/plugins/rate-limit.ts</span>
+              <span style={`${mono} font-size: 11px; color: #5D666F;`}>new · 28 lines</span>
+            </div>
+            {m.state === 'pending' && <span style={`${mono} font-size: 10.5px; color: #5D666F;`}>valid 10 min · code A7F3</span>}
+            {m.state === 'pending' ? (
+              <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <span style={`padding: 9px 15px; background: #8EEE98; border-radius: 8px; ${mono} font-size: 12px; color: #07090D;`}>✅ Approve</span>
+                <span style={`padding: 9px 15px; border: 1px solid #292E35; border-radius: 8px; ${mono} font-size: 12px; color: #B2BCC6;`}>👁 View</span>
+                <span style={`padding: 9px 15px; border: 1px solid #FF93B2; border-radius: 8px; ${mono} font-size: 12px; color: #FF93B2;`}>❌ Reject</span>
+              </div>
+            ) : (
+              <span style={`${mono} font-size: 11px; color: #5D666F;`}>{m.foot}</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+{
+  kind === 'alerts' && (
+    <div style={pad}>
+      <div style={label}>ALERT · TOAST</div>
+      <div style={rowStretch}>
+        {alerts.map(([tone, bg, mark, title, body]) => (
+          <div style={`flex: 1 1 268px; display: flex; gap: 12px; padding: 16px 18px; background: ${bg}; border-left: 2px solid ${tone}; border-radius: 0 10px 10px 0;`}>
+            <span style={`color: ${tone}; ${mono} font-size: 13px; flex-shrink: 0; padding-top: 1px;`}>{mark}</span>
+            <div>
+              <div style="font-size: 14px; font-weight: 600; color: #F6F9FC; margin-bottom: 4px;">{title}</div>
+              <div style="font-size: 13px; line-height: 1.6; color: #95A0AB;">{body}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+{
+  kind === 'empties' && (
+    <div style={pad}>
+      <div style={label}>EMPTY STATES</div>
+      <div style={rowStretch}>
+        {empties.map(([glyph, title, body, cta]) => (
+          <div style="flex: 1 1 268px; padding: 34px 24px; background: #0C1116; border: 1px dashed #292E35; border-radius: 13px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 11px;">
+            <span style={`${mono} font-size: 22px; color: #414950;`}>{glyph}</span>
+            <span style="font-size: 15px; font-weight: 600; color: #B2BCC6;">{title}</span>
+            <span style="font-size: 13px; line-height: 1.6; color: #5D666F; max-width: 240px;">{body}</span>
+            <span style={`margin-top: 4px; padding: 9px 16px; border: 1px solid #292E35; border-radius: 8px; ${mono} font-size: 12px; color: #FF7A5E;`}>{cta}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+{
+  kind === 'term' && (
+    <div style={pad}>
+      <div style={label}>TERMINAL BLOCK</div>
+      <div style={`background: #05070A; border: 1px solid #171C22; border-radius: 11px; padding: 20px; ${mono} font-size: 12.5px; line-height: 1.95; color: #7A848F; overflow-x: auto;`}>
+        <div style="color: #414950;">$ caraka doctor</div>
+        <div><span style="color: #8EEE98;">✔</span> claude 2.4.1 · acp</div>
+        <div><span style="color: #8EEE98;">✔</span> titen 0.7.0 · 127.0.0.1:7717</div>
+        <div><span style="color: #FFD67E;">!</span> forum topics unavailable · linear mode</div>
+        <div><span style="color: #FF93B2;">✗</span> allowFrom is empty · gateway will not start</div>
+        <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #FF7A5E;">▸</span> run caraka doctor --fix<span style="width: 7px; height: 13px; background: #FF7A5E; animation: ck-blink 1.1s step-end infinite;"></span></div>
+      </div>
+    </div>
+  )
+}
+
+{
+  kind === 'loading' && (
+    <div style={pad}>
+      <div style={label}>LOADING</div>
+      <div style={row}>
+        <div style="flex: 1 1 200px; display: flex; align-items: center; gap: 13px;">
+          <span style="width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid #292E35; border-top-color: #E2452C; animation: ck-spin .8s linear infinite;"></span>
+          <span style={`${mono} font-size: 12px; color: #7A848F;`}>spinner</span>
+        </div>
+        <div style="flex: 1 1 200px; display: flex; align-items: center; gap: 13px;">
+          <span style="position: relative; width: 44px; height: 22px; display: flex; align-items: center; justify-content: center;">
+            <span style="position: absolute; left: 50%; top: 50%; width: 21px; height: 21px; margin: -10.5px 0 0 -21px; border-radius: 50%; border: 1px solid #2B1612;"></span>
+            <span style="position: absolute; left: 50%; top: 50%; width: 21px; height: 21px; margin: -10.5px 0 0 0; border-radius: 50%; border: 1px solid #2B1612;"></span>
+            <span style="position: absolute; left: 50%; top: 50%; width: 21px; height: 21px; margin: -10.5px 0 0 -21px; animation: ck-spin 2.6s linear infinite;"><span style="position: absolute; left: 100%; top: 50%; width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; border-radius: 50%; background: #FF7A5E;"></span></span>
+            <span style="position: absolute; left: 50%; top: 50%; width: 21px; height: 21px; margin: -10.5px 0 0 0; animation: ck-spinRev 2.6s linear infinite;"><span style="position: absolute; left: 0; top: 50%; width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; border-radius: 50%; background: #FF7A5E;"></span></span>
+          </span>
+          <span style={`${mono} font-size: 12px; color: #7A848F;`}>brand loop</span>
+        </div>
+        <div style="flex: 1 1 240px; display: flex; flex-direction: column; gap: 8px;">
+          <span style={`${mono} font-size: 11px; color: #7A848F;`}>determinate · 68%</span>
+          <span style="height: 4px; border-radius: 3px; background: #171C22; overflow: hidden;"><span style="display: block; height: 100%; width: 68%; background: linear-gradient(90deg,#E2452C,#FF7A5E);"></span></span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+{
+  kind === 'modal' && (
+    <div style="padding: clamp(22px,3vw,30px); background: #070A0E;">
+      <div style={label}>DIALOG</div>
+      <div style="position: relative; padding: 30px 18px; background: rgba(5,8,12,.6); border-radius: 12px; display: flex; justify-content: center;">
+        <div style="width: min(400px,100%); background: #0C1116; border: 1px solid #292E35; border-radius: 14px; padding: 26px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 30px 70px -20px rgba(0,0,0,.9);">
+          <span style={`${mono} font-size: 10px; letter-spacing: .16em; color: #FF93B2;`}>⚠ HIGH RISK</span>
+          <span style="font-size: 17px; font-weight: 600; color: #F6F9FC;">Force-push to main?</span>
+          <span style="font-size: 14px; line-height: 1.6; color: #95A0AB;">This rewrites history on a shared branch. Trusted mode does not skip this prompt.</span>
+          <div style="display: flex; gap: 9px; margin-top: 4px;">
+            <span style={`padding: 10px 17px; border: 1px solid #292E35; border-radius: 9px; ${mono} font-size: 12.5px; color: #B2BCC6;`}>Cancel</span>
+            <span style={`padding: 10px 17px; background: #FF93B2; border-radius: 9px; ${mono} font-size: 12.5px; color: #07090D;`}>Force-push</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+{
+  kind === 'marks' && (
+    <div>
+      <div style={cell}>
+        <div style={label}>MARK — RING GEOMETRY IS EXPLICIT PX, NEVER PERCENT</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 26px; align-items: flex-end;">
+          {marks.map(([size, ring]) => (
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+              <div style={`position: relative; width: ${size * 2.06}px; height: ${size}px; display: flex; align-items: center; justify-content: center;`}>
+                <span style={`position: absolute; left: 50%; top: 50%; width: ${size}px; height: ${size}px; margin: ${-size / 2}px 0 0 ${-size}px; border-radius: 50%; border: 1px solid ${ring};`}></span>
+                <span style={`position: absolute; left: 50%; top: 50%; width: ${size}px; height: ${size}px; margin: ${-size / 2}px 0 0 0; border-radius: 50%; border: 1px solid ${ring};`}></span>
+                <span style={`position: relative; font-family: 'Noto Sans Javanese', serif; font-size: ${size * 0.58}px; line-height: 1; display: block; transform: translateY(17.5%); color: #F6F9FC;`}>ꦕ</span>
+              </div>
+              <span style={`${mono} font-size: 9.5px; color: #414950;`}>{size + 'px'}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={pad}>
+        <div style={label}>BELOW 48PX — RINGS DROP, SOLID TILE ONLY</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-end;">
+          {tiles.map((s) => (
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+              <span style={`width: ${s}px; height: ${s}px; border-radius: ${s / 4}px; background: #E2452C; display: flex; align-items: center; justify-content: center;`}><span style={`font-family: 'Noto Sans Javanese', serif; font-size: ${s * 0.6}px; line-height: 1; display: block; transform: translateY(17.5%); color: #FFEDE7;`}>ꦕ</span></span>
+              <span style={`${mono} font-size: 9.5px; color: #414950;`}>{s + 'px'}</span>
+            </div>
+          ))}
+        </div>
+        <div style="margin-top: 14px; font-size: 13px; line-height: 1.6; color: #7A848F;">Percentage margins resolve against the container width, never its height. Ring offsets are written in px so the pair sits on the centre line at every size.</div>
+      </div>
+    </div>
+  )
+}

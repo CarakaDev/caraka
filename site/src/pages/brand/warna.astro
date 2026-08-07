@@ -1,0 +1,264 @@
+---
+// Ported from design/mockups/Caraka Sistem Warna.dc.html. Markup and inline styles are
+// transcribed as-is; see site/AGENTS.md for the substitutions that replace the design-comp runtime.
+import Base from '../../layouts/Base.astro'
+import '../../styles/pages/warna.css'
+import { roleCards, ramp, rampUse, neutrals, textContrast, neutralUse, tertiary, cvdSets, semantic, tokensA, tokensB } from '../../data/warna'
+---
+
+<Base page="warna">
+  <div style="width: 1200px; margin: 0 auto; background: #05080C; font-family: 'Public Sans', sans-serif; color: #E9EDF2;">
+
+    <main id="main">
+
+    <section style="padding: 80px; border-bottom: 1px solid #171C22;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 44px;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #7A848F;">CARAKA · SISTEM WARNA</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; color: #5D666F;">v1.0 · METODE DIFERENSIAL</div>
+      </div>
+
+      <div style="display: flex; gap: 56px; align-items: flex-start; margin-bottom: 48px;">
+        <div style="flex: 1;">
+          <h1 style="margin: 0 0 16px; font-size: 38px; font-weight: 700; letter-spacing: -0.025em; color: #F6F9FC; text-wrap: pretty;">Lebih sedikit hue, bukan lebih banyak</h1>
+          <p style="margin: 0 0 14px; font-size: 15.5px; line-height: 1.7; color: #95A0AB; text-wrap: pretty;">Sistem ini disusun dengan <strong style="color:#D2D8DF;font-weight:600;">metode diferensial</strong>: setiap warna diuji jarak perseptualnya (ΔE OKLab) terhadap semua warna lain — dalam penglihatan normal, deuteranopia, dan protanopia — dan hanya diterima bila jaraknya di atas ambang.</p>
+          <p style="margin: 0; font-size: 15.5px; line-height: 1.7; color: #95A0AB; text-wrap: pretty;">Pengujian itu membalik rencana awal. Saya menyisir seluruh roda warna untuk mencari hue <em>secondary</em> dan <em>tertiary</em>. Kandidat terbaik hanya mencapai <strong style="color:#FF7A5E;font-weight:600;">ΔE 13,2</strong> — di bawah ambang aman 15. Enam warna status Telegram sudah memenuhi roda warna; hue baru apa pun pasti bertabrakan dengan salah satunya.</p>
+        </div>
+        <div style="width: 330px; flex-shrink: 0; background: #0C1116; border: 1px solid #171C22; border-radius: 12px; padding: 26px 28px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #7A848F; margin-bottom: 18px;">KEPUTUSAN</div>
+          <div style="display: flex; flex-direction: column; gap: 13px; font-size: 13.5px; line-height: 1.5; color: #B2BCC6;">
+            <div style="display: flex; gap: 11px;"><span style="color: #FF7A5E;">→</span><span><strong style="color:#F6F9FC;font-weight:600;">Satu hue merek.</strong> Kesumba, dengan tangga nada penuh.</span></div>
+            <div style="display: flex; gap: 11px;"><span style="color: #FF7A5E;">→</span><span><strong style="color:#F6F9FC;font-weight:600;">Secondary &amp; tertiary bukan hue baru</strong> — diturunkan dari netral dingin dan dari kesumba itu sendiri.</span></div>
+            <div style="display: flex; gap: 11px;"><span style="color: #FF7A5E;">→</span><span><strong style="color:#F6F9FC;font-weight:600;">Status terkunci</strong> pada enam warna ikon topic Telegram. Tidak bisa diubah.</span></div>
+            <div style="display: flex; gap: 11px;"><span style="color: #FF7A5E;">→</span><span><strong style="color:#F6F9FC;font-weight:600;">Warna tidak pernah jadi satu-satunya sinyal.</strong> Buktinya ada di §4.</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 14px;">
+        {roleCards.map((c) => (
+          <div style="flex: 1; border-radius: 12px; overflow: hidden; border: 1px solid #171C22;">
+            <div aria-hidden="true" style={`height: 96px; background: ${c.swatch};`}></div>
+            <div style="padding: 18px 20px; background: #0C1116; display: flex; flex-direction: column; gap: 5px;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.18em; color: #7A848F;">{c.role}</span>
+              <span style="font-size: 15px; font-weight: 600; color: #F6F9FC;">{c.name}</span>
+              <span style="font-size: 12.5px; line-height: 1.5; color: #95A0AB;">{c.use}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section style="padding: 80px; border-bottom: 1px solid #171C22;">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #7A848F; margin-bottom: 12px;">01 · PRIMARY — KESUMBA</div>
+      <p style="margin: 0 0 36px; font-size: 15px; line-height: 1.65; color: #95A0AB; max-width: 700px; text-wrap: pretty;">Tangga nada dibangun di ruang <strong style="color:#D2D8DF;font-weight:600;">OKLCH</strong> pada hue tetap <code style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#FF7A5E;">31,8°</code>, dengan lightness berjarak perseptual seragam dan chroma meruncing di kedua ujung. Inilah sebabnya nada 50 dan 950 tidak terlihat "berlumpur" seperti ramp yang dibuat dengan mencampur putih dan hitam.</p>
+
+      <div style="display: flex; border-radius: 12px; overflow: hidden; margin-bottom: 28px;">
+        {ramp.map((r) => (
+          <div style="flex: 1; display: flex; flex-direction: column;">
+            <div style={`height: 110px; background: ${r.hex}; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 9px;`}>
+              <span style={`font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: ${r.ink};`}>{r.step}</span>
+            </div>
+            <div style="padding: 11px 6px; background: #0C1116; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #7A848F;">{r.hex}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style="display: flex; gap: 20px;">
+        <div style="flex: 1; background: #0C1116; border: 1px solid #171C22; border-radius: 12px; padding: 26px 28px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #7A848F; margin-bottom: 18px;">TUGAS TIAP NADA</div>
+          <div style="display: flex; flex-direction: column; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+            {rampUse.map((u) => (
+              <div style="display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #171C22;">
+                <span style="color: #B2BCC6;">{u.step}</span><span style="color: #7A848F;">{u.use}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style="flex: 1; background: #0C1116; border: 1px solid #171C22; border-radius: 12px; padding: 26px 28px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #7A848F; margin-bottom: 18px;">ATURAN PENTING</div>
+          <p style="margin: 0 0 16px; font-size: 13.5px; line-height: 1.65; color: #95A0AB; text-wrap: pretty;"><strong style="color:#FF7A5E;font-weight:600;">Kesumba 500 tidak boleh dipakai untuk teks.</strong> Di atas void ia hanya mencapai 4,89:1 — cukup untuk elemen besar, tidak untuk teks kecil.</p>
+          <p style="margin: 0 0 16px; font-size: 13.5px; line-height: 1.65; color: #95A0AB; text-wrap: pretty;">Untuk teks dan tautan di latar gelap, pakai <strong style="color:#FF7A5E;font-weight:600;">kesumba 400</strong> <code style="font-family:'JetBrains Mono',monospace;font-size:12px;">#FF7A5E</code> — 7,83:1, lolos AAA.</p>
+          <p style="margin: 0; font-size: 13.5px; line-height: 1.65; color: #95A0AB; text-wrap: pretty;">Di atas kesumba 500, tinta tergelap <code style="font-family:'JetBrains Mono',monospace;font-size:12px;">#07090D</code> hanya mencapai 4,86:1 — jadi label di dalam tombol kesumba wajib berukuran ≥ 16px atau tebal.</p>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding: 80px; border-bottom: 1px solid #171C22;">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #7A848F; margin-bottom: 12px;">02 · SECONDARY — NETRAL DINGIN</div>
+      <p style="margin: 0 0 36px; font-size: 15px; line-height: 1.65; color: #95A0AB; max-width: 700px; text-wrap: pretty;">Membawa <strong style="color:#D2D8DF;font-weight:600;">90% permukaan</strong> produk. Bukan abu-abu murni: hue dikunci di <code style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#95A0AB;">250°</code> dengan chroma 0,005–0,020 — cukup untuk terasa dingin dan teknis, terlalu rendah untuk bersaing dengan kesumba.</p>
+
+      <div style="display: flex; border-radius: 12px; overflow: hidden; margin-bottom: 28px;">
+        {neutrals.map((n) => (
+          <div style="flex: 1; display: flex; flex-direction: column;">
+            <div style={`height: 96px; background: ${n.hex}; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 9px;`}>
+              <span style={`font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: ${n.ink};`}>{n.step}</span>
+            </div>
+            <div style="padding: 11px 4px; background: #0C1116; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 8.5px; color: #7A848F;">{n.hex}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style="display: flex; gap: 20px;">
+        <div style="flex: 1.2; background: #0C1116; border: 1px solid #171C22; border-radius: 12px; padding: 26px 28px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #7A848F; margin-bottom: 18px;">KONTRAS TEKS DI n-000</div>
+          <div style="display: flex; flex-direction: column; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+            {textContrast.map((t) => (
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #171C22;">
+                <span style={`color: ${t.hex};`}>{t.step} · {t.hex}</span>
+                <span style="display: flex; align-items: center; gap: 12px;"><span style="color: #7A848F;">{t.ratio}</span><span style={`color: ${t.gradeCol}; font-size: 10.5px;`}>{t.grade}</span></span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style="flex: 1; background: #0C1116; border: 1px solid #171C22; border-radius: 12px; padding: 26px 28px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #7A848F; margin-bottom: 18px;">TUGAS</div>
+          <div style="display: flex; flex-direction: column; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+            {neutralUse.map((u) => (
+              <div style="display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #171C22;">
+                <span style="color: #B2BCC6;">{u.step}</span><span style="color: #7A848F;">{u.use}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding: 80px; border-bottom: 1px solid #171C22;">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #7A848F; margin-bottom: 12px;">03 · TERTIARY — PERMUKAAN BERNADA KESUMBA</div>
+      <p style="margin: 0 0 36px; font-size: 15px; line-height: 1.65; color: #95A0AB; max-width: 700px; text-wrap: pretty;">Bukan hue ketiga. Ini kesumba pada chroma sangat rendah (0,010–0,030), dipakai untuk permukaan yang harus terasa "milik merek" tanpa berteriak: latar kartu aktif, sorotan baris, batas panel yang sedang dipilih.</p>
+
+      <div style="display: flex; gap: 20px; margin-bottom: 28px;">
+        {tertiary.map((t) => (
+          <div style="flex: 1; border-radius: 12px; overflow: hidden; border: 1px solid #171C22;">
+            <div aria-hidden="true" style={`height: 88px; background: ${t.hex};`}></div>
+            <div style="padding: 16px 18px; background: #0C1116; display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #F6F9FC;">{t.name}</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #7A848F;">{t.hex}</span>
+              <span style="font-size: 12px; line-height: 1.5; color: #95A0AB;">{t.use}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style="background: #0C1116; border: 1px solid #171C22; border-radius: 12px; padding: 30px 32px;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #7A848F; margin-bottom: 20px;">CONTOH · DAFTAR SESI</div>
+        <div style="border-radius: 10px; overflow: hidden; border: 1px solid #171C22;">
+          <div style="display: flex; align-items: center; gap: 14px; padding: 14px 18px; background: #12100F; border-left: 2px solid #E2452C;">
+            <span style="color: #FF7A5E; font-family: 'JetBrains Mono', monospace; font-size: 13px;">▸</span>
+            <span style="font-size: 14px; color: #F6F9FC; font-weight: 500;">toko-api · rate limit login</span>
+            <span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #7A848F;">#a91</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 14px; padding: 14px 18px; background: #0C1116; border-left: 2px solid #171C22;">
+            <span style="color: #FFD67E; font-family: 'JetBrains Mono', monospace; font-size: 13px;">⏸</span>
+            <span style="font-size: 14px; color: #B2BCC6;">toko-api · audit dependency</span>
+            <span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #7A848F;">#a92</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 14px; padding: 14px 18px; background: #0C1116; border-left: 2px solid #171C22;">
+            <span style="color: #8EEE98; font-family: 'JetBrains Mono', monospace; font-size: 13px;">✓</span>
+            <span style="font-size: 14px; color: #7A848F;">web · revisi hero</span>
+            <span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #5D666F;">#a85</span>
+          </div>
+        </div>
+        <p style="margin: 16px 0 0; font-size: 13px; line-height: 1.6; color: #95A0AB; text-wrap: pretty;">Baris aktif memakai <code style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#FF7A5E;">surface-active #12100F</code> — hanya sedikit lebih hangat dari panel di sebelahnya, tetapi cukup untuk terbaca sebagai "yang ini". Penanda kuat justru datang dari batas kiri kesumba dan dari glif status, bukan dari latar.</p>
+      </div>
+    </section>
+
+    <section style="padding: 80px; border-bottom: 1px solid #171C22;">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #7A848F; margin-bottom: 12px;">04 · UJI DIFERENSIAL — TEMUAN PALING PENTING</div>
+      <p style="margin: 0 0 32px; font-size: 15px; line-height: 1.65; color: #95A0AB; max-width: 760px; text-wrap: pretty;">Warna status terkunci pada enam warna ikon topic Telegram — API hanya menerima keenamnya. Diuji dengan simulasi CVD, <strong style="color:#FF7A5E;font-weight:600;">himpunan itu gagal</strong>. Ini bukan sesuatu yang bisa diperbaiki dengan memilih warna lebih baik; ia harus diselesaikan di lapisan desain.</p>
+
+      <div style="display: flex; gap: 20px; margin-bottom: 28px;">
+        {cvdSets.map((s) => (
+          <div style="flex: 1; background: #0C1116; border: 1px solid #171C22; border-radius: 12px; padding: 24px 26px;">
+            <div style={`font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: ${s.tone}; margin-bottom: 18px;`}>{s.label}</div>
+            <div style="display: flex; gap: 7px; margin-bottom: 18px;">
+              {s.chips.map((c) => (
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 7px;">
+                  <div style={`width: 100%; height: 44px; border-radius: 7px; background: ${c.hex}; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #07090D;`}>{c.glyph}</div>
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 8.5px; color: #7A848F;">{c.name}</span>
+                </div>
+              ))}
+            </div>
+            <div style={`font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: ${s.tone};`}>{s.worst}</div>
+            <p style="margin: 8px 0 0; font-size: 12.5px; line-height: 1.55; color: #95A0AB; text-wrap: pretty;">{s.note}</p>
+          </div>
+        ))}
+      </div>
+
+      <div style="background: #12100F; border: 1px solid rgba(226,69,44,0.30); border-radius: 12px; padding: 30px 34px;">
+        <div style="display: flex; gap: 30px; align-items: flex-start;">
+          <div style="flex: 1;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #FF7A5E; margin-bottom: 14px;">KONSEKUENSI — ATURAN WAJIB</div>
+            <h3 style="margin: 0 0 12px; font-size: 21px; font-weight: 700; letter-spacing: -0.015em; color: #F6F9FC; text-wrap: pretty;">Warna tidak pernah menjadi satu-satunya sinyal status</h3>
+            <p style="margin: 0 0 14px; font-size: 14px; line-height: 1.7; color: #B2BCC6; text-wrap: pretty;">Pada deuteranopia, <strong style="color:#FF7A5E;font-weight:600;">hijau <code style="font-family:'JetBrains Mono',monospace;font-size:13px;">done</code> dan ungu <code style="font-family:'JetBrains Mono',monospace;font-size:13px;">cancelled</code> berjarak ΔE 2,5</strong> — praktis identik. Kuning <code style="font-family:'JetBrains Mono',monospace;font-size:13px;">waiting</code> dan magenta <code style="font-family:'JetBrains Mono',monospace;font-size:13px;">failed</code> berjarak 5,0.</p>
+            <p style="margin: 0; font-size: 14px; line-height: 1.7; color: #B2BCC6; text-wrap: pretty;">Karena itu setiap status <strong style="color:#F6F9FC;font-weight:600;">wajib</strong> membawa glif teksnya di nama topic. Prefiks bukan hiasan — ia satu-satunya sinyal yang bertahan untuk sekitar 8% pria. Aturan ini sudah ada di spesifikasi; uji ini yang membuktikan bahwa ia tidak boleh dilepas.</p>
+          </div>
+          <div style="width: 230px; flex-shrink: 0; background: #05080C; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 11px; font-family: 'JetBrains Mono', monospace; font-size: 13px;">
+            <div style="display: flex; align-items: center; gap: 11px;"><span style="color:#6FB9F0;">▸</span><span style="color:#B2BCC6;">running</span></div>
+            <div style="display: flex; align-items: center; gap: 11px;"><span style="color:#FFD67E;">⏸</span><span style="color:#B2BCC6;">awaiting</span></div>
+            <div style="display: flex; align-items: center; gap: 11px;"><span style="color:#8EEE98;">✓</span><span style="color:#B2BCC6;">done</span></div>
+            <div style="display: flex; align-items: center; gap: 11px;"><span style="color:#FF93B2;">✗</span><span style="color:#B2BCC6;">failed</span></div>
+            <div style="display: flex; align-items: center; gap: 11px;"><span style="color:#CB86DB;">⊘</span><span style="color:#B2BCC6;">cancelled</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding: 80px; border-bottom: 1px solid #171C22;">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #7A848F; margin-bottom: 12px;">05 · SEMANTIK — TERKUNCI PADA TELEGRAM</div>
+      <p style="margin: 0 0 32px; font-size: 15px; line-height: 1.65; color: #95A0AB; max-width: 700px; text-wrap: pretty;">Telegram hanya menerima enam nilai <code style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#95A0AB;">icon_color</code>. Memakai warna lain di UI kita akan memutus hubungan antara apa yang terlihat di daftar topic dan apa yang terlihat di dasbor — jadi keenamnya diadopsi apa adanya.</p>
+
+      <div style="display: flex; gap: 14px; margin-bottom: 24px;">
+        {semantic.map((s) => (
+          <div style="flex: 1; border-radius: 12px; overflow: hidden; border: 1px solid #171C22;">
+            <div style={`height: 84px; background: ${s.hex}; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 24px; color: #07090D;`}>{s.glyph}</div>
+            <div style="padding: 15px 16px; background: #0C1116; display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 13.5px; font-weight: 600; color: #F6F9FC;">{s.role}</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #7A848F;">{s.hex}</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: #5D666F;">{s.dec}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style="background: #0C1116; border: 1px solid #171C22; border-radius: 12px; padding: 26px 30px;">
+        <p style="margin: 0; font-size: 13.5px; line-height: 1.7; color: #95A0AB; text-wrap: pretty;"><strong style="color:#FF7A5E;font-weight:600;">Merah Telegram <code style="font-family:'JetBrains Mono',monospace;font-size:12px;">#FB6F5F</code> sengaja dikosongkan.</strong> Jaraknya ke kesumba hanya ΔE 9,9 — terlalu dekat, dan pengguna akan bingung membedakan "merek" dari "gagal". Status <code style="font-family:'JetBrains Mono',monospace;font-size:12px;">failed</code> karena itu memakai magenta <code style="font-family:'JetBrains Mono',monospace;font-size:12px;">#FF93B3</code>, yang berjarak aman dari keduanya. Ini satu-satunya perubahan dari pemetaan status sebelumnya.</p>
+      </div>
+    </section>
+
+    <section style="padding: 80px;">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #7A848F; margin-bottom: 12px;">06 · TOKEN</div>
+      <p style="margin: 0 0 32px; font-size: 15px; line-height: 1.65; color: #95A0AB; max-width: 700px; text-wrap: pretty;">Token semantik menunjuk ke nada, bukan ke hex. Mengganti seluruh identitas nanti berarti mengubah satu hue di ramp, bukan menyisir ratusan nilai.</p>
+
+      <div style="display: flex; gap: 20px;">
+        <div style="flex: 1; background: #0C1116; border: 1px solid #171C22; border-radius: 12px; padding: 28px 30px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 2.05;">
+          <div style="color: #5D666F;">/* permukaan */</div>
+          {tokensA.map((t) => (
+            <div style="display: flex; justify-content: space-between;"><span style="color: #B2BCC6;">{t.k}</span><span style="color: #7A848F;">{t.v}</span></div>
+          ))}
+        </div>
+        <div style="flex: 1; background: #0C1116; border: 1px solid #171C22; border-radius: 12px; padding: 28px 30px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 2.05;">
+          <div style="color: #5D666F;">/* teks &amp; aksi */</div>
+          {tokensB.map((t) => (
+            <div style="display: flex; justify-content: space-between;"><span style="color: #B2BCC6;">{t.k}</span><span style="color: #7A848F;">{t.v}</span></div>
+          ))}
+        </div>
+      </div>
+
+      <div style="margin-top: 44px; padding-top: 30px; border-top: 1px solid #171C22; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div style="position: relative; width: 52px; height: 26px; display: flex; align-items: center; justify-content: center;">
+            <div aria-hidden="true" style="position: absolute; left: 50%; top: 50%; width: 25px; height: 25px; margin: -12.5px 0 0 -25px; border-radius: 50%; border: 1px solid #E2452C;"></div>
+            <div aria-hidden="true" style="position: absolute; left: 50%; top: 50%; width: 25px; height: 25px; margin: -12.5px 0 0 0; border-radius: 50%; border: 1px solid #E2452C;"></div>
+            <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 15px; line-height: 1; display: block; transform: translateY(17.5%); color: #F6F9FC;">ꦕ</span>
+          </div>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.18em; color: #95A0AB;">caraka</span>
+        </div>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5D666F;">Satu hue. Sisanya nada.</span>
+      </div>
+    </section>
+
+    </main>
+
+  </div>
+</Base>

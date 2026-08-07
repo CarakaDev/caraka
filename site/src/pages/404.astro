@@ -1,0 +1,32 @@
+---
+// Specified in design/mockups/Caraka UI Kit.dc.html, section 13 "Error pages",
+// as the first of four. The comp draws it as a card inside the kit; here it is
+// the page itself, with the same copy, colours, and mark treatment.
+import Base from '../layouts/Base.astro'
+import '../styles/pages/404.css'
+---
+
+<Base page="notFound">
+  <meta slot="head" name="robots" content="noindex, follow" />
+
+  <div style="width: 100%; min-height: 100vh; background: #05080C; font-family: 'Public Sans', sans-serif; color: #E9EDF2; display: flex; align-items: center; justify-content: center; padding: clamp(40px, 10vh, 96px) clamp(20px, 5vw, 60px); position: relative; overflow: hidden;">
+    <div aria-hidden="true" style="position: absolute; left: 50%; top: 44%; width: 380px; height: 380px; margin: -190px 0 0 -190px; border-radius: 50%; background: radial-gradient(circle, rgba(122,132,143,.10), transparent 62%); animation: ck-bloom 7s ease-in-out infinite; pointer-events: none;"></div>
+
+    <main id="main" style="position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px;">
+      <div aria-hidden="true" style="position: relative; width: 96px; height: 48px; display: flex; align-items: center; justify-content: center;">
+        <div style="position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -46px; border-radius: 50%; border: 1px solid #414950;"></div>
+        <div style="position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 0; border-radius: 50%; border: 1px solid #414950;"></div>
+        <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 27px; line-height: 1; display: block; transform: translateY(17.5%); color: #7A848F;">ꦕ</span>
+      </div>
+
+      <span style="position: relative; font-family: 'JetBrains Mono', monospace; font-size: clamp(34px, 6vw, 52px); font-weight: 700; letter-spacing: -.03em; color: #414950; line-height: 1;">404</span>
+      <h1 style="margin: 0; position: relative; font-size: clamp(17px, 2.4vw, 22px); font-weight: 600; color: #F6F9FC; text-wrap: balance;">This page was never sent</h1>
+      <p style="position: relative; margin: 0; max-width: 420px; font-size: 14.5px; line-height: 1.65; color: #95A0AB; text-wrap: pretty;">The link is wrong, or the page moved. Nothing is broken on your side.</p>
+
+      <div style="position: relative; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 4px;">
+        <a href="/" class="hv-btn" style="padding: 11px 20px; background: #E2452C; border-radius: 9px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #FFEDE7; transition: background .2s;">Go home</a>
+        <a href="/docs" class="hv-ring-ink" style="padding: 11px 20px; border: 1px solid #292E35; border-radius: 9px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #B2BCC6; transition: border-color .2s, color .2s;">Read the docs</a>
+      </div>
+    </main>
+  </div>
+</Base>

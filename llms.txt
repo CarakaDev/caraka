@@ -1,0 +1,53 @@
+# Caraka
+
+> A thin bridge from Telegram to the coding agent already installed on your machine. Every task lives in its own topic, like tabs in a terminal, with approvals, streaming progress, and memory that can explain itself. Caraka has no agent loop, no execution tools, and no plugin marketplace: the coding agent already has all of those.
+
+Caraka speaks [ACP](https://agentclientprotocol.com), the LSP-equivalent for coding agents, so one client covers 28+ agents including Claude Code, Codex CLI, Gemini CLI, Cursor, Cline, Goose and Amp. Memory uses [Titen](https://titen.dev), which separates observation, claim, and context so a conclusion is never confused with the evidence behind it. Status: pre-alpha, MIT, Node ≥ 22.
+
+## Start here
+
+- [README](https://github.com/CarakaDev/caraka/blob/main/README.md): what it is, why it is small, safety posture
+- [README in Indonesian](https://github.com/CarakaDev/caraka/blob/main/README.id.md)
+- [Install guide](https://github.com/CarakaDev/caraka/blob/main/docs/install-guide.md): prerequisites, what to do with no Node and no agent, costs, the free path, install.sh anatomy
+- [Blueprint](https://github.com/CarakaDev/caraka/blob/main/docs/blueprint.md): one-page overview and locked decisions
+
+## Specification
+
+- [PRD](https://github.com/CarakaDev/caraka/blob/main/docs/prd.md): problem, users, goals, non-goals, scope
+- [FRD](https://github.com/CarakaDev/caraka/blob/main/docs/frd.md): functional requirements by module, FR-ids
+- [BRD](https://github.com/CarakaDev/caraka/blob/main/docs/brd.md): market, positioning, business requirements
+- [Design](https://github.com/CarakaDev/caraka/blob/main/docs/design.md): architecture, interfaces, ACP and CLI driver contracts
+- [ERD](https://github.com/CarakaDev/caraka/blob/main/docs/erd.md): data model, integrity rules, retention
+- [Session model](https://github.com/CarakaDev/caraka/blob/main/docs/session-model.md): sessions as Telegram topics, lifecycle, routing, housekeeping
+- [Telegram integration](https://github.com/CarakaDev/caraka/blob/main/docs/telegram-integration.md): Bot API 10.2 mapping
+- [Security](https://github.com/CarakaDev/caraka/blob/main/docs/security.md): threat model, mandatory controls, policy modes
+- [Tech stack](https://github.com/CarakaDev/caraka/blob/main/docs/techstack.md): choices with the alternatives that were rejected
+- [Roadmap](https://github.com/CarakaDev/caraka/blob/main/docs/roadmap.md): phases and decision gates
+
+## Research
+
+Every claim in the specification traces to one of these.
+
+- [ACP](https://github.com/CarakaDev/caraka/blob/main/docs/research/acp-protokol-universal-agentclientprotocol-jetbrains-morph.md): the universal protocol
+- [Agent integration matrix](https://github.com/CarakaDev/caraka/blob/main/docs/research/coding-agents-matriks-integrasi-multi-sumber.md): per-agent routes
+- [OpenClaw architecture](https://github.com/CarakaDev/caraka/blob/main/docs/research/openclaw-arsitektur-openclaw-github-docs.md)
+- [Caraka vs OpenClaw vs Hermes](https://github.com/CarakaDev/caraka/blob/main/docs/research/perbandingan-openclaw-hermes-caraka.md): why the categories differ
+- [Prerequisites and cost](https://github.com/CarakaDev/caraka/blob/main/docs/research/prasyarat-biaya-dan-jalur-gratis.md): pricing verified August 2026, and the free path
+- [Titen memory](https://github.com/CarakaDev/caraka/blob/main/docs/research/titen-memory-titen-dev-github.md)
+- [Telegram Bot API 2026](https://github.com/CarakaDev/caraka/blob/main/docs/research/telegram-bot-api-2026-core-telegram-botnews.md)
+- [Sessions as topics](https://github.com/CarakaDev/caraka/blob/main/docs/research/sesi-topic-thread-telegram-discord.md)
+- [Remote agent security](https://github.com/CarakaDev/caraka/blob/main/docs/research/keamanan-agent-remote-arxiv-openclaw-acp.md)
+- [Icon colour research](https://github.com/CarakaDev/caraka/blob/main/docs/research/warna-ikon-favicon-multi-sumber.md)
+
+## Contributing
+
+- [CONTRIBUTING](https://github.com/CarakaDev/caraka/blob/main/CONTRIBUTING.md)
+- [AGENTS.md](https://github.com/CarakaDev/caraka/blob/main/AGENTS.md): rules for coding agents working on this repository
+- [SECURITY](https://github.com/CarakaDev/caraka/blob/main/SECURITY.md): report to security@caraka.dev
+- [Architecture decisions](https://github.com/CarakaDev/caraka/blob/main/docs/adr/): one file per decision, with the alternatives rejected
+
+## Optional
+
+- [Brand](https://github.com/CarakaDev/caraka/blob/main/docs/brand.md): the name, the hanacaraka legend, visual identity
+- [FAQ](https://github.com/CarakaDev/caraka/blob/main/docs/faq.md)
+- [Troubleshooting](https://github.com/CarakaDev/caraka/blob/main/docs/troubleshooting.md)

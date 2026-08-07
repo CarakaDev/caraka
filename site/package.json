@@ -1,0 +1,44 @@
+{
+  "name": "caraka-site",
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "assets": "node scripts/gen-assets.mjs",
+    "prebuild": "node scripts/gen-assets.mjs",
+    "lint": "oxlint src scripts test",
+    "typecheck": "astro check",
+    "test": "vitest run",
+    "e2e": "playwright test",
+    "deploy": "wrangler deploy",
+    "check": "npm run lint && npm run typecheck && npm run test",
+    "compare": "node scripts/compare-to-mockup.mjs dist ../design/mockups"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.3",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/public-sans": "^5.3.0",
+    "@fontsource/noto-sans-javanese": "^5.3.0",
+    "astro": "^7.2.0"
+  },
+  "private": "true",
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/public-sans": "^5.3.0",
+    "@playwright/test": "^1.62.1",
+    "@resvg/resvg-js": "^2.6.2",
+    "oxlint": "^1.77.0",
+    "satori": "^0.29.0",
+    "sharp": "^0.35.3",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.119.0"
+  }
+}

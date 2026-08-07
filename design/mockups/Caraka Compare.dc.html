@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Javanese:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html { scroll-behavior: smooth; background: #05080C; scrollbar-width: none; }
+  body { margin: 0; padding: 0; background: #05080C; overflow-x: hidden; }
+  * { box-sizing: border-box; }
+  a { color: #FF7A5E; text-decoration: none; }
+  a:hover { color: #F6F9FC; }
+  ::selection { background: #E2452C; color: #FFEDE7; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+  @keyframes ck-spin { to { transform: rotate(360deg); } }
+  @keyframes ck-spinRev { to { transform: rotate(-360deg); } }
+  @keyframes ck-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes ck-rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+  @keyframes ck-riseSm { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  @keyframes ck-slideL { from { opacity: 0; transform: translateX(-26px); } to { opacity: 1; transform: none; } }
+  @keyframes ck-drawX { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes ck-boot { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @keyframes ck-blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+  @media (max-width: 620px) { [data-navlinks] { display: none; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; } }
+</style>
+</helmet>
+
+<div style="width: 100%; background: #05080C; font-family: 'Public Sans', sans-serif; color: #E9EDF2; position: relative; overflow-x: hidden;">
+
+  <div style="position: fixed; left: 0; top: 0; right: 0; height: 2px; z-index: 110; background: #171C22;">
+    <div style="height: 100%; width: 100%; background: linear-gradient(90deg, #E2452C, #FF7A5E); transform-origin: left; transform: scaleX(var(--ck-sp, 0));"></div>
+  </div>
+
+  <header style="position: fixed; left: 0; right: 0; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px clamp(16px, 4vw, 34px); background: rgba(5,8,12,.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid #0C1116;">
+    <a href="Caraka Landing.dc.html" style="display: flex; align-items: center; gap: 12px;">
+      <span style="position: relative; width: 44px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <span style="position: absolute; left: 50%; top: 50%; width: 21px; height: 21px; margin: -10.5px 0 0 -21px; border-radius: 50%; border: 1px solid #E2452C;"></span>
+        <span style="position: absolute; left: 50%; top: 50%; width: 21px; height: 21px; margin: -10.5px 0 0 0; border-radius: 50%; border: 1px solid #E2452C;"></span>
+        <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 12px; line-height: 1; display: block; transform: translateY(17.5%); color: #F6F9FC;">ꦕ</span>
+      </span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: .2em; color: #E9EDF2;">caraka</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .16em; color: #E2452C; padding: 3px 8px; border: 1px solid #2B1612; border-radius: 5px;">COMPARE</span>
+    </a>
+    <nav data-navlinks="1" style="display: flex; align-items: center; gap: clamp(14px, 2.4vw, 26px); font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+      <a href="Caraka Landing.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Home</a>
+      <a href="Caraka Docs.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Docs</a>
+      <a href="Caraka Story.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Story</a>
+    </nav>
+    <a href="https://github.com/CarakaDev/caraka" style="padding: 9px 16px; border: 1px solid #292E35; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B2BCC6; transition: border-color .2s, color .2s; white-space: nowrap;" style-hover="border-color: #E2452C; color: #FF7A5E;">GitHub ↗</a>
+  </header>
+
+  <section data-screen-label="Hero" style="position: relative; padding: clamp(120px, 17vh, 180px) clamp(20px, 5vw, 60px) clamp(56px, 8vh, 90px);">
+    <div style="width: min(1120px, 100%); margin: 0 auto;">
+      <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px; animation: ck-boot .8s cubic-bezier(.2,.9,.3,1) both;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .22em; color: #E2452C;">CARAKA vs OPENCLAW vs HERMES</span>
+        <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent); transform-origin: left; animation: ck-drawX 1s cubic-bezier(.3,.7,.3,1) .25s both;"></span>
+      </div>
+      <h1 style="margin: 0 0 20px; max-width: 900px; font-size: clamp(30px, 5.6vw, 58px); font-weight: 700; letter-spacing: -.03em; line-height: 1.08; color: #F6F9FC; text-wrap: balance; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) .15s both;">They are personal assistants that can also write code. Caraka only writes code.</h1>
+      <p style="margin: 0 0 26px; max-width: 640px; font-size: clamp(15px, 1.9vw, 18px); line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) .28s both;">This is not a fight over the same users. OpenClaw clears your inbox, keeps your calendar, and drives your browser. Writing code sits somewhere on that list. For Caraka it is the entire list.</p>
+      <div style="display: flex; gap: 13px; padding: 17px 20px; max-width: 640px; background: #0C1116; border: 1px solid #171C22; border-radius: 11px; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) .4s both;">
+        <span style="color: #7A848F; font-size: 20px; line-height: 1; flex-shrink: 0;">&ldquo;</span>
+        <div>
+          <p style="margin: 0 0 7px; font-size: 15px; line-height: 1.6; color: #D2D8DF; text-wrap: pretty;">OpenClaw is a personal agent; OpenCode is a coding agent. Different tools for different jobs.</p>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5D666F;">Standard Compute, 2026</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Tiga kategori" style="position: relative; padding: clamp(50px, 8vh, 80px) clamp(20px, 5vw, 60px) clamp(70px, 11vh, 120px);">
+    <div style="width: min(1120px, 100%); margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: clamp(14px, 2vw, 20px);">
+      <sc-for list="{{ products }}" as="p" hint-placeholder-count="3">
+        <div style="position: relative; padding: clamp(26px, 3.4vw, 36px); background: {{ p.bg }}; border: 1px solid {{ p.border }}; border-radius: 16px; display: flex; flex-direction: column; gap: 16px; animation: ck-rise linear both; animation-timeline: view(); animation-range: {{ p.range }};">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-size: 21px; font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">{{ p.name }}</span>
+            <sc-if value="{{ p.us }}" hint-placeholder-val="{{ true }}">
+              <span style="position: relative; width: 40px; height: 20px; display: flex; align-items: center; justify-content: center;">
+                <span style="position: absolute; left: 50%; top: 50%; width: 19px; height: 19px; margin: -9.5px 0 0 -19px; border-radius: 50%; border: 1px solid #E2452C;"></span>
+                <span style="position: absolute; left: 50%; top: 50%; width: 19px; height: 19px; margin: -9.5px 0 0 0; border-radius: 50%; border: 1px solid #E2452C;"></span>
+                <span style="position: absolute; left: 50%; top: 50%; width: 19px; height: 19px; margin: -9.5px 0 0 -19px; animation: ck-spin 3.6s linear infinite;"><span style="position: absolute; left: 100%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: #FF7A5E;"></span></span>
+                <span style="position: absolute; left: 50%; top: 50%; width: 19px; height: 19px; margin: -9.5px 0 0 0; animation: ck-spinRev 3.6s linear infinite;"><span style="position: absolute; left: 0; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: #FF7A5E;"></span></span>
+              </span>
+            </sc-if>
+          </div>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: .16em; color: {{ p.tone }};">{{ p.kind }}</span>
+          <p style="margin: 0; font-size: 14.5px; line-height: 1.65; color: #95A0AB; text-wrap: pretty;">{{ p.body }}</p>
+          <div style="height: 1px; background: {{ p.border }};"></div>
+          <div style="display: flex; flex-direction: column; gap: 9px;">
+            <sc-for list="{{ p.does }}" as="d" hint-placeholder-count="4">
+              <span style="display: flex; gap: 10px; font-size: 13.5px; line-height: 1.5; color: #7A848F;"><span style="color: {{ p.tone }}; flex-shrink: 0;">·</span>{{ d }}</span>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section data-screen-label="Tabel" style="position: relative; padding: clamp(70px, 12vh, 130px) clamp(20px, 5vw, 60px); border-top: 1px solid #0C1116; background: #070A0E;">
+    <div style="width: min(1120px, 100%); margin: 0 auto;">
+      <div style="max-width: 700px; margin-bottom: clamp(30px, 4vh, 46px);">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 75%;">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .22em; color: #E2452C;">01 — SIDE BY SIDE</span>
+          <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent); transform-origin: left; animation: ck-drawX linear both; animation-timeline: view(); animation-range: entry 0% cover 20%;"></span>
+        </div>
+        <h2 style="margin: 0; font-size: clamp(25px, 4.2vw, 40px); font-weight: 700; letter-spacing: -.025em; line-height: 1.14; color: #F6F9FC; text-wrap: balance; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">Where the two shapes actually differ.</h2>
+      </div>
+
+      <div style="border: 1px solid #171C22; border-radius: 16px; overflow: hidden;">
+        <div style="display: flex; padding: 14px clamp(14px, 2vw, 22px); background: #12100F; border-bottom: 1px solid #2B1612; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: .14em; color: #7A848F;">
+          <span style="flex: 1.4; min-width: 110px;"></span>
+          <span style="flex: 1; min-width: 84px;">OPENCLAW</span>
+          <span style="flex: 1; min-width: 76px;">HERMES</span>
+          <span style="flex: 1.2; min-width: 96px; color: #FF7A5E;">CARAKA</span>
+        </div>
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="10">
+          <div style="display: flex; padding: 15px clamp(14px, 2vw, 22px); border-bottom: 1px solid #171C22; background: #0C1116; font-size: 13px; line-height: 1.5; transition: background .2s; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: {{ r.range }};" style-hover="background: #0E1216;">
+            <span style="flex: 1.4; min-width: 110px; color: #7A848F; padding-right: 10px;">{{ r.k }}</span>
+            <span style="flex: 1; min-width: 84px; color: #95A0AB; padding-right: 10px;">{{ r.a }}</span>
+            <span style="flex: 1; min-width: 76px; color: #95A0AB; padding-right: 10px;">{{ r.b }}</span>
+            <span style="flex: 1.2; min-width: 96px; color: {{ r.tone }}; font-weight: {{ r.weight }};">{{ r.c }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <p style="margin: 16px 0 0; font-size: 12.5px; line-height: 1.6; color: #5D666F; text-wrap: pretty;">Skywork measured usage distribution across both categories in May 2026 and found 85% of coding-agent usage is software development, while personal-assistant usage spreads across everything else. The two products serve different people.</p>
+    </div>
+  </section>
+
+  <section data-screen-label="Keluhan" style="position: relative; padding: clamp(70px, 12vh, 130px) clamp(20px, 5vw, 60px); border-top: 1px solid #0C1116;">
+    <div style="width: min(1120px, 100%); margin: 0 auto;">
+      <div style="max-width: 720px; margin-bottom: clamp(32px, 4.5vh, 50px);">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 75%;">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .22em; color: #E2452C;">02 — WHAT USERS REPORTED</span>
+          <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent); transform-origin: left; animation: ck-drawX linear both; animation-timeline: view(); animation-range: entry 0% cover 20%;"></span>
+        </div>
+        <h2 style="margin: 0 0 16px; font-size: clamp(25px, 4.2vw, 40px); font-weight: 700; letter-spacing: -.025em; line-height: 1.14; color: #F6F9FC; text-wrap: balance; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">Six complaints that shaped this project.</h2>
+        <p style="margin: 0; font-size: clamp(15px, 1.8vw, 17px); line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 4% cover 30%;">These come from a reviewer who used OpenClaw daily from January 2026 for both personal and professional work, and liked it enough to write at length before switching. Some may already be fixed. The dates are printed so you can judge.</p>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(288px, 1fr)); gap: clamp(14px, 2vw, 20px); align-items: stretch;">
+        <sc-for list="{{ complaints }}" as="c" hint-placeholder-count="6">
+          <div style="padding: clamp(24px, 3vw, 30px); background: #0C1116; border: 1px solid #171C22; border-radius: 15px; display: flex; flex-direction: column; gap: 14px; transition: border-color .25s; animation: ck-rise linear both; animation-timeline: view(); animation-range: {{ c.range }};" style-hover="border-color: #2B1612;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .18em; color: #FF93B2;">{{ c.tag }}</span>
+            <p style="margin: 0; font-size: 14.5px; line-height: 1.6; color: #D2D8DF; font-style: italic; text-wrap: pretty;">&ldquo;{{ c.quote }}&rdquo;</p>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #5D666F;">{{ c.src }}</span>
+            <div style="height: 1px; background: #171C22; margin-top: auto;"></div>
+            <div style="display: flex; gap: 11px;">
+              <span style="color: #8EEE98; font-family: 'JetBrains Mono', monospace; font-size: 12px; flex-shrink: 0; padding-top: 2px;">→</span>
+              <span style="font-size: 14px; line-height: 1.6; color: #95A0AB; text-wrap: pretty;">{{ c.answer }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Biaya" style="position: relative; padding: clamp(70px, 12vh, 130px) clamp(20px, 5vw, 60px); border-top: 1px solid #0C1116; background: #070A0E;">
+    <div style="width: min(1000px, 100%); margin: 0 auto;">
+      <div style="max-width: 700px; margin-bottom: clamp(30px, 4vh, 44px);">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 75%;">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .22em; color: #E2452C;">03 — THE TOKEN MATH</span>
+          <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent); transform-origin: left; animation: ck-drawX linear both; animation-timeline: view(); animation-range: entry 0% cover 20%;"></span>
+        </div>
+        <h2 style="margin: 0 0 16px; font-size: clamp(25px, 4.2vw, 40px); font-weight: 700; letter-spacing: -.025em; line-height: 1.14; color: #F6F9FC; text-wrap: balance; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">An assistant with its own loop bills you twice.</h2>
+        <p style="margin: 0; font-size: clamp(15px, 1.8vw, 17px); line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 4% cover 30%;">This is the clearest economic difference, and it follows directly from architecture rather than pricing policy.</p>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: clamp(14px, 2vw, 20px);">
+        <sc-for list="{{ tokenPaths }}" as="t" hint-placeholder-count="2">
+          <div style="padding: clamp(24px, 3vw, 32px); background: {{ t.bg }}; border: 1px solid {{ t.border }}; border-radius: 15px; display: flex; flex-direction: column; gap: 14px; animation: ck-rise linear both; animation-timeline: view(); animation-range: {{ t.range }};">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .18em; color: {{ t.tone }};">{{ t.tag }}</span>
+            <div style="display: flex; flex-direction: column; gap: 10px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+              <sc-for list="{{ t.steps }}" as="s" hint-placeholder-count="3">
+                <div style="display: flex; align-items: center; gap: 11px;">
+                  <span style="width: 7px; height: 7px; border-radius: 50%; background: {{ s.dot }}; flex-shrink: 0;"></span>
+                  <span style="color: #B2BCC6;">{{ s.t }}</span>
+                  <span style="margin-left: auto; color: {{ s.costTone }};">{{ s.cost }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="height: 1px; background: {{ t.border }};"></div>
+            <span style="font-size: 14px; line-height: 1.6; color: #95A0AB; text-wrap: pretty;">{{ t.note }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Pilih" style="position: relative; padding: clamp(70px, 12vh, 140px) clamp(20px, 5vw, 60px); border-top: 1px solid #0C1116;">
+    <div style="width: min(1000px, 100%); margin: 0 auto;">
+      <div style="max-width: 700px; margin-bottom: clamp(30px, 4vh, 46px);">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 75%;">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .22em; color: #E2452C;">04 — WHICH ONE</span>
+          <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent); transform-origin: left; animation: ck-drawX linear both; animation-timeline: view(); animation-range: entry 0% cover 20%;"></span>
+        </div>
+        <h2 style="margin: 0; font-size: clamp(25px, 4.2vw, 40px); font-weight: 700; letter-spacing: -.025em; line-height: 1.14; color: #F6F9FC; text-wrap: balance; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">Pick by the job, not by the feature count.</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <sc-for list="{{ picks }}" as="p" hint-placeholder-count="6">
+          <div style="display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; padding: clamp(18px, 2.4vw, 24px); background: #0C1116; border: 1px solid {{ p.border }}; border-radius: 13px; transition: border-color .25s; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: {{ p.range }};" style-hover="border-color: #2B1612;">
+            <span style="flex: 1; min-width: 240px; font-size: 15px; line-height: 1.55; color: #B2BCC6; text-wrap: pretty;">{{ p.want }}</span>
+            <span style="padding: 7px 15px; border-radius: 100px; background: {{ p.chipBg }}; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{ p.chipInk }}; white-space: nowrap;">{{ p.use }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="margin-top: clamp(26px, 4vh, 40px); padding: clamp(24px, 3.4vw, 36px); background: #12100F; border: 1px solid #2B1612; border-radius: 16px; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 30%;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .2em; color: #FF7A5E; margin-bottom: 16px;">WHAT WE WILL NOT CLAIM</div>
+        <div style="display: flex; flex-direction: column; gap: 13px;">
+          <sc-for list="{{ honest }}" as="h" hint-placeholder-count="3">
+            <div style="display: flex; gap: 12px;">
+              <span style="color: #7A848F; font-family: 'JetBrains Mono', monospace; font-size: 12px; flex-shrink: 0; padding-top: 2px;">·</span>
+              <span style="font-size: 14.5px; line-height: 1.65; color: #B2BCC6; text-wrap: pretty;">{{ h }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="CTA" style="position: relative; padding: clamp(70px, 12vh, 140px) clamp(20px, 5vw, 60px); border-top: 1px solid #0C1116; overflow: hidden;">
+    <div style="position: absolute; left: 50%; top: 50%; width: min(700px, 118vw); height: min(700px, 118vw); margin-left: min(-350px, -59vw); margin-top: min(-350px, -59vw); border-radius: 50%; background: radial-gradient(circle, rgba(226,69,44,.12), transparent 62%); pointer-events: none;"></div>
+    <div style="position: relative; width: min(660px, 100%); margin: 0 auto; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 22px;">
+      <h2 style="margin: 0; font-size: clamp(24px, 4.2vw, 40px); font-weight: 700; letter-spacing: -.03em; line-height: 1.14; color: #F6F9FC; text-wrap: balance; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 28%;">Send the task. Caraka runs it.</h2>
+      <p style="margin: 0; font-size: clamp(15px, 1.8vw, 17px); line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 4% cover 30%;">Free path available: Gemini CLI gives 1,000 requests a day at no cost. Caraka itself never asks for a card.</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 8% cover 34%;">
+        <button onClick="{{ copy }}" style="display: flex; align-items: center; gap: 14px; padding: 15px 22px; background: #0C1116; border: 1px solid #292E35; border-radius: 11px; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #E9EDF2; transition: border-color .2s;" style-hover="border-color: #E2452C;">
+          <span style="color: #5D666F;">$</span><span>npx caraka init</span>
+          <span style="font-size: 11px; color: {{ copyTone }}; min-width: 48px; text-align: right;">{{ copyLabel }}</span>
+        </button>
+        <a href="Caraka Docs.dc.html" style="padding: 15px 26px; background: #E2452C; border-radius: 11px; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #FFEDE7; transition: background .2s;" style-hover="background: #C02F17; color: #FFEDE7;">Read the docs →</a>
+      </div>
+    </div>
+  </section>
+
+  <footer style="padding: clamp(44px, 7vh, 70px) clamp(20px, 5vw, 60px); border-top: 1px solid #0C1116;">
+    <div style="width: min(1120px, 100%); margin: 0 auto; display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between;">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #414950;">ꦕ caraka · MIT · pre-alpha</span>
+      <div style="display: flex; flex-wrap: wrap; gap: clamp(14px, 2.6vw, 28px); font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+        <a href="Caraka Landing.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Home</a>
+        <a href="Caraka Docs.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Docs</a>
+        <a href="Caraka Story.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Story</a>
+        <a href="Caraka Security.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Security</a>
+        <a href="Caraka Status.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Status</a>
+        <a href="https://github.com/CarakaDev/caraka" style="color: #7A848F;" style-hover="color: #FF7A5E;">GitHub</a>
+      </div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  state = { copied: false };
+  componentDidMount() {
+    const root = document.documentElement;
+    let raf = null;
+    this._s = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = null;
+        const max = Math.max(1, root.scrollHeight - window.innerHeight);
+        root.style.setProperty("--ck-sp", String(Math.min(1, Math.max(0, window.scrollY / max))));
+      });
+    };
+    window.addEventListener("scroll", this._s, { passive: true });
+    window.addEventListener("resize", this._s, { passive: true });
+    this._s();
+  }
+  componentWillUnmount() {
+    clearTimeout(this._c);
+    window.removeEventListener("scroll", this._s);
+    window.removeEventListener("resize", this._s);
+  }
+  r(i, step, span) { const a = i * (step || 4); return `entry ${a}% cover ${a + (span || 28)}%`; }
+
+  renderVals() {
+    const copy = () => {
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText("npx caraka init").catch(() => {});
+      this.setState({ copied: true });
+      clearTimeout(this._c);
+      this._c = setTimeout(() => this.setState({ copied: false }), 1800);
+    };
+    const copied = this.state.copied;
+
+    return {
+      copy,
+      copyLabel: copied ? "COPIED" : "COPY",
+      copyTone: copied ? "#8EEE98" : "#5D666F",
+
+      products: [
+        { name: "OpenClaw", kind: "PERSONAL AI ASSISTANT", tone: "#7A848F", bg: "#0C1116", border: "#171C22", us: false, range: this.r(0, 4, 26),
+          body: "A persistent, self-hosted assistant that connects a model to your OS, your messaging apps, and the internet. It acts rather than advises.",
+          does: ["Clears your inbox", "Manages your calendar", "Drives a browser", "Runs shell commands", "Writes code, among other things"] },
+        { name: "Hermes", kind: "AGENT FRAMEWORK", tone: "#7A848F", bg: "#0C1116", border: "#171C22", us: false, range: this.r(1, 4, 26),
+          body: "A Python agent framework with its own runtime and orchestration. You build the assistant you want on top of it.",
+          does: ["Orchestrates agents", "Ships its own tool layer", "Linux, macOS, WSL2 only", "Writes code, among other things"] },
+        { name: "Caraka", kind: "CHAT BRIDGE TO YOUR CODING AGENT", tone: "#FF7A5E", bg: "#12100F", border: "#2B1612", us: true, range: this.r(2, 4, 26),
+          body: "A bridge with no runtime of its own. It carries your task to the coding agent you already installed and already pay for.",
+          does: ["Works on your repository", "Sessions as Telegram topics", "Approval before every write", "Memory across sessions", "Nothing else, on purpose"] },
+      ],
+
+      rows: [
+        { k: "Category", a: "Personal assistant", b: "Agent framework", c: "Chat bridge", tone: "#FF7A5E", weight: "600", range: this.r(0, 2.2, 22) },
+        { k: "Main job", a: "Inbox, calendar, browser", b: "Orchestration", c: "Your repository", tone: "#FF7A5E", weight: "600", range: this.r(1, 2.2, 22) },
+        { k: "Agent runtime", a: "Its own", b: "Its own", c: "Yours", tone: "#FF7A5E", weight: "600", range: this.r(2, 2.2, 22) },
+        { k: "Execution tools", a: "20+", b: "Yes", c: "Zero", tone: "#FF7A5E", weight: "600", range: this.r(3, 2.2, 22) },
+        { k: "Plugin marketplace", a: "Large", b: "Yes", c: "None", tone: "#FF7A5E", weight: "600", range: this.r(4, 2.2, 22) },
+        { k: "Channels", a: "22", b: "via gateway", c: "1 in v1.0", tone: "#95A0AB", weight: "400", range: this.r(5, 2.2, 22) },
+        { k: "Tokens outside your agent", a: "Yes, own loop", b: "Yes", c: "None", tone: "#8EEE98", weight: "600", range: this.r(6, 2.2, 22) },
+        { k: "Sandboxing", a: "Configure it", b: "Configure it", c: "Inherited", tone: "#FF7A5E", weight: "600", range: this.r(7, 2.2, 22) },
+        { k: "Reported setup time", a: "Hours", b: "pip + venv", c: "Under 3 min", tone: "#FF7A5E", weight: "600", range: this.r(8, 2.2, 22) },
+        { k: "Maturity", a: "Very high", b: "High", c: "Pre-alpha", tone: "#FF93B2", weight: "600", range: this.r(9, 2.2, 22) },
+      ],
+
+      complaints: [
+        { tag: "SETUP", quote: "It is open-source, yes, but installation is a nightmare. I remember spending hours to get it right.", src: "Composio, May 2026", answer: "npx caraka init. One command, six interactions, target under three minutes. The wizard confirms what it finds rather than asking what it should already know.", range: this.r(0, 4, 28) },
+        { tag: "PLUGINS", quote: "The Skills and Plugin ecosystem is vast, but the experience is horrible.", src: "Composio, May 2026", answer: "No marketplace at all. Extension happens through a declarative YAML preset or an MCP server you install deliberately. Trust sits with you, not with a registry.", range: this.r(1, 4, 28) },
+        { tag: "COST", quote: "Agentic tasks consume a massive amount of tokens. If you want to use it like a personal assistant, the cost will skyrocket pretty fast.", src: "Composio, May 2026", answer: "Caraka has no agent loop, so it burns no tokens of its own. Everything runs on the coding-agent subscription you already pay for.", range: this.r(2, 4, 28) },
+        { tag: "SECURITY", quote: "The initial releases lacked any security hardening. The internet was filled with heated debates around it.", src: "Composio, May 2026", answer: "Mandatory allowlist, signed single-use approvals, secret scrubbing, and an append-only audit log, all present from the first commit rather than added after an incident.", range: this.r(3, 4, 28) },
+        { tag: "STABILITY", quote: "Every patch would make it worse. A fix for one thing would unfix the other.", src: "Composio, May 2026", answer: "A core capped at roughly 8,000 lines is small enough that one person can read it in a day. Fewer moving parts is the only reliable way to make a patch predictable.", range: this.r(4, 4, 28) },
+        { tag: "ARCHITECTURE", quote: "Not bugs, since the project ships fast and breaks fast in equal measure. The edges I hit were architectural.", src: "Vellum, August 2026", answer: "The written non-goals are the defence. No agent loop, no tools, no marketplace, no companion app. Every feature request is tested against one question: can the coding agent already do this?", range: this.r(5, 4, 28) },
+      ],
+
+      tokenPaths: [
+        { tag: "ASSISTANT WITH ITS OWN LOOP", tone: "#FF93B2", bg: "#0C1116", border: "#171C22", range: this.r(0, 5, 28),
+          steps: [
+            { t: "your coding agent plan", cost: "$20+/mo", costTone: "#FF93B2", dot: "#FF93B2" },
+            { t: "assistant reasoning loop", cost: "tokens", costTone: "#FF93B2", dot: "#FF93B2" },
+            { t: "heartbeat every 30 min", cost: "tokens", costTone: "#FF93B2", dot: "#FF93B2" },
+          ],
+          note: "Every proactive turn is a full agent turn. The bill arrives from two directions." },
+        { tag: "CARAKA", tone: "#FF7A5E", bg: "#12100F", border: "#2B1612", range: this.r(1, 5, 28),
+          steps: [
+            { t: "your coding agent plan", cost: "$20+/mo", costTone: "#B2BCC6", dot: "#FF7A5E" },
+            { t: "caraka bridge", cost: "free", costTone: "#8EEE98", dot: "#8EEE98" },
+            { t: "heartbeat", cost: "off", costTone: "#8EEE98", dot: "#8EEE98" },
+          ],
+          note: "No loop, no second bill. Proactive scheduling is off by default because it is expensive and noisy." },
+      ],
+
+      picks: [
+        { want: "Clear my inbox, keep my calendar, drive a browser", use: "OpenClaw", chipBg: "#171C22", chipInk: "#B2BCC6", border: "#171C22", range: this.r(0, 2.6, 24) },
+        { want: "Build my own assistant on a Python framework", use: "Hermes", chipBg: "#171C22", chipInk: "#B2BCC6", border: "#171C22", range: this.r(1, 2.6, 24) },
+        { want: "Ship a fix to my repository from my phone", use: "Caraka", chipBg: "#2B1612", chipInk: "#FF7A5E", border: "#2B1612", range: this.r(2, 2.6, 24) },
+        { want: "Keep five tasks running without them colliding in one chat", use: "Caraka", chipBg: "#2B1612", chipInk: "#FF7A5E", border: "#2B1612", range: this.r(3, 2.6, 24) },
+        { want: "Approve every write before it lands", use: "Caraka", chipBg: "#2B1612", chipInk: "#FF7A5E", border: "#2B1612", range: this.r(4, 2.6, 24) },
+        { want: "Not pay for a second reasoning loop", use: "Caraka", chipBg: "#2B1612", chipInk: "#FF7A5E", border: "#2B1612", range: this.r(5, 2.6, 24) },
+        { want: "A mature project with a large community today", use: "OpenClaw", chipBg: "#171C22", chipInk: "#B2BCC6", border: "#171C22", range: this.r(6, 2.6, 24) },
+      ],
+
+      honest: [
+        "OpenClaw is far more mature. Hundreds of thousands of stars, tens of thousands of commits, a real community. Caraka is pre-alpha and you should treat it that way.",
+        "OpenClaw does work Caraka will never do. Calendar, inbox, browser, home automation. If that is what you need, this is not the answer.",
+        "The complaints quoted above come from early 2026 releases and some may already be fixed. Dates are printed so you can check for yourself rather than take our word for it.",
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

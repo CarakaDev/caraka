@@ -1,0 +1,156 @@
+import { test, expect, describe } from 'vitest'
+import { readFileSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+// The mockups are the design. These tests are the tripwire that says so out
+// loud: if a stylesheet drifts from its comp, or a hover state is dropped in a
+// port, the build stops instead of quietly shipping something that only mostly
+// looks right.
+
+const SITE = fileURLToPath(new URL('..', import.meta.url))
+const MOCKUPS = join(SITE, '..', 'design', 'mockups')
+
+const SLUG = {
+  'Caraka Landing.dc.html': 'landing',
+  'Caraka Docs.dc.html': 'docs',
+  'Caraka Install.dc.html': 'install',
+  'Caraka Compare.dc.html': 'compare',
+  'Caraka Security.dc.html': 'security',
+  'Caraka Status.dc.html': 'status',
+  'Caraka Story.dc.html': 'story',
+  'Caraka Brandkit.dc.html': 'brand',
+  'Caraka Sistem Warna.dc.html': 'warna',
+  'Caraka UI Kit.dc.html': 'ui-kit',
+}
+
+const mockup = (file) => readFileSync(join(MOCKUPS, file), 'utf8')
+const styleBlock = (src) => src.slice(src.indexOf('<style>') + 7, src.indexOf('</style>')).trim()
+const globalCss = readFileSync(join(SITE, 'src', 'styles', 'global.css'), 'utf8')
+
+describe('page stylesheets', () => {
+  for (const [file, slug] of Object.entries(SLUG)) {
+    test(`${slug}.css is its mockup's style block, unedited`, () => {
+      const css = readFileSync(join(SITE, 'src', 'styles', 'pages', `${slug}.css`), 'utf8')
+      // Strip only the provenance header this repo adds on extraction.
+      const body = css.replace(/^\/\*[\s\S]*?\*\/\s*/, '').trim()
+      expect(body).toBe(styleBlock(mockup(file)))
+    })
+  }
+
+  test('keyframes that collide across pages keep their own values', () => {
+    // ck-rise travels a different distance on five different pages. One shared
+    // stylesheet would silently give them all whichever definition loaded last.
+    const seen = new Map()
+    for (const [file, slug] of Object.entries(SLUG)) {
+      const re = /@keyframes\s+([\w-]+)\s*\{((?:[^{}]|\{[^{}]*\})*)\}/g
+      let m
+      while ((m = re.exec(styleBlock(mockup(file))))) {
+        const key = m[1]
+        const value = m[2].replace(/\s+/g, ' ').trim()
+        if (!seen.has(key)) seen.set(key, new Map())
+        seen.get(key).set(value, [...(seen.get(key).get(value) || []), slug])
+      }
+    }
+    const collisions = [...seen].filter(([, variants]) => variants.size > 1)
+    expect(collisions.length, 'no collisions found — the fixture changed').toBeGreaterThan(0)
+
+    for (const [name, variants] of collisions) {
+      for (const [value, slugs] of variants) {
+        for (const slug of slugs) {
+          const css = readFileSync(join(SITE, 'src', 'styles', 'pages', `${slug}.css`), 'utf8')
+          const own = new RegExp(`@keyframes\\s+${name}\\s*\\{((?:[^{}]|\\{[^{}]*\\})*)\\}`).exec(css)
+          expect(own, `${slug}.css is missing @keyframes ${name}`).not.toBeNull()
+          expect(own[1].replace(/\s+/g, ' ').trim(), `${slug} @keyframes ${name}`).toBe(value)
+        }
+      }
+    }
+  })
+})
+
+describe('hover states', () => {
+  const declarations = new Set()
+  for (const file of Object.keys(SLUG)) {
+    for (const m of mockup(file).matchAll(/style-hover="([^"]*)"/g)) declarations.add(m[1].trim())
+  }
+
+  // The class body, normalised: property:value pairs, order-independent.
+  const normalise = (decl) =>
+    decl
+      .split(';')
+      .map((d) => d.trim().replace(/\s+/g, ' '))
+      .filter(Boolean)
+      .sort()
+      .join(';')
+
+  const classes = new Map()
+  for (const m of globalCss.matchAll(/\.(hv-[\w-]+):hover\s*\{([^}]*)\}/g)) {
+    classes.set(m[1], normalise(m[2]))
+  }
+
+  test('every style-hover in every mockup has a class that reproduces it', () => {
+    const wanted = [...declarations].map(normalise)
+    const have = new Set(classes.values())
+    const missing = wanted.filter((w) => !have.has(w))
+    expect(missing).toEqual([])
+  })
+
+  test('no hover class exists that no mockup asks for', () => {
+    // Except the two descendant rules for the rail, which pair with hv-reveal
+    // and hv-tick and are declared separately.
+    const wanted = new Set([...declarations].map(normalise))
+    const unused = [...classes].filter(([, body]) => !wanted.has(body)).map(([name]) => name)
+    expect(unused).toEqual([])
+  })
+})
+
+describe('fonts', () => {
+  test('the three families the mockups name are declared', () => {
+    // Inline styles across the comps say 'Public Sans', 'JetBrains Mono' and
+    // 'Noto Sans Javanese'. Self-hosting under a different family name would
+    // silently fall back to a system font on every one of those declarations.
+    for (const family of ['Public Sans', 'JetBrains Mono', 'Noto Sans Javanese']) {
+      expect(globalCss).toContain(`font-family: '${family}';`)
+    }
+  })
+
+  test('anchor targets clear the fixed header', () => {
+    expect(globalCss).toMatch(/\[id\]\s*\{\s*scroll-margin-top:/)
+  })
+})
+
+describe('ports', () => {
+  const pagesDir = join(SITE, 'src', 'pages')
+  const walk = (dir) =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? walk(join(dir, e.name)) : e.name.endsWith('.astro') ? [join(dir, e.name)] : [],
+    )
+
+  test('no design-comp syntax survived the port', () => {
+    const leftovers = []
+    for (const f of walk(pagesDir)) {
+      const src = readFileSync(f, 'utf8')
+      for (const pattern of ['sc-for', 'sc-if', 'style-hover', 'hint-placeholder', 'data-screen-label', '.dc.html"', 'className']) {
+        if (src.includes(pattern)) leftovers.push(`${f.replace(SITE, '')}: ${pattern}`)
+      }
+      // `{{ x }}` is design-comp interpolation; Astro uses a single brace.
+      if (/\{\{\s*\w/.test(src)) leftovers.push(`${f.replace(SITE, '')}: {{ }}`)
+    }
+    expect(leftovers).toEqual([])
+  })
+
+  test('every page reaches every other page it links to', () => {
+    const routes = new Set(['/'])
+    for (const f of walk(pagesDir)) {
+      const rel = f.replace(join(pagesDir), '').replace(/\.astro$/, '').replace(/\/index$/, '')
+      routes.add(rel === '' ? '/' : rel)
+    }
+    const broken = []
+    for (const f of walk(pagesDir)) {
+      for (const m of readFileSync(f, 'utf8').matchAll(/href="(\/[^"#?]*)"/g)) {
+        if (!routes.has(m[1])) broken.push(`${f.replace(SITE, '')} -> ${m[1]}`)
+      }
+    }
+    expect(broken).toEqual([])
+  })
+})

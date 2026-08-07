@@ -1,0 +1,60 @@
+---
+// The three micro-animations inside the "01 — THE GAP" cards. In the mockup
+// they are built in JavaScript (vUnreachable, vBlind, vForget) and passed
+// through the card data; here they are markup, selected by name.
+interface Props {
+  kind: 'unreachable' | 'blind' | 'forget'
+}
+const { kind } = Astro.props
+
+const mono = "font-family: 'JetBrains Mono', monospace;"
+
+const forgetLines = [
+  'repo uses pnpm, never npm',
+  'auth = middleware, not decorator',
+  'migrations/ is off limits',
+]
+---
+
+{
+  kind === 'unreachable' && (
+    <div style="position: relative; width: 100%; height: 60px; display: flex; align-items: center; gap: 14px;">
+      <div style={`position: relative; width: 34px; height: 34px; border-radius: 9px; background: #171C22; display: flex; align-items: center; justify-content: center; ${mono} font-size: 13px; color: #5D666F; flex-shrink: 0;`}>
+        ◧
+      </div>
+      <div style="flex: 1; height: 1px; background: repeating-linear-gradient(90deg,#292E35 0 5px,transparent 5px 11px);" />
+      <div style="position: relative; width: 34px; height: 34px; border-radius: 9px; border: 1px solid #2B1612; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <span style={`${mono} font-size: 13px; color: #E2452C; animation: ck-flick 3.2s ease-in-out infinite;`}>✦</span>
+      </div>
+    </div>
+  )
+}
+
+{
+  kind === 'blind' && (
+    <div style="width: 100%; display: flex; flex-direction: column; gap: 9px;">
+      {[0, 1, 2].map((i) => (
+        <div style="height: 5px; border-radius: 3px; background: #171C22; overflow: hidden;">
+          <div
+            style={`height: 100%; width: 100%; background: ${i === 2 ? '#292E35' : '#E2452C'}; opacity: ${i === 2 ? 1 : 0.9 - i * 0.3}; transform-origin: left; animation: ck-fill ${3.2 + i * 0.9}s cubic-bezier(.3,.7,.3,1) infinite; animation-delay: ${i * 0.35}s;`}
+          />
+        </div>
+      ))}
+      <div style={`${mono} font-size: 10px; color: #414950; letter-spacing: .14em;`}>NO VISIBILITY</div>
+    </div>
+  )
+}
+
+{
+  kind === 'forget' && (
+    <div style="width: 100%; display: flex; flex-direction: column; gap: 7px;">
+      {forgetLines.map((t, i) => (
+        <div
+          style={`${mono} font-size: 10.5px; color: #5D666F; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: ck-flick 4.4s ease-in-out infinite; animation-delay: ${i * 1.1}s;`}
+        >
+          {t}
+        </div>
+      ))}
+    </div>
+  )
+}

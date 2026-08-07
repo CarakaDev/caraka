@@ -1,0 +1,26 @@
+name: Feature request
+description: Propose a change to what Caraka does
+labels: [proposal]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Every proposal is tested against one question: **does the coding agent already do this?** If yes, it will be declined however well implemented. Proposals that add an agent loop, execution tools, a model abstraction, or a plugin registry are out of scope by design. See docs/prd.md for the written non-goals.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem, not the solution
+      description: What are you unable to do today?
+    validations:
+      required: true
+  - type: textarea
+    id: agentcheck
+    attributes:
+      label: Why the coding agent cannot already do this
+    validations:
+      required: true
+  - type: textarea
+    id: budget
+    attributes:
+      label: What this could remove
+      description: A new feature must either remove something or keep the core under ~8,000 lines. What would you cut?

@@ -1,0 +1,40 @@
+{
+  "name": "caraka",
+  "version": "0.0.0",
+  "description": "Send the task. Caraka runs it. — a thin bridge from Telegram to the coding agent already installed on your machine.",
+  "keywords": [
+    "acp",
+    "agent-client-protocol",
+    "coding-agent",
+    "claude-code",
+    "telegram",
+    "telegram-bot",
+    "mcp",
+    "ai-agent",
+    "developer-tools"
+  ],
+  "homepage": "https://caraka.dev",
+  "bugs": {
+    "url": "https://github.com/CarakaDev/caraka/issues",
+    "email": "halo@caraka.dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CarakaDev/caraka.git"
+  },
+  "license": "MIT",
+  "author": "Rama Aditya <halo@caraka.dev> (https://caraka.dev)",
+  "type": "module",
+  "bin": {
+    "caraka": "bin/caraka.mjs"
+  },
+  "files": [
+    "bin"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

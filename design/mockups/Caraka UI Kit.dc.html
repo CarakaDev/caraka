@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Javanese:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html { scroll-behavior: smooth; background: #05080C; scrollbar-width: none; }
+  body { margin: 0; padding: 0; background: #05080C; overflow-x: hidden; }
+  * { box-sizing: border-box; }
+  a { color: #FF7A5E; text-decoration: none; }
+  a:hover { color: #F6F9FC; }
+  ::selection { background: #E2452C; color: #FFEDE7; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+  @keyframes ck-spin { to { transform: rotate(360deg); } }
+  @keyframes ck-spinRev { to { transform: rotate(-360deg); } }
+  @keyframes ck-blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+  @keyframes ck-pulse { 0% { transform: scale(1); opacity: .5; } 100% { transform: scale(2.4); opacity: 0; } }
+  @keyframes ck-shimmer { 0% { background-position: -320px 0; } 100% { background-position: 320px 0; } }
+  @keyframes ck-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes ck-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+  @keyframes ck-drawX { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes ck-bloom { 0%,100% { opacity: .25; } 50% { opacity: .65; } }
+  [data-toc] { display: block; }
+  @media (max-width: 1080px) { [data-toc] { display: none; } }
+  @media (max-width: 620px) { [data-navlinks] { display: none; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; } }
+</style>
+</helmet>
+
+<div style="width: 100%; background: #05080C; font-family: 'Public Sans', sans-serif; color: #E9EDF2; position: relative; overflow-x: hidden;">
+
+  <div style="position: fixed; left: 0; top: 0; right: 0; height: 2px; z-index: 110; background: #171C22;">
+    <div style="height: 100%; width: 100%; background: linear-gradient(90deg, #E2452C, #FF7A5E); transform-origin: left; transform: scaleX(var(--ck-sp, 0));"></div>
+  </div>
+
+  <header style="position: fixed; left: 0; right: 0; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px clamp(16px, 4vw, 34px); background: rgba(5,8,12,.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid #0C1116;">
+    <a href="Caraka Landing.dc.html" style="display: flex; align-items: center; gap: 12px;">
+      <span style="position: relative; width: 44px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <span style="position: absolute; left: 50%; top: 50%; width: 21px; height: 21px; margin: -10.5px 0 0 -21px; border-radius: 50%; border: 1px solid #E2452C;"></span>
+        <span style="position: absolute; left: 50%; top: 50%; width: 21px; height: 21px; margin: -10.5px 0 0 0; border-radius: 50%; border: 1px solid #E2452C;"></span>
+        <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 12px; line-height: 1; display: block; transform: translateY(17.5%); color: #F6F9FC;">ꦕ</span>
+      </span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: .2em; color: #E9EDF2;">caraka</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .16em; color: #E2452C; padding: 3px 8px; border: 1px solid #2B1612; border-radius: 5px;">UI KIT</span>
+    </a>
+    <nav data-navlinks="1" style="display: flex; align-items: center; gap: clamp(14px, 2.4vw, 26px); font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+      <a href="Caraka Landing.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Home</a>
+      <a href="Caraka Docs.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Docs</a>
+      <a href="Caraka Compare.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Compare</a>
+      <a href="Caraka Install.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Install</a>
+    </nav>
+    <a href="https://github.com/CarakaDev/caraka" style="padding: 9px 16px; border: 1px solid #292E35; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B2BCC6; transition: border-color .2s, color .2s; white-space: nowrap;" style-hover="border-color: #E2452C; color: #FF7A5E;">GitHub ↗</a>
+  </header>
+
+  <div style="display: flex; gap: clamp(28px, 4vw, 56px); width: min(1320px, 100%); margin: 0 auto; padding: clamp(96px, 14vh, 128px) clamp(20px, 4vw, 44px) clamp(70px, 12vh, 120px);">
+
+    <main style="flex: 1; min-width: 0;">
+      <div style="margin-bottom: clamp(40px, 6vh, 60px);">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px;">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .22em; color: #E2452C;">UI KIT v1.0</span>
+          <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent); transform-origin: left; animation: ck-drawX 1s cubic-bezier(.3,.7,.3,1) .2s both;"></span>
+        </div>
+        <h1 style="margin: 0 0 16px; font-size: clamp(30px, 5vw, 50px); font-weight: 700; letter-spacing: -.03em; line-height: 1.08; color: #F6F9FC; text-wrap: balance;">Every component, in every state it will actually reach.</h1>
+        <p style="margin: 0; max-width: 660px; font-size: clamp(15px, 1.8vw, 17px); line-height: 1.7; color: #95A0AB; text-wrap: pretty;">A component is only finished when its empty, loading, error, and disabled states are drawn. This page holds all of them, at the sizes and contrasts they will ship at.</p>
+      </div>
+
+      <sc-for list="{{ sections }}" as="s" hint-placeholder-count="12">
+        <section id="{{ s.id }}" data-screen-label="{{ s.title }}" style="margin-bottom: clamp(46px, 7vh, 76px); scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 8px;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">{{ s.no }}</span>
+            <h2 style="margin: 0; font-size: clamp(19px, 2.6vw, 26px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">{{ s.title }}</h2>
+          </div>
+          <p style="margin: 0 0 22px; max-width: 660px; font-size: 14.5px; line-height: 1.65; color: #7A848F; text-wrap: pretty;">{{ s.note }}</p>
+          <div style="border: 1px solid #171C22; border-radius: 15px; overflow: hidden;">{{ s.body }}</div>
+        </section>
+      </sc-for>
+
+      <section id="errors" data-screen-label="Halaman error" style="margin-bottom: clamp(46px, 7vh, 76px); scroll-margin-top: 90px;">
+        <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 8px;">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">13</span>
+          <h2 style="margin: 0; font-size: clamp(19px, 2.6vw, 26px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Error pages</h2>
+        </div>
+        <p style="margin: 0 0 22px; max-width: 660px; font-size: 14.5px; line-height: 1.65; color: #7A848F; text-wrap: pretty;">Each one says what happened, what it means, and what to do next. None of them show a stack trace, and none of them apologise twice.</p>
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <sc-for list="{{ errorPages }}" as="e" hint-placeholder-count="4">
+            <div style="position: relative; border: 1px solid {{ e.border }}; border-radius: 15px; overflow: hidden; background: #05070A;">
+              <div style="display: flex; align-items: center; gap: 9px; padding: 10px 16px; background: #0C1116; border-bottom: 1px solid #171C22; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #5D666F;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: {{ e.dot }};"></span>{{ e.route }}
+              </div>
+              <div style="position: relative; padding: clamp(34px, 5vw, 56px) clamp(22px, 4vw, 44px); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; overflow: hidden;">
+                <div style="position: absolute; left: 50%; top: 44%; width: 380px; height: 380px; margin: -190px 0 0 -190px; border-radius: 50%; background: radial-gradient(circle, {{ e.glow }}, transparent 62%); animation: ck-bloom 7s ease-in-out infinite; pointer-events: none;"></div>
+                <div style="position: relative; width: 96px; height: 48px; display: flex; align-items: center; justify-content: center;">
+                  <div style="position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -46px; border-radius: 50%; border: 1px solid {{ e.ring }}; {{ e.ringAnimL }}"></div>
+                  <div style="position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 0; border-radius: 50%; border: 1px solid {{ e.ring }}; {{ e.ringAnimR }}"></div>
+                  <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 27px; line-height: 1; display: block; transform: translateY(17.5%); color: {{ e.glyphInk }};">ꦕ</span>
+                </div>
+                <span style="position: relative; font-family: 'JetBrains Mono', monospace; font-size: clamp(34px, 6vw, 52px); font-weight: 700; letter-spacing: -.03em; color: {{ e.codeInk }}; line-height: 1;">{{ e.code }}</span>
+                <span style="position: relative; font-size: clamp(17px, 2.4vw, 22px); font-weight: 600; color: #F6F9FC; text-wrap: balance;">{{ e.title }}</span>
+                <p style="position: relative; margin: 0; max-width: 420px; font-size: 14.5px; line-height: 1.65; color: #95A0AB; text-wrap: pretty;">{{ e.body }}</p>
+                <sc-if value="{{ e.hint }}" hint-placeholder-val="{{ true }}">
+                  <div style="position: relative; display: flex; align-items: center; gap: 11px; padding: 11px 16px; background: #0C1116; border: 1px solid #171C22; border-radius: 9px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B2BCC6;">
+                    <span style="color: #5D666F;">$</span>{{ e.hint }}
+                  </div>
+                </sc-if>
+                <div style="position: relative; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 4px;">
+                  <span style="padding: 11px 20px; background: #E2452C; border-radius: 9px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #FFEDE7;">{{ e.cta }}</span>
+                  <span style="padding: 11px 20px; border: 1px solid #292E35; border-radius: 9px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #B2BCC6;">{{ e.alt }}</span>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <div style="padding: clamp(26px, 4vw, 38px); background: #12100F; border: 1px solid #2B1612; border-radius: 16px;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .2em; color: #FF7A5E; margin-bottom: 16px;">RULES THIS KIT ENFORCES</div>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <sc-for list="{{ rules }}" as="r" hint-placeholder-count="6">
+            <div style="display: flex; gap: 12px;">
+              <span style="color: #7A848F; font-family: 'JetBrains Mono', monospace; font-size: 12px; flex-shrink: 0; padding-top: 2px;">{{ r.n }}</span>
+              <span style="font-size: 14.5px; line-height: 1.65; color: #B2BCC6; text-wrap: pretty;">{{ r.t }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </main>
+
+    <aside data-toc="1" style="width: 190px; flex-shrink: 0;">
+      <div style="position: sticky; top: 104px; display: flex; flex-direction: column; gap: 2px;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .2em; color: #414950; margin-bottom: 12px;">COMPONENTS</div>
+        <sc-for list="{{ toc }}" as="t" hint-placeholder-count="14">
+          <a href="{{ t.href }}" onClick="{{ jump }}" data-target="{{ t.id }}" style="display: flex; align-items: baseline; gap: 9px; padding: 6px 0 6px 12px; border-left: 1px solid #171C22; font-size: 12.5px; color: #7A848F; transition: color .2s, border-color .2s;" style-hover="color: #FF7A5E; border-color: #E2452C;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #414950;">{{ t.no }}</span>
+            <span>{{ t.title }}</span>
+          </a>
+        </sc-for>
+      </div>
+    </aside>
+  </div>
+
+  <footer style="padding: clamp(44px, 7vh, 70px) clamp(20px, 5vw, 60px); border-top: 1px solid #0C1116;">
+    <div style="width: min(1320px, 100%); margin: 0 auto; display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between;">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #414950;">ꦕ caraka · UI Kit v1.0 · Agustus 2026</span>
+      <div style="display: flex; flex-wrap: wrap; gap: clamp(14px, 2.6vw, 28px); font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+        <a href="Caraka Landing.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Home</a>
+        <a href="Caraka Docs.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Docs</a>
+        <a href="Caraka Sistem Warna.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Colour system</a>
+        <a href="Caraka Brandkit.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Logo book</a>
+      </div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1320,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  componentDidMount() {
+    const root = document.documentElement;
+    let raf = null;
+    this._s = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = null;
+        const max = Math.max(1, root.scrollHeight - window.innerHeight);
+        root.style.setProperty("--ck-sp", String(Math.min(1, Math.max(0, window.scrollY / max))));
+      });
+    };
+    window.addEventListener("scroll", this._s, { passive: true });
+    window.addEventListener("resize", this._s, { passive: true });
+    this._s();
+  }
+  componentWillUnmount() {
+    window.removeEventListener("scroll", this._s);
+    window.removeEventListener("resize", this._s);
+  }
+
+  renderVals() {
+    const R = React.createElement;
+    const mono = "'JetBrains Mono', monospace";
+    const jump = (e) => {
+      const id = e.currentTarget && e.currentTarget.getAttribute("data-target");
+      const el = id && document.getElementById(id);
+      if (!el) return;
+      e.preventDefault();
+      window.scrollTo({ top: el.offsetTop - 88, behavior: "smooth" });
+    };
+
+    // ---- shared shells -------------------------------------------------
+    const pad = { padding: "clamp(22px,3vw,30px)", background: "#0C1116" };
+    const label = (t) => R("div", { style: { fontFamily: mono, fontSize: 9.5, letterSpacing: ".16em", color: "#5D666F", marginBottom: 12 } }, t);
+    const row = (kids, extra) => R("div", { style: { display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", ...(extra || {}) } }, kids);
+    const cell = (t, kids) => R("div", { style: { ...pad, borderBottom: "1px solid #171C22" } }, label(t), kids);
+
+    // ---- 01 tokens -----------------------------------------------------
+    const ramp = [["400", "#FF7A5E", "#2B1612"], ["500", "#E2452C", "#FFEDE7"], ["600", "#C02F17", "#FFEDE7"], ["800", "#6F271B", "#FFC9BC"], ["950", "#2B1612", "#FF7A5E"]];
+    const neut = [["000", "#05080C"], ["050", "#0C1116"], ["100", "#171C22"], ["200", "#292E35"], ["500", "#7A848F"], ["700", "#B2BCC6"], ["900", "#E9EDF2"]];
+    const tokens = R("div", null,
+      cell("PRIMARY — KESUMBA", row(ramp.map(([s, h, ink]) =>
+        R("div", { key: s, style: { flex: "1 1 88px", height: 62, borderRadius: 9, background: h, display: "flex", alignItems: "flex-end", padding: 8, fontFamily: mono, fontSize: 10, fontWeight: 700, color: ink } }, s)))),
+      cell("NEUTRAL — H 250°", row(neut.map(([s, h]) =>
+        R("div", { key: s, style: { flex: "1 1 68px", height: 50, borderRadius: 9, background: h, border: "1px solid #171C22", display: "flex", alignItems: "flex-end", padding: 7, fontFamily: mono, fontSize: 9.5, color: s >= "500" ? "#05080C" : "#7A848F" } }, s)))),
+      cell("TYPE SCALE", R("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
+        [["48 / 700 / -.03em", 40, 700, "#F6F9FC", "Display"], ["28 / 700 / -.025em", 26, 700, "#F6F9FC", "Heading"], ["17 / 400", 17, 400, "#95A0AB", "Body text runs at this size"], ["13.5 / 400", 13.5, 400, "#7A848F", "Secondary and captions"], ["12 / mono", 12, 400, "#FF7A5E", "$ npx caraka init"]]
+          .map(([k, sz, w, c, t], i) => R("div", { key: i, style: { display: "flex", gap: 20, alignItems: "baseline", flexWrap: "wrap" } },
+            R("span", { style: { fontFamily: mono, fontSize: 10, color: "#414950", width: 138, flexShrink: 0 } }, k),
+            R("span", { style: { fontSize: sz, fontWeight: w, color: c, letterSpacing: sz > 24 ? "-.025em" : "0", fontFamily: i === 4 ? mono : "'Public Sans', sans-serif", lineHeight: 1.2 } }, t))))),
+      R("div", { style: pad }, label("RADIUS · SPACING"),
+        row([4, 8, 11, 15, 100].map((r) => R("div", { key: r, style: { width: 62, height: 44, borderRadius: r, background: "#171C22", border: "1px solid #292E35", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: mono, fontSize: 10, color: "#7A848F" } }, r)))));
+
+    // ---- 02 buttons ----------------------------------------------------
+    const btn = (t, st) => R("span", { style: { display: "inline-flex", alignItems: "center", gap: 9, padding: "12px 20px", borderRadius: 10, fontFamily: mono, fontSize: 13, whiteSpace: "nowrap", ...st } }, t);
+    const buttons = R("div", null,
+      cell("PRIMARY", row([
+        btn("Approve", { background: "#E2452C", color: "#FFEDE7" }),
+        btn("Approve", { background: "#C02F17", color: "#FFEDE7" }),
+        btn("Approve", { background: "#952C1B", color: "#FFC9BC" }),
+        btn("Approve", { background: "#E2452C", color: "#FFEDE7", outline: "2px solid #FF7A5E", outlineOffset: 2 }),
+        btn("Approve", { background: "#292E35", color: "#5D666F", cursor: "not-allowed" }),
+        btn(R("span", { style: { display: "inline-flex", alignItems: "center", gap: 9 } },
+          R("span", { style: { width: 12, height: 12, borderRadius: "50%", border: "1.5px solid rgba(255,237,231,.35)", borderTopColor: "#FFEDE7", animation: "ck-spin .8s linear infinite" } }), "Working"),
+          { background: "#E2452C", color: "#FFEDE7" }),
+      ])),
+      cell("SECONDARY · GHOST · DANGER", row([
+        btn("Details", { border: "1px solid #292E35", color: "#B2BCC6" }),
+        btn("Details", { border: "1px solid #E2452C", color: "#FF7A5E" }),
+        btn("Details", { border: "1px solid #171C22", color: "#414950", cursor: "not-allowed" }),
+        btn("Cancel", { color: "#7A848F" }),
+        btn("Cancel", { color: "#FF7A5E", background: "#12100F" }),
+        btn("Reject", { border: "1px solid #FF93B2", color: "#FF93B2" }),
+      ])),
+      R("div", { style: pad }, label("STATE ORDER — default · hover · active · focus · disabled · loading"),
+        R("div", { style: { fontSize: 13.5, lineHeight: 1.65, color: "#7A848F" } }, "Focus is always a 2px outline offset by 2px, never a colour swap. A disabled control never changes on hover, so the cursor tells the truth before the click does.")));
+
+    // ---- 03 inputs -----------------------------------------------------
+    const field = (l, st, hint, hintColor) => R("div", { style: { flex: "1 1 230px", display: "flex", flexDirection: "column", gap: 7 } },
+      R("span", { style: { fontFamily: mono, fontSize: 10.5, color: "#7A848F" } }, l),
+      R("div", { style: { padding: "12px 14px", borderRadius: 9, background: "#05070A", border: "1px solid #292E35", fontFamily: mono, fontSize: 13, color: "#B2BCC6", ...st } }, st && st.__ph ? "" : "~/dev/toko-api"),
+      hint ? R("span", { style: { fontSize: 11.5, color: hintColor || "#5D666F" } }, hint) : null);
+    const inputs = R("div", null,
+      cell("TEXT FIELD", row([
+        field("default", null, "Absolute path to the repository"),
+        field("focus", { borderColor: "#E2452C", outline: "2px solid rgba(226,69,44,.28)" }, "Absolute path to the repository"),
+        field("error", { borderColor: "#FF93B2" }, "Not a git repository", "#FF93B2"),
+        field("disabled", { color: "#414950", background: "#0C1116", borderColor: "#171C22" }, "Locked while a run is active"),
+      ])),
+      R("div", { style: pad }, label("TOGGLE · SEGMENTED"),
+        row([
+          R("div", { style: { display: "flex", background: "#05070A", border: "1px solid #292E35", borderRadius: 9, overflow: "hidden", fontFamily: mono, fontSize: 12 } },
+            ["read-only", "assisted", "trusted"].map((t, i) => R("span", { key: t, style: { padding: "10px 15px", background: i === 1 ? "#E2452C" : "transparent", color: i === 1 ? "#FFEDE7" : i === 2 ? "#414950" : "#95A0AB" } }, t))),
+          R("span", { style: { display: "inline-flex", alignItems: "center", gap: 10, fontFamily: mono, fontSize: 12, color: "#95A0AB" } },
+            R("span", { style: { width: 38, height: 21, borderRadius: 11, background: "#E2452C", padding: 3, display: "flex", justifyContent: "flex-end" } },
+              R("span", { style: { width: 15, height: 15, borderRadius: "50%", background: "#FFEDE7" } })), "memory on"),
+          R("span", { style: { display: "inline-flex", alignItems: "center", gap: 10, fontFamily: mono, fontSize: 12, color: "#5D666F" } },
+            R("span", { style: { width: 38, height: 21, borderRadius: 11, background: "#292E35", padding: 3, display: "flex" } },
+              R("span", { style: { width: 15, height: 15, borderRadius: "50%", background: "#5D666F" } })), "heartbeat off"),
+        ])));
+
+    // ---- 04 status chips ----------------------------------------------
+    const S = [["running", "#6FB9F0", "▸"], ["awaiting", "#FFD67E", "⏸"], ["done", "#8EEE98", "✓"], ["failed", "#FF93B2", "✗"], ["cancelled", "#CB86DB", "⊘"], ["queued", "#7A848F", "≡"]];
+    const chips = R("div", null,
+      cell("STATUS — GLYPH IS MANDATORY, COLOUR IS REINFORCEMENT", row(S.map(([n, c, g]) =>
+        R("span", { key: n, style: { display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 14px", background: "#05070A", border: "1px solid #171C22", borderRadius: 8, fontFamily: mono, fontSize: 12, color: "#95A0AB" } },
+          R("span", { style: { color: c } }, g), n)))),
+      cell("SOLID · DOT · COUNT", row([
+        ...S.slice(0, 4).map(([n, c, g]) => R("span", { key: n, style: { display: "inline-flex", alignItems: "center", gap: 7, padding: "6px 12px", background: c, borderRadius: 100, fontFamily: mono, fontSize: 11.5, color: "#07090D", fontWeight: 500 } }, g, n)),
+        R("span", { style: { display: "inline-flex", alignItems: "center", gap: 8, fontFamily: mono, fontSize: 12, color: "#95A0AB" } },
+          R("span", { style: { position: "relative", width: 8, height: 8, borderRadius: "50%", background: "#8EEE98" } },
+            R("span", { style: { position: "absolute", inset: 0, borderRadius: "50%", background: "#8EEE98", animation: "ck-pulse 2.4s ease-out infinite" } })), "connected"),
+        R("span", { style: { padding: "4px 9px", background: "#2B1612", borderRadius: 100, fontFamily: mono, fontSize: 11, color: "#FF7A5E" } }, "3"),
+      ])),
+      R("div", { style: pad }, label("COLOUR-BLIND CHECK — deuteranopia"),
+        row(S.slice(0, 5).map(([n, , g], i) => R("span", { key: n, style: { display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 14px", background: "#05070A", border: "1px solid #171C22", borderRadius: 8, fontFamily: mono, fontSize: 12, color: "#95A0AB" } },
+          R("span", { style: { color: ["#918BE1", "#F1F49F", "#BAB2B7", "#DFE6AA", "#B5BAC6"][i] } }, g), n))),
+        R("div", { style: { marginTop: 12, fontSize: 13, lineHeight: 1.6, color: "#7A848F" } }, "done and cancelled collapse to ΔE 2,5 here. The glyph is what still separates them.")));
+
+    // ---- 05 session rows ----------------------------------------------
+    const sess = (g, c, name, id, ink, bg, bar) => R("div", { style: { position: "relative", display: "flex", alignItems: "center", gap: 13, padding: "14px 18px", borderBottom: "1px solid #171C22", background: bg, overflow: "hidden" } },
+      bar ? R("span", { style: { position: "absolute", left: 0, top: 0, bottom: 0, width: 2, background: c } }) : null,
+      R("span", { style: { width: 9, height: 9, borderRadius: "50%", background: c, flexShrink: 0 } }),
+      R("span", { style: { fontFamily: mono, fontSize: 12.5, color: c, flexShrink: 0 } }, g),
+      R("span", { style: { fontSize: 13.5, color: ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, name),
+      R("span", { style: { marginLeft: "auto", fontFamily: mono, fontSize: 11, color: "#5D666F", flexShrink: 0 } }, id));
+    const sessions = R("div", null,
+      sess("▸", "#6FB9F0", "toko-api · rate limit login", "#a91", "#F6F9FC", "#0C1116", true),
+      sess("⏸", "#FFD67E", "toko-api · dependency audit", "#a92", "#E9EDF2", "#12100F", true),
+      sess("≡", "#7A848F", "web · hero revision (queued #2)", "#a93", "#95A0AB", "#0C1116", false),
+      sess("✓", "#8EEE98", "toko-api · fix checkout 500", "#a88", "#7A848F", "#0C1116", false),
+      sess("✗", "#FF93B2", "api-gateway · prisma migrate", "#a84", "#7A848F", "#0C1116", false),
+      sess("⊘", "#CB86DB", "docs · restructure", "#a81", "#5D666F", "#0C1116", false),
+      R("div", { style: { ...pad, paddingTop: 18, paddingBottom: 18 } }, label("SKELETON — WHILE THE LIST LOADS"),
+        R("div", { style: { display: "flex", flexDirection: "column", gap: 11 } }, [0, 1, 2].map((i) =>
+          R("div", { key: i, style: { display: "flex", alignItems: "center", gap: 13 } },
+            R("span", { style: { width: 9, height: 9, borderRadius: "50%", background: "#292E35" } }),
+            R("span", { style: { height: 11, flex: 1, maxWidth: 130 + i * 70, borderRadius: 5, background: "linear-gradient(90deg,#171C22 0,#292E35 40%,#171C22 80%)", backgroundSize: "320px 100%", animation: "ck-shimmer 1.5s linear infinite", animationDelay: `${i * .15}s` } }))))));
+
+    // ---- 06 approval ---------------------------------------------------
+    const appr = (state) => {
+      const map = {
+        pending: { border: "#2B1612", bg: "#12100F", tone: "#FFD67E", tag: "⚠ NEEDS PERMISSION", foot: null },
+        approved: { border: "#171C22", bg: "#0C1116", tone: "#8EEE98", tag: "✓ APPROVED", foot: "approved by @rio · 14:22" },
+        denied: { border: "#171C22", bg: "#0C1116", tone: "#FF93B2", tag: "✗ REJECTED", foot: "rejected by @rio · 14:23" },
+        expired: { border: "#171C22", bg: "#0C1116", tone: "#5D666F", tag: "⊘ EXPIRED", foot: "no answer in 10 minutes" },
+      }[state];
+      const live = state === "pending";
+      return R("div", { style: { flex: "1 1 268px", padding: 22, background: map.bg, border: `1px solid ${map.border}`, borderRadius: 13, display: "flex", flexDirection: "column", gap: 13, opacity: state === "expired" ? .6 : 1 } },
+        R("span", { style: { fontFamily: mono, fontSize: 10, letterSpacing: ".16em", color: map.tone } }, map.tag),
+        R("div", { style: { display: "flex", flexDirection: "column", gap: 4 } },
+          R("span", { style: { fontSize: 14, fontWeight: 600, color: "#F6F9FC" } }, "Write file"),
+          R("span", { style: { fontFamily: mono, fontSize: 12, color: "#95A0AB" } }, "src/plugins/rate-limit.ts"),
+          R("span", { style: { fontFamily: mono, fontSize: 11, color: "#5D666F" } }, "new · 28 lines")),
+        live ? R("span", { style: { fontFamily: mono, fontSize: 10.5, color: "#5D666F" } }, "valid 10 min · code A7F3") : null,
+        live
+          ? R("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 } },
+              R("span", { style: { padding: "9px 15px", background: "#8EEE98", borderRadius: 8, fontFamily: mono, fontSize: 12, color: "#07090D" } }, "✅ Approve"),
+              R("span", { style: { padding: "9px 15px", border: "1px solid #292E35", borderRadius: 8, fontFamily: mono, fontSize: 12, color: "#B2BCC6" } }, "👁 View"),
+              R("span", { style: { padding: "9px 15px", border: "1px solid #FF93B2", borderRadius: 8, fontFamily: mono, fontSize: 12, color: "#FF93B2" } }, "❌ Reject"))
+          : R("span", { style: { fontFamily: mono, fontSize: 11, color: "#5D666F" } }, map.foot));
+    };
+    const approval = R("div", { style: pad }, label("APPROVAL CARD — pending · approved · rejected · expired"),
+      row([appr("pending"), appr("approved"), appr("denied"), appr("expired")], { alignItems: "stretch" }));
+
+    // ---- 07 alerts -----------------------------------------------------
+    const alert = (tone, bg, mark, title, body) => R("div", { style: { flex: "1 1 268px", display: "flex", gap: 12, padding: "16px 18px", background: bg, borderLeft: `2px solid ${tone}`, borderRadius: "0 10px 10px 0" } },
+      R("span", { style: { color: tone, fontFamily: mono, fontSize: 13, flexShrink: 0, paddingTop: 1 } }, mark),
+      R("div", null,
+        R("div", { style: { fontSize: 14, fontWeight: 600, color: "#F6F9FC", marginBottom: 4 } }, title),
+        R("div", { style: { fontSize: 13, lineHeight: 1.6, color: "#95A0AB" } }, body)));
+    const alerts = R("div", { style: pad }, label("ALERT · TOAST"),
+      row([
+        alert("#6FB9F0", "#0C1116", "i", "Linear mode", "Forum topics are unavailable here, so replies carry a [workspace · #id] header."),
+        alert("#8EEE98", "#0C1116", "✓", "18 tests passed", "2 files changed on branch feat/login-rate-limit."),
+        alert("#FFD67E", "#12100F", "!", "Weekly limit approaching", "Claude is near its ceiling. Consider /switch codex for routine work."),
+        alert("#FF93B2", "#0C1116", "✗", "Agent stopped", "Timeout after 30 minutes. Approved changes were kept."),
+      ], { alignItems: "stretch" }));
+
+    // ---- 08 empty ------------------------------------------------------
+    const empty = (glyph, title, body, cta) => R("div", { style: { flex: "1 1 268px", padding: "34px 24px", background: "#0C1116", border: "1px dashed #292E35", borderRadius: 13, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 11 } },
+      R("span", { style: { fontFamily: mono, fontSize: 22, color: "#414950" } }, glyph),
+      R("span", { style: { fontSize: 15, fontWeight: 600, color: "#B2BCC6" } }, title),
+      R("span", { style: { fontSize: 13, lineHeight: 1.6, color: "#5D666F", maxWidth: 240 } }, body),
+      R("span", { style: { marginTop: 4, padding: "9px 16px", border: "1px solid #292E35", borderRadius: 8, fontFamily: mono, fontSize: 12, color: "#FF7A5E" } }, cta));
+    const empties = R("div", { style: pad }, label("EMPTY STATES"),
+      row([
+        empty("○", "No sessions yet", "Send a task from the General topic and the first tab appears here.", "@workspace <task>"),
+        empty("≡", "No workspaces", "Point Caraka at a repository to get started.", "caraka ws add"),
+        empty("◇", "Memory is empty", "Nothing has been remembered for this project yet.", "/ingat <note>"),
+        empty("⌕", "No matches", "No session matches that filter.", "clear filter"),
+      ], { alignItems: "stretch" }));
+
+    // ---- 09 terminal ---------------------------------------------------
+    const term = R("div", { style: pad }, label("TERMINAL BLOCK"),
+      R("div", { style: { background: "#05070A", border: "1px solid #171C22", borderRadius: 11, padding: 20, fontFamily: mono, fontSize: 12.5, lineHeight: 1.95, color: "#7A848F", overflowX: "auto" } },
+        R("div", { style: { color: "#414950" } }, "$ caraka doctor"),
+        R("div", null, R("span", { style: { color: "#8EEE98" } }, "✔"), " claude 2.4.1 · acp"),
+        R("div", null, R("span", { style: { color: "#8EEE98" } }, "✔"), " titen 0.7.0 · 127.0.0.1:7717"),
+        R("div", null, R("span", { style: { color: "#FFD67E" } }, "!"), " forum topics unavailable · linear mode"),
+        R("div", null, R("span", { style: { color: "#FF93B2" } }, "✗"), " allowFrom is empty · gateway will not start"),
+        R("div", { style: { display: "flex", alignItems: "center", gap: 8 } }, R("span", { style: { color: "#FF7A5E" } }, "▸"), " run caraka doctor --fix",
+          R("span", { style: { width: 7, height: 13, background: "#FF7A5E", animation: "ck-blink 1.1s step-end infinite" } }))));
+
+    // ---- 10 loading ----------------------------------------------------
+    const loading = R("div", { style: pad }, label("LOADING"),
+      row([
+        R("div", { style: { flex: "1 1 200px", display: "flex", alignItems: "center", gap: 13 } },
+          R("span", { style: { width: 20, height: 20, borderRadius: "50%", border: "1.5px solid #292E35", borderTopColor: "#E2452C", animation: "ck-spin .8s linear infinite" } }),
+          R("span", { style: { fontFamily: mono, fontSize: 12, color: "#7A848F" } }, "spinner")),
+        R("div", { style: { flex: "1 1 200px", display: "flex", alignItems: "center", gap: 13 } },
+          R("span", { style: { position: "relative", width: 44, height: 22, display: "flex", alignItems: "center", justifyContent: "center" } },
+            R("span", { style: { position: "absolute", left: "50%", top: "50%", width: 21, height: 21, margin: "-10.5px 0 0 -21px", borderRadius: "50%", border: "1px solid #2B1612" } }),
+            R("span", { style: { position: "absolute", left: "50%", top: "50%", width: 21, height: 21, margin: "-10.5px 0 0 0", borderRadius: "50%", border: "1px solid #2B1612" } }),
+            R("span", { style: { position: "absolute", left: "50%", top: "50%", width: 21, height: 21, margin: "-10.5px 0 0 -21px", animation: "ck-spin 2.6s linear infinite" } },
+              R("span", { style: { position: "absolute", left: "100%", top: "50%", width: 5, height: 5, margin: "-2.5px 0 0 -2.5px", borderRadius: "50%", background: "#FF7A5E" } })),
+            R("span", { style: { position: "absolute", left: "50%", top: "50%", width: 21, height: 21, margin: "-10.5px 0 0 0", animation: "ck-spinRev 2.6s linear infinite" } },
+              R("span", { style: { position: "absolute", left: 0, top: "50%", width: 5, height: 5, margin: "-2.5px 0 0 -2.5px", borderRadius: "50%", background: "#FF7A5E" } }))),
+          R("span", { style: { fontFamily: mono, fontSize: 12, color: "#7A848F" } }, "brand loop")),
+        R("div", { style: { flex: "1 1 240px", display: "flex", flexDirection: "column", gap: 8 } },
+          R("span", { style: { fontFamily: mono, fontSize: 11, color: "#7A848F" } }, "determinate · 68%"),
+          R("span", { style: { height: 4, borderRadius: 3, background: "#171C22", overflow: "hidden" } },
+            R("span", { style: { display: "block", height: "100%", width: "68%", background: "linear-gradient(90deg,#E2452C,#FF7A5E)" } }))),
+      ]));
+
+    // ---- 11 modal ------------------------------------------------------
+    const modal = R("div", { style: { ...pad, background: "#070A0E" } }, label("DIALOG"),
+      R("div", { style: { position: "relative", padding: "30px 18px", background: "rgba(5,8,12,.6)", borderRadius: 12, display: "flex", justifyContent: "center" } },
+        R("div", { style: { width: "min(400px,100%)", background: "#0C1116", border: "1px solid #292E35", borderRadius: 14, padding: 26, display: "flex", flexDirection: "column", gap: 14, boxShadow: "0 30px 70px -20px rgba(0,0,0,.9)" } },
+          R("span", { style: { fontFamily: mono, fontSize: 10, letterSpacing: ".16em", color: "#FF93B2" } }, "⚠ HIGH RISK"),
+          R("span", { style: { fontSize: 17, fontWeight: 600, color: "#F6F9FC" } }, "Force-push to main?"),
+          R("span", { style: { fontSize: 14, lineHeight: 1.6, color: "#95A0AB" } }, "This rewrites history on a shared branch. Trusted mode does not skip this prompt."),
+          R("div", { style: { display: "flex", gap: 9, marginTop: 4 } },
+            R("span", { style: { padding: "10px 17px", border: "1px solid #292E35", borderRadius: 9, fontFamily: mono, fontSize: 12.5, color: "#B2BCC6" } }, "Cancel"),
+            R("span", { style: { padding: "10px 17px", background: "#FF93B2", borderRadius: 9, fontFamily: mono, fontSize: 12.5, color: "#07090D" } }, "Force-push")))));
+
+    // ---- 12 mark -------------------------------------------------------
+    const markAt = (size, ring) => R("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 8 } },
+      R("div", { style: { position: "relative", width: size * 2.06, height: size, display: "flex", alignItems: "center", justifyContent: "center" } },
+        R("span", { style: { position: "absolute", left: "50%", top: "50%", width: size, height: size, margin: `${-size / 2}px 0 0 ${-size}px`, borderRadius: "50%", border: `1px solid ${ring}` } }),
+        R("span", { style: { position: "absolute", left: "50%", top: "50%", width: size, height: size, margin: `${-size / 2}px 0 0 0`, borderRadius: "50%", border: `1px solid ${ring}` } }),
+        R("span", { style: { position: "relative", fontFamily: "'Noto Sans Javanese', serif", fontSize: size * .58, lineHeight: 1, display: "block", transform: "translateY(17.5%)", color: "#F6F9FC" } }, "ꦕ")),
+      R("span", { style: { fontFamily: mono, fontSize: 9.5, color: "#414950" } }, size + "px"));
+    const marks = R("div", null,
+      cell("MARK — RING GEOMETRY IS EXPLICIT PX, NEVER PERCENT", row([markAt(96, "#E2452C"), markAt(64, "#E2452C"), markAt(46, "#E2452C"), markAt(30, "#E2452C")], { gap: 26, alignItems: "flex-end" })),
+      R("div", { style: pad }, label("BELOW 48PX — RINGS DROP, SOLID TILE ONLY"),
+        row([32, 24, 16].map((s) => R("div", { key: s, style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 8 } },
+          R("span", { style: { width: s, height: s, borderRadius: s / 4, background: "#E2452C", display: "flex", alignItems: "center", justifyContent: "center" } },
+            R("span", { style: { fontFamily: "'Noto Sans Javanese', serif", fontSize: s * .6, lineHeight: 1, display: "block", transform: "translateY(17.5%)", color: "#FFEDE7" } }, "ꦕ")),
+          R("span", { style: { fontFamily: mono, fontSize: 9.5, color: "#414950" } }, s + "px"))), { gap: 22, alignItems: "flex-end" }),
+        R("div", { style: { marginTop: 14, fontSize: 13, lineHeight: 1.6, color: "#7A848F" } }, "Percentage margins resolve against the container width, never its height. Ring offsets are written in px so the pair sits on the centre line at every size.")));
+
+    const sec = [
+      { no: "01", id: "tokens", title: "Tokens", note: "Colour ramps, type scale, radius. Everything else on this page draws from here.", body: tokens },
+      { no: "02", id: "buttons", title: "Buttons", note: "Six states per variant. A control with no disabled state is not finished.", body: buttons },
+      { no: "03", id: "inputs", title: "Inputs", note: "Error text replaces the hint rather than stacking below it, so the field never grows on failure.", body: inputs },
+      { no: "04", id: "chips", title: "Status chips", note: "Colour never carries meaning alone. The deuteranopia row shows why.", body: chips },
+      { no: "05", id: "sessions", title: "Session rows", note: "The product's core component. Six states plus the skeleton it shows while loading.", body: sessions },
+      { no: "06", id: "approval", title: "Approval card", note: "The one component where a mistake costs real work. Every terminal state is drawn.", body: approval },
+      { no: "07", id: "alerts", title: "Alerts", note: "Each one names the thing that happened and the number attached to it.", body: alerts },
+      { no: "08", id: "empty", title: "Empty states", note: "An empty state is a first-run tutorial. It always carries the exact command to fix it.", body: empties },
+      { no: "09", id: "terminal", title: "Terminal", note: "Four severities in one block. Output is deterministic and safe to paste into an issue.", body: term },
+      { no: "10", id: "loading", title: "Loading", note: "Indeterminate spinners for unknown waits, a determinate bar when progress is known.", body: loading },
+      { no: "11", id: "dialog", title: "Dialog", note: "Reserved for actions that trusted mode still refuses to skip.", body: modal },
+      { no: "12", id: "mark", title: "Mark sizes", note: "Where the ∞ pair holds together, and where it stops.", body: marks },
+    ];
+
+    return {
+      jump,
+      sections: sec,
+      toc: [...sec.map((s) => ({ no: s.no, id: s.id, href: "#" + s.id, title: s.title })), { no: "13", id: "errors", href: "#errors", title: "Error pages" }],
+
+      errorPages: [
+        { route: "caraka.dev/404", code: "404", title: "This page was never sent", body: "The link is wrong, or the page moved. Nothing is broken on your side.", cta: "Go home", alt: "Read the docs", dot: "#7A848F", border: "#171C22", ring: "#414950", glyphInk: "#7A848F", codeInk: "#414950", glow: "rgba(122,132,143,.10)", ringAnimL: "", ringAnimR: "", hint: null },
+        { route: "caraka.dev/500", code: "500", title: "The gate did not open", body: "Something failed on our side. It has been logged, and nothing you did caused it.", cta: "Try again", alt: "Report it", dot: "#FF93B2", border: "#2B1612", ring: "#FF93B2", glyphInk: "#FF93B2", codeInk: "#FF93B2", glow: "rgba(255,147,178,.12)", ringAnimL: "", ringAnimR: "", hint: null },
+        { route: "gateway · offline", code: "503", title: "Gateway is not running", body: "Caraka is installed but the process is not up. Start it and the topic list comes back.", cta: "Retry", alt: "View logs", dot: "#FFD67E", border: "#171C22", ring: "#FFD67E", glyphInk: "#FFD67E", codeInk: "#FFD67E", glow: "rgba(255,214,126,.10)", ringAnimL: "animation: ck-spin 3.4s linear infinite;", ringAnimR: "animation: ck-spinRev 3.4s linear infinite;", hint: "caraka start" },
+        { route: "agent · not found", code: "424", title: "No coding agent installed", body: "Caraka has no agent of its own. Install one, authenticate, then run init again. Gemini CLI is free at 1,000 requests a day.", cta: "Install guide", alt: "Compare agents", dot: "#E2452C", border: "#2B1612", ring: "#E2452C", glyphInk: "#F6F9FC", codeInk: "#FF7A5E", glow: "rgba(226,69,44,.14)", ringAnimL: "", ringAnimR: "", hint: "npm i -g @google/gemini-cli" },
+      ],
+
+      rules: [
+        { n: "01", t: "Colour is never the only signal. Every status carries a glyph, because done and cancelled sit at ΔE 2,5 under deuteranopia." },
+        { n: "02", t: "Focus is a 2px outline offset by 2px. Never a colour swap, never a shadow, never removed." },
+        { n: "03", t: "Kesumba 500 is for marks and buttons. Text and links use kesumba 400, which reaches 7,83:1 on the void." },
+        { n: "04", t: "Every empty state carries the exact command that fills it. An empty screen with no next step is a dead end." },
+        { n: "05", t: "Errors name what happened and what to do. No stack traces, no apology, no blame." },
+        { n: "06", t: "Ring geometry is written in px. Percentage margins resolve against width, which puts the pair off-centre." },
+        { n: "07", t: "Disabled controls do not react to hover. The cursor should tell the truth before the click does." },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

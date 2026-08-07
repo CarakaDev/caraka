@@ -1,0 +1,36 @@
+name: Agent preset
+description: Add support for a coding agent on the CLI route
+labels: [preset]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is the highest-value, lowest-friction contribution: one YAML file in presets/agents/, no core code. If it needs core changes, the abstraction is wrong and that is worth saying in the issue.
+  - type: input
+    id: agent
+    attributes:
+      label: Agent name and homepage
+    validations:
+      required: true
+  - type: dropdown
+    id: route
+    attributes:
+      label: Which route
+      options: [ACP native, ACP via adapter, Headless CLI, MCP client only, Unsure]
+    validations:
+      required: true
+  - type: textarea
+    id: invoke
+    attributes:
+      label: How it is invoked headlessly
+      description: The exact command, including how a session is resumed and what the output format is.
+      render: shell
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Confirmed
+      options:
+        - label: The agent runs non-interactively and returns on completion
+        - label: I have tested the command myself

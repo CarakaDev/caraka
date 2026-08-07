@@ -1,0 +1,135 @@
+---
+// Ported from design/mockups/Caraka UI Kit.dc.html. Markup and inline styles are
+// transcribed as-is; see site/AGENTS.md for the substitutions that replace the
+// design-comp runtime.
+import Base from '../../layouts/Base.astro'
+import KitBody from '../../components/KitBody.astro'
+import '../../styles/pages/ui-kit.css'
+import { sections, toc, errorPages, rules } from '../../data/ui-kit'
+---
+
+<Base page="ui-kit">
+  <div style="width: 100%; background: #05080C; font-family: 'Public Sans', sans-serif; color: #E9EDF2; position: relative; overflow-x: hidden;">
+
+    <div style="position: fixed; left: 0; top: 0; right: 0; height: 2px; z-index: 110; background: #171C22;">
+      <div style="height: 100%; width: 100%; background: linear-gradient(90deg, #E2452C, #FF7A5E); transform-origin: left; transform: scaleX(var(--ck-sp, 0));"></div>
+    </div>
+
+    <header style="position: fixed; left: 0; right: 0; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px clamp(16px, 4vw, 34px); background: rgba(5,8,12,.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid #0C1116;">
+      <a href="/" style="display: flex; align-items: center; gap: 12px;">
+        <span style="position: relative; width: 44px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <span style="position: absolute; left: 50%; top: 50%; width: 21px; height: 21px; margin: -10.5px 0 0 -21px; border-radius: 50%; border: 1px solid #E2452C;"></span>
+          <span style="position: absolute; left: 50%; top: 50%; width: 21px; height: 21px; margin: -10.5px 0 0 0; border-radius: 50%; border: 1px solid #E2452C;"></span>
+          <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 12px; line-height: 1; display: block; transform: translateY(17.5%); color: #F6F9FC;">ꦕ</span>
+        </span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: .2em; color: #E9EDF2;">caraka</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .16em; color: #E2452C; padding: 3px 8px; border: 1px solid #2B1612; border-radius: 5px;">UI KIT</span>
+      </a>
+      <nav data-navlinks="1" style="display: flex; align-items: center; gap: clamp(14px, 2.4vw, 26px); font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+        <a href="/" class="hv-ink" style="color: #7A848F;">Home</a>
+        <a href="/docs" class="hv-ink" style="color: #7A848F;">Docs</a>
+        <a href="/compare" class="hv-ink" style="color: #7A848F;">Compare</a>
+        <a href="/install" class="hv-ink" style="color: #7A848F;">Install</a>
+      </nav>
+      <a href="https://github.com/CarakaDev/caraka" class="hv-ring-ink" style="padding: 9px 16px; border: 1px solid #292E35; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B2BCC6; transition: border-color .2s, color .2s; white-space: nowrap;">GitHub ↗</a>
+    </header>
+
+    <div style="display: flex; gap: clamp(28px, 4vw, 56px); width: min(1320px, 100%); margin: 0 auto; padding: clamp(96px, 14vh, 128px) clamp(20px, 4vw, 44px) clamp(70px, 12vh, 120px);">
+
+      <main id="main" style="flex: 1; min-width: 0;">
+        <div style="margin-bottom: clamp(40px, 6vh, 60px);">
+          <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .22em; color: #E2452C;">UI KIT v1.0</span>
+            <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent); transform-origin: left; animation: ck-drawX 1s cubic-bezier(.3,.7,.3,1) .2s both;"></span>
+          </div>
+          <h1 style="margin: 0 0 16px; font-size: clamp(30px, 5vw, 50px); font-weight: 700; letter-spacing: -.03em; line-height: 1.08; color: #F6F9FC; text-wrap: balance;">Every component, in every state it will actually reach.</h1>
+          <p style="margin: 0; max-width: 660px; font-size: clamp(15px, 1.8vw, 17px); line-height: 1.7; color: #95A0AB; text-wrap: pretty;">A component is only finished when its empty, loading, error, and disabled states are drawn. This page holds all of them, at the sizes and contrasts they will ship at.</p>
+        </div>
+
+        {sections.map((s) => (
+          <section id={s.id} style="margin-bottom: clamp(46px, 7vh, 76px); scroll-margin-top: 90px;">
+            <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 8px;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">{s.no}</span>
+              <h2 style="margin: 0; font-size: clamp(19px, 2.6vw, 26px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">{s.title}</h2>
+            </div>
+            <p style="margin: 0 0 22px; max-width: 660px; font-size: 14.5px; line-height: 1.65; color: #7A848F; text-wrap: pretty;">{s.note}</p>
+            <div style="border: 1px solid #171C22; border-radius: 15px; overflow: hidden;"><KitBody kind={s.body} /></div>
+          </section>
+        ))}
+
+        <section id="errors" style="margin-bottom: clamp(46px, 7vh, 76px); scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 8px;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">13</span>
+            <h2 style="margin: 0; font-size: clamp(19px, 2.6vw, 26px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Error pages</h2>
+          </div>
+          <p style="margin: 0 0 22px; max-width: 660px; font-size: 14.5px; line-height: 1.65; color: #7A848F; text-wrap: pretty;">Each one says what happened, what it means, and what to do next. None of them show a stack trace, and none of them apologise twice.</p>
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            {errorPages.map((e) => (
+              <div style={`position: relative; border: 1px solid ${e.border}; border-radius: 15px; overflow: hidden; background: #05070A;`}>
+                <div style="display: flex; align-items: center; gap: 9px; padding: 10px 16px; background: #0C1116; border-bottom: 1px solid #171C22; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #5D666F;">
+                  <span style={`width: 8px; height: 8px; border-radius: 50%; background: ${e.dot};`}></span>{e.route}
+                </div>
+                <div style="position: relative; padding: clamp(34px, 5vw, 56px) clamp(22px, 4vw, 44px); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; overflow: hidden;">
+                  <div aria-hidden="true" style={`position: absolute; left: 50%; top: 44%; width: 380px; height: 380px; margin: -190px 0 0 -190px; border-radius: 50%; background: radial-gradient(circle, ${e.glow}, transparent 62%); animation: ck-bloom 7s ease-in-out infinite; pointer-events: none;`}></div>
+                  <div style="position: relative; width: 96px; height: 48px; display: flex; align-items: center; justify-content: center;">
+                    <div style={`position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -46px; border-radius: 50%; border: 1px solid ${e.ring}; ${e.ringAnimL}`}></div>
+                    <div style={`position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 0; border-radius: 50%; border: 1px solid ${e.ring}; ${e.ringAnimR}`}></div>
+                    <span style={`position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 27px; line-height: 1; display: block; transform: translateY(17.5%); color: ${e.glyphInk};`}>ꦕ</span>
+                  </div>
+                  <span style={`position: relative; font-family: 'JetBrains Mono', monospace; font-size: clamp(34px, 6vw, 52px); font-weight: 700; letter-spacing: -.03em; color: ${e.codeInk}; line-height: 1;`}>{e.code}</span>
+                  <span style="position: relative; font-size: clamp(17px, 2.4vw, 22px); font-weight: 600; color: #F6F9FC; text-wrap: balance;">{e.title}</span>
+                  <p style="position: relative; margin: 0; max-width: 420px; font-size: 14.5px; line-height: 1.65; color: #95A0AB; text-wrap: pretty;">{e.body}</p>
+                  {e.hint && (
+                    <div style="position: relative; display: flex; align-items: center; gap: 11px; padding: 11px 16px; background: #0C1116; border: 1px solid #171C22; border-radius: 9px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B2BCC6;">
+                      <span style="color: #5D666F;">$</span>{e.hint}
+                    </div>
+                  )}
+                  <div style="position: relative; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 4px;">
+                    <span style="padding: 11px 20px; background: #E2452C; border-radius: 9px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #FFEDE7;">{e.cta}</span>
+                    <span style="padding: 11px 20px; border: 1px solid #292E35; border-radius: 9px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #B2BCC6;">{e.alt}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div style="padding: clamp(26px, 4vw, 38px); background: #12100F; border: 1px solid #2B1612; border-radius: 16px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .2em; color: #FF7A5E; margin-bottom: 16px;">RULES THIS KIT ENFORCES</div>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            {rules.map((r) => (
+              <div style="display: flex; gap: 12px;">
+                <span style="color: #7A848F; font-family: 'JetBrains Mono', monospace; font-size: 12px; flex-shrink: 0; padding-top: 2px;">{r.n}</span>
+                <span style="font-size: 14.5px; line-height: 1.65; color: #B2BCC6; text-wrap: pretty;">{r.t}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </main>
+
+      <aside data-toc="1" style="width: 190px; flex-shrink: 0;">
+        <div style="position: sticky; top: 104px; display: flex; flex-direction: column; gap: 2px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .2em; color: #414950; margin-bottom: 12px;">COMPONENTS</div>
+          {toc.map((t) => (
+            <a href={t.href} class="hv-ring-ink" style="display: flex; align-items: baseline; gap: 9px; padding: 6px 0 6px 12px; border-left: 1px solid #171C22; font-size: 12.5px; color: #7A848F; transition: color .2s, border-color .2s;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #414950;">{t.no}</span>
+              <span>{t.title}</span>
+            </a>
+          ))}
+        </div>
+      </aside>
+    </div>
+
+    <footer style="padding: clamp(44px, 7vh, 70px) clamp(20px, 5vw, 60px); border-top: 1px solid #0C1116;">
+      <div style="width: min(1320px, 100%); margin: 0 auto; display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #414950;">ꦕ caraka · UI Kit v1.0 · Agustus 2026</span>
+        <div style="display: flex; flex-wrap: wrap; gap: clamp(14px, 2.6vw, 28px); font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+          <a href="/" class="hv-ink" style="color: #7A848F;">Home</a>
+          <a href="/docs" class="hv-ink" style="color: #7A848F;">Docs</a>
+          <a href="/brand/warna" class="hv-ink" style="color: #7A848F;">Colour system</a>
+          <a href="/brand" class="hv-ink" style="color: #7A848F;">Logo book</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+</Base>

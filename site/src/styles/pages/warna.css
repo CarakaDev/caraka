@@ -1,0 +1,7 @@
+/* Verbatim from design/mockups/Caraka Sistem Warna.dc.html — the mockup is the source of truth.
+   Keyframe names collide across pages with different values, so each page owns its own set. */
+
+html, body { margin: 0; padding: 0; background: #05080C; }
+  * { box-sizing: border-box; }
+  a { color: #FF7A5E; text-decoration: none; }
+  a:hover { color: #F6F9FC; text-decoration: underline; }

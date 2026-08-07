@@ -1,0 +1,56 @@
+---
+import { PAGES, SITE, ogPath, type PageKey } from '../lib/site'
+import '../styles/global.css'
+
+interface Props {
+  page: PageKey
+}
+
+const { page } = Astro.props
+const meta = PAGES[page]
+const canonical = new URL(meta.path, SITE.url).href
+const ogImage = new URL(ogPath(page), SITE.url).href
+---
+
+<!doctype html>
+<html lang={meta.lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>{meta.title}</title>
+    <meta name="description" content={meta.description} />
+    <link rel="canonical" href={canonical} />
+
+    <meta property="og:type" content={page === 'landing' ? 'website' : 'article'} />
+    <meta property="og:site_name" content={SITE.name} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:title" content={meta.title} />
+    <meta property="og:description" content={meta.description} />
+    <meta property="og:locale" content={meta.lang === 'id' ? 'id_ID' : 'en_US'} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={meta.ogHeadline} />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={meta.title} />
+    <meta name="twitter:description" content={meta.description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content={SITE.void} />
+    <meta name="color-scheme" content="dark" />
+
+    <slot name="head" />
+  </head>
+
+  <body>
+    <a class="ck-skip" href="#main">Skip to content</a>
+    <slot />
+    <script src="../scripts/ck.js"></script>
+  </body>
+</html>

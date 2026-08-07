@@ -1,0 +1,50 @@
+/* Verbatim from design/mockups/Caraka Landing.dc.html — the mockup is the source of truth.
+   Keyframe names collide across pages with different values, so each page owns its own set. */
+
+html { scroll-behavior: smooth; background: #05080C; scrollbar-width: none; }
+  body { margin: 0; padding: 0; background: #05080C; overflow-x: hidden; }
+  * { box-sizing: border-box; }
+  a { color: #FF7A5E; text-decoration: none; }
+  a:hover { color: #F6F9FC; }
+  ::selection { background: #E2452C; color: #FFEDE7; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+
+  @keyframes ck-spin { to { transform: rotate(360deg); } }
+  @keyframes ck-spinRev { to { transform: rotate(-360deg); } }
+  @keyframes ck-bloom { 0%,100% { opacity: .28; } 50% { opacity: .78; } }
+  @keyframes ck-blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+  @keyframes ck-drift { to { background-position: 34px 34px, 34px 34px; } }
+  @keyframes ck-pulse { 0% { transform: scale(1); opacity: .55; } 100% { transform: scale(2.6); opacity: 0; } }
+  @keyframes ck-sweepX { 0% { transform: translateX(-100%); } 100% { transform: translateX(320%); } }
+  @keyframes ck-fill { 0% { transform: scaleX(0); } 70%,100% { transform: scaleX(1); } }
+  @keyframes ck-flick { 0%,100% { opacity: .18; } 12% { opacity: 1; } 30% { opacity: .3; } }
+  @keyframes ck-orbit { to { transform: rotate(360deg); } }
+  @keyframes ck-caret { 0%,100% { transform: translateY(0); } 33% { transform: translateY(26px); } 66% { transform: translateY(52px); } }
+
+  @keyframes ck-seed { 0% { transform: scale(0); opacity: 0; } 55% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes ck-ringIn { 0% { transform: scale(.15); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes ck-glyphIn { 0% { opacity: 0; transform: translate(-50%,-50%) scale(.65); filter: blur(7px); } 100% { opacity: 1; transform: translate(-50%,-50%) scale(1); filter: blur(0); } }
+  @keyframes ck-glyphOut { 0% { opacity: 1; transform: translate(-50%,-50%) scale(1); } 100% { opacity: 0; transform: translate(-50%,-50%) scale(1.5); filter: blur(9px); } }
+  @keyframes ck-seam { 0% { transform: scaleY(0); opacity: 0; } 35% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
+  @keyframes ck-partL { to { transform: translateX(-62vw) scale(1.4); opacity: 0; } }
+  @keyframes ck-partR { to { transform: translateX(62vw) scale(1.4); opacity: 0; } }
+  @keyframes ck-veil { 0%,74% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+  @keyframes ck-bootbar { 0% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
+
+  @keyframes ck-rise { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+  @keyframes ck-riseSm { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: none; } }
+  @keyframes ck-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes ck-slideL { from { opacity: 0; transform: translateX(-34px); } to { opacity: 1; transform: none; } }
+  @keyframes ck-slideR { from { opacity: 0; transform: translateX(34px); } to { opacity: 1; transform: none; } }
+  @keyframes ck-zoom { from { opacity: 0; transform: scale(.88); } to { opacity: 1; transform: scale(1); } }
+  @keyframes ck-drawY { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+  @keyframes ck-drawX { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes ck-para { from { transform: translateY(46px); } to { transform: translateY(-46px); } }
+  @keyframes ck-heroOut { to { opacity: 0; transform: translateY(-40px) scale(.96); } }
+
+  [data-rail] { display: flex; }
+  [data-navlinks] { display: flex; }
+  @media (max-width: 940px) { [data-rail] { display: none; } }
+  @media (min-width: 941px) { [data-topbar] { display: none; } }
+  @media (max-width: 620px) { [data-navlinks] { display: none; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; } }

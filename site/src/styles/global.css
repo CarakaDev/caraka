@@ -1,0 +1,135 @@
+/* Caraka — cross-page foundation.
+   Everything page-specific (keyframes, body background, breakpoints) lives in
+   src/styles/pages/*.css, copied verbatim from the mockups. Keep this file to
+   what is genuinely identical on every page: fonts and hover states. */
+
+/* --- Fonts -----------------------------------------------------------------
+   Self-hosted. The family names below match the mockups' inline styles exactly
+   ('Public Sans', 'JetBrains Mono', 'Noto Sans Javanese'), so ported markup can
+   be copied without rewriting a single font-family declaration.
+   Paths point into the fontsource packages; Vite fingerprints and emits them. */
+
+@font-face {
+  font-family: 'Public Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('../../node_modules/@fontsource-variable/public-sans/files/public-sans-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url('../../node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* The aksara. Only the Javanese subset is loaded — the Latin subset of this
+   family is never used, Public Sans and JetBrains Mono cover Latin. */
+@font-face {
+  font-family: 'Noto Sans Javanese';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('../../node_modules/@fontsource/noto-sans-javanese/files/noto-sans-javanese-javanese-400-normal.woff2') format('woff2');
+  unicode-range: U+00A0, U+200C-200D, U+25CC, U+A980-A9DF;
+}
+
+@font-face {
+  font-family: 'Noto Sans Javanese';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url('../../node_modules/@fontsource/noto-sans-javanese/files/noto-sans-javanese-javanese-500-normal.woff2') format('woff2');
+  unicode-range: U+00A0, U+200C-200D, U+25CC, U+A980-A9DF;
+}
+
+@font-face {
+  font-family: 'Noto Sans Javanese';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url('../../node_modules/@fontsource/noto-sans-javanese/files/noto-sans-javanese-javanese-700-normal.woff2') format('woff2');
+  unicode-range: U+00A0, U+200C-200D, U+25CC, U+A980-A9DF;
+}
+
+/* --- Scroll progress -------------------------------------------------------
+   The top bar and the right rail read --ck-sp, a 0..1 number, set from
+   src/scripts/ck.js.
+
+   A pure-CSS version was tried first: @property plus a scroll(root) timeline,
+   which would have kept script off the scroll path entirely. It does not
+   survive minification. The minifier folds
+
+     html { animation: ck-scroll-progress linear both; animation-timeline: scroll(root) }
+
+   into `animation: linear both ck-scroll-progress scroll(root)`, and a timeline
+   is not accepted in the `animation` shorthand, so the whole declaration is
+   invalid and dropped. The page then renders with an empty progress bar and
+   nothing reports an error. Inline styles are untouched by the minifier, which
+   is why the mockups' own view() animations are unaffected.
+
+   Fifteen lines of build-tool workaround, or five lines of scroll listener that
+   work in every engine. The listener wins. */
+
+/* Anchor targets sit under a fixed header on every page. */
+[id] { scroll-margin-top: 96px; }
+
+/* --- Hover states ----------------------------------------------------------
+   The mockups carry hover styling in a `style-hover` attribute, which only the
+   design-comp runtime understands. Inline styles cannot express :hover, so the
+   116 uses collapse to these 13 classes — one per distinct declaration.
+   Named for the element they dress, not the property they set. */
+
+.hv-ink:hover { color: #FF7A5E; }
+.hv-ring:hover { border-color: #E2452C; }
+.hv-ring-ink:hover { border-color: #E2452C; color: #FF7A5E; }
+.hv-ring-soft:hover { border-color: #2B1612; }
+.hv-ring-tint:hover { border-color: #E2452C; background: #12100F; }
+.hv-ring-soft-row:hover { border-color: #2B1612; background: #0E1216; }
+.hv-btn:hover { background: #C02F17; color: #FFEDE7; }
+.hv-row:hover { background: #0E1216; }
+.hv-tint:hover { background: #12100F; }
+.hv-card:hover { border-color: #2B1612; transform: translateY(-4px); }
+.hv-chip:hover { border-color: #E2452C; color: #FF7A5E; transform: translateY(-3px); }
+.hv-tick:hover { background: #FF7A5E; width: 22px; }
+.hv-reveal:hover { opacity: 1; color: #FF7A5E; }
+
+/* The rail label and its tick live in the same anchor, and the tick has to
+   react to the anchor being hovered, not itself. Focus is included: the label
+   sits at opacity 0 until revealed, so without this a keyboard user lands a
+   focus ring on a bare 13px tick with nothing to read. */
+a:hover > .hv-reveal,
+a:focus-visible > .hv-reveal { opacity: 1; color: #FF7A5E; }
+a:hover > .hv-tick,
+a:focus-visible > .hv-tick { background: #FF7A5E; width: 22px; }
+
+/* --- Focus -----------------------------------------------------------------
+   The mockups show no focus ring; without one the site is unusable by keyboard.
+   Added deliberately, in the brand accent, and only for keyboard focus. */
+:focus-visible {
+  outline: 2px solid #FF7A5E;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* --- Skip link -------------------------------------------------------------
+   Every page opens with a fixed header and, on the landing page, a 2.6s intro
+   veil. A keyboard user needs a way past both. */
+.ck-skip {
+  position: fixed;
+  left: 12px;
+  top: -100px;
+  z-index: 400;
+  padding: 10px 16px;
+  background: #E2452C;
+  color: #FFEDE7;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  border-radius: 8px;
+  transition: top 0.18s;
+}
+.ck-skip:focus { top: 12px; color: #FFEDE7; }

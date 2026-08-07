@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "caraka-site",
+  "compatibility_date": "2026-08-07",
+
+  // Static assets only — no Worker script. `account_id` is deliberately absent:
+  // this repo is public, so the account comes from CLOUDFLARE_ACCOUNT_ID in the
+  // environment (see .env.example) and never from a committed file.
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page",
+    // Must agree with astro.config.mjs `trailingSlash: 'never'`. The default,
+    // auto-trailing-slash, redirects /docs to /docs/ — which is the opposite of
+    // the canonical URL every page declares, so every internal link would cost
+    // a redirect and every canonical would disagree with the served URL.
+    "html_handling": "drop-trailing-slash"
+  },
+
+  // A zone route, not a custom domain. caraka.dev already carries proxied DNS
+  // records, and attaching a custom domain would require deleting them first.
+  // A route binds the Worker to the existing proxied hostname and touches no
+  // DNS at all.
+  "routes": [{ "pattern": "caraka.dev/*", "zone_name": "caraka.dev" }]
+}

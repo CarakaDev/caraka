@@ -1,0 +1,8 @@
+/* The 404 has no mockup of its own — design/mockups/Caraka UI Kit.dc.html
+   specifies it as one of four error pages. Reset and bloom match that page. */
+
+html, body { margin: 0; padding: 0; background: #05080C; }
+* { box-sizing: border-box; }
+a { color: #FF7A5E; text-decoration: none; }
+@keyframes ck-bloom { 0%,100% { opacity: .25; } 50% { opacity: .65; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; } }

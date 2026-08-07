@@ -1,0 +1,25 @@
+/* Verbatim from design/mockups/Caraka Install.dc.html — the mockup is the source of truth.
+   Keyframe names collide across pages with different values, so each page owns its own set. */
+
+html { scroll-behavior: smooth; background: #05080C; scrollbar-width: none; }
+  body { margin: 0; padding: 0; background: #05080C; overflow-x: hidden; }
+  * { box-sizing: border-box; }
+  a { color: #FF7A5E; text-decoration: none; }
+  a:hover { color: #F6F9FC; }
+  ::selection { background: #E2452C; color: #FFEDE7; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+  @keyframes ck-spin { to { transform: rotate(360deg); } }
+  @keyframes ck-spinRev { to { transform: rotate(-360deg); } }
+  @keyframes ck-blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+  @keyframes ck-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes ck-rise { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
+  @keyframes ck-riseSm { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  @keyframes ck-slideL { from { opacity: 0; transform: translateX(-26px); } to { opacity: 1; transform: none; } }
+  @keyframes ck-drawX { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes ck-drawY { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+  @keyframes ck-boot { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @keyframes ck-bloom { 0%,100% { opacity: .22; } 50% { opacity: .6; } }
+  [data-toc] { display: block; }
+  @media (max-width: 1080px) { [data-toc] { display: none; } }
+  @media (max-width: 620px) { [data-navlinks] { display: none; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; } }

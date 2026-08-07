@@ -1,0 +1,646 @@
+---
+// Ported from design/mockups/Caraka Brandkit.dc.html. Markup and inline styles are
+// transcribed as-is; see site/AGENTS.md for the substitutions that replace the
+// design-comp runtime.
+import Base from '../../layouts/Base.astro'
+import '../../styles/pages/brand.css'
+import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, semantic, donts } from '../../data/brand'
+---
+
+<Base page="brand">
+  <div style="width: 1200px; margin: 0 auto; background: #05070A; font-family: 'Public Sans', sans-serif; color: #E8F2FB;">
+
+    <main id="main">
+
+    <section style="padding: 90px 80px 80px; border-bottom: 1px solid rgba(111,185,240,0.10);">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 64px;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6;">CARAKA · LOGO BOOK</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; color: #3F5B72;">v1.0 · 7 AGUSTUS 2026</div>
+      </div>
+
+      <div style="position: relative; height: 460px; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 16px; overflow: hidden; display: flex; align-items: center; justify-content: center; background-image: linear-gradient(rgba(111,185,240,0.055) 1px, transparent 1px), linear-gradient(90deg, rgba(111,185,240,0.055) 1px, transparent 1px); background-size: 32px 32px; animation: ck-drift 14s linear infinite;">
+        <div aria-hidden="true" style={`position: absolute; left: 22px; top: 22px; width: 22px; height: 22px; border-top: 2px solid ${accent}; border-left: 2px solid ${accent};`}></div>
+        <div aria-hidden="true" style={`position: absolute; right: 22px; top: 22px; width: 22px; height: 22px; border-top: 2px solid ${accent}; border-right: 2px solid ${accent};`}></div>
+        <div aria-hidden="true" style={`position: absolute; left: 22px; bottom: 22px; width: 22px; height: 22px; border-bottom: 2px solid ${accent}; border-left: 2px solid ${accent};`}></div>
+        <div aria-hidden="true" style={`position: absolute; right: 22px; bottom: 22px; width: 22px; height: 22px; border-bottom: 2px solid ${accent}; border-right: 2px solid ${accent};`}></div>
+
+        <div style="position: relative; width: 320px; height: 320px; display: flex; align-items: center; justify-content: center;">
+          <div style={`position: absolute; inset: 0; border-radius: 50%; background: repeating-conic-gradient(from 0deg, ${glowSoft} 0deg 0.6deg, transparent 0.6deg 12deg); animation: ck-spin 40s linear infinite;`}></div>
+          <div style="position: absolute; inset: 9px; border-radius: 50%; background: #080B10;"></div>
+          <div style={`position: absolute; inset: 22px; border-radius: 50%; border: 1px solid transparent; border-top-color: ${accent}; border-right-color: ${glowSoft}; animation: ck-spin 6.5s linear infinite;`}></div>
+          <div style={`position: absolute; inset: 44px; border-radius: 50%; border: 1px solid transparent; border-bottom-color: ${glowSoft}; animation: ck-spin-rev 10s linear infinite;`}></div>
+          <div style="position: absolute; inset: 64px; border-radius: 50%; border: 1px dashed rgba(111,185,240,0.14); animation: ck-spin 26s linear infinite;"></div>
+          <div style={`position: absolute; left: 50%; top: 50%; width: 200px; height: 200px; margin: -100px 0 0 -100px; border-radius: 50%; background: ${glowSoft}; filter: blur(50px); animation: ck-bloom 6s ease-in-out infinite;`}></div>
+
+          <div style="position: relative; width: 212px; height: 106px; display: flex; align-items: center; justify-content: center;">
+            <div style="position: absolute; left: 50%; top: 50%; width: 102px; height: 102px; margin: -51px 0 0 -102px; border-radius: 50%; border: 1px solid rgba(111,185,240,0.14);"></div>
+            <div style="position: absolute; left: 50%; top: 50%; width: 102px; height: 102px; margin: -51px 0 0 0; border-radius: 50%; border: 1px solid rgba(111,185,240,0.14);"></div>
+            <div style={`position: absolute; left: 50%; top: 50%; width: 102px; height: 102px; margin: -51px 0 0 -102px; border-radius: 50%; border: 1px solid transparent; border-top-color: ${glowStrong}; border-right-color: ${glowSoft}; animation: ck-spin 3.8s linear infinite;`}></div>
+            <div style={`position: absolute; left: 50%; top: 50%; width: 102px; height: 102px; margin: -51px 0 0 0; border-radius: 50%; border: 1px solid transparent; border-top-color: ${glowStrong}; border-left-color: ${glowSoft}; animation: ck-spin-rev 3.8s linear infinite;`}></div>
+            <div style="position: absolute; left: 50%; top: 50%; width: 102px; height: 102px; margin: -51px 0 0 -102px; animation: ck-spin 3.8s linear infinite;"><div style={`position: absolute; left: 100%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: #F7FBFF; box-shadow: 0 0 14px 4px ${glowStrong};`}></div></div>
+            <div style="position: absolute; left: 50%; top: 50%; width: 102px; height: 102px; margin: -51px 0 0 0; animation: ck-spin-rev 3.8s linear infinite;"><div style={`position: absolute; left: 0; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: #F7FBFF; box-shadow: 0 0 14px 4px ${glowStrong};`}></div></div>
+            <span style={`position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 60px; line-height: 1; display: block; transform: translateY(17.5%); color: #F7FBFF; text-shadow: 0 0 34px ${glowStrong};`}>ꦕ</span>
+          </div>
+        </div>
+
+        <div style="position: absolute; left: 0; right: 0; bottom: 40px; display: flex; flex-direction: column; align-items: center; gap: 9px;">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 21px; font-weight: 500; letter-spacing: 0.36em; text-indent: 0.36em; color: #F2F8FF;">caraka</span>
+          <div style="display: flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.22em; color: #4E7EA6;">
+            <span aria-hidden="true" style="width: 5px; height: 5px; border-radius: 50%; background: #8EEE98; box-shadow: 0 0 8px 2px rgba(142,238,152,0.6);"></span>
+            <span>UTUSAN · TERHUBUNG</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 56px; margin-top: 56px;">
+        <div style="flex: 1;">
+          <h1 style="margin: 0 0 14px; font-size: 40px; font-weight: 700; letter-spacing: -0.025em; color: #F2F8FF;">Logo Book</h1>
+          <p style="margin: 0; font-size: 15.5px; line-height: 1.65; color: #8FAAC2; text-wrap: pretty;">Panduan lengkap identitas visual Caraka: filosofi, anatomi lambang, versi animasi dan statis, favicon, aturan ruang, penempatan, dan batasan pemakaian.</p>
+        </div>
+        <div style="width: 300px; display: flex; flex-direction: column; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #6E93B2;">
+          <div style="display: flex; justify-content: space-between;"><span style="color:#3F5B72;">nama</span><span>Caraka · ꦕꦫꦏ</span></div>
+          <div style="display: flex; justify-content: space-between;"><span style="color:#3F5B72;">arti</span><span>utusan</span></div>
+          <div style="display: flex; justify-content: space-between;"><span style="color:#3F5B72;">domain</span><span>caraka.dev</span></div>
+          <div style="display: flex; justify-content: space-between;"><span style="color:#3F5B72;">lisensi</span><span>MIT</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding: 80px; border-bottom: 1px solid rgba(111,185,240,0.10);">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 32px;">01 · FILOSOFI</div>
+      <div style="display: flex; gap: 64px;">
+        <div style="width: 420px; flex-shrink: 0;">
+          <div style="background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 40px 36px; display: flex; flex-direction: column; gap: 20px;">
+            <div style="display: flex; align-items: baseline; gap: 18px;"><span style="font-family: 'Noto Sans Javanese', serif; font-size: 34px; line-height: 1.5; color: #F2F8FF;">ꦲꦤꦕꦫꦏ</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4E7EA6;">hana caraka</span></div>
+            <div style="display: flex; align-items: baseline; gap: 18px;"><span style="font-family: 'Noto Sans Javanese', serif; font-size: 34px; line-height: 1.5; color: #8FAAC2;">ꦢꦠꦱꦮꦭ</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4E7EA6;">data sawala</span></div>
+            <div style="display: flex; align-items: baseline; gap: 18px;"><span style="font-family: 'Noto Sans Javanese', serif; font-size: 34px; line-height: 1.5; color: #8FAAC2;">ꦥꦝꦗꦪꦚ</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4E7EA6;">padha jayanya</span></div>
+            <div style="display: flex; align-items: baseline; gap: 18px;"><span style="font-family: 'Noto Sans Javanese', serif; font-size: 34px; line-height: 1.5; color: #6E93B2;">ꦩꦒꦧꦛꦔ</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4E7EA6;">maga bathanga</span></div>
+          </div>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+          <h2 style="margin: 0; font-size: 27px; font-weight: 700; letter-spacing: -0.02em; color: #F2F8FF; text-wrap: pretty;">Kesetiaan tanpa konteks itu berbahaya</h2>
+          <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #8FAAC2; text-wrap: pretty;"><strong style="color:#C9DFF2;font-weight:600;">Caraka</strong> berarti utusan. Ia juga kata pertama aksara Jawa — dari legenda dua abdi Aji Saka, Dora dan Sembada.</p>
+          <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #8FAAC2; text-wrap: pretty;">Sembada diberi pusaka untuk dijaga, dengan pesan: jangan serahkan kepada siapa pun kecuali aku sendiri. Belakangan Dora dikirim mengambilnya, membawa pesan: ambil dan bawa kembali.</p>
+          <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #8FAAC2; text-wrap: pretty;">Keduanya patuh dengan sempurna. Keduanya benar menurut instruksi yang mereka pegang. Keduanya sama kuat. Keduanya mati — bukan karena pengkhianatan, melainkan karena dua perintah yang bertabrakan, tanpa cara memverifikasi, tanpa manusia di antaranya pada saat yang menentukan.</p>
+          <div style="height: 1px; background: rgba(111,185,240,0.12); margin: 4px 0;"></div>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; gap: 16px;"><span style={`font-family: 'JetBrains Mono', monospace; font-size: 11px; color: ${accent}; width: 132px; flex-shrink: 0; padding-top: 2px;`}>data sawala</span><span style="font-size: 14px; line-height: 1.6; color: #9FC4E0;">memori berprovenance — setiap keputusan menyebut buktinya</span></div>
+            <div style="display: flex; gap: 16px;"><span style={`font-family: 'JetBrains Mono', monospace; font-size: 11px; color: ${accent}; width: 132px; flex-shrink: 0; padding-top: 2px;`}>tak ada yang bertanya</span><span style="font-size: 14px; line-height: 1.6; color: #9FC4E0;">approval lewat ketukan, bukan teks yang bisa dipalsukan</span></div>
+            <div style="display: flex; gap: 16px;"><span style={`font-family: 'JetBrains Mono', monospace; font-size: 11px; color: ${accent}; width: 132px; flex-shrink: 0; padding-top: 2px;`}>maga bathanga</span><span style="font-size: 14px; line-height: 1.6; color: #9FC4E0;">audit append-only — kerja tidak berakhir sia-sia tanpa jejak</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding: 80px; border-bottom: 1px solid rgba(111,185,240,0.10);">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 12px;">02 · ANATOMI LAMBANG</div>
+      <p style="margin: 0 0 40px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 680px; text-wrap: pretty;">Lambang dibangun dari satu unit: diameter lingkaran <strong style="color:#C9DFF2;font-weight:600;">d</strong>. Dua lingkaran identik bersinggungan di titik pusat komposisi, membentuk ∞. Aksara ꦕ diletakkan di persilangan itu.</p>
+
+      <div style="display: flex; gap: 24px;">
+        <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 40px; display: flex; align-items: center; justify-content: center;">
+          <div style="position: relative; width: 300px; height: 200px;">
+            <div style="position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(111,185,240,0.22);"></div>
+            <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(111,185,240,0.22);"></div>
+            <div style={`position: absolute; left: 50%; top: 50%; width: 102px; height: 102px; margin: -51px 0 0 -102px; border-radius: 50%; border: 1px solid ${accent};`}></div>
+            <div style={`position: absolute; left: 50%; top: 50%; width: 102px; height: 102px; margin: -51px 0 0 0; border-radius: 50%; border: 1px solid ${accent};`}></div>
+            <div style="position: absolute; left: 50%; top: 50%; width: 102px; height: 1px; margin: -51px 0 0 -102px; background: rgba(255,255,255,0.30);"></div>
+            <div style="position: absolute; left: 50%; top: 50%; margin: -66px 0 0 -66px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8FAAC2;">d</div>
+            <div style="position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: #F7FBFF;"></div>
+            <span aria-hidden="true" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-family: 'Noto Sans Javanese', serif; font-size: 60px; line-height: 1; color: rgba(247,251,255,0.16);">ꦕ</span>
+          </div>
+        </div>
+
+        <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 40px; display: flex; align-items: center; justify-content: center;">
+          <div style="position: relative; width: 300px; height: 200px;">
+            <div style="position: absolute; left: 50%; top: 50%; width: 102px; height: 102px; margin: -51px 0 0 -102px; border-radius: 50%; border: 1px solid rgba(111,185,240,0.20);"></div>
+            <div style="position: absolute; left: 50%; top: 50%; width: 102px; height: 102px; margin: -51px 0 0 0; border-radius: 50%; border: 1px solid rgba(111,185,240,0.20);"></div>
+            <div style="position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(200,90,90,0.55);"></div>
+            <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center;">
+              <span style="font-family: 'Noto Sans Javanese', serif; font-size: 60px; line-height: 1; display: block; transform: translateY(17.5%); color: #F7FBFF;">ꦕ</span>
+            </div>
+            <div style="position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #6E93B2; white-space: nowrap;">koreksi optis · translateY(17.5%) · terukur</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 24px; margin-top: 24px;">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; color: #4E7EA6;">KONSTRUKSI</div>
+          <p style="margin: 0; font-size: 13.5px; line-height: 1.65; color: #8FAAC2; text-wrap: pretty;">Jarak antar pusat lingkaran = <strong style="color:#C9DFF2;font-weight:600;">d</strong>. Lebar total = 2d. Tinggi = d. Aksara diset pada 0,59d dan berdiri di titik singgung.</p>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; color: #4E7EA6;">PERATAAN</div>
+          <p style="margin: 0; font-size: 13.5px; line-height: 1.65; color: #8FAAC2; text-wrap: pretty;">Font aksara Jawa menyediakan ruang sandhangan di atas dan pasangan di bawah. ꦕ tidak memakai keduanya, jadi wajib <code style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#C9DFF2;">line-height:1</code> + <code style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#C9DFF2;">translateY(17.5%)</code>.</p>
+          <p style="margin: 0; font-size: 12.5px; line-height: 1.6; color: #6E93B2; text-wrap: pretty;">Angka ini <strong style="color:#9FC4E0;font-weight:600;">terukur, bukan dikira</strong>. Pada 100px: tinta membentang 55px di atas garis dasar dan 0px di bawahnya, sedangkan kotak font membentang 112/92. Pusat tinta jatuh 17,5px di atas pusat kotak — persis nilai koreksinya.</p>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding: 80px; border-bottom: 1px solid rgba(111,185,240,0.10);">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 12px;">03 · LOGO ANIMASI</div>
+      <p style="margin: 0 0 40px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 680px; text-wrap: pretty;">Versi hidup dipakai di hero situs, splash <code style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#C9DFF2;">caraka init</code>, dan video. <strong style="color:#C9DFF2;font-weight:600;">Tidak pernah</strong> di favicon, avatar, atau badge.</p>
+
+      <div style="display: flex; gap: 24px;">
+        <div style="width: 480px; flex-shrink: 0; position: relative; height: 400px; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; overflow: hidden; display: flex; align-items: center; justify-content: center; background-image: linear-gradient(rgba(111,185,240,0.055) 1px, transparent 1px), linear-gradient(90deg, rgba(111,185,240,0.055) 1px, transparent 1px); background-size: 32px 32px; animation: ck-drift 14s linear infinite;">
+          <div aria-hidden="true" style={`position: absolute; left: 18px; top: 18px; width: 20px; height: 20px; border-top: 2px solid ${accent}; border-left: 2px solid ${accent};`}></div>
+          <div aria-hidden="true" style={`position: absolute; right: 18px; top: 18px; width: 20px; height: 20px; border-top: 2px solid ${accent}; border-right: 2px solid ${accent};`}></div>
+          <div aria-hidden="true" style={`position: absolute; left: 18px; bottom: 18px; width: 20px; height: 20px; border-bottom: 2px solid ${accent}; border-left: 2px solid ${accent};`}></div>
+          <div aria-hidden="true" style={`position: absolute; right: 18px; bottom: 18px; width: 20px; height: 20px; border-bottom: 2px solid ${accent}; border-right: 2px solid ${accent};`}></div>
+          <div style="position: relative; width: 280px; height: 280px; display: flex; align-items: center; justify-content: center;">
+            <div style={`position: absolute; inset: 0; border-radius: 50%; background: repeating-conic-gradient(from 0deg, ${glowSoft} 0deg 0.6deg, transparent 0.6deg 12deg); animation: ck-spin 40s linear infinite;`}></div>
+            <div style="position: absolute; inset: 9px; border-radius: 50%; background: #080B10;"></div>
+            <div style={`position: absolute; inset: 20px; border-radius: 50%; border: 1px solid transparent; border-top-color: ${accent}; border-right-color: ${glowSoft}; animation: ck-spin 6.5s linear infinite;`}></div>
+            <div style={`position: absolute; inset: 40px; border-radius: 50%; border: 1px solid transparent; border-bottom-color: ${glowSoft}; animation: ck-spin-rev 10s linear infinite;`}></div>
+            <div style="position: absolute; inset: 58px; border-radius: 50%; border: 1px dashed rgba(111,185,240,0.14); animation: ck-spin 26s linear infinite;"></div>
+            <div style={`position: absolute; left: 50%; top: 50%; width: 180px; height: 180px; margin: -90px 0 0 -90px; border-radius: 50%; background: ${glowSoft}; filter: blur(46px); animation: ck-bloom 6s ease-in-out infinite;`}></div>
+            <div style="position: relative; width: 190px; height: 95px; display: flex; align-items: center; justify-content: center;">
+              <div style="position: absolute; left: 50%; top: 50%; width: 92px; height: 92px; margin: -46px 0 0 -92px; border-radius: 50%; border: 1px solid rgba(111,185,240,0.14);"></div>
+              <div style="position: absolute; left: 50%; top: 50%; width: 92px; height: 92px; margin: -46px 0 0 0; border-radius: 50%; border: 1px solid rgba(111,185,240,0.14);"></div>
+              <div style={`position: absolute; left: 50%; top: 50%; width: 92px; height: 92px; margin: -46px 0 0 -92px; border-radius: 50%; border: 1px solid transparent; border-top-color: ${glowStrong}; border-right-color: ${glowSoft}; animation: ck-spin 3.8s linear infinite;`}></div>
+              <div style={`position: absolute; left: 50%; top: 50%; width: 92px; height: 92px; margin: -46px 0 0 0; border-radius: 50%; border: 1px solid transparent; border-top-color: ${glowStrong}; border-left-color: ${glowSoft}; animation: ck-spin-rev 3.8s linear infinite;`}></div>
+              <div style="position: absolute; left: 50%; top: 50%; width: 92px; height: 92px; margin: -46px 0 0 -92px; animation: ck-spin 3.8s linear infinite;"><div style={`position: absolute; left: 100%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: #F7FBFF; box-shadow: 0 0 14px 4px ${glowStrong};`}></div></div>
+              <div style="position: absolute; left: 50%; top: 50%; width: 92px; height: 92px; margin: -46px 0 0 0; animation: ck-spin-rev 3.8s linear infinite;"><div style={`position: absolute; left: 0; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: #F7FBFF; box-shadow: 0 0 14px 4px ${glowStrong};`}></div></div>
+              <span style={`position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 54px; line-height: 1; display: block; transform: translateY(17.5%); color: #F7FBFF; text-shadow: 0 0 34px ${glowStrong};`}>ꦕ</span>
+            </div>
+          </div>
+          <div style="position: absolute; left: 0; right: 0; bottom: 30px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 500; letter-spacing: 0.36em; text-indent: 0.36em; color: #F2F8FF;">caraka</span>
+            <div style="display: flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.22em; color: #4E7EA6;">
+              <span aria-hidden="true" style="width: 5px; height: 5px; border-radius: 50%; background: #8EEE98; box-shadow: 0 0 8px 2px rgba(142,238,152,0.6);"></span>
+              <span>UTUSAN · TERHUBUNG</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 14px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; color: #4E7EA6;">SPESIFIKASI GERAK</div>
+          <div style="display: flex; flex-direction: column; gap: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+            <div style="display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid rgba(111,185,240,0.10);"><span style="color:#6E93B2;">piringan tik</span><span style="color:#C9DFF2;">40s · linear · searah</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid rgba(111,185,240,0.10);"><span style="color:#6E93B2;">busur luar</span><span style="color:#C9DFF2;">6,5s · linear · searah</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid rgba(111,185,240,0.10);"><span style="color:#6E93B2;">busur tengah</span><span style="color:#C9DFF2;">10s · linear · berlawanan</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid rgba(111,185,240,0.10);"><span style="color:#6E93B2;">busur putus</span><span style="color:#C9DFF2;">26s · linear · searah</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid rgba(111,185,240,0.10);"><span style="color:#6E93B2;">utusan ∞</span><span style="color:#C9DFF2;">3,8s · linear · berpasangan</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid rgba(111,185,240,0.10);"><span style="color:#6E93B2;">cahaya mekar</span><span style="color:#C9DFF2;">6s · ease-in-out · 0,35→0,75</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid rgba(111,185,240,0.10);"><span style="color:#6E93B2;">kisi latar</span><span style="color:#C9DFF2;">14s · linear · 32px</span></div>
+          </div>
+          <div style={`margin-top: 8px; padding: 16px 18px; background: rgba(111,185,240,0.05); border-left: 2px solid ${accent};`}>
+            <p style="margin: 0; font-size: 13px; line-height: 1.65; color: #9FC4E0; text-wrap: pretty;">Semua durasi <strong style="color:#C9DFF2;font-weight:600;">tidak kelipatan satu sama lain</strong> — supaya komposisi tidak pernah mengulang pola yang sama persis. Kesan yang dikejar: sesuatu yang sedang bekerja, bukan sedang berputar.</p>
+          </div>
+          <div style="padding: 16px 18px; background: rgba(255,214,126,0.06); border-left: 2px solid #FFD67E;">
+            <p style="margin: 0; font-size: 13px; line-height: 1.65; color: #E6D3A8; text-wrap: pretty;">Wajib menghormati <code style="font-family:'JetBrains Mono',monospace;font-size:12px;">prefers-reduced-motion</code>. Saat aktif, seluruh gerak berhenti dan komposisi jatuh ke lambang statis.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding: 80px; border-bottom: 1px solid rgba(111,185,240,0.10);">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 12px;">04 · LOGO STATIS &amp; LOCKUP</div>
+      <p style="margin: 0 0 40px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 680px; text-wrap: pretty;">Tanpa gerak dan cahaya, lambang menyusut ke bentuk intinya: dua lingkaran bersinggungan dengan ꦕ di persilangan. Ini yang dipakai di 95% tempat.</p>
+
+      <div style="display: flex; gap: 24px; margin-bottom: 24px;">
+        <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 44px; display: flex; flex-direction: column; align-items: center; gap: 20px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; align-self: flex-start;">MARK</div>
+          <div style="position: relative; width: 190px; height: 95px; display: flex; align-items: center; justify-content: center; margin: 20px 0;">
+            <div style={`position: absolute; left: 50%; top: 50%; width: 92px; height: 92px; margin: -46px 0 0 -92px; border-radius: 50%; border: 1.5px solid ${accent};`}></div>
+            <div style={`position: absolute; left: 50%; top: 50%; width: 92px; height: 92px; margin: -46px 0 0 0; border-radius: 50%; border: 1.5px solid ${accent};`}></div>
+            <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 52px; line-height: 1; display: block; transform: translateY(17.5%); color: #F2F8FF;">ꦕ</span>
+          </div>
+        </div>
+
+        <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 44px; display: flex; flex-direction: column; align-items: center; gap: 20px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; align-self: flex-start;">LOCKUP MENDATAR</div>
+          <div style="display: flex; align-items: center; gap: 22px; margin: 30px 0;">
+            <div style="position: relative; width: 118px; height: 59px; display: flex; align-items: center; justify-content: center;">
+              <div style={`position: absolute; left: 50%; top: 50%; width: 57px; height: 57px; margin: -28.5px 0 0 -57px; border-radius: 50%; border: 1.5px solid ${accent};`}></div>
+              <div style={`position: absolute; left: 50%; top: 50%; width: 57px; height: 57px; margin: -28.5px 0 0 0; border-radius: 50%; border: 1.5px solid ${accent};`}></div>
+              <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 32px; line-height: 1; display: block; transform: translateY(17.5%); color: #F2F8FF;">ꦕ</span>
+            </div>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 500; letter-spacing: 0.2em; color: #F2F8FF;">caraka</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 24px;">
+        <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 44px; display: flex; flex-direction: column; align-items: center; gap: 20px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; align-self: flex-start;">LOCKUP BERTUMPUK</div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 18px; margin: 20px 0;">
+            <div style="position: relative; width: 130px; height: 65px; display: flex; align-items: center; justify-content: center;">
+              <div style={`position: absolute; left: 50%; top: 50%; width: 63px; height: 63px; margin: -31.5px 0 0 -63px; border-radius: 50%; border: 1.5px solid ${accent};`}></div>
+              <div style={`position: absolute; left: 50%; top: 50%; width: 63px; height: 63px; margin: -31.5px 0 0 0; border-radius: 50%; border: 1.5px solid ${accent};`}></div>
+              <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 36px; line-height: 1; display: block; transform: translateY(17.5%); color: #F2F8FF;">ꦕ</span>
+            </div>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 500; letter-spacing: 0.34em; text-indent: 0.34em; color: #F2F8FF;">caraka</span>
+          </div>
+        </div>
+
+        <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 44px; display: flex; flex-direction: column; align-items: center; gap: 20px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; align-self: flex-start;">WORDMARK PENUH</div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 14px; margin: 26px 0;">
+            <span style="font-family: 'Noto Sans Javanese', serif; font-size: 46px; line-height: 1; display: block; transform: translateY(17.5%); color: #F2F8FF;">ꦕꦫꦏ</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; letter-spacing: 0.36em; text-indent: 0.36em; color: #8FAAC2;">caraka</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding: 80px; border-bottom: 1px solid rgba(111,185,240,0.10);">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 12px;">05 · INVERT &amp; MONOKROM</div>
+      <p style="margin: 0 0 40px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 680px; text-wrap: pretty;">Empat varian resmi. Urutan prioritas: aksen di gelap → aksen di terang → monokrom terang → monokrom gelap.</p>
+
+      <div style="display: flex; gap: 20px;">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
+          <div style="height: 190px; background: #07090D; border: 1px solid rgba(111,185,240,0.14); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+            <div style="position: relative; width: 128px; height: 64px; display: flex; align-items: center; justify-content: center;">
+              <div style={`position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 -62px; border-radius: 50%; border: 1.5px solid ${accent};`}></div>
+              <div style={`position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 0; border-radius: 50%; border: 1.5px solid ${accent};`}></div>
+              <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 35px; line-height: 1; display: block; transform: translateY(17.5%); color: #F2F8FF;">ꦕ</span>
+            </div>
+          </div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #6E93B2;">utama · gelap</div>
+        </div>
+
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
+          <div style="height: 190px; background: #F5F3EF; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+            <div style="position: relative; width: 128px; height: 64px; display: flex; align-items: center; justify-content: center;">
+              <div style={`position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 -62px; border-radius: 50%; border: 1.5px solid ${accentInk};`}></div>
+              <div style={`position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 0; border-radius: 50%; border: 1.5px solid ${accentInk};`}></div>
+              <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 35px; line-height: 1; display: block; transform: translateY(17.5%); color: #07090D;">ꦕ</span>
+            </div>
+          </div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #6E93B2;">invert · terang</div>
+        </div>
+
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
+          <div style="height: 190px; background: #07090D; border: 1px solid rgba(255,255,255,0.10); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+            <div style="position: relative; width: 128px; height: 64px; display: flex; align-items: center; justify-content: center;">
+              <div style="position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 -62px; border-radius: 50%; border: 1.5px solid #F2F8FF;"></div>
+              <div style="position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 0; border-radius: 50%; border: 1.5px solid #F2F8FF;"></div>
+              <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 35px; line-height: 1; display: block; transform: translateY(17.5%); color: #F2F8FF;">ꦕ</span>
+            </div>
+          </div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #6E93B2;">monokrom terang</div>
+        </div>
+
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
+          <div style="height: 190px; background: #F5F3EF; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+            <div style="position: relative; width: 128px; height: 64px; display: flex; align-items: center; justify-content: center;">
+              <div style="position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 -62px; border-radius: 50%; border: 1.5px solid #07090D;"></div>
+              <div style="position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 0; border-radius: 50%; border: 1.5px solid #07090D;"></div>
+              <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 35px; line-height: 1; display: block; transform: translateY(17.5%); color: #07090D;">ꦕ</span>
+            </div>
+          </div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #6E93B2;">monokrom gelap</div>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding: 80px; border-bottom: 1px solid rgba(111,185,240,0.10);">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 12px;">06 · FAVICON &amp; APP ICON</div>
+      <p style="margin: 0 0 40px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 680px; text-wrap: pretty;">Di bawah 48px, dua lingkaran hilang dan hanya <strong style="color:#C9DFF2;font-weight:600;">ꦕ</strong> yang tersisa di kotak padat. Itu keputusan, bukan kompromi — lambang besar boleh rumit selama versi kecilnya satu bentuk tegas.</p>
+
+      <div style="display: flex; gap: 24px;">
+        <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 40px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; margin-bottom: 32px;">DENGAN CINCIN · ≥ 64PX</div>
+          <div style="position: relative; display: flex; align-items: flex-end; gap: 26px;">
+            <div style="position: absolute; left: 0; right: 0; bottom: 22px; height: 1px; background: rgba(111,185,240,0.12);"></div>
+            <div style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+              <div style="width: 128px; height: 128px; border-radius: 28px; background: #07090D; border: 1px solid rgba(111,185,240,0.18); display: flex; align-items: center; justify-content: center;">
+                <div style="position: relative; width: 88px; height: 44px; display: flex; align-items: center; justify-content: center;">
+                  <div style={`position: absolute; left: 50%; top: 50%; width: 43px; height: 43px; margin: -21.5px 0 0 -43px; border-radius: 50%; border: 1.5px solid ${accent};`}></div>
+                  <div style={`position: absolute; left: 50%; top: 50%; width: 43px; height: 43px; margin: -21.5px 0 0 0; border-radius: 50%; border: 1.5px solid ${accent};`}></div>
+                  <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 25px; line-height: 1; display: block; transform: translateY(17.5%); color: #F2F8FF;">ꦕ</span>
+                </div>
+              </div>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #4E7EA6;">512 · 180</span>
+            </div>
+            <div style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+              <div style="width: 64px; height: 64px; border-radius: 14px; background: #07090D; border: 1px solid rgba(111,185,240,0.18); display: flex; align-items: center; justify-content: center;">
+                <div style="position: relative; width: 46px; height: 23px; display: flex; align-items: center; justify-content: center;">
+                  <div style={`position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -22px; border-radius: 50%; border: 1px solid ${accent};`}></div>
+                  <div style={`position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 0; border-radius: 50%; border: 1px solid ${accent};`}></div>
+                  <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 13px; line-height: 1; display: block; transform: translateY(17.5%); color: #F2F8FF;">ꦕ</span>
+                </div>
+              </div>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #4E7EA6;">64</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 40px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; margin-bottom: 32px;">TANPA CINCIN · &lt; 48PX</div>
+          <div style="position: relative; display: flex; align-items: flex-end; gap: 26px;">
+            <div style="position: absolute; left: 0; right: 0; bottom: 22px; height: 1px; background: rgba(111,185,240,0.12);"></div>
+            <div style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+              <div style={`width: 48px; height: 48px; border-radius: 11px; background: ${accent}; display: flex; align-items: center; justify-content: center;`}><span style={`font-family: 'Noto Sans Javanese', serif; font-size: 29px; line-height: 1; display: block; transform: translateY(17.5%); color: ${inkOnAccent};`}>ꦕ</span></div>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #4E7EA6;">48</span>
+            </div>
+            <div style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+              <div style={`width: 32px; height: 32px; border-radius: 8px; background: ${accent}; display: flex; align-items: center; justify-content: center;`}><span style={`font-family: 'Noto Sans Javanese', serif; font-size: 19px; line-height: 1; display: block; transform: translateY(17.5%); color: ${inkOnAccent};`}>ꦕ</span></div>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #4E7EA6;">32</span>
+            </div>
+            <div style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+              <div style={`width: 16px; height: 16px; border-radius: 4px; background: ${accent}; display: flex; align-items: center; justify-content: center;`}><span style={`font-family: 'Noto Sans Javanese', serif; font-size: 10px; line-height: 1; display: block; transform: translateY(17.5%); color: ${inkOnAccent};`}>ꦕ</span></div>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #4E7EA6;">16</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 24px; margin-top: 24px;">
+        <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 32px 36px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; margin-bottom: 20px;">BERKAS YANG DIBUTUHKAN</div>
+          <div style="display: flex; flex-direction: column; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+            <div style="display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid rgba(111,185,240,0.08);"><span style="color:#C9DFF2;">favicon.ico</span><span style="color:#6E93B2;">16 · 32 · 48</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid rgba(111,185,240,0.08);"><span style="color:#C9DFF2;">icon.svg</span><span style="color:#6E93B2;">adaptif</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid rgba(111,185,240,0.08);"><span style="color:#C9DFF2;">apple-touch-icon.png</span><span style="color:#6E93B2;">180</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid rgba(111,185,240,0.08);"><span style="color:#C9DFF2;">icon-512.png</span><span style="color:#6E93B2;">512 · PWA</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 9px 0;"><span style="color:#C9DFF2;">og-image.png</span><span style="color:#6E93B2;">1200 × 630</span></div>
+          </div>
+        </div>
+        <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 32px 36px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; margin-bottom: 20px;">CATATAN TEKNIS</div>
+          <p style="margin: 0 0 14px; font-size: 13.5px; line-height: 1.65; color: #8FAAC2; text-wrap: pretty;">Aksara <strong style="color:#C9DFF2;font-weight:600;">wajib dikonversi ke path</strong> di semua berkas ekspor. Jangan pernah mengirim SVG dengan <code style="font-family:'JetBrains Mono',monospace;font-size:12px;">&lt;text&gt;</code> — sistem tanpa Noto Sans Javanese akan menampilkan kotak tofu.</p>
+          <p style="margin: 0; font-size: 13.5px; line-height: 1.65; color: #8FAAC2; text-wrap: pretty;">Apple touch icon tidak boleh transparan; pakai latar <code style="font-family:'JetBrains Mono',monospace;font-size:12px;">#07090D</code> penuh.</p>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding: 80px; border-bottom: 1px solid rgba(111,185,240,0.10);">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 12px;">07 · RUANG AMAN &amp; UKURAN MINIMUM</div>
+      <p style="margin: 0 0 40px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 680px; text-wrap: pretty;">Ruang aman = <strong style="color:#C9DFF2;font-weight:600;">½d</strong> (setengah diameter lingkaran) di keempat sisi. Tidak ada elemen lain yang boleh masuk.</p>
+
+      <div style="display: flex; gap: 24px;">
+        <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 40px; display: flex; align-items: center; justify-content: center;">
+          <div style="position: relative; padding: 46px 46px;">
+            <div style="position: absolute; inset: 0; border: 1px dashed rgba(111,185,240,0.30);"></div>
+            <div style="position: absolute; left: 46px; top: 0; bottom: 0; width: 1px; background: rgba(111,185,240,0.14);"></div>
+            <div style="position: absolute; right: 46px; top: 0; bottom: 0; width: 1px; background: rgba(111,185,240,0.14);"></div>
+            <div style="position: absolute; left: 0; right: 0; top: 46px; height: 1px; background: rgba(111,185,240,0.14);"></div>
+            <div style="position: absolute; left: 0; right: 0; bottom: 46px; height: 1px; background: rgba(111,185,240,0.14);"></div>
+            <div style="position: absolute; left: 14px; top: 14px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #4E7EA6;">½d</div>
+            <div style="position: relative; width: 186px; height: 93px; display: flex; align-items: center; justify-content: center;">
+              <div style={`position: absolute; left: 50%; top: 50%; width: 92px; height: 92px; margin: -46px 0 0 -92px; border-radius: 50%; border: 1.5px solid ${accent};`}></div>
+              <div style={`position: absolute; left: 50%; top: 50%; width: 92px; height: 92px; margin: -46px 0 0 0; border-radius: 50%; border: 1.5px solid ${accent};`}></div>
+              <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 52px; line-height: 1; display: block; transform: translateY(17.5%); color: #F2F8FF;">ꦕ</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 14px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; color: #4E7EA6;">UKURAN MINIMUM</div>
+          <div style="display: flex; flex-direction: column; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+            <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(111,185,240,0.10);"><span style="color:#6E93B2;">mark bercincin · layar</span><span style="color:#C9DFF2;">48 px tinggi</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(111,185,240,0.10);"><span style="color:#6E93B2;">mark bercincin · cetak</span><span style="color:#C9DFF2;">12 mm tinggi</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(111,185,240,0.10);"><span style="color:#6E93B2;">mark padat (ꦕ)</span><span style="color:#C9DFF2;">16 px</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(111,185,240,0.10);"><span style="color:#6E93B2;">lockup mendatar</span><span style="color:#C9DFF2;">120 px lebar</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(111,185,240,0.10);"><span style="color:#6E93B2;">wordmark ꦕꦫꦏ</span><span style="color:#C9DFF2;">24 px tinggi</span></div>
+          </div>
+          <div style={`margin-top: 8px; padding: 16px 18px; background: rgba(111,185,240,0.05); border-left: 2px solid ${accent};`}>
+            <p style="margin: 0; font-size: 13px; line-height: 1.65; color: #9FC4E0; text-wrap: pretty;">Di bawah 48px, ganti ke mark padat. Cincin setipis 1px akan hilang atau berubah jadi bubur piksel — lebih baik mundur ke bentuk yang tegas daripada memaksakan bentuk yang benar.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding: 80px; border-bottom: 1px solid rgba(111,185,240,0.10);">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 12px;">08 · WARNA</div>
+      <p style="margin: 0 0 32px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 730px; text-wrap: pretty;"><strong style="color:#C9DFF2;font-weight:600;">Satu hue merek, sisanya nada.</strong> Seluruh roda warna disisir untuk mencari hue kedua dan ketiga; kandidat terbaik hanya mencapai ΔE 13,2 — di bawah ambang aman 15. Enam warna status Telegram sudah memenuhi ruang warna, jadi hue baru apa pun pasti bertabrakan. Sistem lengkap ada di <strong style="color:#C9DFF2;font-weight:600;">Caraka Sistem Warna</strong>.</p>
+
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; margin-bottom: 14px;">PRIMARY — KESUMBA · OKLCH H=31,8°</div>
+      <div style="display: flex; border-radius: 12px; overflow: hidden; margin-bottom: 14px;">
+        {ramp.map((r) => (
+          <div style="flex: 1; display: flex; flex-direction: column;">
+            <div style={`height: 84px; background: ${r.hex}; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px;`}><span style={`font-family: 'JetBrains Mono', monospace; font-size: 9.5px; font-weight: 700; color: ${r.ink};`}>{r.step}</span></div>
+            <div style="padding: 9px 4px; background: #080B10; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 8.5px; color: #4E7EA6;">{r.hex}</div>
+          </div>
+        ))}
+      </div>
+      <p style="margin: 0 0 34px; font-size: 13px; line-height: 1.6; color: #8FAAC2; text-wrap: pretty;"><strong style="color:#FF7A5E;font-weight:600;">500 untuk lambang dan tombol; 400 untuk teks.</strong> Kesumba 500 hanya mencapai 4,89:1 di atas void — cukup untuk elemen besar, tidak untuk teks kecil. Kesumba 400 mencapai 7,83:1.</p>
+
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; margin-bottom: 14px;">SEMANTIK — TERKUNCI PADA IKON TOPIC TELEGRAM</div>
+      <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+        {semantic.map((s) => (
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
+            <div style={`height: 104px; border-radius: 12px; background: ${s.hex}; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 26px; color: #07090D;`}>{s.glyph}</div>
+            <div style="display: flex; flex-direction: column; gap: 3px;"><span style="font-size: 13.5px; font-weight: 600; color: #F2F8FF;">{s.role}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #6E93B2;">{s.hex}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #4E7EA6;">{s.dec}</span></div>
+          </div>
+        ))}
+      </div>
+      <div style="padding: 17px 20px; background: rgba(226,69,44,0.07); border-left: 2px solid #E2452C; margin-bottom: 34px;">
+        <p style="margin: 0; font-size: 13px; line-height: 1.65; color: #E0B4A8; text-wrap: pretty;">Merah Telegram <code style="font-family:'JetBrains Mono',monospace;font-size:12px;">#FB6F5F</code> <strong style="color:#FF8B6B;font-weight:600;">dikosongkan</strong> — jaraknya ke kesumba hanya ΔE 9,9. Dan karena himpunan ini gagal uji buta warna — <code style="font-family:'JetBrains Mono',monospace;font-size:12px;">done</code> ↔ <code style="font-family:'JetBrains Mono',monospace;font-size:12px;">cancelled</code> berjarak ΔE 2,5 pada deuteranopia — <strong style="color:#FF8B6B;font-weight:600;">setiap status wajib membawa glifnya</strong>. Warna tidak pernah menjadi satu-satunya sinyal.</p>
+      </div>
+
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; margin-bottom: 14px;">SECONDARY — NETRAL DINGIN · H=250°</div>
+      <div style="display: flex; border-radius: 12px; overflow: hidden;">
+        {neutrals.map((n) => (
+          <div style="flex: 1; display: flex; flex-direction: column;">
+            <div style={`height: 76px; background: ${n.hex}; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px;`}><span style={`font-family: 'JetBrains Mono', monospace; font-size: 9.5px; font-weight: 700; color: ${n.ink};`}>{n.step}</span></div>
+            <div style="padding: 9px 3px; background: #080B10; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #4E7EA6;">{n.hex}</div>
+          </div>
+        ))}
+      </div>
+      <p style="margin: 14px 0 0; font-size: 13px; line-height: 1.6; color: #8FAAC2; text-wrap: pretty;">Membawa 90% permukaan. Chroma 0,005–0,020 — cukup untuk terasa dingin dan teknis, terlalu rendah untuk bersaing dengan kesumba. <strong style="color:#C9DFF2;font-weight:600;">Tertiary</strong> bukan hue ketiga, melainkan kesumba pada chroma sangat rendah: <code style="font-family:'JetBrains Mono',monospace;font-size:12px;">#12100F</code> · <code style="font-family:'JetBrains Mono',monospace;font-size:12px;">#1E1614</code> · <code style="font-family:'JetBrains Mono',monospace;font-size:12px;">#2B1612</code>.</p>
+    </section>
+
+    <section style="padding: 80px; border-bottom: 1px solid rgba(111,185,240,0.10);">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 40px;">09 · TIPOGRAFI</div>
+
+      <div style="display: flex; gap: 24px;">
+        <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 36px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; margin-bottom: 22px;">AKSARA · NOTO SANS JAVANESE</div>
+          <div style="font-family: 'Noto Sans Javanese', serif; font-size: 44px; line-height: 1.5; color: #F2F8FF; margin-bottom: 18px;">ꦕꦫꦏ</div>
+          <p style="margin: 0; font-size: 13px; line-height: 1.65; color: #8FAAC2; text-wrap: pretty;">Satu-satunya font aksara Jawa yang andal lintas platform. <strong style="color:#C9DFF2;font-weight:600;">Selalu sertakan fallback latin</strong> — banyak sistem belum punya glyph-nya.</p>
+        </div>
+
+        <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 36px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; margin-bottom: 22px;">WORDMARK &amp; KODE · JETBRAINS MONO</div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 500; letter-spacing: 0.2em; color: #F2F8FF; margin-bottom: 8px;">caraka</div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 15px; color: #6E93B2; margin-bottom: 18px;">0123456789 ▸ ⏸ ✓ ✗ ⊘</div>
+          <p style="margin: 0; font-size: 13px; line-height: 1.65; color: #8FAAC2; text-wrap: pretty;">Wordmark selalu <strong style="color:#C9DFF2;font-weight:600;">huruf kecil</strong>, sama seperti perintah CLI-nya. Tracking 0,2em untuk lockup, 0,36em untuk versi bertumpuk.</p>
+        </div>
+
+        <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 36px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; margin-bottom: 22px;">TEKS · PUBLIC SANS</div>
+          <div style="font-size: 27px; font-weight: 700; letter-spacing: -0.02em; color: #F2F8FF; margin-bottom: 6px;">Kirim tugasnya.</div>
+          <div style="font-size: 15px; line-height: 1.6; color: #8FAAC2; margin-bottom: 18px;">Caraka yang jalan.</div>
+          <p style="margin: 0; font-size: 13px; line-height: 1.65; color: #8FAAC2; text-wrap: pretty;">Untuk dokumentasi dan antarmuka. Netral, tidak bersaing dengan aksara.</p>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding: 80px; border-bottom: 1px solid rgba(111,185,240,0.10);">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 12px;">10 · PENEMPATAN</div>
+      <p style="margin: 0 0 40px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 680px; text-wrap: pretty;">Empat konteks di mana logo benar-benar muncul. Bukan mockup dekoratif — ini tempat aslinya.</p>
+
+      <div style="display: flex; gap: 24px; margin-bottom: 24px;">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6;">TERMINAL · npx caraka init</div>
+          <div style="background: #05070A; border: 1px solid rgba(111,185,240,0.10); border-radius: 12px; padding: 24px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.9; color: #7E9AB2;">
+            <div style="color: #47657D;">$ npx caraka init</div>
+            <div style="height: 10px;"></div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style={`font-family: 'Noto Sans Javanese', serif; font-size: 18px; line-height: 1; display: block; transform: translateY(17.5%); color: ${accent};`}>ꦕꦫꦏ</span>
+              <span style="color: #F2F8FF; font-weight: 700;">caraka</span>
+              <span style="color: #47657D;">v0.1.0</span>
+            </div>
+            <div style="height: 10px;"></div>
+            <div><span style="color: #8EEE98;">✔</span> claude 2.4.1 · acp</div>
+            <div><span style="color: #8EEE98;">✔</span> titen 0.7.0 · lokal</div>
+            <div style="display: flex; align-items: center; gap: 8px;"><span style={`color: ${accent};`}>▸</span> menunggu pesan pertama<span aria-hidden="true" style={`width: 7px; height: 13px; background: ${accent}; animation: ck-blink 1.1s step-end infinite;`}></span></div>
+          </div>
+        </div>
+
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6;">GITHUB · AVATAR ORG</div>
+          <div style="background: #0D1117; border: 1px solid rgba(111,185,240,0.10); border-radius: 12px; padding: 24px; display: flex; align-items: center; gap: 16px;">
+            <div style="width: 62px; height: 62px; border-radius: 50%; background: #07090D; border: 1px solid rgba(111,185,240,0.20); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <div style="position: relative; width: 44px; height: 22px; display: flex; align-items: center; justify-content: center;">
+                <div style={`position: absolute; left: 50%; top: 50%; width: 21px; height: 21px; margin: -10.5px 0 0 -21px; border-radius: 50%; border: 1px solid ${accent};`}></div>
+                <div style={`position: absolute; left: 50%; top: 50%; width: 21px; height: 21px; margin: -10.5px 0 0 0; border-radius: 50%; border: 1px solid ${accent};`}></div>
+                <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 13px; line-height: 1; display: block; transform: translateY(17.5%); color: #F2F8FF;">ꦕ</span>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 3px;">
+              <span style="font-size: 15px; font-weight: 600; color: #F2F8FF;">CarakaDev</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #6E93B2;">caraka · MIT · TypeScript</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 24px;">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6;">TELEGRAM · AVATAR BOT</div>
+          <div style="background: #17212B; border-radius: 12px; padding: 20px 22px; display: flex; align-items: center; gap: 14px;">
+            <div style={`width: 46px; height: 46px; border-radius: 50%; background: ${accent}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;`}><span style={`font-family: 'Noto Sans Javanese', serif; font-size: 27px; line-height: 1; display: block; transform: translateY(17.5%); color: ${inkOnAccent};`}>ꦕ</span></div>
+            <div style="display: flex; flex-direction: column; gap: 3px;">
+              <span style="font-size: 14.5px; font-weight: 600; color: #F2F8FF;">toko_caraka_bot</span>
+              <span style="font-size: 12.5px; color: #6E93B2;">▸ sesi #a91 · toko-api</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6;">SITUS · HEADER</div>
+          <div style="background: #05070A; border: 1px solid rgba(111,185,240,0.10); border-radius: 12px; padding: 22px 26px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <div style="position: relative; width: 58px; height: 29px; display: flex; align-items: center; justify-content: center;">
+                <div style={`position: absolute; left: 50%; top: 50%; width: 28px; height: 28px; margin: -14px 0 0 -28px; border-radius: 50%; border: 1px solid ${accent};`}></div>
+                <div style={`position: absolute; left: 50%; top: 50%; width: 28px; height: 28px; margin: -14px 0 0 0; border-radius: 50%; border: 1px solid ${accent};`}></div>
+                <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 16px; line-height: 1; display: block; transform: translateY(17.5%); color: #F2F8FF;">ꦕ</span>
+              </div>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 500; letter-spacing: 0.18em; color: #F2F8FF;">caraka</span>
+            </div>
+            <div style="display: flex; gap: 22px; font-size: 13px; color: #8FAAC2;"><span>Dokumen</span><span>GitHub</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding: 80px; border-bottom: 1px solid rgba(111,185,240,0.10);">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 12px;">11 · YANG TIDAK BOLEH</div>
+      <p style="margin: 0 0 40px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 680px; text-wrap: pretty;">Lambang ini bertumpu pada satu aksara nyata dengan makna nyata. Merusaknya bukan soal selera — itu merusak keterbacaan tulisan yang dipakai orang.</p>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+        {donts.map((item) => (
+          <div style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="position: relative; height: 130px; background: #080B10; border: 1px solid rgba(226,69,44,0.28); border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+              <div aria-hidden="true" style="position: absolute; right: 12px; top: 12px; width: 20px; height: 20px; border-radius: 50%; background: rgba(226,69,44,0.16); display: flex; align-items: center; justify-content: center; font-size: 12px; color: #E2452C;">✗</div>
+              <div aria-hidden="true" style={`font-family: 'Noto Sans Javanese', serif; color: #F2F8FF; ${item.style}`}>ꦕ</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 13.5px; font-weight: 600; color: #E8F2FB;">{item.title}</span>
+              <span style="font-size: 12.5px; line-height: 1.55; color: #8FAAC2;">{item.note}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section style="padding: 80px; border-bottom: 1px solid rgba(111,185,240,0.10);">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 12px;">12 · CADANGAN TANPA AKSARA</div>
+      <p style="margin: 0 0 40px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 680px; text-wrap: pretty;">Noto Sans Javanese belum terpasang default di banyak sistem. Tanpa cadangan, logo berubah jadi kotak tofu — jauh lebih merusak daripada mundur ke latin.</p>
+
+      <div style="display: flex; gap: 24px;">
+        <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 40px; display: flex; flex-direction: column; align-items: center; gap: 24px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; align-self: flex-start;">CADANGAN · MARK</div>
+          <div style="position: relative; width: 186px; height: 93px; display: flex; align-items: center; justify-content: center; margin: 12px 0;">
+            <div style={`position: absolute; left: 50%; top: 50%; width: 92px; height: 92px; margin: -46px 0 0 -92px; border-radius: 50%; border: 1.5px solid ${accent};`}></div>
+            <div style={`position: absolute; left: 50%; top: 50%; width: 92px; height: 92px; margin: -46px 0 0 0; border-radius: 50%; border: 1.5px solid ${accent};`}></div>
+            <span style="position: relative; font-family: 'JetBrains Mono', monospace; font-size: 44px; font-weight: 500; color: #F2F8FF;">c</span>
+          </div>
+        </div>
+
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 14px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; color: #4E7EA6;">ATURAN</div>
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: flex; gap: 14px;"><span style={`color: ${accent}; font-family: 'JetBrains Mono', monospace; font-size: 12px; flex-shrink: 0; padding-top: 1px;`}>01</span><span style="font-size: 13.5px; line-height: 1.6; color: #8FAAC2;">Aset ekspor (SVG, PNG, ICO) selalu memakai aksara yang <strong style="color:#C9DFF2;font-weight:600;">sudah dikonversi ke path</strong> — cadangan tidak pernah dibutuhkan di sana.</span></div>
+            <div style="display: flex; gap: 14px;"><span style={`color: ${accent}; font-family: 'JetBrains Mono', monospace; font-size: 12px; flex-shrink: 0; padding-top: 1px;`}>02</span><span style="font-size: 13.5px; line-height: 1.6; color: #8FAAC2;">Cadangan hanya untuk aksara yang dirender <strong style="color:#C9DFF2;font-weight:600;">langsung sebagai teks</strong>: terminal, README, judul HTML.</span></div>
+            <div style="display: flex; gap: 14px;"><span style={`color: ${accent}; font-family: 'JetBrains Mono', monospace; font-size: 12px; flex-shrink: 0; padding-top: 1px;`}>03</span><span style="font-size: 13.5px; line-height: 1.6; color: #8FAAC2;">Huruf pengganti adalah <strong style="color:#C9DFF2;font-weight:600;">c</strong> huruf kecil dalam JetBrains Mono — bukan C kapital, bukan huruf lain.</span></div>
+            <div style="display: flex; gap: 14px;"><span style={`color: ${accent}; font-family: 'JetBrains Mono', monospace; font-size: 12px; flex-shrink: 0; padding-top: 1px;`}>04</span><span style="font-size: 13.5px; line-height: 1.6; color: #8FAAC2;">Di terminal, deteksi dukungan font tidak mungkin dilakukan andal — <strong style="color:#C9DFF2;font-weight:600;">selalu</strong> dampingi aksara dengan kata "caraka" di baris yang sama.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding: 80px;">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 12px;">13 · DAFTAR ASET</div>
+      <p style="margin: 0 0 40px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 680px; text-wrap: pretty;">Struktur berkas di <code style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#C9DFF2;">brand/</code> pada repo.</p>
+
+      <div style="display: flex; gap: 24px;">
+        <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 32px 36px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 2; color: #8FAAC2;">
+          <div style="color: #4E7EA6;">brand/</div>
+          <div><span style="color:#3F5B72;">├─</span> <span style="color:#C9DFF2;">mark/</span></div>
+          <div><span style="color:#3F5B72;">│  ├─</span> mark.svg</div>
+          <div><span style="color:#3F5B72;">│  ├─</span> mark-invert.svg</div>
+          <div><span style="color:#3F5B72;">│  ├─</span> mark-mono-light.svg</div>
+          <div><span style="color:#3F5B72;">│  └─</span> mark-solid.svg</div>
+          <div><span style="color:#3F5B72;">├─</span> <span style="color:#C9DFF2;">lockup/</span></div>
+          <div><span style="color:#3F5B72;">│  ├─</span> lockup-horizontal.svg</div>
+          <div><span style="color:#3F5B72;">│  ├─</span> lockup-stacked.svg</div>
+          <div><span style="color:#3F5B72;">│  └─</span> wordmark.svg</div>
+          <div><span style="color:#3F5B72;">├─</span> <span style="color:#C9DFF2;">icon/</span></div>
+          <div><span style="color:#3F5B72;">│  ├─</span> favicon.ico</div>
+          <div><span style="color:#3F5B72;">│  ├─</span> icon.svg</div>
+          <div><span style="color:#3F5B72;">│  ├─</span> apple-touch-icon.png</div>
+          <div><span style="color:#3F5B72;">│  └─</span> icon-512.png</div>
+          <div><span style="color:#3F5B72;">├─</span> <span style="color:#C9DFF2;">motion/</span></div>
+          <div><span style="color:#3F5B72;">│  ├─</span> mark-animated.svg</div>
+          <div><span style="color:#3F5B72;">│  └─</span> mark-animated.webm</div>
+          <div><span style="color:#3F5B72;">└─</span> <span style="color:#C9DFF2;">social/</span></div>
+          <div><span style="color:#3F5B72;">   └─</span> og-image.png</div>
+        </div>
+
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+          <div style="background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 28px 32px;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; margin-bottom: 16px;">LISENSI ASET</div>
+            <p style="margin: 0; font-size: 13.5px; line-height: 1.7; color: #8FAAC2; text-wrap: pretty;">Kode Caraka berlisensi MIT. <strong style="color:#C9DFF2;font-weight:600;">Aset merek tidak.</strong> Logo dan nama boleh dipakai untuk merujuk proyek ini — dalam artikel, daftar perkakas, atau integrasi — tetapi tidak untuk menyiratkan dukungan resmi, dan tidak sebagai logo produk turunan. Fork wajib memakai nama dan lambangnya sendiri.</p>
+          </div>
+          <div style="background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 28px 32px;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; margin-bottom: 16px;">KONTAK</div>
+            <div style="display: flex; flex-direction: column; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #8FAAC2;">
+              <div><span style="color:#3F5B72;">merek</span> · halo@caraka.dev</div>
+              <div><span style="color:#3F5B72;">keamanan</span> · security@caraka.dev</div>
+              <div><span style="color:#3F5B72;">repo</span> · github.com/CarakaDev/caraka</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 56px; padding-top: 32px; border-top: 1px solid rgba(111,185,240,0.10); display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div style="position: relative; width: 52px; height: 26px; display: flex; align-items: center; justify-content: center;">
+            <div style={`position: absolute; left: 50%; top: 50%; width: 25px; height: 25px; margin: -12.5px 0 0 -25px; border-radius: 50%; border: 1px solid ${accent};`}></div>
+            <div style={`position: absolute; left: 50%; top: 50%; width: 25px; height: 25px; margin: -12.5px 0 0 0; border-radius: 50%; border: 1px solid ${accent};`}></div>
+            <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 15px; line-height: 1; display: block; transform: translateY(17.5%); color: #F2F8FF;">ꦕ</span>
+          </div>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.18em; color: #8FAAC2;">caraka</span>
+        </div>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #3F5B72;">Kesetiaan tanpa konteks itu berbahaya.</span>
+      </div>
+    </section>
+
+    </main>
+
+  </div>
+</Base>

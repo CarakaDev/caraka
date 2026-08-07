@@ -1,0 +1,52 @@
+name: Bug report
+description: Something behaves differently from the specification
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Caraka is pre-alpha. Before filing, check that the behaviour is not already described as a known limitation in docs/troubleshooting.md.
+  - type: textarea
+    id: doctor
+    attributes:
+      label: caraka doctor output
+      description: Read-only, secrets redacted, safe to paste as-is.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Send "@toko-api add rate limit" from the General topic
+        2. Approve the write
+        3. The topic icon stays yellow
+    validations:
+      required: true
+  - type: input
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: input
+    id: agent
+    attributes:
+      label: Coding agent and version
+      placeholder: claude 2.4.1
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [macOS, Linux, Windows (WSL2), Other]
+    validations:
+      required: true
+  - type: textarea
+    id: audit
+    attributes:
+      label: Relevant audit lines
+      description: Output of caraka audit --since 1h, if the problem involves a run or an approval.
+      render: shell

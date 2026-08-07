@@ -1,0 +1,45 @@
+# --- secrets: nothing here is ever committed ---
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+*.key
+*.pem
+*.p12
+.wrangler/
+.cloudflare/
+.npmrc
+secrets/
+*.secret
+
+# --- build output ---
+dist/
+.astro/
+.output/
+.vercel/
+.netlify/
+
+# --- deps ---
+node_modules/
+.pnpm-store/
+
+# --- generated site assets (npm run assets rebuilds all of these) ---
+site/public/og/
+site/public/favicon.svg
+site/public/favicon.ico
+site/public/apple-touch-icon.png
+site/public/icon-192.png
+site/public/icon-512.png
+
+# --- tooling / os ---
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+pnpm-debug.log*
+coverage/
+test-results/
+playwright-report/
+blob-report/
+.playwright/

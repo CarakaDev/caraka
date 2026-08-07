@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Javanese:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html { scroll-behavior: smooth; background: #05080C; scrollbar-width: none; }
+  body { margin: 0; padding: 0; background: #05080C; overflow-x: hidden; }
+  * { box-sizing: border-box; }
+  a { color: #FF7A5E; text-decoration: none; }
+  a:hover { color: #F6F9FC; }
+  ::selection { background: #E2452C; color: #FFEDE7; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+  @keyframes ck-blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+  @keyframes ck-spin { to { transform: rotate(360deg); } }
+  @keyframes ck-spinRev { to { transform: rotate(-360deg); } }
+  @keyframes ck-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes ck-rise { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
+  @keyframes ck-riseSm { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  @keyframes ck-slideL { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+  @keyframes ck-drawX { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes ck-boot { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: none; } }
+  [data-toc] { display: block; }
+  @media (max-width: 1040px) { [data-toc] { display: none; } }
+  @media (max-width: 620px) { [data-navlinks] { display: none; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; } }
+</style>
+</helmet>
+
+<div style="width: 100%; background: #05080C; font-family: 'Public Sans', sans-serif; color: #E9EDF2; position: relative; overflow-x: hidden;">
+
+  <div style="position: fixed; left: 0; top: 0; right: 0; height: 2px; z-index: 110; background: #171C22;">
+    <div style="height: 100%; width: 100%; background: linear-gradient(90deg, #E2452C, #FF7A5E); transform-origin: left; transform: scaleX(var(--ck-sp, 0));"></div>
+  </div>
+
+  <header style="position: fixed; left: 0; right: 0; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px clamp(16px, 4vw, 34px); background: rgba(5,8,12,.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid #0C1116;">
+    <a href="Caraka Landing.dc.html" style="display: flex; align-items: center; gap: 12px;">
+      <span style="position: relative; width: 44px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <span style="position: absolute; left: 50%; top: 50%; width: 21px; height: 21px; margin: -10.5px 0 0 -21px; border-radius: 50%; border: 1px solid #E2452C;"></span>
+        <span style="position: absolute; left: 50%; top: 50%; width: 21px; height: 21px; margin: -10.5px 0 0 0; border-radius: 50%; border: 1px solid #E2452C;"></span>
+        <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 12px; line-height: 1; display: block; transform: translateY(17.5%); color: #F6F9FC;">ꦕ</span>
+      </span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: .2em; color: #E9EDF2;">caraka</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .16em; color: #E2452C; padding: 3px 8px; border: 1px solid #2B1612; border-radius: 5px;">DOCS</span>
+    </a>
+    <nav data-navlinks="1" style="display: flex; align-items: center; gap: clamp(14px, 2.4vw, 26px); font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+      <a href="Caraka Landing.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Home</a>
+      <a href="Caraka Compare.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Compare</a>
+      <a href="Caraka Install.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Install</a>
+      <a href="Caraka Story.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Story</a>
+    </nav>
+    <a href="https://github.com/CarakaDev/caraka" style="padding: 9px 16px; border: 1px solid #292E35; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B2BCC6; transition: border-color .2s, color .2s; white-space: nowrap;" style-hover="border-color: #E2452C; color: #FF7A5E;">GitHub ↗</a>
+  </header>
+
+  <div style="display: flex; gap: clamp(30px, 5vw, 66px); width: min(1240px, 100%); margin: 0 auto; padding: clamp(96px, 14vh, 130px) clamp(20px, 5vw, 48px) clamp(70px, 12vh, 120px);">
+
+    <main style="flex: 1; min-width: 0;">
+
+      <div style="margin-bottom: clamp(40px, 6vh, 62px); animation: ck-boot .8s cubic-bezier(.2,.9,.3,1) both;">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px;">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .22em; color: #E2452C;">DOCUMENTATION</span>
+          <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent); transform-origin: left; animation: ck-drawX 1s cubic-bezier(.3,.7,.3,1) .2s both;"></span>
+        </div>
+        <h1 style="margin: 0 0 16px; font-size: clamp(30px, 5.2vw, 52px); font-weight: 700; letter-spacing: -.03em; line-height: 1.08; color: #F6F9FC; text-wrap: balance;">Everything Caraka does, and what it deliberately doesn't.</h1>
+        <p style="margin: 0; max-width: 640px; font-size: clamp(15px, 1.8vw, 17px); line-height: 1.7; color: #95A0AB; text-wrap: pretty;">Caraka is a bridge, not an agent. It has no reasoning loop, no execution tools, no model provider, and no plugin marketplace — your coding agent already has all of those, in better form.</p>
+        <div style="display: flex; align-items: center; gap: 10px; margin-top: 22px; padding: 13px 18px; background: #12100F; border: 1px solid #2B1612; border-radius: 10px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #E0B4A8; max-width: 640px;">
+          <span style="color: #FFD67E;">⏸</span>
+          <span><strong style="color: #F6F9FC; font-weight: 600;">Pre-alpha.</strong> The spec is complete; implementation is starting. Commands below describe the target behaviour.</span>
+        </div>
+      </div>
+
+      <sc-for list="{{ chapters }}" as="c" hint-placeholder-count="7">
+        <section id="{{ c.id }}" data-screen-label="{{ c.label }}" style="margin-bottom: clamp(48px, 8vh, 84px); scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 12px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">{{ c.no }}</span>
+            <h2 style="margin: 0; font-size: clamp(21px, 3vw, 29px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC; text-wrap: balance;">{{ c.title }}</h2>
+          </div>
+          <p style="margin: 0 0 24px; max-width: 660px; font-size: 15.5px; line-height: 1.72; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">{{ c.intro }}</p>
+
+          <sc-if value="{{ c.term }}" hint-placeholder-val="{{ true }}">
+            <div style="position: relative; background: #05070A; border: 1px solid #171C22; border-radius: 13px; padding: clamp(18px, 2.5vw, 26px); margin-bottom: 24px; font-family: 'JetBrains Mono', monospace; font-size: clamp(11.5px, 1.4vw, 13px); line-height: 1.95; overflow-x: auto; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">
+              <div style="position: absolute; left: 0; right: 0; top: 0; height: 1px; background: linear-gradient(90deg, transparent, #E2452C, transparent); opacity: .45;"></div>
+              <sc-for list="{{ c.term }}" as="l" hint-placeholder-count="6">
+                <div style="display: flex; gap: 9px; color: {{ l.tone }}; white-space: pre;"><sc-if value="{{ l.mark }}" hint-placeholder-val="{{ true }}"><span style="color: {{ l.markTone }};">{{ l.mark }}</span></sc-if><span>{{ l.t }}</span></div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ c.rows }}" hint-placeholder-val="{{ true }}">
+            <div style="border: 1px solid #171C22; border-radius: 13px; overflow: hidden; margin-bottom: 24px; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">
+              <sc-for list="{{ c.rows }}" as="r" hint-placeholder-count="6">
+                <div style="display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 14px 18px; border-bottom: 1px solid #171C22; background: #0C1116; transition: background .2s;" style-hover="background: #0E1216;">
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #FF7A5E; min-width: 190px; flex-shrink: 0;">{{ r.k }}</span>
+                  <span style="flex: 1; min-width: 200px; font-size: 14px; line-height: 1.55; color: #95A0AB; text-wrap: pretty;">{{ r.v }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ c.cards }}" hint-placeholder-val="{{ true }}">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; margin-bottom: 24px;">
+              <sc-for list="{{ c.cards }}" as="d" hint-placeholder-count="3">
+                <div style="padding: 22px 24px; background: {{ d.bg }}; border: 1px solid {{ d.border }}; border-radius: 13px; display: flex; flex-direction: column; gap: 9px; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: {{ d.range }};">
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .18em; color: {{ d.tone }};">{{ d.tag }}</span>
+                  <span style="font-size: 16px; font-weight: 600; color: #F6F9FC; text-wrap: pretty;">{{ d.title }}</span>
+                  <span style="font-size: 13.5px; line-height: 1.6; color: #7A848F; text-wrap: pretty;">{{ d.body }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ c.note }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; gap: 13px; padding: 17px 20px; background: #12100F; border-left: 2px solid #E2452C; border-radius: 0 10px 10px 0; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">
+              <span style="color: #FF7A5E; font-family: 'JetBrains Mono', monospace; font-size: 13px; flex-shrink: 0;">!</span>
+              <span style="font-size: 14px; line-height: 1.65; color: #E0B4A8; text-wrap: pretty;">{{ c.note }}</span>
+            </div>
+          </sc-if>
+        </section>
+      </sc-for>
+
+      <div style="padding: clamp(30px, 5vw, 44px); background: #0C1116; border: 1px solid #171C22; border-radius: 16px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 30%;">
+        <div>
+          <div style="font-size: 19px; font-weight: 600; color: #F6F9FC; margin-bottom: 7px;">The spec is public, in full.</div>
+          <div style="font-size: 14px; line-height: 1.6; color: #7A848F; max-width: 420px; text-wrap: pretty;">Nine research documents with sources, plus PRD, FRD, architecture, ERD, security model, and roadmap.</div>
+        </div>
+        <a href="https://github.com/CarakaDev/caraka" style="padding: 14px 24px; background: #E2452C; border-radius: 10px; font-family: 'JetBrains Mono', monospace; font-size: 13.5px; color: #FFEDE7; white-space: nowrap; transition: background .2s;" style-hover="background: #C02F17; color: #FFEDE7;">Browse the repo →</a>
+      </div>
+    </main>
+
+    <aside data-toc="1" style="width: 208px; flex-shrink: 0;">
+      <div style="position: sticky; top: 104px; display: flex; flex-direction: column; gap: 3px;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .2em; color: #414950; margin-bottom: 12px;">ON THIS PAGE</div>
+        <sc-for list="{{ chapters }}" as="c" hint-placeholder-count="7">
+          <a href="{{ c.href }}" onClick="{{ jump }}" data-target="{{ c.id }}" style="display: flex; align-items: baseline; gap: 10px; padding: 7px 0 7px 12px; border-left: 1px solid #171C22; font-size: 13px; color: #7A848F; transition: color .2s, border-color .2s;" style-hover="color: #FF7A5E; border-color: #E2452C;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #414950;">{{ c.no }}</span>
+            <span style="text-wrap: pretty;">{{ c.title }}</span>
+          </a>
+        </sc-for>
+      </div>
+    </aside>
+  </div>
+
+  <footer style="padding: clamp(44px, 7vh, 70px) clamp(20px, 5vw, 60px); border-top: 1px solid #0C1116;">
+    <div style="width: min(1240px, 100%); margin: 0 auto; display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between;">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #414950;">ꦕ caraka · MIT · pre-alpha</span>
+      <div style="display: flex; flex-wrap: wrap; gap: clamp(14px, 2.6vw, 28px); font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+        <a href="Caraka Landing.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Home</a>
+        <a href="Caraka Story.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Story</a>
+        <a href="Caraka Security.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Security</a>
+        <a href="Caraka Status.dc.html" style="color: #7A848F;" style-hover="color: #FF7A5E;">Status</a>
+        <a href="https://github.com/CarakaDev/caraka" style="color: #7A848F;" style-hover="color: #FF7A5E;">GitHub</a>
+        <a href="mailto:halo@caraka.dev" style="color: #7A848F;" style-hover="color: #FF7A5E;">halo@caraka.dev</a>
+      </div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  componentDidMount() {
+    const root = document.documentElement;
+    let raf = null;
+    this._s = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = null;
+        const max = Math.max(1, root.scrollHeight - window.innerHeight);
+        root.style.setProperty("--ck-sp", String(Math.min(1, Math.max(0, window.scrollY / max))));
+      });
+    };
+    window.addEventListener("scroll", this._s, { passive: true });
+    window.addEventListener("resize", this._s, { passive: true });
+    this._s();
+  }
+  componentWillUnmount() {
+    window.removeEventListener("scroll", this._s);
+    window.removeEventListener("resize", this._s);
+  }
+  r(i, step, span) { const a = i * (step || 4); return `entry ${a}% cover ${a + (span || 28)}%`; }
+
+  renderVals() {
+    const jump = (e) => {
+      const id = e.currentTarget && e.currentTarget.getAttribute("data-target");
+      const el = id && document.getElementById(id);
+      if (!el) return;
+      e.preventDefault();
+      window.scrollTo({ top: el.offsetTop - 88, behavior: "smooth" });
+    };
+    const g = "#7A848F", d = "#5D666F";
+
+    return {
+      jump,
+      chapters: [
+        {
+          no: "01", id: "quickstart", href: "#quickstart", label: "Quickstart", title: "Quickstart",
+          intro: "One command. No Docker, no repo to clone, no config file to write by hand. The wizard detects what it can and asks you to confirm — it never asks for something it could have found itself.",
+          term: [
+            { t: "$ npx caraka init", tone: d },
+            { t: "", tone: d },
+            { t: "  Memeriksa lingkungan…", tone: g },
+            { t: "  Node.js 22.14", tone: g, mark: "  ✔", markTone: "#8EEE98" },
+            { t: "  claude 2.4.1        agent · ACP ✓", tone: g, mark: "  ✔", markTone: "#8EEE98" },
+            { t: "  titen               belum terpasang", tone: d, mark: "  ○", markTone: "#5D666F" },
+            { t: "", tone: d },
+            { t: "  Workspace  ~/dev/toko-api", tone: "#B2BCC6" },
+            { t: "  Bot        @toko_caraka_bot", tone: "#B2BCC6" },
+            { t: "  Mode       assisted", tone: "#B2BCC6" },
+            { t: "", tone: d },
+            { t: "  Siap. Kirim pesan ke bot kamu.", tone: "#8EEE98", mark: "  ✅", markTone: "#8EEE98" },
+          ],
+          note: "The wizard ends with the gateway running and prints your first incoming message — proof it works, rather than 'done, good luck'.",
+        },
+        {
+          no: "02", id: "sessions", href: "#sessions", label: "Sesi", title: "Sessions & topics",
+          intro: "One session equals one forum topic. Caraka creates it, names it, colours its icon by state, posts a closing summary, then closes it. Sessions never move between topics, and a topic is never reused.",
+          rows: [
+            { k: "@workspace <task>", v: "Starts a new session in a new topic. Sent from the General topic." },
+            { k: "(reply in a topic)", v: "Continues that session. No prefix needed — the topic is the context." },
+            { k: "/new", v: "Start a fresh session with a clean context." },
+            { k: "/stop", v: "Cancel the running turn (session/cancel over ACP)." },
+            { k: "/status", v: "Active runs, agent, mode, queue depth." },
+            { k: "/switch <agent>", v: "Change the coding agent for this workspace." },
+            { k: "/mode read-only|assisted", v: "Lower or raise permissions. trusted is terminal-only." },
+            { k: "/pin · /unpin", v: "Exempt a topic from auto-deletion." },
+            { k: "/ingat · /lupakan · /memori", v: "Write, forget, and inspect memory." },
+          ],
+          note: "Where topics are unavailable — WhatsApp, or a supergroup without forum mode — Caraka falls back to linear mode with a [workspace · #id] header. Nothing ever hard-fails.",
+        },
+        {
+          no: "03", id: "agents", href: "#agents", label: "Agent", title: "Connecting an agent",
+          intro: "Three routes, chosen automatically. ACP first, headless CLI as fallback, and an MCP inbox for agents that live inside an IDE and cannot be spawned.",
+          cards: [
+            { tag: "ROUTE A · ACP", tone: "#FF7A5E", title: "Spawned over stdio", body: "JSON-RPC 2.0. Streaming updates, native permission prompts, diffs, multi-session. Covers ~19 of 22 agents.", bg: "#12100F", border: "#2B1612", range: this.r(0, 4, 26) },
+            { tag: "ROUTE B · CLI", tone: "#7A848F", title: "A declarative preset", body: "command, args, resumeArgs, output json|jsonl|text, sessionMode. Adding an agent is one YAML file.", bg: "#0C1116", border: "#171C22", range: this.r(1, 4, 26) },
+            { tag: "ROUTE C · MCP", tone: "#7A848F", title: "We become the server", body: "inbox_pull, reply, ask, status. The agent pulls messages — a degraded mode, and we say so.", bg: "#0C1116", border: "#171C22", range: this.r(2, 4, 26) },
+          ],
+          note: "Route C is honest about its trade-off: the agent must be told to call inbox_pull, so it is not 'always on' the way ACP is.",
+        },
+        {
+          no: "04", id: "approval", href: "#approval", label: "Approval", title: "Approvals & policy",
+          intro: "ACP already defines session/request_permission, so Caraka does not invent an approval system — it renders the protocol's own request as buttons in your chat.",
+          rows: [
+            { k: "read-only", v: "Read only. No writes, no commands. Default for groups." },
+            { k: "assisted", v: "Writes and commands require a tap. Default for DMs." },
+            { k: "trusted", v: "Writes and commands run freely. Terminal-only, and must expire." },
+            { k: "always approval", v: "force-push, rm -rf, DB migration, deploy, ~/.ssh, *.env — regardless of mode." },
+            { k: "nonce + TTL", v: "Single-use, bound to (principal, session, request). Expires in 10 minutes." },
+            { k: "fallback", v: "Channels without buttons reply with a short code: ok A7F3 / no A7F3." },
+          ],
+          note: "Approval can never arrive as ordinary chat text. That single rule is what stops a prompt injection from approving itself.",
+        },
+        {
+          no: "05", id: "memory", href: "#memory", label: "Memori", title: "Memory",
+          intro: "Titen is the default provider, running locally. It separates observation, claim, and context so a conclusion is never confused with the evidence behind it.",
+          rows: [
+            { k: "observe", v: "POST /v1/observations — append-only evidence with a content hash." },
+            { k: "consolidate", v: "POST /v1/consolidations — rules first, model only if it must." },
+            { k: "compile", v: "POST /v1/context/compile — scope, then rank into an explicit token budget." },
+            { k: "feedback", v: "POST /v1/context/:id/feedback — outcomes tune the next recall." },
+            { k: "trace", v: "GET /v1/claims/:id/evidence — every claim runs back to its source." },
+            { k: "provider: local", v: "Fallback when Titen is absent: SQLite + FTS5, deliberately shallow." },
+            { k: "provider: none", v: "Memory off. The agent still works." },
+          ],
+          note: "Recall times out at 500 ms and continues without memory. Memory may degrade the answer, but it must never block the reply.",
+        },
+        {
+          no: "06", id: "config", href: "#config", label: "Konfigurasi", title: "Configuration",
+          intro: "A single YAML file at ~/.caraka/config.yaml, validated with a schema that produces readable errors. Every value can be overridden with a CARAKA_* environment variable.",
+          term: [
+            { t: "channels:", tone: "#FF7A5E" },
+            { t: "  telegram:", tone: "#B2BCC6" },
+            { t: "    allowFrom: [\"88123456\"]   # wajib", tone: g },
+            { t: "", tone: d },
+            { t: "workspaces:", tone: "#FF7A5E" },
+            { t: "  - slug: toko-api", tone: "#B2BCC6" },
+            { t: "    path: ~/dev/toko-api", tone: g },
+            { t: "    agent: claude-code", tone: g },
+            { t: "    mode: assisted", tone: g },
+            { t: "", tone: d },
+            { t: "memory:", tone: "#FF7A5E" },
+            { t: "  provider: titen", tone: g },
+            { t: "  budgetTokens: 800", tone: g },
+          ],
+          note: "Secrets never live here. Bot tokens go to the OS keychain, or a chmod 600 file when no keychain is available.",
+        },
+        {
+          no: "07", id: "cli", href: "#cli", label: "CLI", title: "CLI reference",
+          intro: "The terminal is the trusted surface. Anything that raises a privilege happens here, never from chat.",
+          rows: [
+            { k: "caraka init", v: "Interactive setup. Safe to re-run." },
+            { k: "caraka doctor [--fix]", v: "Diagnose everything. Read-only, secrets redacted, safe to paste into an issue." },
+            { k: "caraka start | stop | status", v: "Gateway lifecycle." },
+            { k: "caraka pair approve <ch> <code>", v: "Approve a new sender. Out-of-band by design." },
+            { k: "caraka trust <ws> --for 60m", v: "The only path to trusted mode. Always expires." },
+            { k: "caraka audit --since 24h", v: "Who asked for what, when, approved by whom." },
+            { k: "caraka ws add | list | remove", v: "Manage workspaces." },
+            { k: "caraka uninstall", v: "Clean removal. Your repos and agent config are untouched." },
+          ],
+        },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

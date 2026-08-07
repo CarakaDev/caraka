@@ -1,0 +1,251 @@
+---
+// Ported from design/mockups/Caraka Install.dc.html. Markup and inline styles are
+// transcribed as-is; see site/AGENTS.md for the substitutions that replace the
+// design-comp runtime.
+import Base from '../layouts/Base.astro'
+import '../styles/pages/install.css'
+import { toc, chain, notNeeded, nodeRows, agents, prices, costNotes, paths, scriptRules, verifyLines } from '../data/install'
+---
+
+<Base page="install">
+  <div style="width: 100%; background: #05080C; font-family: 'Public Sans', sans-serif; color: #E9EDF2; position: relative; overflow-x: hidden;">
+
+    <div aria-hidden="true" style="position: fixed; left: 0; top: 0; right: 0; height: 2px; z-index: 110; background: #171C22;">
+      <div style="height: 100%; width: 100%; background: linear-gradient(90deg, #E2452C, #FF7A5E); transform-origin: left; transform: scaleX(var(--ck-sp, 0));"></div>
+    </div>
+
+    <header style="position: fixed; left: 0; right: 0; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px clamp(16px, 4vw, 34px); background: rgba(5,8,12,.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid #0C1116;">
+      <a href="/" style="display: flex; align-items: center; gap: 12px;">
+        <span style="position: relative; width: 44px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <span style="position: absolute; left: 50%; top: 50%; width: 21px; height: 21px; margin: -10.5px 0 0 -21px; border-radius: 50%; border: 1px solid #E2452C;"></span>
+          <span style="position: absolute; left: 50%; top: 50%; width: 21px; height: 21px; margin: -10.5px 0 0 0; border-radius: 50%; border: 1px solid #E2452C;"></span>
+          <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 12px; line-height: 1; display: block; transform: translateY(17.5%); color: #F6F9FC;">ꦕ</span>
+        </span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: .2em; color: #E9EDF2;">caraka</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .16em; color: #E2452C; padding: 3px 8px; border: 1px solid #2B1612; border-radius: 5px;">INSTALL</span>
+      </a>
+      <nav data-navlinks="1" style="display: flex; align-items: center; gap: clamp(14px, 2.4vw, 26px); font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+        <a href="/" class="hv-ink" style="color: #7A848F;">Home</a>
+        <a href="/docs" class="hv-ink" style="color: #7A848F;">Docs</a>
+        <a href="/security" class="hv-ink" style="color: #7A848F;">Security</a>
+      </nav>
+      <a href="https://github.com/CarakaDev/caraka" class="hv-ring-ink" style="padding: 9px 16px; border: 1px solid #292E35; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B2BCC6; transition: border-color .2s, color .2s; white-space: nowrap;">GitHub ↗</a>
+    </header>
+
+    {/* The mockup already carries a <main> further down, wrapping sections 01–07.
+        A second one cannot nest, so the skip-link target sits on the hero — the
+        first content section, and the one holding the h1 and the install CTA. */}
+    <section id="main" style="position: relative; padding: clamp(118px, 17vh, 172px) clamp(20px, 5vw, 60px) clamp(46px, 6vh, 70px); overflow: hidden;">
+      <div aria-hidden="true" style="position: absolute; left: 50%; top: 28%; width: min(720px, 118vw); height: min(720px, 118vw); margin-left: min(-360px, -59vw); margin-top: min(-360px, -59vw); border-radius: 50%; background: radial-gradient(circle, rgba(226,69,44,.12), transparent 62%); animation: ck-bloom 8s ease-in-out infinite; pointer-events: none;"></div>
+      <div style="position: relative; width: min(1120px, 100%); margin: 0 auto;">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px; animation: ck-boot .8s cubic-bezier(.2,.9,.3,1) both;">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .22em; color: #E2452C;">INSTALL</span>
+          <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent); transform-origin: left; animation: ck-drawX 1s cubic-bezier(.3,.7,.3,1) .25s both;"></span>
+        </div>
+        <h1 style="margin: 0 0 18px; max-width: 880px; font-size: clamp(30px, 5.4vw, 56px); font-weight: 700; letter-spacing: -.03em; line-height: 1.08; color: #F6F9FC; text-wrap: balance; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) .15s both;">Three things must exist. Caraka is the cheapest of them.</h1>
+        <p style="margin: 0 0 28px; max-width: 640px; font-size: clamp(15px, 1.9vw, 18px); line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) .28s both;">Caraka is free, MIT, and never asks for a card. Any cost you see belongs to your coding agent, and it applies whether Caraka exists or not. There is a genuinely free path, and it is listed first.</p>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) .4s both;">
+          <button type="button" data-copy="npx caraka init" class="hv-ring-tint" style="display: flex; align-items: center; gap: 14px; padding: 16px 22px; background: #0C1116; border: 1px solid #292E35; border-radius: 11px; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: clamp(13px, 1.7vw, 15px); color: #E9EDF2; transition: border-color .2s, background .2s;">
+            <span style="color: #5D666F;">$</span><span>npx caraka init</span>
+            <span data-copy-label="COPY" style="font-size: 11px; letter-spacing: .1em; color: #5D666F; min-width: 48px; text-align: right;">COPY</span>
+          </button>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5D666F;">no global install, no repo to clone</span>
+        </div>
+      </div>
+    </section>
+
+    <div style="display: flex; gap: clamp(28px, 4vw, 56px); width: min(1240px, 100%); margin: 0 auto; padding: clamp(24px, 4vh, 46px) clamp(20px, 4vw, 44px) clamp(70px, 12vh, 120px);">
+      <main style="flex: 1; min-width: 0;">
+
+        <section id="chain" style="margin-bottom: clamp(46px, 8vh, 78px); scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">01</span>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">What has to be there</h2>
+          </div>
+          <p style="margin: 0 0 24px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">The wizard checks each one in order and stops at the first gap, with the exact command to close it.</p>
+          <div style="position: relative; display: flex; flex-direction: column;">
+            <div aria-hidden="true" style="position: absolute; left: 19px; top: 24px; bottom: 52px; width: 1px; background: linear-gradient(180deg, #E2452C, #2B1612); transform-origin: top; animation: ck-drawY linear both; animation-timeline: view(); animation-range: entry 8% cover 44%;"></div>
+            {chain.map((c) => (
+              <div style={`position: relative; display: flex; gap: 18px; padding-bottom: 24px; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: ${c.range};`}>
+                <span style="width: 39px; height: 39px; flex-shrink: 0; border-radius: 50%; border: 1px solid #E2452C; background: #05080C; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #FF7A5E;">{c.n}</span>
+                <div style="padding-top: 4px;">
+                  <div style="font-size: 16px; font-weight: 600; color: #F6F9FC; margin-bottom: 5px;">{c.title}</div>
+                  <div style="font-size: 14.5px; line-height: 1.65; color: #95A0AB; text-wrap: pretty;">{c.body}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style="padding: 20px 22px; background: #0C1116; border: 1px solid #171C22; border-radius: 13px; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .18em; color: #7A848F; margin-bottom: 12px;">NOT NEEDED</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              {notNeeded.map((n) => (
+                <span style="padding: 6px 12px; background: #05070A; border: 1px solid #171C22; border-radius: 7px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #5D666F; text-decoration: line-through;">{n}</span>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="node" style="margin-bottom: clamp(46px, 8vh, 78px); scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">02</span>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">No Node.js yet</h2>
+          </div>
+          <p style="margin: 0 0 20px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">npx ships with Node, so without it the first command does not exist. This is the only thing to solve before touching Caraka. Version 22 or newer, for the built-in fetch and test runner.</p>
+          <div style="border: 1px solid #171C22; border-radius: 14px; overflow: hidden;">
+            {nodeRows.map((n) => (
+              <div class="hv-row" style={`display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 15px 20px; border-bottom: 1px solid #171C22; background: #0C1116; transition: background .2s; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: ${n.range};`}>
+                <span style="width: 140px; flex-shrink: 0; font-size: 13.5px; color: #B2BCC6;">{n.os}</span>
+                <span style="flex: 1; min-width: 240px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.6; color: #FF7A5E; word-break: break-all;">{n.cmd}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="agent" style="margin-bottom: clamp(46px, 8vh, 78px); scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">03</span>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">No coding agent yet</h2>
+          </div>
+          <p style="margin: 0 0 22px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Caraka has no agent of its own, so this is the one real dead end. Install one, authenticate, then run init again. Already have one? The wizard finds it on PATH and you only confirm.</p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: 14px;">
+            {agents.map((a) => (
+              <div style={`padding: 24px 26px; background: ${a.bg}; border: 1px solid ${a.border}; border-radius: 14px; display: flex; flex-direction: column; gap: 12px; animation: ck-rise linear both; animation-timeline: view(); animation-range: ${a.range};`}>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                  <span style="font-size: 17px; font-weight: 600; color: #F6F9FC;">{a.name}</span>
+                  <span style={`padding: 5px 11px; border-radius: 100px; background: ${a.pillBg}; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: ${a.pillInk}; white-space: nowrap;`}>{a.pill}</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 7px; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+                  <span style="color: #FF7A5E; word-break: break-all;">{a.install}</span>
+                  <span style="color: #7A848F;">{a.login}</span>
+                </div>
+                <div aria-hidden="true" style={`height: 1px; background: ${a.border};`}></div>
+                <span style="font-size: 13.5px; line-height: 1.6; color: #95A0AB; text-wrap: pretty;">{a.note}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="cost" style="margin-bottom: clamp(46px, 8vh, 78px); scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">04</span>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">What it costs</h2>
+          </div>
+          <p style="margin: 0 0 22px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Verified August 2026 from vendor pricing pages. Prices move, so check the source before you buy.</p>
+          <div style="border: 1px solid #171C22; border-radius: 14px; overflow: hidden; margin-bottom: 20px;">
+            <div style="display: flex; padding: 13px 20px; background: #12100F; border-bottom: 1px solid #2B1612; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .14em; color: #7A848F;">
+              <span style="flex: 1.4; min-width: 118px;">PLAN</span>
+              <span style="flex: 1; min-width: 92px;">CLAUDE CODE</span>
+              <span style="flex: 1; min-width: 84px;">CODEX CLI</span>
+              <span style="flex: 1; min-width: 84px;">GEMINI CLI</span>
+            </div>
+            {prices.map((p) => (
+              <div style={`display: flex; padding: 14px 20px; border-bottom: 1px solid #171C22; background: ${p.bg}; font-size: 13px; align-items: center; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: ${p.range};`}>
+                <span style="flex: 1.4; min-width: 118px; color: #B2BCC6;">{p.plan}</span>
+                <span style={`flex: 1; min-width: 92px; color: ${p.aTone};`}>{p.a}</span>
+                <span style={`flex: 1; min-width: 84px; color: ${p.bTone};`}>{p.b}</span>
+                <span style={`flex: 1; min-width: 84px; color: ${p.cTone};`}>{p.c}</span>
+              </div>
+            ))}
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: 14px;">
+            {costNotes.map((c) => (
+              <div style={`padding: 22px 24px; background: ${c.bg}; border: 1px solid ${c.border}; border-radius: 13px; display: flex; flex-direction: column; gap: 8px; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: ${c.range};`}>
+                <span style={`font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .16em; color: ${c.tone};`}>{c.tag}</span>
+                <span style="font-size: 14px; line-height: 1.6; color: #95A0AB; text-wrap: pretty;">{c.t}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="which" style="margin-bottom: clamp(46px, 8vh, 78px); scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 18px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">05</span>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Which path is yours</h2>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 11px;">
+            {paths.map((p) => (
+              <div class="hv-ring-soft" style={`display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; padding: 18px 22px; background: #0C1116; border: 1px solid ${p.border}; border-radius: 13px; transition: border-color .25s; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: ${p.range};`}>
+                <span style="flex: 1; min-width: 220px; font-size: 14.5px; line-height: 1.55; color: #B2BCC6; text-wrap: pretty;">{p.you}</span>
+                <span style={`padding: 7px 15px; border-radius: 100px; background: ${p.chipBg}; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: ${p.chipInk}; white-space: nowrap;`}>{p.use}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="script" style="margin-bottom: clamp(46px, 8vh, 78px); scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">06</span>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">install.sh, and why you can read it first</h2>
+          </div>
+          <p style="margin: 0 0 20px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Piping curl into bash has a bad reputation that is partly deserved. Eight properties make this one worth trusting, and the first is that we show you how to read it before running it.</p>
+          <div style="background: #05070A; border: 1px solid #171C22; border-radius: 13px; padding: clamp(18px, 2.6vw, 26px); margin-bottom: 18px; font-family: 'JetBrains Mono', monospace; font-size: clamp(11.5px, 1.5vw, 13px); line-height: 1.95; overflow-x: auto; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">
+            <div style="color: #5D666F;"># read it first</div>
+            <div style="color: #FF7A5E;">curl -fsSL https://caraka.dev/install.sh | less</div>
+            <div style="height: 10px;"></div>
+            <div style="color: #5D666F;"># see the plan without changing anything</div>
+            <div style="color: #FF7A5E;">curl -fsSL https://caraka.dev/install.sh | bash -s -- --dry-run</div>
+            <div style="height: 10px;"></div>
+            <div style="color: #5D666F;"># pin a version for a reproducible environment</div>
+            <div style="color: #FF7A5E;">CARAKA_VERSION=0.4.0 curl -fsSL https://caraka.dev/install.sh | bash</div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px;">
+            {scriptRules.map((s) => (
+              <div style={`padding: 18px 20px; background: #0C1116; border: 1px solid #171C22; border-radius: 12px; display: flex; gap: 12px; align-items: flex-start; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: ${s.range};`}>
+                <span style="color: #8EEE98; font-family: 'JetBrains Mono', monospace; font-size: 12px; flex-shrink: 0; padding-top: 2px;">✓</span>
+                <span style="font-size: 13.5px; line-height: 1.55; color: #95A0AB; text-wrap: pretty;">{s.t}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="verify" style="scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">07</span>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Verify, fix, remove</h2>
+          </div>
+          <p style="margin: 0 0 20px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Trying this should be cheap and reversible. Uninstall is clean, and it never touches your repositories or your agent's configuration.</p>
+          <div style="background: #05070A; border: 1px solid #171C22; border-radius: 13px; padding: clamp(18px, 2.6vw, 26px); font-family: 'JetBrains Mono', monospace; font-size: clamp(11.5px, 1.5vw, 13px); line-height: 1.95; overflow-x: auto; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">
+            {verifyLines.map((v) => (
+              <div style={`display: flex; gap: 9px; color: ${v.tone}; white-space: pre;`}>{v.mark && (<span style={`color: ${v.markTone};`}>{v.mark}</span>)}<span>{v.t}</span></div>
+            ))}
+          </div>
+          <div style="margin-top: 22px; padding: clamp(24px, 3.4vw, 34px); background: #12100F; border: 1px solid #2B1612; border-radius: 15px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 28%;">
+            <div>
+              <div style="font-size: 18px; font-weight: 600; color: #F6F9FC; margin-bottom: 6px;">Still stuck?</div>
+              <div style="font-size: 14px; line-height: 1.6; color: #95A0AB; max-width: 400px; text-wrap: pretty;">Every planned failure has a documented fix. Paste your doctor output into an issue; it is already redacted.</div>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+              <a href="https://github.com/CarakaDev/caraka/blob/main/docs/troubleshooting.md" class="hv-btn" style="padding: 13px 22px; background: #E2452C; border-radius: 10px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #FFEDE7; white-space: nowrap; transition: background .2s;">Troubleshooting →</a>
+              <a href="https://github.com/CarakaDev/caraka/blob/main/docs/faq.md" class="hv-ring-ink" style="padding: 13px 22px; border: 1px solid #292E35; border-radius: 10px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #B2BCC6; white-space: nowrap; transition: border-color .2s;">FAQ</a>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <aside data-toc="1" style="width: 186px; flex-shrink: 0;">
+        <div style="position: sticky; top: 104px; display: flex; flex-direction: column; gap: 2px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .2em; color: #414950; margin-bottom: 12px;">ON THIS PAGE</div>
+          {toc.map((t) => (
+            <a href={t.href} class="hv-ring-ink" style="display: flex; align-items: baseline; gap: 9px; padding: 7px 0 7px 12px; border-left: 1px solid #171C22; font-size: 12.5px; color: #7A848F; transition: color .2s, border-color .2s;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #414950;">{t.no}</span><span>{t.title}</span>
+            </a>
+          ))}
+        </div>
+      </aside>
+    </div>
+
+    <footer style="padding: clamp(44px, 7vh, 70px) clamp(20px, 5vw, 60px); border-top: 1px solid #0C1116;">
+      <div style="width: min(1240px, 100%); margin: 0 auto; display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #414950;">ꦕ caraka · MIT · pre-alpha</span>
+        <div style="display: flex; flex-wrap: wrap; gap: clamp(14px, 2.6vw, 28px); font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+          <a href="/" class="hv-ink" style="color: #7A848F;">Home</a>
+          <a href="/docs" class="hv-ink" style="color: #7A848F;">Docs</a>
+          <a href="/security" class="hv-ink" style="color: #7A848F;">Security</a>
+          <a href="/status" class="hv-ink" style="color: #7A848F;">Status</a>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+</Base>
