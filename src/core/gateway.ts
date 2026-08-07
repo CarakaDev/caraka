@@ -388,7 +388,7 @@ export class Gateway {
 
   private async runTask(message: TelegramMessage, prompt: string) {
     const session = await this.sessionFor(message, this.title(prompt));
-    this.store.setState(session.id, "running");
+    await this.setState(session, "running");
     const progress = await this.sendText(
       session.chatId,
       `${this.header(session)}${this.t("run.working")}`,
@@ -434,12 +434,11 @@ export class Gateway {
         permission: (request) => this.askPermission(session, agentId!, request),
       });
       const cancelled = result.stopReason === "cancelled";
-      this.store.setState(session.id, cancelled ? "cancelled" : "done");
+      await this.setState(session, cancelled ? "cancelled" : "done");
       await this.sendResult(
         session,
         `${this.header(session)}${output || this.t(cancelled ? "run.cancelled" : "run.noOutput")}`,
       );
-      await this.markTopic(session, cancelled ? "run.cancelled" : "run.noOutput");
       this.store.audit(
         "run.finish",
         result.stopReason,
@@ -449,7 +448,7 @@ export class Gateway {
       );
     } catch (error) {
       if (this.store.sessionById(session.id)?.state !== "cancelled")
-        this.store.setState(session.id, "failed");
+        await this.setState(session, "failed");
       throw error;
     } finally {
       if (timeout) clearTimeout(timeout);
@@ -460,7 +459,7 @@ export class Gateway {
 
   private async cancelForTime(session: Session, agentId: string) {
     await this.claude.cancel(agentId).catch(() => undefined);
-    this.store.setState(session.id, "cancelled");
+    await this.setState(session, "cancelled");
     this.store.audit(
       "run.timeout",
       "cancelled",
@@ -478,13 +477,26 @@ export class Gateway {
     ).catch(() => undefined);
   }
 
-  // A finished session is marked, never closed and never deleted:
-  // `closeForumTopic` is documented for supergroups only, and
-  // `deleteForumTopic` takes the whole transcript with it.
-  private async markTopic(session: Session, state: "run.cancelled" | "run.noOutput") {
+  // Every state change goes through here so a topic name can never disagree
+  // with the row behind it. The glyph leads because the topic list is read at a
+  // glance, and Telegram shows the start of the name. `deleteForumTopic` takes
+  // the whole transcript with it, and `closeForumTopic` is supergroups only —
+  // so a finished session is renamed, never closed or deleted.
+  private static readonly GLYPH: Record<string, string> = {
+    running: "\u25B8",
+    awaiting_approval: "\u23F8",
+    done: "\u2713",
+    failed: "\u2717",
+    cancelled: "\u2298",
+  };
+
+  private async setState(session: Session, state: string) {
+    this.store.setState(session.id, state);
     if (!session.threadId) return;
+    const glyph = Gateway.GLYPH[state];
+    if (!glyph) return;
     await this.telegram
-      .editTopic(session.chatId, session.threadId, `${session.title} · ${this.t(state)}`)
+      .editTopic(session.chatId, session.threadId, `${glyph} ${session.title}`)
       .catch(() => undefined);
   }
 
@@ -582,7 +594,7 @@ export class Gateway {
       rejectOptionId: reject?.optionId ?? null,
       expiresAt,
     });
-    this.store.setState(session.id, "awaiting_approval");
+    await this.setState(session, "awaiting_approval");
     await this.sendText(
       session.chatId,
       `${this.header(session)}${this.t("permission.header")}\n${request.toolCall.title ?? request.toolCall.kind ?? this.t("permission.fallbackTitle")}${this.permissionTarget(request)}\n\n${this.t("permission.ttl")}`,
@@ -611,7 +623,9 @@ export class Gateway {
         const pending = this.pending.get(callback.id);
         if (pending) clearTimeout(pending.timer);
         this.pending.delete(callback.id);
-        if (!this.stopping) this.store.setState(session.id, "running");
+        // Not awaited: this resolves an ACP permission promise, and the rename
+        // is cosmetic — a slow editForumTopic must not delay the agent.
+        if (!this.stopping) void this.setState(session, "running");
         // Every answer leaves through here, so every answer is guarded.
         resolve(guardPermission(request, response));
       };
@@ -929,7 +943,7 @@ export class Gateway {
         pending.finish({ outcome: { outcome: "cancelled" } });
       this.pending.delete(id);
     }
-    this.store.setState(this.active.local.id, "cancelled");
+    await this.setState(this.active.local, "cancelled");
     await this.sendText(
       this.active.local.chatId,
       `${this.header(this.active.local)}${this.t("stop.cancelling")}`,

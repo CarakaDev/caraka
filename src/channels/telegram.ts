@@ -256,10 +256,15 @@ export class Telegram {
     return this.call<boolean>("deleteMessage", { chat_id: chatId, message_id: messageId });
   }
 
-  createTopic(chatId: string, name: string) {
+  // `icon_color` is settable once, at creation, and only from Telegram's six
+  // documented values. `editForumTopic` cannot change it afterwards, so the
+  // running blue is the colour a topic keeps for life; the state that moves
+  // lives in the name.
+  createTopic(chatId: string, name: string, iconColor = 7322096) {
     return this.call<{ message_thread_id: number }>("createForumTopic", {
       chat_id: chatId,
       name: topicName(name, this.t("session.untitled")),
+      icon_color: iconColor,
     });
   }
 

@@ -202,6 +202,8 @@ function callback(from: number, data: string, chatId = from) {
 async function harness(
   options: {
     allowChats?: string[];
+    topics?: boolean;
+    editTopicFails?: boolean;
     onPrompt?: (prompt: string, route: ClaudeRoute) => Promise<{ stopReason: string }>;
     store?: Store;
     root?: string;
@@ -209,7 +211,7 @@ async function harness(
   } = {},
 ) {
   const root = options.root ?? (await mkdtemp(join(tmpdir(), "caraka-e2e-")));
-  const config = defaultConfig(root, "caraka_test_bot", "42", false);
+  const config = defaultConfig(root, "caraka_test_bot", "42", options.topics ?? false);
   if (options.allowChats) config.telegram.allowChats = options.allowChats;
   const scrub = createScrubber();
   const store = options.store ?? new Store(join(root, "test.db"), scrub);
@@ -243,10 +245,12 @@ async function harness(
     deleteMessage: async () => true,
     createTopic: async () => {
       calls.push("createForumTopic");
-      throw new Error("topics unavailable");
+      if (!options.topics) throw new Error("topics unavailable");
+      return { message_thread_id: 7001 };
     },
-    editTopic: async () => {
-      calls.push("editForumTopic");
+    editTopic: async (_chatId: string, _threadId: string, name: string) => {
+      calls.push(`editForumTopic:${name}`);
+      if (options.editTopicFails) throw new Error("TOPIC_NOT_MODIFIED");
       return true;
     },
     answerCallback: async (_id: string, text: string) => {
@@ -760,6 +764,46 @@ test("the startup notice names the machine once an hour", async () => {
     false,
   );
   await second.finish();
+});
+
+test("a topic gets its colour once and carries its state in the name", async () => {
+  // Roadmap Fase 0: `icon_color` is fixed at creation, so the state that moves
+  // lives in the name, glyph first because Telegram shows the start of it.
+  const h = await harness({ topics: true });
+  h.feed.push(message(42, 42, "ship it"));
+  await h.settle(150);
+  assert.ok(h.calls.includes("createForumTopic"));
+  assert.equal(
+    (h.store.db.prepare("SELECT thread_id FROM sessions").get() as { thread_id: string }).thread_id,
+    "7001",
+  );
+  const renames = h.calls.filter((call) => call.startsWith("editForumTopic:"));
+  assert.deepEqual(renames, ["editForumTopic:▸ ship it", "editForumTopic:✓ ship it"]);
+  await h.finish();
+
+  // The colour itself travels on the wire at creation and never again:
+  // `editForumTopic` exposes no `icon_color` field to change it with.
+  let body: Record<string, unknown> = {};
+  const fetcher: typeof fetch = async (_input, init) => {
+    body = JSON.parse(String(init?.body));
+    return new Response(JSON.stringify({ ok: true, result: { message_thread_id: 1 } }), {
+      headers: { "content-type": "application/json" },
+    });
+  };
+  await new Telegram("fake-token", fetcher).createTopic("42", "ship it");
+  assert.equal(body.icon_color, 7322096);
+});
+
+test("a rename Telegram refuses changes neither the run nor the row", async () => {
+  const h = await harness({ topics: true, editTopicFails: true });
+  h.feed.push(message(42, 42, "ship it"));
+  await h.settle(150);
+  assert.deepEqual(h.prompts, ["ship it"]);
+  assert.equal(
+    (h.store.db.prepare("SELECT state FROM sessions").get() as { state: string }).state,
+    "done",
+  );
+  await h.finish();
 });
 
 test("a session that finishes is marked, never closed and never deleted", async () => {
