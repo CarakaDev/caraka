@@ -13,7 +13,7 @@ import { r } from '../lib/anim'
 // three specification-era stats. The version is package.json's; the other three
 // were already replaced when v0.1 shipped.
 export const stats = [
-  { n: '0.2.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '0.2.1', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Preview', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   { n: 'Claude', label: 'SUPPORTED AGENT', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
   { n: '1', label: 'PRIVATE OPERATOR', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
@@ -89,6 +89,16 @@ export const releases = [
         'Complete live topic and Rich Message checks with the release bot',
         'Use Caraka for one full week and finish five real tasks',
         'Record five real setup sessions from people who have never seen it',
+      ] },
+    ] },
+  { v: '0.2.1', state: 'preview', date: '8 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'FIXED', tone: '#FFD67E', items: [
+        'Single-use cards clear their buttons. Trust and group pairing kept theirs after they were answered; only the approval path cleared. The clear moved to the callback fork, after the principal check, so a member outside the sender allowlist still cannot wipe the operator\u2019s card',
+      ] },
+      { label: 'ADDED', tone: '#8EEE98', items: [
+        'A readiness report after group pairing, repeated by /status in any non-private chat: privacy mode stays on, so Telegram delivers only commands addressed to the bot, replies to its own messages, and service messages \u2014 an ordinary group message never arrives',
+        'The report states whether topics are available, and that granting the rights they need makes the bot an admin, which makes it receive every message in the group',
       ] },
     ] },
   { v: '0.2.0', state: 'preview', date: '7 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),

@@ -277,14 +277,15 @@ test.describe('the comps still decide the layout', () => {
     //
     // Measured 8 August 2026, Chromium at 1440x900, against the copy that
     // shipped with v0.2. Deltas from the v0.1 baselines: / +31, /docs +907,
-    // /install +94, /security +371, /status +524.
+    // /install +94, /security +371, /status +524. /status then took a further +317
+    // when the 0.2.1 changelog card was added.
     const EXPECTED: Record<string, number> = {
       // v0.2 copy — measured from the site (see above)
       '/': 6421,
       '/docs': 5874,
       '/install': 5141,
       '/security': 4757,
-      '/status': 5843,
+      '/status': 6160,
       // still measured against the comp
       '/compare': 5873,
       '/story': 5734,

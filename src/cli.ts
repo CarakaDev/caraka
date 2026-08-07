@@ -14,7 +14,7 @@ import { defaultLanguage, translator, type Language, type Translate } from "./i1
 import { isServiceKind, serviceUnit } from "./service.js";
 import { Store } from "./store/db.js";
 
-const VERSION = "0.2.0";
+const VERSION = "0.2.1";
 
 let t: Translate = translator(defaultLanguage());
 
