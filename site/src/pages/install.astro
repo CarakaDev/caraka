@@ -5,6 +5,8 @@
 import Base from '../layouts/Base.astro'
 import '../styles/pages/install.css'
 import { toc, chain, notNeeded, nodeRows, agents, prices, costNotes, paths, scriptRules, verifyLines } from '../data/install'
+import MobileMenu from '../components/MobileMenu.astro'
+import MobileToc from '../components/MobileToc.astro'
 ---
 
 <Base page="install">
@@ -30,6 +32,7 @@ import { toc, chain, notNeeded, nodeRows, agents, prices, costNotes, paths, scri
         <a href="/security" class="hv-ink" style="color: #7A848F;">Security</a>
       </nav>
       <a href="https://github.com/CarakaDev/caraka" class="hv-ring-ink" style="padding: 9px 16px; border: 1px solid #292E35; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B2BCC6; transition: border-color .2s, color .2s; white-space: nowrap;">GitHub ↗</a>
+      <MobileMenu links={[{ label: 'Home', href: '/' }, { label: 'Docs', href: '/docs' }, { label: 'Security', href: '/security' }]} cta={{ label: 'GitHub ↗', href: 'https://github.com/CarakaDev/caraka' }} />
     </header>
 
     {/* The mockup already carries a <main> further down, wrapping sections 01–07.
@@ -57,6 +60,7 @@ import { toc, chain, notNeeded, nodeRows, agents, prices, costNotes, paths, scri
 
     <div style="display: flex; gap: clamp(28px, 4vw, 56px); width: min(1240px, 100%); margin: 0 auto; padding: clamp(24px, 4vh, 46px) clamp(20px, 4vw, 44px) clamp(70px, 12vh, 120px);">
       <main style="flex: 1; min-width: 0;">
+        <MobileToc chapters={toc} breakpoint={1080} />
 
         <section id="chain" style="margin-bottom: clamp(46px, 8vh, 78px); scroll-margin-top: 90px;">
           <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">

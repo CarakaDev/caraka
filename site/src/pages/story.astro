@@ -5,6 +5,7 @@
 import Base from '../layouts/Base.astro'
 import '../styles/pages/story.css'
 import { verse, beats, mapping, markNotes, sisters } from '../data/story'
+import MobileMenu from '../components/MobileMenu.astro'
 ---
 
 <Base page="story">
@@ -31,6 +32,7 @@ import { verse, beats, mapping, markNotes, sisters } from '../data/story'
         <a href="/install" class="hv-ink" style="color: #7A848F;">Install</a>
       </nav>
       <a href="https://github.com/CarakaDev/caraka" class="hv-ring-ink" style="padding: 9px 16px; border: 1px solid #292E35; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B2BCC6; transition: border-color .2s, color .2s; white-space: nowrap;">GitHub ↗</a>
+      <MobileMenu links={[{ label: 'Home', href: '/' }, { label: 'Docs', href: '/docs' }, { label: 'Compare', href: '/compare' }, { label: 'Install', href: '/install' }]} cta={{ label: 'GitHub ↗', href: 'https://github.com/CarakaDev/caraka' }} />
     </header>
 
     <main id="main">

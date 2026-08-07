@@ -5,6 +5,7 @@
 import Base from '../layouts/Base.astro'
 import '../styles/pages/compare.css'
 import { products, rows, complaints, tokenPaths, picks, honest } from '../data/compare'
+import MobileMenu from '../components/MobileMenu.astro'
 ---
 
 <Base page="compare">
@@ -30,6 +31,7 @@ import { products, rows, complaints, tokenPaths, picks, honest } from '../data/c
         <a href="/story" class="hv-ink" style="color: #7A848F;">Story</a>
       </nav>
       <a href="https://github.com/CarakaDev/caraka" class="hv-ring-ink" style="padding: 9px 16px; border: 1px solid #292E35; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B2BCC6; transition: border-color .2s, color .2s; white-space: nowrap;">GitHub ↗</a>
+      <MobileMenu links={[{ label: 'Home', href: '/' }, { label: 'Docs', href: '/docs' }, { label: 'Story', href: '/story' }]} cta={{ label: 'GitHub ↗', href: 'https://github.com/CarakaDev/caraka' }} />
     </header>
 
     <main id="main">

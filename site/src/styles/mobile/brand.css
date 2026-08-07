@@ -1,0 +1,126 @@
+/* /brand at phone widths.
+   ---------------------------------------------------------------------------
+   The logo book was drawn as a fixed 1200px reference board. Its markup carries
+   every value inline, and an inline declaration beats a stylesheet rule without
+   !important — so nothing here edits the page, and nothing here exists above
+   940px. Every rule below is inside the one media query, and !important appears
+   only where the property it sets is written inline on that element.
+
+   940px is the same line the comps use to retire the right rail.
+   #080B10 is the board's own card background; the scroll fades are painted in
+   it so a specimen that runs off the edge reads as scrollable, not as cut off.
+   ======================================================================== */
+
+@media (max-width: 940px) {
+  /* --- shell ------------------------------------------------------------- */
+
+  .ck-m-shell { width: 100% !important; }
+  .ck-m-shell section { padding: 56px 20px !important; }
+
+  /* --- a row of columns becomes one column ------------------------------- */
+  /* Children shed their fixed widths (300, 420, 480px) and their flex:1, so a
+     stacked card is exactly as tall as its own content. */
+
+  .ck-m-cards {
+    flex-direction: column;
+    gap: 20px !important;
+    align-items: stretch !important;
+  }
+  .ck-m-cards > * {
+    flex: 0 0 auto !important;
+    width: auto !important;
+  }
+
+  /* Two items that only share a line because the line was 1040px wide. */
+  .ck-m-stack {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 8px;
+  }
+
+  /* A row that would rather break than overflow. */
+  .ck-m-wrap { flex-wrap: wrap; }
+
+  /* Label/value tables: the value drops under its label when it no longer
+     fits beside it. Nothing is dropped, only re-broken. */
+  .ck-m-rows > div { flex-wrap: wrap; }
+
+  /* --- specimens that only mean anything at their true size -------------- */
+  /* Construction grid, optical-correction diagram, the mark-size rows and the
+     safe-area frame. Shrinking these deletes the thing they demonstrate, so
+     they keep their exact pixel dimensions and the container scrolls. */
+
+  .ck-m-fix,
+  .ck-m-scroll > * { flex: 0 0 auto; }
+
+  .ck-m-scroll {
+    overflow-x: auto;
+    /* Centred justification would push half the overflow off the left edge,
+       where no scroll can reach it. */
+    justify-content: flex-start !important;
+    /* Two layers: an opaque cover pinned to the right of the *content* (local)
+       over a fade pinned to the right of the *element* (scroll). The fade is
+       visible only while there is more to the right, and disappears by itself
+       at the end — and when the specimen fits, the cover sits on top of it.
+       The fade is the cards' hairline colour, not the card's own #080B10: a
+       gradient ending in the colour underneath it paints nothing (measured at
+       0.43/255 per column), and a background layer sits behind the specimen
+       rather than over it, so only a tint against the card reads as an edge. */
+    background:
+      linear-gradient(#080B10, #080B10) right center / 30px 100% no-repeat local,
+      linear-gradient(90deg, rgba(111, 185, 240, 0), rgba(111, 185, 240, 0.12)) right center / 30px 100% no-repeat scroll,
+      #080B10 !important;
+  }
+
+  /* --- colour ramps ------------------------------------------------------ */
+  /* Eleven swatches across a 1200px board become eleven rows: the swatch with
+     its step number, the hex beside it. Every step and every hex survives. */
+
+  .ck-m-ramp { flex-direction: column; }
+  .ck-m-ramp > div { flex-direction: row !important; }
+  .ck-m-ramp > div > div:first-child {
+    flex: 0 0 116px;
+    height: 46px !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    padding: 0 0 0 14px !important;
+  }
+  .ck-m-ramp > div > div:first-child span { font-size: 11px !important; }
+  .ck-m-ramp > div > div:last-child {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 0 14px !important;
+    text-align: left !important;
+    font-size: 11px !important;
+  }
+
+  /* --- semantic swatches ------------------------------------------------- */
+  /* Glyph tile, then role, hex and decimal beside it. The glyph stays: colour
+     is never the only signal, and this set fails deuteranopia without it. */
+
+  .ck-m-sem {
+    flex-direction: column;
+    gap: 12px !important;
+  }
+  .ck-m-sem > div {
+    flex-direction: row !important;
+    align-items: center;
+    gap: 14px !important;
+  }
+  .ck-m-sem > div > div:first-child {
+    flex: 0 0 84px;
+    height: 60px !important;
+  }
+}
+
+/* --- the discs, below 360px ---------------------------------------------- */
+/* 20px gutters leave 278px of board, and the hero disc is 320px wide, so its
+   outer ring was being sliced flat on both sides by the board's own
+   overflow:hidden. Scaling keeps the circle a circle — shrinking the box would
+   flatten it to an ellipse, and the ring insets are px, so the composition
+   would fall apart at any other size. 0.86 × 320 = 275px. */
+
+@media (max-width: 360px) {
+  .ck-m-fix { transform: scale(0.86); }
+}

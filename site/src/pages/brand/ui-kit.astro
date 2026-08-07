@@ -6,6 +6,8 @@ import Base from '../../layouts/Base.astro'
 import KitBody from '../../components/KitBody.astro'
 import '../../styles/pages/ui-kit.css'
 import { sections, toc, errorPages, rules } from '../../data/ui-kit'
+import MobileMenu from '../../components/MobileMenu.astro'
+import MobileToc from '../../components/MobileToc.astro'
 ---
 
 <Base page="ui-kit">
@@ -32,11 +34,14 @@ import { sections, toc, errorPages, rules } from '../../data/ui-kit'
         <a href="/install" class="hv-ink" style="color: #7A848F;">Install</a>
       </nav>
       <a href="https://github.com/CarakaDev/caraka" class="hv-ring-ink" style="padding: 9px 16px; border: 1px solid #292E35; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B2BCC6; transition: border-color .2s, color .2s; white-space: nowrap;">GitHub ↗</a>
+      <MobileMenu links={[{ label: 'Home', href: '/' }, { label: 'Docs', href: '/docs' }, { label: 'Compare', href: '/compare' }, { label: 'Install', href: '/install' }]} cta={{ label: 'GitHub ↗', href: 'https://github.com/CarakaDev/caraka' }} />
     </header>
 
     <div style="display: flex; gap: clamp(28px, 4vw, 56px); width: min(1320px, 100%); margin: 0 auto; padding: clamp(96px, 14vh, 128px) clamp(20px, 4vw, 44px) clamp(70px, 12vh, 120px);">
 
       <main id="main" style="flex: 1; min-width: 0;">
+        <MobileToc chapters={toc} breakpoint={1080} />
+
         <div style="margin-bottom: clamp(40px, 6vh, 60px);">
           <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px;">
             <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .22em; color: #E2452C;">UI KIT v1.0</span>

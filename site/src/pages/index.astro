@@ -6,6 +6,7 @@ import Base from '../layouts/Base.astro'
 import GapVisual from '../components/GapVisual.astro'
 import '../styles/pages/landing.css'
 import { nav, gaps, states, topics, agents, layers, mem, safety, term, verse, footerLinks } from '../data/landing'
+import MobileMenu from '../components/MobileMenu.astro'
 ---
 
 <Base page="landing">
@@ -45,6 +46,7 @@ import { nav, gaps, states, topics, agents, layers, mem, safety, term, verse, fo
         <a href="/security" class="hv-ink" style="color: #7A848F;">Security</a>
       </nav>
       <a href="https://github.com/CarakaDev/caraka" class="hv-ring-ink" style="padding: 9px 16px; border: 1px solid #292E35; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B2BCC6; transition: border-color .2s, color .2s; white-space: nowrap;">GitHub ↗</a>
+      <MobileMenu links={[{ label: 'Docs', href: '/docs' }, { label: 'Install', href: '/install' }, { label: 'Compare', href: '/compare' }, { label: 'Security', href: '/security' }]} cta={{ label: 'GitHub ↗', href: 'https://github.com/CarakaDev/caraka' }} />
     </header>
 
     <div data-topbar="1" style="position: fixed; left: 0; top: 0; right: 0; height: 2px; z-index: 110; background: #171C22;">

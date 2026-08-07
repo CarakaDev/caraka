@@ -133,3 +133,245 @@ a:focus-visible > .hv-tick { background: #FF7A5E; width: 22px; }
   transition: top 0.18s;
 }
 .ck-skip:focus { top: 12px; color: #FFEDE7; }
+
+/* ===========================================================================
+   Phone widths
+   ---------------------------------------------------------------------------
+   The comps never drew a phone. Their entire responsive behaviour is four
+   rules that hide something, and only one of the four has a replacement.
+   Everything below adds the missing replacements.
+
+   One constraint shapes all of it: the ported markup carries its styling
+   inline, and an inline style beats any stylesheet rule without !important.
+   So no inline value is edited here. New elements start at display:none and
+   are switched on inside a media query; where an inline `display` has to be
+   overridden, !important is used and the reason is written down.
+
+   940px is the phone/desktop line, matching the breakpoint at which the comps
+   retire the right rail. The table of contents keeps its own, because the
+   comps set it per page.
+   ======================================================================== */
+
+/* --- header menu --------------------------------------------------------- */
+
+.ck-menu { display: none; }
+
+/* A closed <details> keeps a layout box for its contents, and an absolutely
+   positioned child escapes the UA's hiding altogether — the panel measured
+   34x273 while shut. Both disclosures say it outright instead. */
+.ck-menu:not([open]) .ck-menu-panel,
+.ck-toc:not([open]) .ck-toc-list { display: none; }
+
+.ck-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-right: -10px;
+  border-radius: 8px;
+  cursor: pointer;
+  list-style: none;
+  transition: background 0.2s;
+}
+/* WebKit draws its own disclosure triangle on summary. */
+.ck-menu-btn::-webkit-details-marker { display: none; }
+.ck-menu-btn::marker { content: ''; }
+.ck-menu[open] .ck-menu-btn { background: #12100F; }
+
+.ck-menu-bars {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 19px;
+  height: 14px;
+}
+.ck-menu-bars i {
+  display: block;
+  height: 1.5px;
+  background: #B2BCC6;
+  border-radius: 2px;
+  transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.16s, background 0.2s;
+}
+.ck-menu[open] .ck-menu-bars i { background: #FF7A5E; }
+/* Three bars fold into the cross. */
+.ck-menu[open] .ck-menu-bars i:nth-child(1) { transform: translateY(5.5px) rotate(45deg); }
+.ck-menu[open] .ck-menu-bars i:nth-child(2) { opacity: 0; }
+.ck-menu[open] .ck-menu-bars i:nth-child(3) { transform: translateY(-5.5px) rotate(-45deg); }
+
+.ck-menu-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 8px clamp(16px, 4vw, 34px) 14px;
+  /* Opaque, and no backdrop-filter of its own. The header already sets one,
+     which makes it a backdrop root; a child that paints outside the header's
+     box then has nothing to sample, so the blur did nothing and the 3%
+     transparency let the page read straight through the menu. */
+  background: #05080C;
+  border-bottom: 1px solid #171C22;
+  box-shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.9);
+  animation: ck-menuIn 0.24s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+@keyframes ck-menuIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.ck-menu-link {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 2px;
+  border-bottom: 1px solid #0C1116;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: #B2BCC6;
+  transition: color 0.2s, padding-left 0.2s;
+}
+.ck-menu-link:last-child { border-bottom: 0; }
+.ck-menu-link:hover,
+.ck-menu-link:focus-visible { color: #FF7A5E; padding-left: 8px; }
+
+.ck-menu-cta {
+  margin-top: 10px;
+  justify-content: center;
+  border: 1px solid #292E35;
+  border-bottom: 1px solid #292E35;
+  border-radius: 9px;
+  color: #FF7A5E;
+}
+.ck-menu-cta:hover,
+.ck-menu-cta:focus-visible { border-color: #E2452C; padding-left: 0; }
+
+/* --- table of contents --------------------------------------------------- */
+
+.ck-toc { display: none; }
+
+.ck-toc-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 16px;
+  background: #0C1116;
+  border: 1px solid #171C22;
+  border-radius: 11px;
+  cursor: pointer;
+  list-style: none;
+  transition: border-color 0.2s;
+}
+.ck-toc-btn::-webkit-details-marker { display: none; }
+.ck-toc-btn::marker { content: ''; }
+.ck-toc[open] .ck-toc-btn { border-color: #2B1612; border-radius: 11px 11px 0 0; }
+
+.ck-toc-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: #7A848F;
+}
+.ck-toc-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #414950;
+}
+.ck-toc-chev {
+  margin-left: auto;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid #7A848F;
+  border-bottom: 1.5px solid #7A848F;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.24s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.ck-toc[open] .ck-toc-chev { transform: translateY(1px) rotate(225deg); border-color: #FF7A5E; }
+
+.ck-toc-list {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 16px 10px;
+  background: #0C1116;
+  border: 1px solid #2B1612;
+  border-top: 0;
+  border-radius: 0 0 11px 11px;
+  animation: ck-menuIn 0.22s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+.ck-toc-link {
+  display: flex;
+  align-items: baseline;
+  gap: 11px;
+  min-height: 44px;
+  padding: 6px 0 6px 12px;
+  border-left: 1px solid #171C22;
+  font-size: 14px;
+  color: #7A848F;
+  transition: color 0.2s, border-color 0.2s;
+}
+.ck-toc-link:hover,
+.ck-toc-link:focus-visible { color: #FF7A5E; border-color: #E2452C; }
+.ck-toc-no {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #414950;
+  flex-shrink: 0;
+}
+
+/* --- switches ------------------------------------------------------------ */
+
+@media (max-width: 940px) {
+  .ck-menu { display: block; }
+
+  /* Seven pages carry `display: flex` inline on their nav, which beats the
+     comps' own `@media (max-width: 620px) { [data-navlinks] { display: none } }`
+     — which is why those headers overflow by 82–141px today and drop the
+     GitHub link off the right edge. !important is the only thing that reaches
+     an inline declaration. */
+  [data-navlinks] { display: none !important; }
+}
+
+/* The comps set this breakpoint per page; both values are honoured. */
+@media (max-width: 1040px) {
+  .ck-toc[data-toc-bp='1040'] { display: block; }
+}
+@media (max-width: 1080px) {
+  .ck-toc[data-toc-bp='1080'] { display: block; }
+}
+
+/* --- tap targets --------------------------------------------------------- */
+/* Grown with a pseudo-element rather than padding: padding moves the layout,
+   and the layout may not move (AC-5.2). Scoped to the link classes and the
+   regions that actually fail the 44px floor, not to every anchor — many carry
+   an inline `position` that this would fight. Coarse pointers only. */
+
+@media (max-width: 940px) and (pointer: coarse) {
+  header a,
+  footer a {
+    position: relative;
+  }
+  header a::after,
+  footer a::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    translate: -50% -50%;
+    width: 100%;
+    height: 100%;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Verified first: no header or footer anchor carries an inline `position`,
+     so promoting them to relative cannot disturb an absolutely positioned
+     child. The marks inside the logo resolve against their own wrapper span. */
+
+  /* The skip link is 36px tall by its own padding; it is the first tab stop
+     and has room to grow. */
+  .ck-skip { min-height: 44px; display: flex; align-items: center; }
+}

@@ -1,0 +1,41 @@
+---
+// The header navigation, for widths where it does not fit.
+//
+// A <details> rather than a button with state in JavaScript: <summary> already
+// has button semantics, is already focusable, already announces expanded and
+// collapsed, and already opens and closes without script. Rebuilding that with
+// aria-expanded and a click handler replaces something correct with an
+// imitation of it.
+//
+// Rendered by every page inside <header>, and display:none above 940px — the
+// same breakpoint at which the mockups retire the right rail. Desktop headers
+// are untouched.
+interface Link {
+  label: string
+  href: string
+}
+
+interface Props {
+  /** Every link in this page's desktop header, in the same order. */
+  links: Link[]
+  /** The trailing call to action, e.g. GitHub or Report. Rendered last, boxed. */
+  cta?: Link
+}
+
+const { links, cta } = Astro.props
+---
+
+<details class="ck-menu">
+  <summary aria-label="Menu" class="ck-menu-btn">
+    <span class="ck-menu-bars" aria-hidden="true"><i></i><i></i><i></i></span>
+  </summary>
+
+  <nav class="ck-menu-panel">
+    {links.map((l) => (
+      <a href={l.href} class="ck-menu-link">{l.label}</a>
+    ))}
+    {cta && (
+      <a href={cta.href} class="ck-menu-link ck-menu-cta">{cta.label}</a>
+    )}
+  </nav>
+</details>

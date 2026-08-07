@@ -14,9 +14,17 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+    // Desktop suite. The comps were drawn at these widths, and site.spec.ts
+    // asserts the things they specify.
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testMatch: /site\.spec\.ts/ },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] }, testMatch: /site\.spec\.ts/ },
+    { name: 'webkit', use: { ...devices['Desktop Safari'] }, testMatch: /site\.spec\.ts/ },
+
+    // Phone suite. The comps never drew a phone; mobile.spec.ts asserts what
+    // spec/mobile.md decided instead. Two engines, because the disclosure
+    // widget and its marker behave differently in each.
+    { name: 'mobile-chrome', use: { ...devices['Pixel 7'] }, testMatch: /mobile\.spec\.ts/ },
+    { name: 'mobile-safari', use: { ...devices['iPhone 14'] }, testMatch: /mobile\.spec\.ts/ },
   ],
   webServer: {
     command: 'npm run preview -- --port 4321',

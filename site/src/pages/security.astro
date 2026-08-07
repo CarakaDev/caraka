@@ -17,6 +17,8 @@ import {
   inScope,
   outScope,
 } from '../data/security'
+import MobileMenu from '../components/MobileMenu.astro'
+import MobileToc from '../components/MobileToc.astro'
 ---
 
 <Base page="security">
@@ -42,6 +44,7 @@ import {
         <a href="/install" class="hv-ink" style="color: #7A848F;">Install</a>
       </nav>
       <a href="mailto:security@caraka.dev" class="hv-ring-ink" style="padding: 9px 16px; border: 1px solid #292E35; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B2BCC6; transition: border-color .2s, color .2s; white-space: nowrap;">Report ↗</a>
+      <MobileMenu links={[{ label: 'Home', href: '/' }, { label: 'Docs', href: '/docs' }, { label: 'Install', href: '/install' }]} cta={{ label: 'Report ↗', href: 'mailto:security@caraka.dev' }} />
     </header>
 
     <section id="main" style="position: relative; padding: clamp(118px, 17vh, 172px) clamp(20px, 5vw, 60px) clamp(50px, 7vh, 80px); overflow: hidden;">
@@ -66,6 +69,8 @@ import {
 
     <div style="display: flex; gap: clamp(28px, 4vw, 56px); width: min(1240px, 100%); margin: 0 auto; padding: clamp(30px, 5vh, 60px) clamp(20px, 4vw, 44px) clamp(70px, 12vh, 120px);">
       <main style="flex: 1; min-width: 0;">
+        <MobileToc chapters={toc} breakpoint={1080} />
+
 
         <section id="boundary" style="margin-bottom: clamp(48px, 8vh, 80px); scroll-margin-top: 90px;">
           <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">

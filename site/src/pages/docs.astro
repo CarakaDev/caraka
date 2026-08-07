@@ -5,6 +5,8 @@
 import Base from '../layouts/Base.astro'
 import '../styles/pages/docs.css'
 import { chapters } from '../data/docs'
+import MobileMenu from '../components/MobileMenu.astro'
+import MobileToc from '../components/MobileToc.astro'
 ---
 
 <Base page="docs">
@@ -31,11 +33,14 @@ import { chapters } from '../data/docs'
         <a href="/story" class="hv-ink" style="color: #7A848F;">Story</a>
       </nav>
       <a href="https://github.com/CarakaDev/caraka" class="hv-ring-ink" style="padding: 9px 16px; border: 1px solid #292E35; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B2BCC6; transition: border-color .2s, color .2s; white-space: nowrap;">GitHub ↗</a>
+      <MobileMenu links={[{ label: 'Home', href: '/' }, { label: 'Compare', href: '/compare' }, { label: 'Install', href: '/install' }, { label: 'Story', href: '/story' }]} cta={{ label: 'GitHub ↗', href: 'https://github.com/CarakaDev/caraka' }} />
     </header>
 
     <div style="display: flex; gap: clamp(30px, 5vw, 66px); width: min(1240px, 100%); margin: 0 auto; padding: clamp(96px, 14vh, 130px) clamp(20px, 5vw, 48px) clamp(70px, 12vh, 120px);">
 
       <main id="main" style="flex: 1; min-width: 0;">
+        <MobileToc chapters={chapters} breakpoint={1040} />
+
 
         <div style="margin-bottom: clamp(40px, 6vh, 62px); animation: ck-boot .8s cubic-bezier(.2,.9,.3,1) both;">
           <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px;">

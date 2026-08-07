@@ -1,0 +1,93 @@
+/* Caraka — /brand/warna at phone widths.
+   ---------------------------------------------------------------------------
+   The comp is a fixed 1200px reference board: no min(), no clamp(), nothing on
+   the shell that yields. Everything below turns it into one column, and nothing
+   below applies above 940px — the whole file is one media query, so the desktop
+   render is byte-for-byte what it was.
+
+   The ported markup carries its styling inline, and an inline declaration beats
+   a stylesheet rule without !important. So no `style` attribute is edited here:
+   elements get a class, and the class wins with !important. !important appears
+   only where the property it sets is also written inline; every other rule is
+   plain, because there is nothing inline to beat.
+
+   940px is the line the comps themselves draw when they retire the right rail. */
+
+@media (max-width: 940px) {
+  /* --- shell ------------------------------------------------------------- */
+  /* `width: 1200px` inline. This is the 810px overflow, in one declaration. */
+  .ck-m-shell { width: 100% !important; }
+
+  /* `padding: 80px` inline. 80px of gutter on a 390px screen leaves 230px of
+     column, so the board's own rhythm is kept vertically and cut sideways. */
+  .ck-m-sec { padding: 44px 20px !important; }
+
+  /* --- rows that become a column ----------------------------------------- */
+  /* Every `display: flex` row on the board — the masthead, the hero and its
+     decision card, the role cards, the paired panels, the CVD cards, the token
+     columns, the colophon. Reading order is already top-to-bottom-left-to-right,
+     so the source order is the stacked order and no markup moves. */
+  .ck-m-stack {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 22px !important;
+  }
+  /* Inline `flex: 1` / `flex: 1.2` divides the width on desktop. Down the
+     column it would divide height instead, against a container that has none. */
+  .ck-m-stack > * { flex: none !important; }
+
+  /* The two panels pinned to a pixel width in the gutter: the KEPUTUSAN card
+     (330px) and the status legend (230px). Both are now full-bleed. */
+  .ck-m-fixw { width: auto !important; }
+
+  /* --- colour ramps ------------------------------------------------------ */
+  /* Eleven kesumba steps and twelve neutrals, drawn as vertical slices. At
+     390px each slice is 32px wide and the hex under it is unreadable, so each
+     becomes a row: the swatch on the left carrying its step number, the hex
+     beside it. The strip keeps its rounded clip, so it still reads as one ramp
+     rather than a list of unrelated colours. */
+  .ck-m-swatches { flex-direction: column; }
+
+  .ck-m-swatch {
+    flex: none !important;
+    flex-direction: row !important;
+  }
+  .ck-m-swatch > :first-child {
+    flex: none;
+    width: 108px;
+    height: auto !important;
+    min-height: 46px;
+    align-items: center !important;
+    padding-bottom: 0 !important;
+  }
+  .ck-m-swatch > :last-child {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    text-align: left !important;
+    padding: 11px 14px !important;
+    /* 8.5–9px was sized for a 32px column. The row has space for the value. */
+    font-size: 11px !important;
+  }
+
+  /* --- colour-blindness strips ------------------------------------------- */
+  /* Not stacked. The strip exists to be read across: five simulated status
+     colours side by side, and the finding is how little separates two of them.
+     Broken into five rows there is nothing left to compare, so it keeps its
+     true size and scrolls instead (AC-4.4).
+
+     The scrollability is marked with a mask fade rather than an ::after: the
+     strip is its own scroll container, and a pseudo-element inside one scrolls
+     away with the content. A mask is painted against the border box, which
+     does not move. */
+  .ck-m-cvd {
+    overflow-x: auto;
+    padding-bottom: 6px;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 34px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 34px), transparent);
+  }
+  /* ponytail: the fade is unconditional, so between ~443px and 940px it marks a
+     strip that already fits. Detecting overflow needs script or a scroll-driven
+     animation; neither is worth it for a width this site does not design for. */
+  .ck-m-cvd > * { flex: 0 0 64px !important; }
+}

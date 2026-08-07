@@ -168,3 +168,51 @@ test.describe('honesty', () => {
     }
   })
 })
+
+test.describe('the comps still decide the layout', () => {
+  test('every route keeps the document height its mockup renders at', async ({ page, browserName }) => {
+    // Chromium only, and not for convenience: engines disagree on font metrics.
+    // Firefox renders /brand/warna 11px taller than Chromium does, and always
+    // did — measured against an unmodified copy of the page. A single set of
+    // numbers can therefore only be true for one engine. Chromium is the one
+    // scripts/compare-to-mockup.mjs renders the comps in, so the numbers below
+    // and the parity check they guard come from the same place.
+    test.skip(browserName !== 'chromium', 'height baselines are per-engine')
+
+    // These numbers came from rendering each comp beside its port at 1440x900;
+    // all ten matched exactly. They are the tripwire for any later change —
+    // phone work especially, since a media query written one breakpoint too
+    // wide would land here first.
+    //
+    // This lives in the desktop suite on purpose. Under device emulation the
+    // same pages measure a pixel taller on three routes, which is sub-pixel
+    // rounding at a different device scale factor, not a regression.
+    const EXPECTED: Record<string, number> = {
+      '/': 6374,
+      '/docs': 5220,
+      '/install': 4934,
+      '/compare': 5873,
+      '/security': 4546,
+      '/status': 5008,
+      '/story': 5734,
+      '/brand': 10171,
+      '/brand/warna': 5258,
+      '/brand/ui-kit': 9525,
+    }
+
+    await page.setViewportSize({ width: 1440, height: 900 })
+    const drift: string[] = []
+
+    for (const [path, expected] of Object.entries(EXPECTED)) {
+      await page.goto(path, { waitUntil: 'networkidle' })
+      // No veil wait: the landing intro is position:fixed and contributes
+      // nothing to document height. Ten routes at the full settle would take
+      // the whole test past its timeout for no measurement gain.
+      await page.waitForTimeout(300)
+      const got = await page.evaluate(() => document.body.scrollHeight)
+      if (got !== expected) drift.push(`${path}: ${got} (comp renders at ${expected})`)
+    }
+
+    expect(drift).toEqual([])
+  })
+})

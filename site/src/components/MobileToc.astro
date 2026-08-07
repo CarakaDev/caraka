@@ -1,0 +1,42 @@
+---
+// The on-page table of contents, for widths where the mockups hide the sidebar.
+//
+// The comps drop `[data-toc]` below 1040px (1080px on two pages) and put
+// nothing in its place, so a phone reader loses every in-page link. This
+// renders the same list, collapsed, above the content.
+//
+// Same <details> reasoning as MobileMenu. Anchors need no scroll handler:
+// `[id] { scroll-margin-top }` in global.css already clears the fixed header.
+interface Chapter {
+  no: string
+  title: string
+  href: string
+}
+
+interface Props {
+  chapters: Chapter[]
+  /** Matches the page's own `[data-toc]` breakpoint: 1040 or 1080. */
+  breakpoint?: 1040 | 1080
+  /** The eyebrow above the desktop list, so both read the same. */
+  label?: string
+}
+
+const { chapters, breakpoint = 1040, label = 'ON THIS PAGE' } = Astro.props
+---
+
+<details class="ck-toc" data-toc-bp={breakpoint}>
+  <summary class="ck-toc-btn">
+    <span class="ck-toc-label">{label}</span>
+    <span class="ck-toc-count">{chapters.length}</span>
+    <span class="ck-toc-chev" aria-hidden="true"></span>
+  </summary>
+
+  <nav class="ck-toc-list">
+    {chapters.map((c) => (
+      <a href={c.href} class="ck-toc-link">
+        <span class="ck-toc-no">{c.no}</span>
+        <span>{c.title}</span>
+      </a>
+    ))}
+  </nav>
+</details>

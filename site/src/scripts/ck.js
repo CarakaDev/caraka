@@ -58,3 +58,86 @@ document.addEventListener('click', async (e) => {
   addEventListener('resize', update, { passive: true })
   write()
 }
+
+// --- disclosure menus -------------------------------------------------------
+// <details> gives open/close, focus, and the expanded/collapsed announcement
+// for free. Two things it does not give, and both matter on a phone:
+// Escape does not close it, and the page behind it keeps scrolling.
+{
+  const menu = () => document.querySelector('.ck-menu[open]')
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return
+    const open = menu()
+    if (!open) return
+    open.removeAttribute('open')
+    open.querySelector('summary')?.focus()
+  })
+
+  // A tap outside the panel should dismiss it, the same as any menu.
+  document.addEventListener('click', (e) => {
+    const open = menu()
+    if (open && e.target instanceof Node && !open.contains(e.target)) open.removeAttribute('open')
+  })
+
+  // Scroll lock. Two things had to be measured rather than assumed:
+  // the root element is the scroller, so locking the body alone computes to
+  // overflow:hidden and changes nothing; and iOS Safari ignores overflow:hidden
+  // on the root anyway. Pinning the body and carrying the offset is the only
+  // approach that holds on both, and it is why the scroll position has to be
+  // restored by hand afterwards.
+  let lockedAt = 0
+  const setLock = (on) => {
+    const root = document.documentElement
+    const body = document.body
+    if (on) {
+      lockedAt = window.scrollY
+      root.style.overflow = 'hidden'
+      body.style.position = 'fixed'
+      body.style.top = `-${lockedAt}px`
+      body.style.left = '0'
+      body.style.right = '0'
+    } else {
+      root.style.overflow = ''
+      body.style.position = ''
+      body.style.top = ''
+      body.style.left = ''
+      body.style.right = ''
+      window.scrollTo(0, lockedAt)
+    }
+  }
+
+  document.addEventListener(
+    'toggle',
+    (e) => {
+      if (!(e.target instanceof Element) || !e.target.classList.contains('ck-menu')) return
+      setLock(e.target.hasAttribute('open'))
+    },
+    true, // toggle does not bubble
+  )
+}
+
+// --- scrollable regions -----------------------------------------------------
+// A region you can only reach by dragging is unreachable by keyboard. Chromium
+// and Firefox make an overflowing container focusable on their own; WebKit does
+// not, so on Safari the right-hand half of a colour ramp or a simulation strip
+// cannot be reached at all. Confirmed by tabbing 80 times on /brand/warna:
+// reached in Chromium and Firefox, never in WebKit.
+//
+// Found by measurement, not by class name, and applied only while the element
+// actually overflows — on a container that fits, a tab stop leads nowhere.
+// `tabindex` alone is the fix; `role="region"` without an accessible name
+// announces worse than no role at all.
+{
+  const candidates = () => document.querySelectorAll('[class*="ck-m-"], [data-scroll-region]')
+  const sync = () => {
+    for (const el of candidates()) {
+      const ox = getComputedStyle(el).overflowX
+      const scrollable = (ox === 'auto' || ox === 'scroll') && el.scrollWidth > el.clientWidth + 1
+      if (scrollable) el.setAttribute('tabindex', '0')
+      else el.removeAttribute('tabindex')
+    }
+  }
+  sync()
+  addEventListener('resize', sync, { passive: true })
+}

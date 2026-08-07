@@ -133,8 +133,12 @@ describe('ports', () => {
       for (const pattern of ['sc-for', 'sc-if', 'style-hover', 'hint-placeholder', 'data-screen-label', '.dc.html"', 'className']) {
         if (src.includes(pattern)) leftovers.push(`${f.replace(SITE, '')}: ${pattern}`)
       }
-      // `{{ x }}` is design-comp interpolation; Astro uses a single brace.
-      if (/\{\{\s*\w/.test(src)) leftovers.push(`${f.replace(SITE, '')}: {{ }}`)
+      // Design-comp interpolation is `{{ name }}` or `{{ item.field }}` and
+      // nothing else. Matching on `{{` alone flags every Astro object prop —
+      // `cta={{ label: '…' }}` is a JSX object literal, not a leftover.
+      if (/\{\{\s*[a-zA-Z_$][\w$]*(\.[\w$]+)*\s*\}\}/.test(src)) {
+        leftovers.push(`${f.replace(SITE, '')}: {{ }}`)
+      }
     }
     expect(leftovers).toEqual([])
   })

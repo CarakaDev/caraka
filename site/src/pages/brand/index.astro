@@ -4,16 +4,17 @@
 // design-comp runtime.
 import Base from '../../layouts/Base.astro'
 import '../../styles/pages/brand.css'
+import '../../styles/mobile/brand.css'
 import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, semantic, donts } from '../../data/brand'
 ---
 
 <Base page="brand">
-  <div style="width: 1200px; margin: 0 auto; background: #05070A; font-family: 'Public Sans', sans-serif; color: #E8F2FB;">
+  <div class="ck-m-shell" style="width: 1200px; margin: 0 auto; background: #05070A; font-family: 'Public Sans', sans-serif; color: #E8F2FB;">
 
     <main id="main">
 
     <section style="padding: 90px 80px 80px; border-bottom: 1px solid rgba(111,185,240,0.10);">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 64px;">
+      <div class="ck-m-stack" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 64px;">
         <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6;">CARAKA · LOGO BOOK</div>
         <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; color: #3F5B72;">v1.0 · 7 AGUSTUS 2026</div>
       </div>
@@ -24,7 +25,7 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
         <div aria-hidden="true" style={`position: absolute; left: 22px; bottom: 22px; width: 22px; height: 22px; border-bottom: 2px solid ${accent}; border-left: 2px solid ${accent};`}></div>
         <div aria-hidden="true" style={`position: absolute; right: 22px; bottom: 22px; width: 22px; height: 22px; border-bottom: 2px solid ${accent}; border-right: 2px solid ${accent};`}></div>
 
-        <div style="position: relative; width: 320px; height: 320px; display: flex; align-items: center; justify-content: center;">
+        <div class="ck-m-fix" style="position: relative; width: 320px; height: 320px; display: flex; align-items: center; justify-content: center;">
           <div style={`position: absolute; inset: 0; border-radius: 50%; background: repeating-conic-gradient(from 0deg, ${glowSoft} 0deg 0.6deg, transparent 0.6deg 12deg); animation: ck-spin 40s linear infinite;`}></div>
           <div style="position: absolute; inset: 9px; border-radius: 50%; background: #080B10;"></div>
           <div style={`position: absolute; inset: 22px; border-radius: 50%; border: 1px solid transparent; border-top-color: ${accent}; border-right-color: ${glowSoft}; animation: ck-spin 6.5s linear infinite;`}></div>
@@ -52,12 +53,12 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
         </div>
       </div>
 
-      <div style="display: flex; gap: 56px; margin-top: 56px;">
+      <div class="ck-m-cards" style="display: flex; gap: 56px; margin-top: 56px;">
         <div style="flex: 1;">
           <h1 style="margin: 0 0 14px; font-size: 40px; font-weight: 700; letter-spacing: -0.025em; color: #F2F8FF;">Logo Book</h1>
           <p style="margin: 0; font-size: 15.5px; line-height: 1.65; color: #8FAAC2; text-wrap: pretty;">Panduan lengkap identitas visual Caraka: filosofi, anatomi lambang, versi animasi dan statis, favicon, aturan ruang, penempatan, dan batasan pemakaian.</p>
         </div>
-        <div style="width: 300px; display: flex; flex-direction: column; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #6E93B2;">
+        <div class="ck-m-rows" style="width: 300px; display: flex; flex-direction: column; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #6E93B2;">
           <div style="display: flex; justify-content: space-between;"><span style="color:#3F5B72;">nama</span><span>Caraka · ꦕꦫꦏ</span></div>
           <div style="display: flex; justify-content: space-between;"><span style="color:#3F5B72;">arti</span><span>utusan</span></div>
           <div style="display: flex; justify-content: space-between;"><span style="color:#3F5B72;">domain</span><span>caraka.dev</span></div>
@@ -68,9 +69,9 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
 
     <section style="padding: 80px; border-bottom: 1px solid rgba(111,185,240,0.10);">
       <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 32px;">01 · FILOSOFI</div>
-      <div style="display: flex; gap: 64px;">
+      <div class="ck-m-cards" style="display: flex; gap: 64px;">
         <div style="width: 420px; flex-shrink: 0;">
-          <div style="background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 40px 36px; display: flex; flex-direction: column; gap: 20px;">
+          <div class="ck-m-rows" style="background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 40px 36px; display: flex; flex-direction: column; gap: 20px;">
             <div style="display: flex; align-items: baseline; gap: 18px;"><span style="font-family: 'Noto Sans Javanese', serif; font-size: 34px; line-height: 1.5; color: #F2F8FF;">ꦲꦤꦕꦫꦏ</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4E7EA6;">hana caraka</span></div>
             <div style="display: flex; align-items: baseline; gap: 18px;"><span style="font-family: 'Noto Sans Javanese', serif; font-size: 34px; line-height: 1.5; color: #8FAAC2;">ꦢꦠꦱꦮꦭ</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4E7EA6;">data sawala</span></div>
             <div style="display: flex; align-items: baseline; gap: 18px;"><span style="font-family: 'Noto Sans Javanese', serif; font-size: 34px; line-height: 1.5; color: #8FAAC2;">ꦥꦝꦗꦪꦚ</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4E7EA6;">padha jayanya</span></div>
@@ -96,8 +97,8 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
       <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 12px;">02 · ANATOMI LAMBANG</div>
       <p style="margin: 0 0 40px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 680px; text-wrap: pretty;">Lambang dibangun dari satu unit: diameter lingkaran <strong style="color:#C9DFF2;font-weight:600;">d</strong>. Dua lingkaran identik bersinggungan di titik pusat komposisi, membentuk ∞. Aksara ꦕ diletakkan di persilangan itu.</p>
 
-      <div style="display: flex; gap: 24px;">
-        <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 40px; display: flex; align-items: center; justify-content: center;">
+      <div class="ck-m-cards" style="display: flex; gap: 24px;">
+        <div class="ck-m-scroll" style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 40px; display: flex; align-items: center; justify-content: center;">
           <div style="position: relative; width: 300px; height: 200px;">
             <div style="position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(111,185,240,0.22);"></div>
             <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(111,185,240,0.22);"></div>
@@ -110,7 +111,7 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
           </div>
         </div>
 
-        <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 40px; display: flex; align-items: center; justify-content: center;">
+        <div class="ck-m-scroll" style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 40px; display: flex; align-items: center; justify-content: center;">
           <div style="position: relative; width: 300px; height: 200px;">
             <div style="position: absolute; left: 50%; top: 50%; width: 102px; height: 102px; margin: -51px 0 0 -102px; border-radius: 50%; border: 1px solid rgba(111,185,240,0.20);"></div>
             <div style="position: absolute; left: 50%; top: 50%; width: 102px; height: 102px; margin: -51px 0 0 0; border-radius: 50%; border: 1px solid rgba(111,185,240,0.20);"></div>
@@ -123,7 +124,7 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
         </div>
       </div>
 
-      <div style="display: flex; gap: 24px; margin-top: 24px;">
+      <div class="ck-m-cards" style="display: flex; gap: 24px; margin-top: 24px;">
         <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
           <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; color: #4E7EA6;">KONSTRUKSI</div>
           <p style="margin: 0; font-size: 13.5px; line-height: 1.65; color: #8FAAC2; text-wrap: pretty;">Jarak antar pusat lingkaran = <strong style="color:#C9DFF2;font-weight:600;">d</strong>. Lebar total = 2d. Tinggi = d. Aksara diset pada 0,59d dan berdiri di titik singgung.</p>
@@ -140,13 +141,13 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
       <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 12px;">03 · LOGO ANIMASI</div>
       <p style="margin: 0 0 40px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 680px; text-wrap: pretty;">Versi hidup dipakai di hero situs, splash <code style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#C9DFF2;">caraka init</code>, dan video. <strong style="color:#C9DFF2;font-weight:600;">Tidak pernah</strong> di favicon, avatar, atau badge.</p>
 
-      <div style="display: flex; gap: 24px;">
+      <div class="ck-m-cards" style="display: flex; gap: 24px;">
         <div style="width: 480px; flex-shrink: 0; position: relative; height: 400px; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; overflow: hidden; display: flex; align-items: center; justify-content: center; background-image: linear-gradient(rgba(111,185,240,0.055) 1px, transparent 1px), linear-gradient(90deg, rgba(111,185,240,0.055) 1px, transparent 1px); background-size: 32px 32px; animation: ck-drift 14s linear infinite;">
           <div aria-hidden="true" style={`position: absolute; left: 18px; top: 18px; width: 20px; height: 20px; border-top: 2px solid ${accent}; border-left: 2px solid ${accent};`}></div>
           <div aria-hidden="true" style={`position: absolute; right: 18px; top: 18px; width: 20px; height: 20px; border-top: 2px solid ${accent}; border-right: 2px solid ${accent};`}></div>
           <div aria-hidden="true" style={`position: absolute; left: 18px; bottom: 18px; width: 20px; height: 20px; border-bottom: 2px solid ${accent}; border-left: 2px solid ${accent};`}></div>
           <div aria-hidden="true" style={`position: absolute; right: 18px; bottom: 18px; width: 20px; height: 20px; border-bottom: 2px solid ${accent}; border-right: 2px solid ${accent};`}></div>
-          <div style="position: relative; width: 280px; height: 280px; display: flex; align-items: center; justify-content: center;">
+          <div class="ck-m-fix" style="position: relative; width: 280px; height: 280px; display: flex; align-items: center; justify-content: center;">
             <div style={`position: absolute; inset: 0; border-radius: 50%; background: repeating-conic-gradient(from 0deg, ${glowSoft} 0deg 0.6deg, transparent 0.6deg 12deg); animation: ck-spin 40s linear infinite;`}></div>
             <div style="position: absolute; inset: 9px; border-radius: 50%; background: #080B10;"></div>
             <div style={`position: absolute; inset: 20px; border-radius: 50%; border: 1px solid transparent; border-top-color: ${accent}; border-right-color: ${glowSoft}; animation: ck-spin 6.5s linear infinite;`}></div>
@@ -174,7 +175,7 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
 
         <div style="flex: 1; display: flex; flex-direction: column; gap: 14px;">
           <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; color: #4E7EA6;">SPESIFIKASI GERAK</div>
-          <div style="display: flex; flex-direction: column; gap: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+          <div class="ck-m-rows" style="display: flex; flex-direction: column; gap: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
             <div style="display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid rgba(111,185,240,0.10);"><span style="color:#6E93B2;">piringan tik</span><span style="color:#C9DFF2;">40s · linear · searah</span></div>
             <div style="display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid rgba(111,185,240,0.10);"><span style="color:#6E93B2;">busur luar</span><span style="color:#C9DFF2;">6,5s · linear · searah</span></div>
             <div style="display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid rgba(111,185,240,0.10);"><span style="color:#6E93B2;">busur tengah</span><span style="color:#C9DFF2;">10s · linear · berlawanan</span></div>
@@ -197,7 +198,7 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
       <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 12px;">04 · LOGO STATIS &amp; LOCKUP</div>
       <p style="margin: 0 0 40px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 680px; text-wrap: pretty;">Tanpa gerak dan cahaya, lambang menyusut ke bentuk intinya: dua lingkaran bersinggungan dengan ꦕ di persilangan. Ini yang dipakai di 95% tempat.</p>
 
-      <div style="display: flex; gap: 24px; margin-bottom: 24px;">
+      <div class="ck-m-cards" style="display: flex; gap: 24px; margin-bottom: 24px;">
         <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 44px; display: flex; flex-direction: column; align-items: center; gap: 20px;">
           <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; align-self: flex-start;">MARK</div>
           <div style="position: relative; width: 190px; height: 95px; display: flex; align-items: center; justify-content: center; margin: 20px 0;">
@@ -209,7 +210,7 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
 
         <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 44px; display: flex; flex-direction: column; align-items: center; gap: 20px;">
           <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; align-self: flex-start;">LOCKUP MENDATAR</div>
-          <div style="display: flex; align-items: center; gap: 22px; margin: 30px 0;">
+          <div class="ck-m-wrap" style="display: flex; align-items: center; gap: 22px; margin: 30px 0;">
             <div style="position: relative; width: 118px; height: 59px; display: flex; align-items: center; justify-content: center;">
               <div style={`position: absolute; left: 50%; top: 50%; width: 57px; height: 57px; margin: -28.5px 0 0 -57px; border-radius: 50%; border: 1.5px solid ${accent};`}></div>
               <div style={`position: absolute; left: 50%; top: 50%; width: 57px; height: 57px; margin: -28.5px 0 0 0; border-radius: 50%; border: 1.5px solid ${accent};`}></div>
@@ -220,7 +221,7 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
         </div>
       </div>
 
-      <div style="display: flex; gap: 24px;">
+      <div class="ck-m-cards" style="display: flex; gap: 24px;">
         <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 44px; display: flex; flex-direction: column; align-items: center; gap: 20px;">
           <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; align-self: flex-start;">LOCKUP BERTUMPUK</div>
           <div style="display: flex; flex-direction: column; align-items: center; gap: 18px; margin: 20px 0;">
@@ -247,7 +248,7 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
       <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 12px;">05 · INVERT &amp; MONOKROM</div>
       <p style="margin: 0 0 40px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 680px; text-wrap: pretty;">Empat varian resmi. Urutan prioritas: aksen di gelap → aksen di terang → monokrom terang → monokrom gelap.</p>
 
-      <div style="display: flex; gap: 20px;">
+      <div class="ck-m-cards" style="display: flex; gap: 20px;">
         <div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
           <div style="height: 190px; background: #07090D; border: 1px solid rgba(111,185,240,0.14); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
             <div style="position: relative; width: 128px; height: 64px; display: flex; align-items: center; justify-content: center;">
@@ -298,10 +299,10 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
       <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 12px;">06 · FAVICON &amp; APP ICON</div>
       <p style="margin: 0 0 40px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 680px; text-wrap: pretty;">Di bawah 48px, dua lingkaran hilang dan hanya <strong style="color:#C9DFF2;font-weight:600;">ꦕ</strong> yang tersisa di kotak padat. Itu keputusan, bukan kompromi — lambang besar boleh rumit selama versi kecilnya satu bentuk tegas.</p>
 
-      <div style="display: flex; gap: 24px;">
+      <div class="ck-m-cards" style="display: flex; gap: 24px;">
         <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 40px;">
           <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; margin-bottom: 32px;">DENGAN CINCIN · ≥ 64PX</div>
-          <div style="position: relative; display: flex; align-items: flex-end; gap: 26px;">
+          <div class="ck-m-scroll" style="position: relative; display: flex; align-items: flex-end; gap: 26px;">
             <div style="position: absolute; left: 0; right: 0; bottom: 22px; height: 1px; background: rgba(111,185,240,0.12);"></div>
             <div style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px;">
               <div style="width: 128px; height: 128px; border-radius: 28px; background: #07090D; border: 1px solid rgba(111,185,240,0.18); display: flex; align-items: center; justify-content: center;">
@@ -328,7 +329,7 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
 
         <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 40px;">
           <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; margin-bottom: 32px;">TANPA CINCIN · &lt; 48PX</div>
-          <div style="position: relative; display: flex; align-items: flex-end; gap: 26px;">
+          <div class="ck-m-scroll" style="position: relative; display: flex; align-items: flex-end; gap: 26px;">
             <div style="position: absolute; left: 0; right: 0; bottom: 22px; height: 1px; background: rgba(111,185,240,0.12);"></div>
             <div style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px;">
               <div style={`width: 48px; height: 48px; border-radius: 11px; background: ${accent}; display: flex; align-items: center; justify-content: center;`}><span style={`font-family: 'Noto Sans Javanese', serif; font-size: 29px; line-height: 1; display: block; transform: translateY(17.5%); color: ${inkOnAccent};`}>ꦕ</span></div>
@@ -346,10 +347,10 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
         </div>
       </div>
 
-      <div style="display: flex; gap: 24px; margin-top: 24px;">
+      <div class="ck-m-cards" style="display: flex; gap: 24px; margin-top: 24px;">
         <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 32px 36px;">
           <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; margin-bottom: 20px;">BERKAS YANG DIBUTUHKAN</div>
-          <div style="display: flex; flex-direction: column; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+          <div class="ck-m-rows" style="display: flex; flex-direction: column; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
             <div style="display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid rgba(111,185,240,0.08);"><span style="color:#C9DFF2;">favicon.ico</span><span style="color:#6E93B2;">16 · 32 · 48</span></div>
             <div style="display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid rgba(111,185,240,0.08);"><span style="color:#C9DFF2;">icon.svg</span><span style="color:#6E93B2;">adaptif</span></div>
             <div style="display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid rgba(111,185,240,0.08);"><span style="color:#C9DFF2;">apple-touch-icon.png</span><span style="color:#6E93B2;">180</span></div>
@@ -369,8 +370,8 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
       <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 12px;">07 · RUANG AMAN &amp; UKURAN MINIMUM</div>
       <p style="margin: 0 0 40px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 680px; text-wrap: pretty;">Ruang aman = <strong style="color:#C9DFF2;font-weight:600;">½d</strong> (setengah diameter lingkaran) di keempat sisi. Tidak ada elemen lain yang boleh masuk.</p>
 
-      <div style="display: flex; gap: 24px;">
-        <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 40px; display: flex; align-items: center; justify-content: center;">
+      <div class="ck-m-cards" style="display: flex; gap: 24px;">
+        <div class="ck-m-scroll" style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 40px; display: flex; align-items: center; justify-content: center;">
           <div style="position: relative; padding: 46px 46px;">
             <div style="position: absolute; inset: 0; border: 1px dashed rgba(111,185,240,0.30);"></div>
             <div style="position: absolute; left: 46px; top: 0; bottom: 0; width: 1px; background: rgba(111,185,240,0.14);"></div>
@@ -388,7 +389,7 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
 
         <div style="flex: 1; display: flex; flex-direction: column; gap: 14px;">
           <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; color: #4E7EA6;">UKURAN MINIMUM</div>
-          <div style="display: flex; flex-direction: column; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+          <div class="ck-m-rows" style="display: flex; flex-direction: column; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
             <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(111,185,240,0.10);"><span style="color:#6E93B2;">mark bercincin · layar</span><span style="color:#C9DFF2;">48 px tinggi</span></div>
             <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(111,185,240,0.10);"><span style="color:#6E93B2;">mark bercincin · cetak</span><span style="color:#C9DFF2;">12 mm tinggi</span></div>
             <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(111,185,240,0.10);"><span style="color:#6E93B2;">mark padat (ꦕ)</span><span style="color:#C9DFF2;">16 px</span></div>
@@ -407,7 +408,7 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
       <p style="margin: 0 0 32px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 730px; text-wrap: pretty;"><strong style="color:#C9DFF2;font-weight:600;">Satu hue merek, sisanya nada.</strong> Seluruh roda warna disisir untuk mencari hue kedua dan ketiga; kandidat terbaik hanya mencapai ΔE 13,2 — di bawah ambang aman 15. Enam warna status Telegram sudah memenuhi ruang warna, jadi hue baru apa pun pasti bertabrakan. Sistem lengkap ada di <strong style="color:#C9DFF2;font-weight:600;">Caraka Sistem Warna</strong>.</p>
 
       <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; margin-bottom: 14px;">PRIMARY — KESUMBA · OKLCH H=31,8°</div>
-      <div style="display: flex; border-radius: 12px; overflow: hidden; margin-bottom: 14px;">
+      <div class="ck-m-ramp" style="display: flex; border-radius: 12px; overflow: hidden; margin-bottom: 14px;">
         {ramp.map((r) => (
           <div style="flex: 1; display: flex; flex-direction: column;">
             <div style={`height: 84px; background: ${r.hex}; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px;`}><span style={`font-family: 'JetBrains Mono', monospace; font-size: 9.5px; font-weight: 700; color: ${r.ink};`}>{r.step}</span></div>
@@ -418,7 +419,7 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
       <p style="margin: 0 0 34px; font-size: 13px; line-height: 1.6; color: #8FAAC2; text-wrap: pretty;"><strong style="color:#FF7A5E;font-weight:600;">500 untuk lambang dan tombol; 400 untuk teks.</strong> Kesumba 500 hanya mencapai 4,89:1 di atas void — cukup untuk elemen besar, tidak untuk teks kecil. Kesumba 400 mencapai 7,83:1.</p>
 
       <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; margin-bottom: 14px;">SEMANTIK — TERKUNCI PADA IKON TOPIC TELEGRAM</div>
-      <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+      <div class="ck-m-sem" style="display: flex; gap: 16px; margin-bottom: 16px;">
         {semantic.map((s) => (
           <div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
             <div style={`height: 104px; border-radius: 12px; background: ${s.hex}; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 26px; color: #07090D;`}>{s.glyph}</div>
@@ -431,7 +432,7 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
       </div>
 
       <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; margin-bottom: 14px;">SECONDARY — NETRAL DINGIN · H=250°</div>
-      <div style="display: flex; border-radius: 12px; overflow: hidden;">
+      <div class="ck-m-ramp" style="display: flex; border-radius: 12px; overflow: hidden;">
         {neutrals.map((n) => (
           <div style="flex: 1; display: flex; flex-direction: column;">
             <div style={`height: 76px; background: ${n.hex}; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px;`}><span style={`font-family: 'JetBrains Mono', monospace; font-size: 9.5px; font-weight: 700; color: ${n.ink};`}>{n.step}</span></div>
@@ -445,7 +446,7 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
     <section style="padding: 80px; border-bottom: 1px solid rgba(111,185,240,0.10);">
       <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 40px;">09 · TIPOGRAFI</div>
 
-      <div style="display: flex; gap: 24px;">
+      <div class="ck-m-cards" style="display: flex; gap: 24px;">
         <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 36px;">
           <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; margin-bottom: 22px;">AKSARA · NOTO SANS JAVANESE</div>
           <div style="font-family: 'Noto Sans Javanese', serif; font-size: 44px; line-height: 1.5; color: #F2F8FF; margin-bottom: 18px;">ꦕꦫꦏ</div>
@@ -472,7 +473,7 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
       <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 12px;">10 · PENEMPATAN</div>
       <p style="margin: 0 0 40px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 680px; text-wrap: pretty;">Empat konteks di mana logo benar-benar muncul. Bukan mockup dekoratif — ini tempat aslinya.</p>
 
-      <div style="display: flex; gap: 24px; margin-bottom: 24px;">
+      <div class="ck-m-cards" style="display: flex; gap: 24px; margin-bottom: 24px;">
         <div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
           <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6;">TERMINAL · npx caraka init</div>
           <div style="background: #05070A; border: 1px solid rgba(111,185,240,0.10); border-radius: 12px; padding: 24px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.9; color: #7E9AB2;">
@@ -508,7 +509,7 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
         </div>
       </div>
 
-      <div style="display: flex; gap: 24px;">
+      <div class="ck-m-cards" style="display: flex; gap: 24px;">
         <div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
           <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6;">TELEGRAM · AVATAR BOT</div>
           <div style="background: #17212B; border-radius: 12px; padding: 20px 22px; display: flex; align-items: center; gap: 14px;">
@@ -522,7 +523,7 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
 
         <div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
           <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6;">SITUS · HEADER</div>
-          <div style="background: #05070A; border: 1px solid rgba(111,185,240,0.10); border-radius: 12px; padding: 22px 26px; display: flex; align-items: center; justify-content: space-between;">
+          <div class="ck-m-wrap" style="background: #05070A; border: 1px solid rgba(111,185,240,0.10); border-radius: 12px; padding: 22px 26px; display: flex; align-items: center; justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 14px;">
               <div style="position: relative; width: 58px; height: 29px; display: flex; align-items: center; justify-content: center;">
                 <div style={`position: absolute; left: 50%; top: 50%; width: 28px; height: 28px; margin: -14px 0 0 -28px; border-radius: 50%; border: 1px solid ${accent};`}></div>
@@ -561,7 +562,7 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
       <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 12px;">12 · CADANGAN TANPA AKSARA</div>
       <p style="margin: 0 0 40px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 680px; text-wrap: pretty;">Noto Sans Javanese belum terpasang default di banyak sistem. Tanpa cadangan, logo berubah jadi kotak tofu — jauh lebih merusak daripada mundur ke latin.</p>
 
-      <div style="display: flex; gap: 24px;">
+      <div class="ck-m-cards" style="display: flex; gap: 24px;">
         <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 40px; display: flex; flex-direction: column; align-items: center; gap: 24px;">
           <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #4E7EA6; align-self: flex-start;">CADANGAN · MARK</div>
           <div style="position: relative; width: 186px; height: 93px; display: flex; align-items: center; justify-content: center; margin: 12px 0;">
@@ -587,7 +588,7 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
       <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #4E7EA6; margin-bottom: 12px;">13 · DAFTAR ASET</div>
       <p style="margin: 0 0 40px; font-size: 15px; line-height: 1.65; color: #8FAAC2; max-width: 680px; text-wrap: pretty;">Struktur berkas di <code style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#C9DFF2;">brand/</code> pada repo.</p>
 
-      <div style="display: flex; gap: 24px;">
+      <div class="ck-m-cards" style="display: flex; gap: 24px;">
         <div style="flex: 1; background: #080B10; border: 1px solid rgba(111,185,240,0.10); border-radius: 14px; padding: 32px 36px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 2; color: #8FAAC2;">
           <div style="color: #4E7EA6;">brand/</div>
           <div><span style="color:#3F5B72;">├─</span> <span style="color:#C9DFF2;">mark/</span></div>
@@ -627,7 +628,7 @@ import { accent, accentInk, glowSoft, glowStrong, inkOnAccent, ramp, neutrals, s
         </div>
       </div>
 
-      <div style="margin-top: 56px; padding-top: 32px; border-top: 1px solid rgba(111,185,240,0.10); display: flex; justify-content: space-between; align-items: center;">
+      <div class="ck-m-stack" style="margin-top: 56px; padding-top: 32px; border-top: 1px solid rgba(111,185,240,0.10); display: flex; justify-content: space-between; align-items: center;">
         <div style="display: flex; align-items: center; gap: 14px;">
           <div style="position: relative; width: 52px; height: 26px; display: flex; align-items: center; justify-content: center;">
             <div style={`position: absolute; left: 50%; top: 50%; width: 25px; height: 25px; margin: -12.5px 0 0 -25px; border-radius: 50%; border: 1px solid ${accent};`}></div>
