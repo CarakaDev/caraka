@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { PAGES } from '../src/lib/site'
+import { PAGES, ogPath } from '../src/lib/site'
 
 const ROUTES = Object.entries(PAGES).map(([key, meta]) => ({ key, ...meta }))
 
@@ -20,7 +20,7 @@ test.describe('routes', () => {
       const abs = (p: string) => new URL(p, 'https://caraka.dev').href
       await expect(page.locator('link[rel=canonical]')).toHaveAttribute('href', abs(r.path))
       await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', abs(r.path))
-      await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', abs(`/og/${r.key}.png`))
+      await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', abs(ogPath(r.key)))
       await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image')
     })
   }
@@ -28,8 +28,8 @@ test.describe('routes', () => {
   test('the OG image each page points at actually exists', async ({ request }) => {
     // AC-4.3 — a 404 here is invisible until someone shares a link.
     for (const r of ROUTES) {
-      const res = await request.get(`/og/${r.key}.png`)
-      expect(res.status(), `/og/${r.key}.png`).toBe(200)
+      const res = await request.get(ogPath(r.key))
+      expect(res.status(), ogPath(r.key)).toBe(200)
       expect(Number(res.headers()['content-length'])).toBeGreaterThan(1000)
     }
   })
@@ -184,6 +184,11 @@ test.describe('the comps still decide the layout', () => {
     // phone work especially, since a media query written one breakpoint too
     // wide would land here first.
     //
+    // Three of these moved when the comps did: the minimum-size rule replaced
+    // the ringed lockups in the two colophons (+6 each), and the UI kit gained
+    // an eighth rule (+59 with its own header change). Each new number was
+    // measured against the updated comp and matches it exactly.
+    //
     // This lives in the desktop suite on purpose. Under device emulation the
     // same pages measure a pixel taller on three routes, which is sub-pixel
     // rounding at a different device scale factor, not a regression.
@@ -195,9 +200,11 @@ test.describe('the comps still decide the layout', () => {
       '/security': 4386,
       '/status': 5319,
       '/story': 5734,
-      '/brand': 10171,
-      '/brand/warna': 5258,
-      '/brand/ui-kit': 9525,
+      '/brand': 10177,
+      '/brand/warna': 5264,
+      '/brand/ui-kit': 9584,
+      '/brand/og': 6821,
+      '/brand/readme': 5474,
     }
 
     await page.setViewportSize({ width: 1440, height: 900 })

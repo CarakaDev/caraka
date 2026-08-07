@@ -1,0 +1,226 @@
+---
+// Ported from design/mockups/Caraka README.dc.html. Markup and inline styles are
+// transcribed as-is; see site/AGENTS.md for the substitutions that replace the
+// design-comp runtime.
+//
+// The comp fetched its three SVGs into blob URLs at runtime. They are static
+// files here, copied into public/brand/ from assets/ and from the org-profile
+// repository, so the board renders without a build-time dependency on a sibling
+// checkout. The animation inside them is SMIL, which is exactly why an <img>
+// carries it: no stylesheet, no script.
+import Base from '../../layouts/Base.astro'
+import '../../styles/pages/readme.css'
+import '../../styles/mobile/readme.css'
+import { showChrome, badges, legend, projects, tree } from '../../data/readme'
+---
+
+<Base page="readme">
+  <div class="ck-m-shell" style="width: 1360px; margin: 0 auto; padding: 0 0 120px; background: #05080C; font-family: 'Public Sans', sans-serif; color: #E9EDF2;">
+
+    <main id="main">
+
+    <section class="ck-m-sec" style="padding: 72px 80px 56px;">
+      <div class="ck-m-stack" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 36px;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #7A848F;">CARAKA · README</div>
+        <button type="button" data-replay class="hv-ring-ink" style="padding: 9px 18px; background: #0C1116; border: 1px solid #292E35; border-radius: 8px; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; letter-spacing: 0.1em; color: #B2BCC6; transition: border-color .2s, color .2s;">↻ ULANGI ANIMASI</button>
+      </div>
+
+      <div class="ck-m-stack" style="display: flex; gap: 52px; align-items: flex-start;">
+        <div style="flex: 1;">
+          <h1 style="margin: 0 0 16px; font-size: 40px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.08; color: #F6F9FC; text-wrap: pretty;">Animasi di GitHub, tanpa GIF</h1>
+          <p style="margin: 0 0 14px; font-size: 15.5px; line-height: 1.7; color: #95A0AB; text-wrap: pretty;">GitHub membuang <code style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#FF7A5E;">&lt;script&gt;</code> dan <code style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#FF7A5E;">&lt;style&gt;</code> dari markdown, tapi gambar dilewatkan apa adanya. Jadi animasinya dititipkan di dalam <strong style="color:#D2D8DF;font-weight:600;">SVG</strong>, pakai <strong style="color:#D2D8DF;font-weight:600;">SMIL</strong> — <code style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#B2BCC6;">&lt;animate&gt;</code> dan <code style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#B2BCC6;">&lt;animateTransform&gt;</code>, markup gerak bawaan SVG yang tidak butuh stylesheet sama sekali. Ukurannya kecil, tajam di layar retina, dan tidak ada GIF 4 MB yang harus di-render ulang tiap ganti kata.</p>
+          <p style="margin: 0; font-size: 15.5px; line-height: 1.7; color: #95A0AB; text-wrap: pretty;">Satu batasan yang menentukan bentuknya: <strong style="color:#D2D8DF;font-weight:600;">font eksternal tidak ikut termuat</strong> — SVG dirender pakai font milik pembaca. Makanya aksara ꦕ tidak dipakai di dalam banner (di Windows sering jadi kotak kosong); lambangnya dibangun dari geometri cincin yang sudah jadi motif situs, dan teksnya cuma mono dan sans generik. Aksara tetap ada di badan README, tempat GitHub menanganinya sebagai teks biasa.</p>
+        </div>
+        <div class="ck-m-fixw" style="width: 340px; flex-shrink: 0; background: #12100F; border: 1px solid #2B1612; border-radius: 12px; padding: 26px 28px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #FF7A5E; margin-bottom: 18px;">TIGA BERKAS</div>
+          <div style="display: flex; flex-direction: column; gap: 14px; font-size: 13px; line-height: 1.55; color: #B2BCC6;">
+            <div><code style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F6F9FC;">assets/banner.svg.txt</code><br /><span style="color:#7A848F;">Gerbang membuka, cincin berputar, utusan menelusuri lemniskat.</span></div>
+            <div><code style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F6F9FC;">assets/flow.svg.txt</code><br /><span style="color:#7A848F;">Paket berjalan Telegram → caraka → agent, dan progres balik lagi.</span></div>
+            <div><code style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F6F9FC;">org-profile/assets/banner.svg.txt</code><br /><span style="color:#7A848F;">Dua utusan berjalan saling mendekat, gerbang approval naik di tengah.</span></div>
+          </div>
+          <div style="margin-top: 18px; padding-top: 16px; border-top: 1px solid #2B1612; font-size: 12.5px; line-height: 1.55; color: #95A0AB;">Ketiganya berakhiran <code style="font-family:'JetBrains Mono',monospace;color:#FF7A5E;">.txt</code> karena editor ini membuang markup gerak dari berkas <code style="font-family:'JetBrains Mono',monospace;color:#B2BCC6;">.svg</code>. <strong style="color:#F6F9FC;font-weight:600;">Buang akhiran <code style="font-family:'JetBrains Mono',monospace;">.txt</code>-nya saat commit</strong> — isinya sudah final, tidak ada yang perlu diubah.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="ck-m-sec" style="padding: 0 80px 48px;">
+      <div class="ck-m-cap" style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 16px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #FF7A5E;">01 · BANNER REPO</span>
+        <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent);"></span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #5D666F;">assets/banner.svg.txt · 1280×440</span>
+      </div>
+      <div style="border: 1px solid #171C22; border-radius: 12px; overflow: hidden; background: #05080C;">
+        <img data-svg="banner" src="/brand/banner.svg" alt="Banner caraka" style="display: block; width: 100%; aspect-ratio: 1280 / 440;" />
+      </div>
+    </section>
+
+    <section class="ck-m-sec" style="padding: 0 80px 48px;">
+      <div class="ck-m-cap" style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 16px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #FF7A5E;">02 · DIAGRAM ALUR</span>
+        <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent);"></span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #5D666F;">assets/flow.svg.txt · 1280×380</span>
+      </div>
+      <div style="border: 1px solid #171C22; border-radius: 12px; overflow: hidden; background: #05080C;">
+        <img data-svg="flow" src="/brand/flow.svg" alt="Alur Telegram ke caraka ke coding agent" style="display: block; width: 100%; aspect-ratio: 1280 / 380;" />
+      </div>
+    </section>
+
+    <section class="ck-m-sec" style="padding: 0 80px 56px;">
+      <div class="ck-m-cap" style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 16px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #FF7A5E;">03 · BANNER ORGANISASI</span>
+        <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent);"></span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #5D666F;">org-profile/assets/banner.svg.txt · 1280×340</span>
+      </div>
+      <div style="border: 1px solid #171C22; border-radius: 12px; overflow: hidden; background: #05080C;">
+        <img data-svg="org" src="/brand/org-banner.svg" alt="Banner CarakaDev" style="display: block; width: 100%; aspect-ratio: 1280 / 340;" />
+      </div>
+      <p style="margin: 14px 0 0; font-size: 13.5px; line-height: 1.6; color: #7A848F; max-width: 760px; text-wrap: pretty;">Loop delapan detik: dua utusan berjalan saling mendekat, berhenti di gerbang yang naik di tengah, gerbang menyala hijau <em style="color:#8EEE98;font-style:normal;">✓ human</em>, lalu keduanya lewat. Legendanya berakhir dengan dua mayat; animasinya berakhir dengan dua yang selamat. Itu seluruh tesis organisasinya, tanpa satu kalimat pun.</p>
+    </section>
+
+    <section class="ck-m-sec" style="padding: 0 80px 48px;">
+      <div class="ck-m-cap" style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 16px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #FF7A5E;">04 · TAMPAK DI GITHUB</span>
+        <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent);"></span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #5D666F;">CarakaDev/caraka · README.md</span>
+      </div>
+
+      <div style="border: 1px solid #30363d; border-radius: 12px; overflow: hidden; background: #0d1117;">
+        {showChrome && (
+          <div class="ck-m-ghhead" style="display: flex; align-items: center; gap: 10px; padding: 12px 18px; background: #161b22; border-bottom: 1px solid #30363d; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #ff5f57;"></span>
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #febc2e;"></span>
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #28c840;"></span>
+            <span style="margin-left: 12px; padding: 4px 12px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #8b949e;">github.com/CarakaDev/caraka</span>
+          </div>
+        )}
+
+        <div class="ck-m-ghhead" style="padding: 16px 20px; border-bottom: 1px solid #21262d; display: flex; align-items: center; gap: 10px; font-size: 15px;">
+          <span style="color: #8b949e;">📖</span>
+          <span style="color: #4493f8; font-weight: 600;">CarakaDev</span><span style="color: #8b949e;">/</span><span style="color: #4493f8; font-weight: 700;">caraka</span>
+          <span style="padding: 2px 9px; border: 1px solid #30363d; border-radius: 100px; font-size: 11px; color: #8b949e;">Public</span>
+          <span style="margin-left: auto; display: flex; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #8b949e;">
+            <span style="padding: 4px 10px; border: 1px solid #30363d; border-radius: 6px; background: #21262d;">★ Star</span>
+            <span style="padding: 4px 10px; border: 1px solid #30363d; border-radius: 6px; background: #21262d;">⑂ Fork</span>
+          </span>
+        </div>
+
+        <div class="ck-m-ghbody" style="padding: 36px 48px 44px; font-family: -apple-system, 'Segoe UI', 'Public Sans', sans-serif; color: #e6edf3; font-size: 16px; line-height: 1.6;">
+          <img data-svg="banner" src="/brand/banner.svg" alt="caraka" style="display: block; width: 100%; aspect-ratio: 1280 / 440; margin-bottom: 26px;" />
+
+          <div class="ck-m-badges" style="display: flex; justify-content: center; gap: 7px; margin-bottom: 18px;">
+            {badges.map((b) => (
+              <span style="display: flex; height: 20px; border-radius: 3px; overflow: hidden; font-family: 'JetBrains Mono', monospace; font-size: 10.5px;">
+                <span style="display: flex; align-items: center; padding: 0 7px; background: #05080C; color: #c9d1d9;">{b.k}</span>
+                <span style={`display: flex; align-items: center; padding: 0 7px; background: ${b.tone}; color: ${b.ink};`}>{b.v}</span>
+              </span>
+            ))}
+          </div>
+
+          <div style="text-align: center; margin-bottom: 30px; font-size: 14.5px; color: #8b949e;">
+            <a href="https://caraka.dev" style="color: #4493f8; font-weight: 700;">caraka.dev</a> · <a href="#" style="color: #4493f8;">Blueprint</a> · <a href="#" style="color: #4493f8;">Install</a> · <a href="#" style="color: #4493f8;">Threat model</a> · <a href="#" style="color: #4493f8;">Roadmap</a> · <a href="#" style="color: #4493f8;">🇮🇩 Bahasa Indonesia</a>
+          </div>
+
+          <div style="padding: 12px 18px; border-left: 4px solid #30363d; color: #8b949e; margin-bottom: 30px; font-size: 15px;">
+            <strong style="color: #e6edf3;">Status: pre-alpha.</strong> The specification is complete and public; implementation is starting. There is nothing useful to install yet. The npm package currently reserves the name.
+          </div>
+
+          <div style="height: 1px; background: #21262d; margin-bottom: 26px;"></div>
+
+          <h2 style="margin: 0 0 14px; font-size: 25px; font-weight: 600; color: #e6edf3; padding-bottom: 8px; border-bottom: 1px solid #21262d;">What it is</h2>
+          <p style="margin: 0 0 16px; color: #c9d1d9; text-wrap: pretty;">Coding agents are locked to one terminal on one machine. Caraka is the missing transport — a thin bridge, not another assistant.</p>
+          <p style="margin: 0 0 26px; color: #c9d1d9; text-wrap: pretty;">It has <strong style="color:#e6edf3;">no agent loop, no tools, no model provider, and no plugin marketplace.</strong> Your coding agent already has all of those, and its versions are better. Caraka adds only what chat needs — identity, sessions, approvals, memory, and audit.</p>
+
+          <img data-svg="flow" src="/brand/flow.svg" alt="alur" style="display: block; width: 100%; aspect-ratio: 1280 / 380; margin-bottom: 14px;" />
+
+          <div style="margin-bottom: 28px; padding: 9px 14px; border: 1px solid #30363d; border-radius: 6px; font-size: 14px; color: #8b949e; display: inline-flex; align-items: center; gap: 8px;">
+            <span style="font-size: 11px;">▸</span> Same thing, as plain text
+          </div>
+
+          <h2 style="margin: 0 0 14px; font-size: 25px; font-weight: 600; color: #e6edf3; padding-bottom: 8px; border-bottom: 1px solid #21262d;">Try it (soon)</h2>
+          <div style="padding: 16px 18px; background: #161b22; border: 1px solid #30363d; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 13.5px; line-height: 1.8; color: #c9d1d9; margin-bottom: 16px;">
+            <div>npx caraka init      <span style="color: #8b949e;"># guided setup — checks Node, finds your agent, pairs the bot</span></div>
+            <div>npx caraka up        <span style="color: #8b949e;"># start the envoy</span></div>
+          </div>
+          <p style="margin: 0; color: #c9d1d9; font-size: 15px; text-wrap: pretty;">No agent installed? <code style="font-family:'JetBrains Mono',monospace;font-size:13.5px;background:#161b22;padding:2px 6px;border-radius:5px;">init</code> offers the free path: Gemini CLI, 1,000 requests a day, no card.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="ck-m-sec" style="padding: 0 80px 48px;">
+      <div class="ck-m-cap" style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 16px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #FF7A5E;">05 · PROFIL ORGANISASI</span>
+        <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent);"></span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #5D666F;">CarakaDev/.github · profile/README.md</span>
+      </div>
+
+      <div style="border: 1px solid #30363d; border-radius: 12px; overflow: hidden; background: #0d1117;">
+        <div class="ck-m-ghhead" style="padding: 16px 20px; border-bottom: 1px solid #21262d; display: flex; align-items: center; gap: 12px;">
+          <span style="width: 30px; height: 30px; border-radius: 7px; background: #E2452C; display: flex; align-items: center; justify-content: center;"><span style="font-family: 'Noto Sans Javanese', serif; font-size: 18px; line-height: 1; display: block; transform: translateY(17.5%); color: #FFEDE7;">ꦕ</span></span>
+          <span style="font-size: 19px; font-weight: 700; color: #e6edf3;">CarakaDev</span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #8b949e;">2 repositories</span>
+        </div>
+
+        <div class="ck-m-ghbody" style="padding: 36px 48px 44px; font-family: -apple-system, 'Segoe UI', 'Public Sans', sans-serif; color: #e6edf3; font-size: 16px; line-height: 1.6;">
+          <img data-svg="org" src="/brand/org-banner.svg" alt="CarakaDev" style="display: block; width: 100%; aspect-ratio: 1280 / 340; margin-bottom: 22px;" />
+          <p style="margin: 0 0 26px; text-align: center; color: #c9d1d9;">Tools for coding agents that can be <strong style="color:#e6edf3;">interrupted, questioned, and asked to explain themselves.</strong></p>
+          <div style="height: 1px; background: #21262d; margin-bottom: 26px;"></div>
+
+          <h3 style="margin: 0 0 14px; font-size: 20px; font-weight: 600; color: #e6edf3;">The name</h3>
+          <p style="margin: 0 0 16px; color: #c9d1d9; text-wrap: pretty;">In the Javanese script, the first four letters are not letters. They are a sentence.</p>
+          <div style="padding: 4px 0 4px 18px; border-left: 4px solid #30363d; margin-bottom: 18px; color: #8b949e; line-height: 1.75;">
+            {legend.map((l) => (
+              <div><span style="font-family: 'Noto Sans Javanese', serif; color: #c9d1d9;">{l.aksara}</span> · <em style="color: #c9d1d9;">{l.roman}</em> — {l.gloss}</div>
+            ))}
+          </div>
+          <p style="margin: 0 0 26px; color: #c9d1d9; text-wrap: pretty;">Both obeyed perfectly. Both were right according to the instructions they held. Both died — killed not by disloyalty but by <strong style="color:#e6edf3;">loyalty without context</strong>. Every project here is a different answer to that failure.</p>
+
+          <h3 style="margin: 0 0 14px; font-size: 20px; font-weight: 600; color: #e6edf3;">Projects</h3>
+          <div style="border: 1px solid #30363d; border-radius: 6px; overflow: hidden; margin-bottom: 16px;">
+            {projects.map((p) => (
+              <div class="ck-m-proj" style="display: grid; grid-template-columns: 130px 1fr 92px; gap: 18px; padding: 15px 18px; border-bottom: 1px solid #21262d; align-items: start; font-size: 14.5px;">
+                <span style="color: #4493f8; font-weight: 700;">{p.name}</span>
+                <span style="color: #c9d1d9; line-height: 1.55; text-wrap: pretty;">{p.desc}</span>
+                <span style={`font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 2px 8px; border-radius: 5px; background: #161b22; color: ${p.tone}; justify-self: start;`}>{p.status}</span>
+              </div>
+            ))}
+          </div>
+          <p style="margin: 0; color: #8b949e; font-size: 15px;">One is sent. One remembers.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="ck-m-sec" style="padding: 0 80px;">
+      <div class="ck-m-stack" style="display: flex; gap: 20px; align-items: stretch;">
+        <div style="flex: 1; background: #0C1116; border: 1px solid #171C22; border-radius: 14px; padding: 30px 32px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.18em; color: #7A848F; margin-bottom: 20px;">TARUH DI MANA</div>
+          <div class="ck-m-tree" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.9; color: #B2BCC6; white-space: pre-wrap;">{tree}</div>
+          <p style="margin: 20px 0 0; font-size: 13.5px; line-height: 1.6; color: #7A848F; text-wrap: pretty;">Profil organisasi butuh repo publik bernama persis <code style="font-family:'JetBrains Mono',monospace;color:#FF7A5E;">.github</code> di bawah <code style="font-family:'JetBrains Mono',monospace;color:#FF7A5E;">CarakaDev</code>. Isinya muncul otomatis di halaman depan organisasi.</p>
+        </div>
+        <div class="ck-m-fixw" style="width: 400px; flex-shrink: 0; background: #12100F; border: 1px solid #2B1612; border-radius: 14px; padding: 30px 32px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.18em; color: #FF7A5E; margin-bottom: 20px;">YANG PERLU DIINGAT</div>
+          <div style="display: flex; flex-direction: column; gap: 14px; font-size: 13.5px; line-height: 1.6; color: #95A0AB;">
+            <p style="margin: 0; text-wrap: pretty;"><strong style="color:#F6F9FC;font-weight:600;">Buang akhiran <code style="font-family:'JetBrains Mono',monospace;color:#FF7A5E;">.txt</code></strong> saat menaruh berkasnya di repo. Markdown-nya sudah menunjuk ke <code style="font-family:'JetBrains Mono',monospace;color:#B2BCC6;">assets/banner.svg</code>, jadi tidak ada yang perlu disesuaikan lagi.</p>
+            <p style="margin: 0; text-wrap: pretty;">Pakai <strong style="color:#F6F9FC;font-weight:600;">path relatif</strong> di markdown, bukan URL <code style="font-family:'JetBrains Mono',monospace;color:#B2BCC6;">raw.githubusercontent</code> — raw menyajikan SVG sebagai teks dan gambarnya tidak muncul.</p>
+            <p style="margin: 0; text-wrap: pretty;">Kartu ini gelap di kedua tema GitHub, jadi tidak perlu dua berkas <code style="font-family:'JetBrains Mono',monospace;color:#B2BCC6;">&lt;picture&gt;</code>.</p>
+            <p style="margin: 0; text-wrap: pretty;">Animasi <strong style="color:#F6F9FC;font-weight:600;">mulai ulang tiap gambar dimuat</strong>, jadi bagian intronya selalu terlihat oleh pengunjung baru — sisanya loop pelan supaya tidak mengganggu saat orang membaca.</p>
+            <p style="margin: 0; text-wrap: pretty;">npm tidak menampilkan gambar berpath relatif. Diagram teks polos sengaja disimpan di <code style="font-family:'JetBrains Mono',monospace;color:#B2BCC6;">&lt;details&gt;</code> supaya pembaca npm tetap kebagian.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    </main>
+
+  </div>
+
+  {/* The comp's `replay` handler re-fetched the three SVGs so their SMIL intro
+      plays again. Same thing, without a new bundle: a fresh query string is a
+      fresh image resource, and an image resource starts its timeline at zero. */}
+  <script is:inline>
+    document.querySelector('[data-replay]')?.addEventListener('click', () => {
+      for (const img of document.querySelectorAll('img[data-svg]')) {
+        img.src = img.src.split('?')[0] + '?r=' + Date.now()
+      }
+    })
+  </script>
+</Base>

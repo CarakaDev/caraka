@@ -162,6 +162,20 @@ Ramp penuh 50–950 dibangun di OKLCH pada hue tetap **31,8°**, lightness berja
 
 **Aturan keras:** kesumba-500 **tidak boleh dipakai untuk teks** — hanya 4,89:1 di atas void. Untuk teks pakai kesumba-400.
 
+#### Ukuran minimum lambang
+
+| Varian | Minimum |
+|---|---|
+| Mark bercincin, layar | **48 px tinggi** |
+| Mark bercincin, cetak | 12 mm tinggi |
+| Mark padat (ꦕ di kotak) | 16 px |
+| Lockup mendatar | 120 px lebar |
+| Wordmark ꦕꦫꦏ | 24 px tinggi |
+
+Di bawah 48px, **cincin dilepas dan lambang menjadi kotak padat**. Cincin setipis 1px hilang atau berubah jadi bubur piksel. Header dan footer situs karena itu memakai kotak padat, bukan varian bercincin.
+
+**Satu pengecualian:** indikator gerak ∞ (dua busur berputar dengan titik mengorbit) boleh dipakai di bawah 48px, karena ia komponen *loading*, bukan lambang identitas. Bedanya jelas dari geraknya. Lihat UI Kit §10.
+
 #### Secondary — netral dingin
 
 Membawa 90% permukaan. Hue dikunci di **250°**, chroma 0,005–0,020 — cukup untuk terasa dingin dan teknis, terlalu rendah untuk bersaing dengan kesumba.

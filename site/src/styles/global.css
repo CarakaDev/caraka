@@ -28,7 +28,18 @@
 }
 
 /* The aksara. Only the Javanese subset is loaded — the Latin subset of this
-   family is never used, Public Sans and JetBrains Mono cover Latin. */
+   family is never used, Public Sans and JetBrains Mono cover Latin.
+
+   One measured difference from the comps: they pull this family from the
+   Google Fonts CDN, whose build reports about 2.06em of ascent+descent to
+   reserve the sandhangan and pasangan space. The fontsource subset here
+   reports about 1.06em. Identical glyphs, identical rendering — the only
+   effect is that an aksara in an *inline* span occupies a shorter line box,
+   which makes /brand/readme's verse rows 4px tighter each than the comp's.
+   Nowhere else differs, because every other aksara in the design carries
+   `line-height: 1; display: block` per docs/brand.md §6, which pins the box
+   and makes font metrics irrelevant. The comp's own verse span omits that
+   rule; the site reproduces the comp's markup rather than correcting it. */
 @font-face {
   font-family: 'Noto Sans Javanese';
   font-style: normal;

@@ -44,11 +44,7 @@
 
   <header style="position: fixed; left: 0; right: 0; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px clamp(16px, 4vw, 34px); background: rgba(5,8,12,.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid #0C1116;">
     <a href="Caraka Landing.dc.html" style="display: flex; align-items: center; gap: 12px;">
-      <span style="position: relative; width: 44px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-        <span style="position: absolute; left: 50%; top: 50%; width: 21px; height: 21px; margin: -10.5px 0 0 -21px; border-radius: 50%; border: 1px solid #E2452C;"></span>
-        <span style="position: absolute; left: 50%; top: 50%; width: 21px; height: 21px; margin: -10.5px 0 0 0; border-radius: 50%; border: 1px solid #E2452C;"></span>
-        <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 12px; line-height: 1; display: block; transform: translateY(17.5%); color: #F6F9FC;">ꦕ</span>
-      </span>
+      <span style="width: 27px; height: 27px; border-radius: 7px; background: #E2452C; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><span style="font-family: 'Noto Sans Javanese', serif; font-size: 16px; line-height: 1; display: block; transform: translateY(17.5%); color: #FFEDE7;">ꦕ</span></span>
       <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: .2em; color: #E9EDF2;">caraka</span>
       <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .16em; color: #E2452C; padding: 3px 8px; border: 1px solid #2B1612; border-radius: 5px;">UI KIT</span>
     </a>
@@ -448,7 +444,8 @@ class Component extends DCLogic {
         { n: "04", t: "Every empty state carries the exact command that fills it. An empty screen with no next step is a dead end." },
         { n: "05", t: "Errors name what happened and what to do. No stack traces, no apology, no blame." },
         { n: "06", t: "Ring geometry is written in px. Percentage margins resolve against width, which puts the pair off-centre." },
-        { n: "07", t: "Disabled controls do not react to hover. The cursor should tell the truth before the click does." },
+        { n: "07", t: "Below 48px the rings drop and the mark becomes a solid tile. Site headers and footers use the tile. The one exception is the animated ∞ indicator, which is a loading component rather than the identity mark." },
+        { n: "08", t: "Disabled controls do not react to hover. The cursor should tell the truth before the click does." },
       ],
     };
   }

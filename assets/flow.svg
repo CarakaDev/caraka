@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 380" width="1280" height="380" role="img" aria-label="Telegram topics to caraka to your coding agent">
+<title>Telegram topics &#8594; caraka &#8594; your coding agent</title>
+
+<rect width="1280" height="380" fill="#05080C"/>
+
+<g opacity="1">
+  <animate attributeName="opacity" values="0;1" dur=".7s" begin=".05s" fill="freeze"/>
+  <animateTransform attributeName="transform" type="translate" values="0 10;0 0" keyTimes="0;1" calcMode="spline" keySplines=".2 .9 .3 1" dur=".7s" begin=".05s" fill="freeze"/>
+  <text x="40" y="46" fill="#5D666F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" letter-spacing="2.4">PRIVATE CHAT = WORKSPACE</text>
+  <rect x="40" y="62" width="368" height="268" rx="14" fill="#0C1116" stroke="#171C22"/>
+  <rect x="40" y="62" width="368" height="44" rx="14" fill="#171C22"/><rect x="40" y="92" width="368" height="14" fill="#171C22"/>
+  <rect x="40" y="105" width="368" height="1" fill="#232930"/>
+  <circle cx="66" cy="84" r="11" fill="#E2452C"/><circle cx="66" cy="84" r="3.4" fill="#FFEDE7"/>
+  <text x="86" y="89" fill="#F6F9FC" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600">toko_caraka_bot</text>
+  <text x="386" y="88" text-anchor="end" fill="#5D666F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5">online</text>
+
+  <g font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13">
+    <rect x="41" y="118" width="2" height="34" fill="#5D666F" opacity=".5"/>
+    <circle cx="70" cy="135" r="4.5" fill="#7A848F"/>
+    <text x="86" y="140" fill="#95A0AB">General</text>
+    <text x="386" y="140" text-anchor="end" fill="#414950" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5">control</text>
+
+    <rect x="41" y="156" width="2" height="34" fill="#5AB4E8"/>
+    <circle cx="70" cy="173" r="4.5" fill="#5AB4E8"/>
+    <circle cx="70" cy="173" r="4.5" fill="#5AB4E8" opacity="0">
+      <animate attributeName="r" values="4.5;14" dur="2.4s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".55;0" dur="2.4s" repeatCount="indefinite"/>
+    </circle>
+    <text x="86" y="178" fill="#E9EDF2">toko-api &#183; rate limit login</text>
+    <text x="386" y="178" text-anchor="end" fill="#5D666F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5">#a91</text>
+
+    <rect x="41" y="194" width="2" height="34" fill="#FFD67E"/>
+    <circle cx="70" cy="211" r="4.5" fill="#FFD67E">
+      <animate attributeName="opacity" values=".45;1;.45" dur="1.7s" repeatCount="indefinite"/>
+    </circle>
+    <text x="86" y="216" fill="#E9EDF2">toko-api &#183; dependency audit</text>
+    <text x="386" y="216" text-anchor="end" fill="#5D666F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5">#a92</text>
+
+    <rect x="41" y="232" width="2" height="34" fill="#8EEE98" opacity=".55"/>
+    <circle cx="70" cy="249" r="4.5" fill="#8EEE98"/>
+    <text x="86" y="254" fill="#95A0AB">web &#183; hero revision</text>
+    <text x="386" y="254" text-anchor="end" fill="#414950" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5">#a85</text>
+  </g>
+
+  <rect x="40" y="278" width="368" height="1" fill="#171C22"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12">
+    <text x="66" y="307" fill="#FF7A5E">&#9656;</text>
+    <text x="86" y="307" fill="#7A848F">@toko-api kenapa checkout 500?</text>
+    <rect x="326" y="296" width="7" height="14" fill="#FF7A5E">
+      <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;.49;.5;1" calcMode="discrete" dur="1.1s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+</g>
+
+<g opacity="1">
+  <animate attributeName="opacity" values="0;1" dur=".7s" begin=".28s" fill="freeze"/>
+  <animateTransform attributeName="transform" type="translate" values="0 10;0 0" keyTimes="0;1" calcMode="spline" keySplines=".2 .9 .3 1" dur=".7s" begin=".28s" fill="freeze"/>
+  <path d="M424 196h72" stroke="#292E35" stroke-width="1.5" fill="none" stroke-dasharray="3 5"><animate attributeName="stroke-dashoffset" values="0;-16" dur="1.1s" repeatCount="indefinite"/></path>
+  <path d="M496 214h-72" stroke="#1E3524" stroke-width="1.5" fill="none" stroke-dasharray="3 5"><animate attributeName="stroke-dashoffset" values="0;-16" dur="1.1s" repeatCount="indefinite"/></path>
+  <circle cx="428" cy="196" r="3.6" fill="#FF7A5E" opacity="0">
+    <animateTransform attributeName="transform" type="translate" values="0 0;88 0" dur="2.6s" begin="0s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.88;1" dur="2.6s" begin="0s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="492" cy="214" r="3" fill="#8EEE98" opacity="0">
+    <animateTransform attributeName="transform" type="translate" values="0 0;-88 0" dur="2.6s" begin=".55s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.88;1" dur="2.6s" begin=".55s" repeatCount="indefinite"/>
+  </circle>
+  <text x="460" y="176" text-anchor="middle" fill="#414950" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" letter-spacing="1.4">BOT API</text>
+
+  <rect x="512" y="104" width="256" height="184" rx="14" fill="#12100F" stroke="#8F2C1C"/>
+  <text x="640" y="86" text-anchor="middle" fill="#E2452C" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" letter-spacing="2.4">THE ENVOY</text>
+
+  <circle cx="628" cy="146" r="15" fill="none" stroke="#E2452C" stroke-width="1.6" opacity=".8"/>
+  <circle cx="652" cy="146" r="15" fill="none" stroke="#E2452C" stroke-width="1.6" opacity=".8"/>
+  <circle cx="640" cy="146" r="2.6" fill="#FF7A5E"/>
+
+  <text x="640" y="196" text-anchor="middle" fill="#F6F9FC" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="19" letter-spacing="6" dx="3">caraka</text>
+  <text x="640" y="226" text-anchor="middle" fill="#95A0AB" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">identity &#183; router &#183; topics</text>
+  <text x="640" y="246" text-anchor="middle" fill="#95A0AB" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">policy &#183; approval &#183; memory</text>
+  <text x="640" y="266" text-anchor="middle" fill="#5D666F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">no model &#183; no tools &#183; no loop</text>
+
+  <path d="M784 196h72" stroke="#292E35" stroke-width="1.5" fill="none" stroke-dasharray="3 5"><animate attributeName="stroke-dashoffset" values="0;-16" dur="1.1s" repeatCount="indefinite"/></path>
+  <path d="M856 214h-72" stroke="#1E3524" stroke-width="1.5" fill="none" stroke-dasharray="3 5"><animate attributeName="stroke-dashoffset" values="0;-16" dur="1.1s" repeatCount="indefinite"/></path>
+  <circle cx="788" cy="196" r="3.6" fill="#FF7A5E" opacity="0">
+    <animateTransform attributeName="transform" type="translate" values="0 0;88 0" dur="2.6s" begin="1.3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.88;1" dur="2.6s" begin="1.3s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="852" cy="214" r="3" fill="#8EEE98" opacity="0">
+    <animateTransform attributeName="transform" type="translate" values="0 0;-88 0" dur="2.6s" begin="1.85s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.88;1" dur="2.6s" begin="1.85s" repeatCount="indefinite"/>
+  </circle>
+  <text x="820" y="176" text-anchor="middle" fill="#414950" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" letter-spacing="1.4">ACP</text>
+</g>
+
+<g opacity="1">
+  <animate attributeName="opacity" values="0;1" dur=".7s" begin=".5s" fill="freeze"/>
+  <animateTransform attributeName="transform" type="translate" values="0 10;0 0" keyTimes="0;1" calcMode="spline" keySplines=".2 .9 .3 1" dur=".7s" begin=".5s" fill="freeze"/>
+  <text x="872" y="46" fill="#5D666F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" letter-spacing="2.4">ALREADY ON YOUR MACHINE</text>
+  <rect x="872" y="62" width="368" height="268" rx="14" fill="#0C1116" stroke="#171C22"/>
+  <rect x="872" y="62" width="368" height="44" rx="14" fill="#171C22"/><rect x="872" y="92" width="368" height="14" fill="#171C22"/>
+  <rect x="872" y="105" width="368" height="1" fill="#232930"/>
+  <circle cx="894" cy="84" r="4" fill="#E2452C"/><circle cx="908" cy="84" r="4" fill="#FFD67E"/><circle cx="922" cy="84" r="4" fill="#8EEE98"/>
+  <text x="940" y="89" fill="#95A0AB" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12">~/toko-api</text>
+
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5">
+    <text x="898" y="140" fill="#5D666F">$</text><text x="916" y="140" fill="#E9EDF2">reading src/checkout/*.ts</text>
+    <text x="898" y="166" fill="#5D666F">&#8250;</text><text x="916" y="166" fill="#7A848F">3 files, 412 lines in context</text>
+    <text x="898" y="192" fill="#5D666F">&#8250;</text><text x="916" y="192" fill="#FFD67E">wants to edit rate-limit.ts</text>
+    <text x="898" y="218" fill="#5D666F">&#8250;</text><text x="916" y="218" fill="#7A848F">awaiting approval&#8230;</text>
+  </g>
+
+  <rect x="898" y="240" width="150" height="34" rx="9" fill="#0F1A12" stroke="#1E3524"/>
+  <text x="973" y="262" text-anchor="middle" fill="#8EEE98" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12">&#10003;  Approve</text>
+  <rect x="1060" y="240" width="150" height="34" rx="9" fill="#0C1116" stroke="#292E35"/>
+  <text x="1135" y="262" text-anchor="middle" fill="#95A0AB" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12">&#10005;  Reject</text>
+
+  <text x="898" y="303" fill="#414950" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5">signed callback &#183; single use &#183; ttl 5m</text>
+</g>
+
+<text x="640" y="360" text-anchor="middle" fill="#2B333B" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" letter-spacing="1.8">ONE SESSION = ONE TOPIC = ONE TAB</text>
+</svg>

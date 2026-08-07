@@ -42,7 +42,7 @@ Everything else — every inline `style`, every `animation`, every `animation-ra
 
 ## Content
 
-`src/data/*.ts` holds what the lists render. Every value there traces to `../docs/`. Caraka is pre-alpha with nothing implemented: never write copy that implies a feature works, and never introduce a number, date, version, or quotation that is not already in the docs.
+`src/data/*.ts` holds what the lists render. Every value there traces to `../docs/`. The v0.1 preview supports one private Telegram operator and Claude Code; copy must distinguish that verified scope from roadmap work. Never imply memory, groups, background services, attachments, or other coding agents ship in v0.1, and never introduce a number, date, version, or quotation that is not already in the docs.
 
 ## Assets
 

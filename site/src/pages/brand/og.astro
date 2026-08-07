@@ -1,0 +1,497 @@
+---
+// Ported from design/mockups/Caraka OG Images.dc.html. Markup and inline styles are
+// transcribed as-is; see site/AGENTS.md for the substitutions that replace the
+// design-comp runtime.
+import Base from '../../layouts/Base.astro'
+import '../../styles/pages/og.css'
+import '../../styles/mobile/og.css'
+import { showGrid, showGuides, matrix, legend, toc, threats, term, phases, meta } from '../../data/og'
+---
+
+<Base page="og">
+  <div class="ck-m-shell" style="width: 1424px; margin: 0 auto; padding: 0 0 120px; background: #05080C; font-family: 'Public Sans', sans-serif; color: #E9EDF2;">
+
+    <main id="main">
+
+    <section style="padding: 80px 112px 64px;">
+      <div class="ck-m-stack" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; color: #7A848F;">CARAKA · OPEN GRAPH</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; color: #5D666F;">1200 × 630 · 7 HALAMAN</div>
+      </div>
+
+      <div class="ck-m-stack" style="display: flex; gap: 56px; align-items: flex-start;">
+        <div style="flex: 1;">
+          <h1 style="margin: 0 0 16px; font-size: 40px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.08; color: #F6F9FC; text-wrap: pretty;">Satu kerangka, tujuh isi</h1>
+          <p style="margin: 0 0 14px; font-size: 15.5px; line-height: 1.7; color: #95A0AB; text-wrap: pretty;">Setiap kartu memakai rangka yang identik — <strong style="color:#D2D8DF;font-weight:600;">bilah bab</strong> di atas, kolom teks di kiri, <strong style="color:#D2D8DF;font-weight:600;">panel instrumen</strong> di kanan, lockup ꦕ di kaki. Yang berubah cuma kalimatnya dan satu motif. Di timeline Twitter atau preview Telegram, yang orang lihat pertama adalah judul; motif hanya memberi tanda halaman mana ini.</p>
+          <p style="margin: 0; font-size: 15.5px; line-height: 1.7; color: #95A0AB; text-wrap: pretty;">Bilah di ujung atas terisi sesuai posisi halaman dalam urutan situs — kartu Landing terisi seperdelapan, kartu Status hampir penuh. Sinyal kecil, tapi konsisten di semua tempat kartu ini muncul.</p>
+        </div>
+        <div class="ck-m-fixw" style="width: 360px; flex-shrink: 0; background: #0C1116; border: 1px solid #171C22; border-radius: 12px; padding: 26px 28px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: #7A848F; margin-bottom: 18px;">ATURAN</div>
+          <div style="display: flex; flex-direction: column; gap: 13px; font-size: 13.5px; line-height: 1.5; color: #B2BCC6;">
+            <div style="display: flex; gap: 11px;"><span style="color: #FF7A5E;">→</span><span><strong style="color:#F6F9FC;font-weight:600;">Judul maksimal dua baris.</strong> 58px, tidak pernah mengecil untuk memuat kalimat panjang — kalimatnya yang dipendekkan.</span></div>
+            <div style="display: flex; gap: 11px;"><span style="color: #FF7A5E;">→</span><span><strong style="color:#F6F9FC;font-weight:600;">Padding aman 72px.</strong> LinkedIn dan Telegram memotong tepi; tidak ada yang penting di luar itu.</span></div>
+            <div style="display: flex; gap: 11px;"><span style="color: #FF7A5E;">→</span><span><strong style="color:#F6F9FC;font-weight:600;">Motif tidak boleh membawa informasi baru.</strong> Ia mengulang isi halaman, bukan menambah.</span></div>
+            <div style="display: flex; gap: 11px;"><span style="color: #FF7A5E;">→</span><span><strong style="color:#F6F9FC;font-weight:600;">Tiga fakta mono</strong> di kaki teks. Bukan empat, bukan kalimat.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="ck-m-cardsec" style="padding: 0 112px 56px;">
+      <div class="ck-m-caphead" style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 16px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #FF7A5E;">01 · LANDING</span>
+        <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent);"></span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #5D666F;">og-landing.png</span>
+      </div>
+
+      <div style="position: relative; width: 1200px; height: 630px; overflow: hidden; background: #05080C; border-radius: 4px;">
+        {showGrid && (
+          <div style="position: absolute; inset: 0; background-image: linear-gradient(rgba(226,69,44,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(226,69,44,.055) 1px, transparent 1px); background-size: 34px 34px; mask-image: radial-gradient(ellipse 66% 62% at 76% 48%, #000 12%, transparent 72%); -webkit-mask-image: radial-gradient(ellipse 66% 62% at 76% 48%, #000 12%, transparent 72%);"></div>
+        )}
+        <div style="position: absolute; right: -110px; top: 50%; width: 760px; height: 760px; margin-top: -380px; border-radius: 50%; background: radial-gradient(circle, rgba(226,69,44,.16), transparent 62%);"></div>
+        <div style="position: absolute; left: 0; right: 0; top: 0; height: 3px; background: #171C22;"></div>
+        <div style="position: absolute; left: 0; top: 0; width: 12.5%; height: 3px; background: linear-gradient(90deg, #E2452C, #FF7A5E);"></div>
+
+        <div style="position: absolute; inset: 0; padding: 72px; display: flex; align-items: center; gap: 56px;">
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: flex-start;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 26px;">
+              <span style="width: 22px; height: 1px; background: #E2452C;"></span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.22em; color: #E2452C;">TELEGRAM → CODING AGENT</span>
+            </div>
+            <h2 style="margin: 0 0 22px; font-size: 58px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.04; color: #F6F9FC;">Send the task.<br /><span style="color: #FF7A5E;">Caraka runs it.</span></h2>
+            <p style="margin: 0 0 34px; max-width: 520px; font-size: 19px; line-height: 1.6; color: #95A0AB; text-wrap: pretty;">A thin bridge from Telegram to the coding agent already installed on your machine.</p>
+            <div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.14em; color: #7A848F;">
+              <span>MIT</span><span style="color: #292E35;">·</span><span>NODE ≥ 22</span><span style="color: #292E35;">·</span><span>28+ AGENTS VIA ACP</span>
+            </div>
+          </div>
+
+          <div style="width: 348px; height: 348px; flex-shrink: 0; position: relative; display: flex; align-items: center; justify-content: center;">
+            <div style="position: absolute; inset: 0; border-radius: 50%; background: repeating-conic-gradient(from 0deg, rgba(226,69,44,.28) 0deg .6deg, transparent .6deg 12deg);"></div>
+            <div style="position: absolute; inset: 11px; border-radius: 50%; background: #05080C;"></div>
+            <div style="position: absolute; inset: 24px; border-radius: 50%; border: 1.5px solid transparent; border-top-color: #E2452C; border-right-color: rgba(226,69,44,.3);"></div>
+            <div style="position: absolute; inset: 52px; border-radius: 50%; border: 1.5px solid transparent; border-bottom-color: rgba(226,69,44,.32);"></div>
+            <div style="position: absolute; inset: 76px; border-radius: 50%; border: 1px dashed rgba(226,69,44,.16);"></div>
+            <div style="position: relative; width: 150px; height: 75px; display: flex; align-items: center; justify-content: center;">
+              <div style="position: absolute; left: 0; top: 0; width: 75px; height: 75px; border-radius: 50%; border: 1.5px solid rgba(226,69,44,.22);"></div>
+              <div style="position: absolute; right: 0; top: 0; width: 75px; height: 75px; border-radius: 50%; border: 1.5px solid rgba(226,69,44,.22);"></div>
+              <div style="position: absolute; left: 0; top: 0; width: 75px; height: 75px; border-radius: 50%; border: 1.5px solid transparent; border-top-color: rgba(226,69,44,.7);"></div>
+              <div style="position: absolute; right: 0; top: 0; width: 75px; height: 75px; border-radius: 50%; border: 1.5px solid transparent; border-bottom-color: rgba(226,69,44,.7);"></div>
+              <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 62px; line-height: 1; display: block; transform: translateY(17.5%); color: #F6F9FC; text-shadow: 0 0 40px rgba(226,69,44,.7);">ꦕ</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="position: absolute; left: 72px; bottom: 56px; display: flex; align-items: center; gap: 13px;">
+          <span style="width: 32px; height: 32px; border-radius: 8px; background: #E2452C; display: flex; align-items: center; justify-content: center;"><span style="font-family: 'Noto Sans Javanese', serif; font-size: 19px; line-height: 1; display: block; transform: translateY(17.5%); color: #FFEDE7;">ꦕ</span></span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: 0.2em; color: #E9EDF2;">caraka</span>
+          <span style="width: 1px; height: 16px; background: #292E35;"></span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #5D666F;">caraka.dev</span>
+        </div>
+        <div style="position: absolute; right: 72px; bottom: 56px; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #414950;">/</div>
+
+        {showGuides && (
+          <div style="position: absolute; inset: 0; pointer-events: none;">
+            <div style="position: absolute; inset: 72px; border: 1px dashed rgba(142,238,152,.4);"></div>
+            <div style="position: absolute; left: 285px; top: 0; width: 630px; height: 630px; border-left: 1px dashed rgba(255,214,126,.35); border-right: 1px dashed rgba(255,214,126,.35);"></div>
+            <span style="position: absolute; left: 78px; top: 78px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.16em; color: #8EEE98;">SAFE 72px</span>
+            <span style="position: absolute; left: 292px; bottom: 8px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.16em; color: #FFD67E;">POTONGAN 1:1</span>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <section class="ck-m-cardsec" style="padding: 0 112px 56px;">
+      <div class="ck-m-caphead" style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 16px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #FF7A5E;">02 · COMPARE</span>
+        <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent);"></span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #5D666F;">og-compare.png</span>
+      </div>
+
+      <div style="position: relative; width: 1200px; height: 630px; overflow: hidden; background: #05080C; border-radius: 4px;">
+        {showGrid && (
+          <div style="position: absolute; inset: 0; background-image: linear-gradient(rgba(226,69,44,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(226,69,44,.055) 1px, transparent 1px); background-size: 34px 34px; mask-image: radial-gradient(ellipse 66% 62% at 76% 48%, #000 12%, transparent 72%); -webkit-mask-image: radial-gradient(ellipse 66% 62% at 76% 48%, #000 12%, transparent 72%);"></div>
+        )}
+        <div style="position: absolute; right: -110px; top: 50%; width: 760px; height: 760px; margin-top: -380px; border-radius: 50%; background: radial-gradient(circle, rgba(226,69,44,.13), transparent 62%);"></div>
+        <div style="position: absolute; left: 0; right: 0; top: 0; height: 3px; background: #171C22;"></div>
+        <div style="position: absolute; left: 0; top: 0; width: 25%; height: 3px; background: linear-gradient(90deg, #E2452C, #FF7A5E);"></div>
+
+        <div style="position: absolute; inset: 0; padding: 72px; display: flex; align-items: center; gap: 52px;">
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: flex-start;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 26px;">
+              <span style="width: 22px; height: 1px; background: #E2452C;"></span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.22em; color: #E2452C;">COMPARE</span>
+            </div>
+            <h2 style="margin: 0 0 22px; font-size: 58px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.04; color: #F6F9FC;">Not an assistant.<br /><span style="color: #FF7A5E;">A hub for agents.</span></h2>
+            <p style="margin: 0 0 34px; max-width: 470px; font-size: 19px; line-height: 1.6; color: #95A0AB; text-wrap: pretty;">Where Caraka overlaps with OpenClaw and Hermes — and where it deliberately does not.</p>
+            <div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.14em; color: #7A848F;">
+              <span>SCOPE</span><span style="color: #292E35;">·</span><span>OWNERSHIP</span><span style="color: #292E35;">·</span><span>SURFACE</span>
+            </div>
+          </div>
+
+          <div style="width: 400px; flex-shrink: 0; background: #0C1116; border: 1px solid #171C22; border-radius: 14px; overflow: hidden;">
+            <div style="display: grid; grid-template-columns: 1fr 62px 62px 62px; align-items: center; padding: 15px 20px; background: #171C22; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.13em; color: #7A848F;">
+              <span></span><span style="text-align: center; color: #FF7A5E;">CRK</span><span style="text-align: center;">OCW</span><span style="text-align: center;">HRM</span>
+            </div>
+            {matrix.map((m) => (
+              <div style="display: grid; grid-template-columns: 1fr 62px 62px 62px; align-items: center; padding: 14px 20px; border-top: 1px solid #171C22; font-size: 13.5px; color: #B2BCC6;">
+                <span>{m.row}</span>
+                <span style="text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #8EEE98;">{m.a}</span>
+                <span style="text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #5D666F;">{m.b}</span>
+                <span style="text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #5D666F;">{m.c}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style="position: absolute; left: 72px; bottom: 56px; display: flex; align-items: center; gap: 13px;">
+          <span style="width: 32px; height: 32px; border-radius: 8px; background: #E2452C; display: flex; align-items: center; justify-content: center;"><span style="font-family: 'Noto Sans Javanese', serif; font-size: 19px; line-height: 1; display: block; transform: translateY(17.5%); color: #FFEDE7;">ꦕ</span></span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: 0.2em; color: #E9EDF2;">caraka</span>
+          <span style="width: 1px; height: 16px; background: #292E35;"></span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #5D666F;">caraka.dev</span>
+        </div>
+        <div style="position: absolute; right: 72px; bottom: 56px; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #414950;">/compare</div>
+
+        {showGuides && (
+          <div style="position: absolute; inset: 0; pointer-events: none;">
+            <div style="position: absolute; inset: 72px; border: 1px dashed rgba(142,238,152,.4);"></div>
+            <div style="position: absolute; left: 285px; top: 0; width: 630px; height: 630px; border-left: 1px dashed rgba(255,214,126,.35); border-right: 1px dashed rgba(255,214,126,.35);"></div>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <section class="ck-m-cardsec" style="padding: 0 112px 56px;">
+      <div class="ck-m-caphead" style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 16px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #FF7A5E;">03 · STORY</span>
+        <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent);"></span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #5D666F;">og-story.png</span>
+      </div>
+
+      <div style="position: relative; width: 1200px; height: 630px; overflow: hidden; background: #05080C; border-radius: 4px;">
+        <div style="position: absolute; right: -40px; top: 50%; width: 700px; height: 700px; margin-top: -350px; border-radius: 50%; background: radial-gradient(circle, rgba(226,69,44,.18), transparent 60%);"></div>
+        <div style="position: absolute; left: 0; right: 0; top: 0; height: 3px; background: #171C22;"></div>
+        <div style="position: absolute; left: 0; top: 0; width: 37.5%; height: 3px; background: linear-gradient(90deg, #E2452C, #FF7A5E);"></div>
+
+        <div style="position: absolute; inset: 0; padding: 72px; display: flex; align-items: center; gap: 52px;">
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: flex-start;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 26px;">
+              <span style="width: 22px; height: 1px; background: #E2452C;"></span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.22em; color: #E2452C;">STORY · HANACARAKA</span>
+            </div>
+            <h2 style="margin: 0 0 22px; font-size: 58px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.04; color: #F6F9FC;">Two envoys,<br /><span style="color: #FF7A5E;">equally strong.</span></h2>
+            <p style="margin: 0 0 34px; max-width: 470px; font-size: 19px; line-height: 1.6; color: #95A0AB; text-wrap: pretty;">A Javanese legend about a message that never arrived — mapped line by line onto the architecture.</p>
+            <div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.14em; color: #7A848F;">
+              <span>20 AKSARA</span><span style="color: #292E35;">·</span><span>4 BARIS</span><span style="color: #292E35;">·</span><span>1 ARSITEKTUR</span>
+            </div>
+          </div>
+
+          <div style="width: 420px; flex-shrink: 0; display: flex; flex-direction: column; gap: 18px;">
+            {legend.map((l) => (
+              <div style="display: flex; align-items: center; gap: 18px;">
+                <span style={`font-family: 'Noto Sans Javanese', serif; font-size: 34px; line-height: 1.5; display: block; color: ${l.ink}; white-space: nowrap;`}>{l.aksara}</span>
+                <span style="flex: 1; height: 1px; background: #171C22;"></span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; color: #5D666F; text-align: right; width: 118px; flex-shrink: 0;">{l.gloss}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style="position: absolute; left: 72px; bottom: 56px; display: flex; align-items: center; gap: 13px;">
+          <span style="width: 32px; height: 32px; border-radius: 8px; background: #E2452C; display: flex; align-items: center; justify-content: center;"><span style="font-family: 'Noto Sans Javanese', serif; font-size: 19px; line-height: 1; display: block; transform: translateY(17.5%); color: #FFEDE7;">ꦕ</span></span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: 0.2em; color: #E9EDF2;">caraka</span>
+          <span style="width: 1px; height: 16px; background: #292E35;"></span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #5D666F;">caraka.dev</span>
+        </div>
+        <div style="position: absolute; right: 72px; bottom: 56px; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #414950;">/story</div>
+
+        {showGuides && (
+          <div style="position: absolute; inset: 0; pointer-events: none;">
+            <div style="position: absolute; inset: 72px; border: 1px dashed rgba(142,238,152,.4);"></div>
+            <div style="position: absolute; left: 285px; top: 0; width: 630px; height: 630px; border-left: 1px dashed rgba(255,214,126,.35); border-right: 1px dashed rgba(255,214,126,.35);"></div>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <section class="ck-m-cardsec" style="padding: 0 112px 56px;">
+      <div class="ck-m-caphead" style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 16px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #FF7A5E;">04 · DOCS</span>
+        <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent);"></span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #5D666F;">og-docs.png</span>
+      </div>
+
+      <div style="position: relative; width: 1200px; height: 630px; overflow: hidden; background: #05080C; border-radius: 4px;">
+        {showGrid && (
+          <div style="position: absolute; inset: 0; background-image: linear-gradient(rgba(226,69,44,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(226,69,44,.055) 1px, transparent 1px); background-size: 34px 34px; mask-image: radial-gradient(ellipse 66% 62% at 76% 48%, #000 12%, transparent 72%); -webkit-mask-image: radial-gradient(ellipse 66% 62% at 76% 48%, #000 12%, transparent 72%);"></div>
+        )}
+        <div style="position: absolute; right: -110px; top: 50%; width: 760px; height: 760px; margin-top: -380px; border-radius: 50%; background: radial-gradient(circle, rgba(226,69,44,.12), transparent 62%);"></div>
+        <div style="position: absolute; left: 0; right: 0; top: 0; height: 3px; background: #171C22;"></div>
+        <div style="position: absolute; left: 0; top: 0; width: 50%; height: 3px; background: linear-gradient(90deg, #E2452C, #FF7A5E);"></div>
+
+        <div style="position: absolute; inset: 0; padding: 72px; display: flex; align-items: center; gap: 52px;">
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: flex-start;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 26px;">
+              <span style="width: 22px; height: 1px; background: #E2452C;"></span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.22em; color: #E2452C;">DOCS</span>
+            </div>
+            <h2 style="margin: 0 0 22px; font-size: 58px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.04; color: #F6F9FC;">First gate to<br /><span style="color: #FF7A5E;">hundredth session.</span></h2>
+            <p style="margin: 0 0 34px; max-width: 470px; font-size: 19px; line-height: 1.6; color: #95A0AB; text-wrap: pretty;">Seven chapters, written for humans and for agents. llms.txt and AGENTS.md ship in the repo.</p>
+            <div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.14em; color: #7A848F;">
+              <span>7 CHAPTERS</span><span style="color: #292E35;">·</span><span>llms.txt</span><span style="color: #292E35;">·</span><span>AGENTS.md</span>
+            </div>
+          </div>
+
+          <div style="width: 400px; flex-shrink: 0; background: #0C1116; border: 1px solid #171C22; border-radius: 14px; padding: 26px 28px; display: flex; flex-direction: column; gap: 3px;">
+            {toc.map((t) => (
+              <div style="display: flex; align-items: center; gap: 14px; padding: 9px 0;">
+                <span style={`font-family: 'JetBrains Mono', monospace; font-size: 11px; color: ${t.num}; width: 20px; flex-shrink: 0;`}>{t.n}</span>
+                <span style={`font-size: 14px; color: ${t.ink};`}>{t.name}</span>
+                <span style="flex: 1; height: 1px; background: #171C22;"></span>
+                <span style={`width: ${t.bar}; height: 3px; border-radius: 2px; background: ${t.tone}; flex-shrink: 0;`}></span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style="position: absolute; left: 72px; bottom: 56px; display: flex; align-items: center; gap: 13px;">
+          <span style="width: 32px; height: 32px; border-radius: 8px; background: #E2452C; display: flex; align-items: center; justify-content: center;"><span style="font-family: 'Noto Sans Javanese', serif; font-size: 19px; line-height: 1; display: block; transform: translateY(17.5%); color: #FFEDE7;">ꦕ</span></span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: 0.2em; color: #E9EDF2;">caraka</span>
+          <span style="width: 1px; height: 16px; background: #292E35;"></span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #5D666F;">caraka.dev</span>
+        </div>
+        <div style="position: absolute; right: 72px; bottom: 56px; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #414950;">/docs</div>
+
+        {showGuides && (
+          <div style="position: absolute; inset: 0; pointer-events: none;">
+            <div style="position: absolute; inset: 72px; border: 1px dashed rgba(142,238,152,.4);"></div>
+            <div style="position: absolute; left: 285px; top: 0; width: 630px; height: 630px; border-left: 1px dashed rgba(255,214,126,.35); border-right: 1px dashed rgba(255,214,126,.35);"></div>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <section class="ck-m-cardsec" style="padding: 0 112px 56px;">
+      <div class="ck-m-caphead" style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 16px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #FF7A5E;">05 · SECURITY</span>
+        <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent);"></span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #5D666F;">og-security.png</span>
+      </div>
+
+      <div style="position: relative; width: 1200px; height: 630px; overflow: hidden; background: #05080C; border-radius: 4px;">
+        {showGrid && (
+          <div style="position: absolute; inset: 0; background-image: linear-gradient(rgba(226,69,44,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(226,69,44,.055) 1px, transparent 1px); background-size: 34px 34px; mask-image: radial-gradient(ellipse 66% 62% at 76% 48%, #000 12%, transparent 72%); -webkit-mask-image: radial-gradient(ellipse 66% 62% at 76% 48%, #000 12%, transparent 72%);"></div>
+        )}
+        <div style="position: absolute; right: -110px; top: 50%; width: 760px; height: 760px; margin-top: -380px; border-radius: 50%; background: radial-gradient(circle, rgba(226,69,44,.12), transparent 62%);"></div>
+        <div style="position: absolute; left: 0; right: 0; top: 0; height: 3px; background: #171C22;"></div>
+        <div style="position: absolute; left: 0; top: 0; width: 62.5%; height: 3px; background: linear-gradient(90deg, #E2452C, #FF7A5E);"></div>
+
+        <div style="position: absolute; inset: 0; padding: 72px; display: flex; align-items: center; gap: 52px;">
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: flex-start;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 26px;">
+              <span style="width: 22px; height: 1px; background: #E2452C;"></span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.22em; color: #E2452C;">SECURITY</span>
+            </div>
+            <h2 style="margin: 0 0 22px; font-size: 58px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.04; color: #F6F9FC;">13 threats mapped.<br /><span style="color: #FF7A5E;">Each has a control.</span></h2>
+            <p style="margin: 0 0 34px; max-width: 470px; font-size: 19px; line-height: 1.6; color: #95A0AB; text-wrap: pretty;">Approvals, scoped tokens, and an audit trail that survives a restart. Written down before the code.</p>
+            <div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.14em; color: #7A848F;">
+              <span>THREAT MODEL v1</span><span style="color: #292E35;">·</span><span>security@caraka.dev</span>
+            </div>
+          </div>
+
+          <div style="width: 400px; flex-shrink: 0; background: #0C1116; border: 1px solid #171C22; border-radius: 14px; padding: 26px 28px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em;">
+              <span style="color: #7A848F;">SURFACE</span><span style="color: #8EEE98;">13 / 13 COVERED</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 11px; margin-bottom: 22px;">
+              {threats.map((t) => (
+                <div style={`aspect-ratio: 1; border-radius: 7px; border: 1px solid ${t.border}; background: ${t.bg}; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: ${t.ink};`}>{t.glyph}</div>
+              ))}
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 9px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px;">
+              <div style="display: flex; justify-content: space-between;"><span style="color: #7A848F;">prompt injection</span><span style="color: #8EEE98;">✓ approval gate</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #7A848F;">token leak</span><span style="color: #8EEE98;">✓ scoped + rotated</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #7A848F;">chat hijack</span><span style="color: #8EEE98;">✓ allowlist</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="position: absolute; left: 72px; bottom: 56px; display: flex; align-items: center; gap: 13px;">
+          <span style="width: 32px; height: 32px; border-radius: 8px; background: #E2452C; display: flex; align-items: center; justify-content: center;"><span style="font-family: 'Noto Sans Javanese', serif; font-size: 19px; line-height: 1; display: block; transform: translateY(17.5%); color: #FFEDE7;">ꦕ</span></span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: 0.2em; color: #E9EDF2;">caraka</span>
+          <span style="width: 1px; height: 16px; background: #292E35;"></span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #5D666F;">caraka.dev</span>
+        </div>
+        <div style="position: absolute; right: 72px; bottom: 56px; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #414950;">/security</div>
+
+        {showGuides && (
+          <div style="position: absolute; inset: 0; pointer-events: none;">
+            <div style="position: absolute; inset: 72px; border: 1px dashed rgba(142,238,152,.4);"></div>
+            <div style="position: absolute; left: 285px; top: 0; width: 630px; height: 630px; border-left: 1px dashed rgba(255,214,126,.35); border-right: 1px dashed rgba(255,214,126,.35);"></div>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <section class="ck-m-cardsec" style="padding: 0 112px 56px;">
+      <div class="ck-m-caphead" style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 16px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #FF7A5E;">06 · INSTALL</span>
+        <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent);"></span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #5D666F;">og-install.png</span>
+      </div>
+
+      <div style="position: relative; width: 1200px; height: 630px; overflow: hidden; background: #05080C; border-radius: 4px;">
+        <div style="position: absolute; right: -110px; top: 50%; width: 760px; height: 760px; margin-top: -380px; border-radius: 50%; background: radial-gradient(circle, rgba(226,69,44,.13), transparent 62%);"></div>
+        <div style="position: absolute; left: 0; right: 0; top: 0; height: 3px; background: #171C22;"></div>
+        <div style="position: absolute; left: 0; top: 0; width: 75%; height: 3px; background: linear-gradient(90deg, #E2452C, #FF7A5E);"></div>
+
+        <div style="position: absolute; inset: 0; padding: 72px; display: flex; align-items: center; gap: 52px;">
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: flex-start;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 26px;">
+              <span style="width: 22px; height: 1px; background: #E2452C;"></span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.22em; color: #E2452C;">INSTALL</span>
+            </div>
+            <h2 style="margin: 0 0 22px; font-size: 58px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.04; color: #F6F9FC;">Empty machine?<br /><span style="color: #FF7A5E;">Still five minutes.</span></h2>
+            <p style="margin: 0 0 34px; max-width: 470px; font-size: 19px; line-height: 1.6; color: #95A0AB; text-wrap: pretty;">From nothing to a running envoy — including the free path, with no card on file.</p>
+            <div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.14em; color: #7A848F;">
+              <span>NODE ≥ 22</span><span style="color: #292E35;">·</span><span>GEMINI CLI</span><span style="color: #292E35;">·</span><span>1,000 REQ/DAY FREE</span>
+            </div>
+          </div>
+
+          <div style="width: 420px; flex-shrink: 0; background: #0C1116; border: 1px solid #171C22; border-radius: 14px; overflow: hidden; box-shadow: 0 30px 80px -30px rgba(0,0,0,.9);">
+            <div style="display: flex; align-items: center; gap: 8px; padding: 14px 18px; background: #171C22; border-bottom: 1px solid #292E35;">
+              <span style="width: 9px; height: 9px; border-radius: 50%; background: #E2452C;"></span>
+              <span style="width: 9px; height: 9px; border-radius: 50%; background: #FFD67E;"></span>
+              <span style="width: 9px; height: 9px; border-radius: 50%; background: #8EEE98;"></span>
+              <span style="margin-left: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5D666F;">bash</span>
+            </div>
+            <div style="padding: 22px 24px; display: flex; flex-direction: column; gap: 11px; font-family: 'JetBrains Mono', monospace; font-size: 13.5px; line-height: 1.5;">
+              {term.map((t) => (
+                <div style="display: flex; gap: 10px;"><span style={`color: ${t.mark}; flex-shrink: 0;`}>{t.sym}</span><span style={`color: ${t.ink};`}>{t.line}</span></div>
+              ))}
+              <div style="display: flex; gap: 10px; align-items: center;"><span style="color: #5D666F;">$</span><span style="width: 8px; height: 15px; background: #FF7A5E;"></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="position: absolute; left: 72px; bottom: 56px; display: flex; align-items: center; gap: 13px;">
+          <span style="width: 32px; height: 32px; border-radius: 8px; background: #E2452C; display: flex; align-items: center; justify-content: center;"><span style="font-family: 'Noto Sans Javanese', serif; font-size: 19px; line-height: 1; display: block; transform: translateY(17.5%); color: #FFEDE7;">ꦕ</span></span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: 0.2em; color: #E9EDF2;">caraka</span>
+          <span style="width: 1px; height: 16px; background: #292E35;"></span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #5D666F;">caraka.dev</span>
+        </div>
+        <div style="position: absolute; right: 72px; bottom: 56px; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #414950;">/install</div>
+
+        {showGuides && (
+          <div style="position: absolute; inset: 0; pointer-events: none;">
+            <div style="position: absolute; inset: 72px; border: 1px dashed rgba(142,238,152,.4);"></div>
+            <div style="position: absolute; left: 285px; top: 0; width: 630px; height: 630px; border-left: 1px dashed rgba(255,214,126,.35); border-right: 1px dashed rgba(255,214,126,.35);"></div>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <section class="ck-m-cardsec" style="padding: 0 112px 56px;">
+      <div class="ck-m-caphead" style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 16px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #FF7A5E;">07 · STATUS</span>
+        <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent);"></span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #5D666F;">og-status.png</span>
+      </div>
+
+      <div style="position: relative; width: 1200px; height: 630px; overflow: hidden; background: #05080C; border-radius: 4px;">
+        {showGrid && (
+          <div style="position: absolute; inset: 0; background-image: linear-gradient(rgba(226,69,44,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(226,69,44,.055) 1px, transparent 1px); background-size: 34px 34px; mask-image: radial-gradient(ellipse 66% 62% at 76% 48%, #000 12%, transparent 72%); -webkit-mask-image: radial-gradient(ellipse 66% 62% at 76% 48%, #000 12%, transparent 72%);"></div>
+        )}
+        <div style="position: absolute; right: -110px; top: 50%; width: 760px; height: 760px; margin-top: -380px; border-radius: 50%; background: radial-gradient(circle, rgba(226,69,44,.12), transparent 62%);"></div>
+        <div style="position: absolute; left: 0; right: 0; top: 0; height: 3px; background: #171C22;"></div>
+        <div style="position: absolute; left: 0; top: 0; width: 87.5%; height: 3px; background: linear-gradient(90deg, #E2452C, #FF7A5E);"></div>
+
+        <div style="position: absolute; inset: 0; padding: 72px; display: flex; align-items: center; gap: 52px;">
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: flex-start;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 26px;">
+              <span style="width: 22px; height: 1px; background: #E2452C;"></span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.22em; color: #E2452C;">STATUS</span>
+            </div>
+            <h2 style="margin: 0 0 22px; font-size: 58px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.04; color: #F6F9FC;">Phase 0 of eight.<br /><span style="color: #FF7A5E;">Nothing hidden.</span></h2>
+            <p style="margin: 0 0 34px; max-width: 470px; font-size: 19px; line-height: 1.6; color: #95A0AB; text-wrap: pretty;">What shipped, what is being verified, and what has not started yet — including the parts that might fail.</p>
+            <div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.14em; color: #7A848F;">
+              <span>8 PHASES</span><span style="color: #292E35;">·</span><span>OPEN CHANGELOG</span><span style="color: #292E35;">·</span><span>PRE-LAUNCH</span>
+            </div>
+          </div>
+
+          <div style="width: 400px; flex-shrink: 0; background: #0C1116; border: 1px solid #171C22; border-radius: 14px; padding: 26px 28px; display: flex; flex-direction: column; gap: 15px;">
+            {phases.map((p) => (
+              <div style="display: flex; align-items: center; gap: 13px;">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5D666F; width: 16px; flex-shrink: 0;">{p.n}</span>
+                <span style={`font-family: 'JetBrains Mono', monospace; font-size: 12px; color: ${p.tone}; width: 12px; flex-shrink: 0;`}>{p.glyph}</span>
+                <span style={`font-size: 13px; color: ${p.ink}; width: 110px; flex-shrink: 0;`}>{p.name}</span>
+                <span style="flex: 1; height: 5px; border-radius: 3px; background: #171C22; overflow: hidden;"><span style={`display: block; width: ${p.fill}; height: 100%; border-radius: 3px; background: ${p.tone};`}></span></span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style="position: absolute; left: 72px; bottom: 56px; display: flex; align-items: center; gap: 13px;">
+          <span style="width: 32px; height: 32px; border-radius: 8px; background: #E2452C; display: flex; align-items: center; justify-content: center;"><span style="font-family: 'Noto Sans Javanese', serif; font-size: 19px; line-height: 1; display: block; transform: translateY(17.5%); color: #FFEDE7;">ꦕ</span></span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: 0.2em; color: #E9EDF2;">caraka</span>
+          <span style="width: 1px; height: 16px; background: #292E35;"></span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #5D666F;">caraka.dev</span>
+        </div>
+        <div style="position: absolute; right: 72px; bottom: 56px; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #414950;">/status</div>
+
+        {showGuides && (
+          <div style="position: absolute; inset: 0; pointer-events: none;">
+            <div style="position: absolute; inset: 72px; border: 1px dashed rgba(142,238,152,.4);"></div>
+            <div style="position: absolute; left: 285px; top: 0; width: 630px; height: 630px; border-left: 1px dashed rgba(255,214,126,.35); border-right: 1px dashed rgba(255,214,126,.35);"></div>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <section class="ck-m-cardsec" style="padding: 0 112px 56px;">
+      <div class="ck-m-caphead" style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 16px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #FF7A5E;">08 · FALLBACK</span>
+        <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent);"></span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #5D666F;">og-default.png · dipakai kalau halaman belum punya kartunya</span>
+      </div>
+
+      <div style="position: relative; width: 1200px; height: 630px; overflow: hidden; background: #E2452C; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 30px;">
+        <div style="position: absolute; inset: 0; background-image: linear-gradient(rgba(5,8,12,.09) 1px, transparent 1px), linear-gradient(90deg, rgba(5,8,12,.09) 1px, transparent 1px); background-size: 34px 34px;"></div>
+        <div style="position: absolute; left: 50%; top: 50%; width: 900px; height: 900px; margin: -450px 0 0 -450px; border-radius: 50%; background: radial-gradient(circle, rgba(255,237,231,.16), transparent 60%);"></div>
+        <span style="position: relative; font-family: 'Noto Sans Javanese', serif; font-size: 190px; line-height: 1; display: block; transform: translateY(17.5%); color: #FFEDE7;">ꦕ</span>
+        <div style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 14px;">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 30px; letter-spacing: 0.42em; color: #FFF3F0; padding-left: 0.42em;">caraka</span>
+          <span style="font-size: 19px; color: rgba(255,237,231,.82); text-wrap: pretty;">Telegram, and the coding agent already on your machine.</span>
+        </div>
+        <div style="position: absolute; bottom: 56px; font-family: 'JetBrains Mono', monospace; font-size: 14px; letter-spacing: 0.16em; color: rgba(255,237,231,.66);">caraka.dev</div>
+
+        {showGuides && (
+          <div style="position: absolute; inset: 0; pointer-events: none;">
+            <div style="position: absolute; inset: 72px; border: 1px dashed rgba(5,8,12,.45);"></div>
+            <div style="position: absolute; left: 285px; top: 0; width: 630px; height: 630px; border-left: 1px dashed rgba(5,8,12,.35); border-right: 1px dashed rgba(5,8,12,.35);"></div>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <section style="padding: 32px 112px 0;">
+      <div class="ck-m-stack" style="display: flex; gap: 20px; align-items: stretch;">
+        <div style="flex: 1; background: #0C1116; border: 1px solid #171C22; border-radius: 14px; padding: 30px 32px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.18em; color: #7A848F; margin-bottom: 20px;">MARKUP PER HALAMAN</div>
+          <div class="ck-m-meta" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.85; color: #B2BCC6; white-space: pre-wrap;">{meta}</div>
+        </div>
+        <div class="ck-m-fixw" style="width: 400px; flex-shrink: 0; background: #12100F; border: 1px solid #2B1612; border-radius: 14px; padding: 30px 32px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.18em; color: #FF7A5E; margin-bottom: 20px;">CATATAN EKSPOR</div>
+          <div style="display: flex; flex-direction: column; gap: 14px; font-size: 13.5px; line-height: 1.6; color: #95A0AB;">
+            <p style="margin: 0; text-wrap: pretty;">Ekspor tiap kartu pada <strong style="color:#F6F9FC;font-weight:600;">2×</strong> lalu turunkan ke 1200×630. Aksara Jawa dan mono 11px pecah kalau di-render 1×.</p>
+            <p style="margin: 0; text-wrap: pretty;">Simpan sebagai <strong style="color:#F6F9FC;font-weight:600;">PNG</strong>, bukan JPG — gradien kesumba di latar gelap memunculkan banding pada kompresi JPG.</p>
+            <p style="margin: 0; text-wrap: pretty;">Batas praktis Telegram <strong style="color:#F6F9FC;font-weight:600;">≈ 5 MB</strong>; kartu-kartu ini jauh di bawah itu.</p>
+            <p style="margin: 0; text-wrap: pretty;">Nyalakan <strong style="color:#F6F9FC;font-weight:600;">panduan potong</strong> lewat panel tweak untuk mengecek tidak ada teks di luar area aman.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    </main>
+
+  </div>
+</Base>

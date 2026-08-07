@@ -26,6 +26,7 @@ node_modules/
 
 # --- generated site assets (npm run assets rebuilds all of these) ---
 site/public/og/
+site/public/brand/
 site/public/favicon.svg
 site/public/favicon.ico
 site/public/apple-touch-icon.png

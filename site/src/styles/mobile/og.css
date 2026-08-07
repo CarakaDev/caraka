@@ -1,0 +1,81 @@
+/* Caraka — /brand/og at phone widths.
+   ---------------------------------------------------------------------------
+   The comp is a fixed 1424px reference board holding nine 1200×630 cards: no
+   min(), no clamp(), nothing that yields. Everything below turns the board into
+   one column, and nothing below applies above 940px — the whole file is one
+   media query, so the desktop render is byte-for-byte what it was.
+
+   The ported markup carries its styling inline, and an inline declaration beats
+   a stylesheet rule without !important. So no `style` attribute is edited here:
+   elements get a class, and the class wins with !important. !important appears
+   only where the property it sets is also written inline; every other rule is
+   plain, because there is nothing inline to beat.
+
+   940px is the line the comps themselves draw when they retire the right rail. */
+
+@media (max-width: 940px) {
+  /* --- shell ------------------------------------------------------------- */
+  /* `width: 1424px` inline. This is the 1034px overflow, in one declaration. */
+  .ck-m-shell { width: 100% !important; }
+
+  /* 112px of gutter on either side leaves 166px of column at 390px. Only the
+     horizontal padding is overridden: the three sections carry three different
+     vertical rhythms (80/64, 0/56, 32/0) and that rhythm is what spaces the
+     cards apart. A longhand !important beats the inline shorthand's own
+     padding-left and padding-right and leaves the other two alone. */
+  .ck-m-shell section {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+
+  /* --- rows that become a column ----------------------------------------- */
+  /* The masthead, the intro beside its ATURAN card, and the usage row at the
+     foot. Reading order is already top-to-bottom-left-to-right, so the source
+     order is the stacked order and no markup moves. */
+  .ck-m-stack {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 22px !important;
+  }
+  /* Inline `flex: 1` divides the width on desktop. Down the column it would
+     divide height instead, against a container that has none. */
+  .ck-m-stack > * { flex: none !important; }
+
+  /* The two panels pinned to a pixel width in the gutter: ATURAN (360px) and
+     CATATAN EKSPOR (400px). Both are now full-bleed. */
+  .ck-m-fixw { width: auto !important; }
+
+  /* --- the cards --------------------------------------------------------- */
+  /* A 1200×630 card is a specimen at 1:1. Scaled down it stops being the thing
+     it documents — 58px headline, 72px safe padding, 11px mono — so it keeps
+     its true size and its section scrolls instead (AC-4.4).
+
+     The scrollability is marked with a mask fade rather than an ::after: the
+     section is its own scroll container, and a pseudo-element inside one
+     scrolls away with the content. A mask is painted against the border box,
+     which does not move. */
+  .ck-m-cardsec {
+    overflow-x: auto;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 34px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 34px), transparent);
+  }
+  /* ponytail: the fade is unconditional, and every card is wider than 940px, so
+     it always marks something real here — unlike a strip that can fit, it never
+     needs the overflow test warna.css wants. */
+
+  /* The caption above each card: number and rule keep their line, the filename
+     drops under them — `og-default.png · dipakai kalau…` is a sentence, not a
+     label, and it has 350px to live in. The extra right padding keeps its last
+     glyph out of the 34px the mask fades. */
+  .ck-m-caphead {
+    flex-wrap: wrap;
+    padding-right: 26px;
+  }
+  .ck-m-caphead > :last-child { flex-basis: 100%; }
+
+  /* --- the meta block ---------------------------------------------------- */
+  /* pre-wrap breaks on spaces, and `content="https://caraka.dev/og/og-landing.png">`
+     has none. The tag is copy-paste source, so it scrolls rather than breaking
+     at an arbitrary character. */
+  .ck-m-meta { overflow-x: auto; }
+}

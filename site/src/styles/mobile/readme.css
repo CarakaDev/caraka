@@ -1,0 +1,119 @@
+/* Caraka — /brand/readme at phone widths.
+   ---------------------------------------------------------------------------
+   The comp is a fixed 1360px reference board: no min(), no clamp(), nothing on
+   the shell that yields. Everything below turns it into one column, and nothing
+   below applies above 940px — the whole file is one media query, so the desktop
+   render is byte-for-byte what it was.
+
+   The ported markup carries its styling inline, and an inline declaration beats
+   a stylesheet rule without !important. So no `style` attribute is edited here:
+   elements get a class, and the class wins with !important. !important appears
+   only where the property it sets is also written inline; every other rule is
+   plain, because there is nothing inline to beat.
+
+   940px is the line the comps themselves draw when they retire the right rail. */
+
+@media (max-width: 940px) {
+  /* --- shell ------------------------------------------------------------- */
+  /* `width: 1360px` inline. This is the 970px overflow, in one declaration. */
+  .ck-m-shell { width: 100% !important; }
+
+  /* The seven sections carry four different padding shorthands (`72px 80px
+     56px`, `0 80px 48px`, `0 80px 56px`, `0 80px`). Overriding the two
+     longhands that hurt keeps each section's own vertical rhythm and needs one
+     rule instead of four. A longhand !important beats an inline shorthand. */
+  .ck-m-sec {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+
+  /* --- rows that become a column ----------------------------------------- */
+  /* The masthead, the hero and its TIGA BERKAS card, and the closing pair.
+     Reading order is already top-to-bottom-left-to-right, so the source order
+     is the stacked order and no markup moves. */
+  .ck-m-stack {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 22px !important;
+  }
+  /* Inline `flex: 1` divides the width on desktop. Down the column it would
+     divide height instead, against a container that has none. */
+  .ck-m-stack > * { flex: none !important; }
+
+  /* The two panels pinned to a pixel width in the gutter: TIGA BERKAS (340px)
+     and YANG PERLU DIINGAT (400px). Both are now full-bleed. */
+  .ck-m-fixw { width: auto !important; }
+
+  /* The five section captions: number, hairline rule, filename. The two labels
+     alone need ~470px at 940 and below they collide, so the row becomes three
+     stacked lines and the rule keeps its job as a divider between them. */
+  .ck-m-cap {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  .ck-m-cap > * { flex: none !important; }
+
+  /* --- the two GitHub previews ------------------------------------------- */
+  /* 48px of side padding on a 350px column leaves 254px of prose. The card is
+     a rendering of a document, not a fixed-size specimen, so it reflows the way
+     GitHub's own mobile view does rather than being scrolled sideways. */
+  .ck-m-ghbody {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+
+  /* Repo chrome, repo header, org header. Each ends with a group pushed right
+     by `margin-left: auto`; wrapping drops that group onto its own line and
+     keeps it right-aligned there. */
+  .ck-m-ghhead { flex-wrap: wrap; }
+
+  /* The badge strip. Not stacked: five badges in a row is what a README badge
+     line *is*, and one per line stops being the specimen. It keeps its true
+     size and scrolls (AC-4.4).
+
+     The scrollability is marked with a mask fade rather than an ::after: the
+     strip is its own scroll container, and a pseudo-element inside one scrolls
+     away with the content. A mask is painted against the border box, which
+     does not move. `justify-content` goes back to the start edge — centred
+     overflow hides its own beginning. */
+  .ck-m-badges {
+    justify-content: flex-start !important;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 34px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 34px), transparent);
+  }
+  .ck-m-badges > * { flex: none; }
+
+  /* Project rows: name, description, status in a 130/1fr/92 grid. Three
+     columns in 254px is 254px of nothing, so they become one column in the
+     order they already read. */
+  .ck-m-proj {
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+  }
+
+  /* --- the placement tree ------------------------------------------------- */
+  /* Two columns of paths joined by →, aligned with runs of spaces. `pre-wrap`
+     breaks that alignment the moment the column is narrower than the longest
+     line, which turns the mapping into noise — so it stops wrapping and scrolls
+     instead, marked at the right edge (AC-4.4).
+
+     The badge strip's mask fade is wrong here. A mask can only fade what is
+     painted under it, and this block is text with a gutter: at 320px the 214px
+     window ends at column 26, and every line of the tree is padding spaces from
+     column 21 to the arrow at 27. Measured, the mask changed 0.00 of a pixel —
+     a scrolling block that read as a finished list. So the marker is a scrim
+     with its own ink instead: #171C22 is this card's own border colour from the
+     comp, the background box of a scroll container is its border box and does
+     not move with the content, and a background paints under the glyphs, so it
+     shows in the gutter without dimming the paths.
+     ponytail: the scrim is unconditional, like the badge strip's fade. */
+  .ck-m-tree {
+    white-space: pre !important;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    background: linear-gradient(90deg, transparent calc(100% - 34px), #171C22);
+  }
+}

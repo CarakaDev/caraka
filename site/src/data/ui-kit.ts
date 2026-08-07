@@ -51,5 +51,6 @@ export const rules = [
   { n: '04', t: 'Every empty state carries the exact command that fills it. An empty screen with no next step is a dead end.' },
   { n: '05', t: 'Errors name what happened and what to do. No stack traces, no apology, no blame.' },
   { n: '06', t: 'Ring geometry is written in px. Percentage margins resolve against width, which puts the pair off-centre.' },
-  { n: '07', t: 'Disabled controls do not react to hover. The cursor should tell the truth before the click does.' },
+  { n: '07', t: 'Below 48px the rings drop and the mark becomes a solid tile. Site headers and footers use the tile. The one exception is the animated ∞ indicator, which is a loading component rather than the identity mark.' },
+  { n: '08', t: 'Disabled controls do not react to hover. The cursor should tell the truth before the click does.' },
 ]

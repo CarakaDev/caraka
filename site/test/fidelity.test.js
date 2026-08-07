@@ -22,6 +22,8 @@ const SLUG = {
   'Caraka Brandkit.dc.html': 'brand',
   'Caraka Sistem Warna.dc.html': 'warna',
   'Caraka UI Kit.dc.html': 'ui-kit',
+  'Caraka OG Images.dc.html': 'og',
+  'Caraka README.dc.html': 'readme',
 }
 
 const mockup = (file) => readFileSync(join(MOCKUPS, file), 'utf8')

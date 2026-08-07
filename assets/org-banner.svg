@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 340" width="1280" height="340" role="img" aria-label="CarakaDev — two envoys, equally strong">
+<title>CarakaDev — two envoys, equally strong</title>
+<defs>
+  <radialGradient id="ob" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#E2452C" stop-opacity=".16"/><stop offset="64%" stop-color="#E2452C" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="ofade" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#000" stop-opacity="0"/><stop offset="18%" stop-color="#000"/>
+    <stop offset="82%" stop-color="#000"/><stop offset="100%" stop-color="#000" stop-opacity="0"/>
+  </linearGradient>
+  <mask id="om"><rect width="1280" height="340" fill="url(#ofade)"/></mask>
+</defs>
+
+<rect width="1280" height="340" fill="#05080C"/>
+
+<ellipse cx="640" cy="150" rx="440" ry="170" fill="url(#ob)" opacity=".85">
+  <animate attributeName="opacity" values=".7;1;.7" dur="6s" repeatCount="indefinite"/>
+</ellipse>
+
+<g mask="url(#om)"><rect x="0" y="149" width="1280" height="1" fill="#1B2128"/></g>
+
+<circle cx="640" cy="150" r="34" fill="#E2452C" opacity="0">
+  <animate attributeName="opacity" values="0;0;.5;0;0" keyTimes="0;.4;.5;.66;1" dur="8s" repeatCount="indefinite"/>
+  <animate attributeName="r" values="20;20;34;54;54" keyTimes="0;.4;.5;.66;1" dur="8s" repeatCount="indefinite"/>
+</circle>
+
+<g opacity="0">
+  <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.3;.38;.6;.72;1" dur="8s" repeatCount="indefinite"/>
+  <rect x="639" y="108" width="2" height="84" fill="#E2452C"/>
+  <circle cx="640" cy="108" r="3" fill="#FF7A5E"/>
+  <circle cx="640" cy="192" r="3" fill="#FF7A5E"/>
+</g>
+
+<g opacity="0">
+  <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.44;.52;.62;.7;1" dur="8s" repeatCount="indefinite"/>
+  <rect x="604" y="196" width="72" height="24" rx="7" fill="#0F1A12" stroke="#1E3524"/>
+  <text x="640" y="213" text-anchor="middle" fill="#8EEE98" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">&#10003; human</text>
+</g>
+
+<g opacity="0">
+  <animate attributeName="opacity" values="0;1;1;1;1;1;0" keyTimes="0;.06;.38;.54;.76;.94;1" dur="8s" repeatCount="indefinite"/>
+  <animateTransform attributeName="transform" type="translate" values="0 0;0 0;374 0;374 0;500 0;620 0;660 0" keyTimes="0;.06;.38;.54;.76;.94;1" dur="8s" repeatCount="indefinite"/>
+  <circle cx="220" cy="150" r="6" fill="#FF7A5E"/>
+  <circle cx="220" cy="150" r="12" fill="none" stroke="#E2452C" stroke-opacity=".4" stroke-width="1"/>
+</g>
+
+<g opacity="0">
+  <animate attributeName="opacity" values="0;1;1;1;1;1;0" keyTimes="0;.06;.38;.54;.76;.94;1" dur="8s" repeatCount="indefinite"/>
+  <animateTransform attributeName="transform" type="translate" values="0 0;0 0;-374 0;-374 0;-500 0;-620 0;-660 0" keyTimes="0;.06;.38;.54;.76;.94;1" dur="8s" repeatCount="indefinite"/>
+  <circle cx="1060" cy="150" r="6" fill="#E9EDF2"/>
+  <circle cx="1060" cy="150" r="12" fill="none" stroke="#95A0AB" stroke-opacity=".3" stroke-width="1"/>
+</g>
+
+<g opacity="1">
+  <animate attributeName="opacity" values="0;1" dur=".8s" begin=".1s" fill="freeze"/>
+  <animateTransform attributeName="transform" type="translate" values="0 12;0 0" keyTimes="0;1" calcMode="spline" keySplines=".2 .9 .3 1" dur=".8s" begin=".1s" fill="freeze"/>
+  <text x="640" y="72" text-anchor="middle" fill="#F6F9FC" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="34" font-weight="500" letter-spacing="11" dx="5.5">CarakaDev</text>
+</g>
+
+<g opacity="1">
+  <animate attributeName="opacity" values="0;1" dur=".8s" begin=".3s" fill="freeze"/>
+  <animateTransform attributeName="transform" type="translate" values="0 12;0 0" keyTimes="0;1" calcMode="spline" keySplines=".2 .9 .3 1" dur=".8s" begin=".3s" fill="freeze"/>
+  <text x="640" y="258" text-anchor="middle" fill="#E9EDF2" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19">Two envoys, equally strong &#8212; <tspan fill="#FF7A5E">and one human in between.</tspan></text>
+</g>
+
+<g opacity="1">
+  <animate attributeName="opacity" values="0;1" dur=".8s" begin=".5s" fill="freeze"/>
+  <animateTransform attributeName="transform" type="translate" values="0 12;0 0" keyTimes="0;1" calcMode="spline" keySplines=".2 .9 .3 1" dur=".8s" begin=".5s" fill="freeze"/>
+  <text x="640" y="288" text-anchor="middle" fill="#7A848F" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5">Tools for agents that can be interrupted, questioned, and asked to explain themselves.</text>
+</g>
+
+<g opacity="1">
+  <animate attributeName="opacity" values="0;1" dur=".8s" begin=".68s" fill="freeze"/>
+  <text x="640" y="322" text-anchor="middle" fill="#414950" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" letter-spacing="2.4">CARAKA<tspan fill="#232930" dx="12">/</tspan><tspan dx="12">TITEN</tspan><tspan fill="#232930" dx="12">/</tspan><tspan dx="12">MIT</tspan></text>
+</g>
+</svg>
