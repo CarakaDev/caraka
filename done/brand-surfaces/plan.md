@@ -69,7 +69,7 @@ Empat kalimat comp yang sudah tidak akurat diperbaiki, bukan disalin:
 
 Bagian **Yang belum ada di v0.1** ditambahkan supaya yang belum dikirim disebut sekali, jelas, alih-alih disamarkan.
 
-Diagram alur disimpan dua kali: sebagai `assets/flow.svg` untuk GitHub, dan sebagai teks polos di dalam `<details>` untuk npm, yang tidak merender gambar berpath relatif. Path-nya relatif, bukan `raw.githubusercontent`, karena raw menyajikan SVG sebagai teks.
+Diagram alur disimpan dua kali: sebagai `assets/flow.svg` untuk GitHub, dan sebagai teks polos di dalam `<details>` untuk npm, yang tidak merender gambar berpath relatif. Path-nya relatif, bukan URL ke host lain — alasannya diukur ulang belakangan, lihat §10.
 
 ## 6. Pembuktian tiap AC
 
@@ -165,3 +165,31 @@ Yang berbeda hanya kotak barisnya: port memakai metrik `serif` (14/3), comp mema
 `U+0020` ditambahkan ke ketiga muka Javanese. `/brand/readme` kini merender 5490px, sama dengan comp-nya, dan angka 112/92 yang `docs/brand.md` ukur akhirnya benar-benar berlaku di situs. Tidak ada rute lain yang bergerak: setiap aksara lain membawa `line-height: 1; display: block`, yang mengunci kotaknya.
 
 **Pelajarannya:** "metrik font berbeda" adalah dugaan yang masuk akal dan salah. Membaca metrik kedua berkas — dua perintah — membalikkannya, dan menunjuk ke perbaikan satu karakter alih-alih `ascent-override` yang akan menyembunyikan gejalanya sambil membiarkan sebabnya.
+
+
+---
+
+## 10. Koreksi: kenapa path relatif, sebenarnya
+
+Catatan penempatan di comp — dan §5 di atas — menuliskan alasannya sebagai *"raw menyajikan SVG sebagai teks dan gambarnya tidak muncul"*. Itu **tidak lagi benar**, dan mungkin sudah lama tidak benar. Diukur 7 Agustus 2026:
+
+```
+$ curl -sI raw.githubusercontent.com/CarakaDev/caraka/main/assets/banner.svg
+content-type: image/svg+xml
+content-security-policy: default-src 'none'; style-src 'unsafe-inline'; sandbox
+```
+
+GitHub sudah menyajikannya dengan tipe konten gambar yang benar.
+
+**Aturannya tetap berlaku, sebabnya yang berbeda.** Diukur pada halaman repositori ini sendiri:
+
+| Ditulis di markdown | Yang GitHub render |
+|---|---|
+| `src="assets/banner.svg"` | `/CarakaDev/caraka/raw/main/assets/banner.svg` — satu origin, langsung |
+| `src="https://img.shields.io/..."` | `camo.githubusercontent.com/<hash>/<hex>` — lewat proksi |
+
+Path relatif ditulis ulang menjadi URL satu origin dan disajikan apa adanya. URL ke host mana pun selain GitHub dilewatkan **camo**, proksi gambar mereka — dan banner ini SVG beranimasi, enam belas elemen `animate` dengan delapan di antaranya mulai dari `opacity="0"`. Yang perlu dijaga bukan tipe kontennya, melainkan bahwa berkasnya sampai ke pembaca tanpa melewati proksi.
+
+Catatan di comp dan di port sudah dikoreksi ke alasan yang benar.
+
+**Pelajarannya sama dengan §9:** sebab yang masuk akal, tercatat rapi, dan salah. Dua perintah `curl` membalikkannya. Aturan yang benar karena alasan yang salah akan dilanggar begitu ada yang memeriksa alasannya dan mendapati alasannya tidak berlaku.

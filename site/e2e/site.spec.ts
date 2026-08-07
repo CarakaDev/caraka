@@ -184,7 +184,9 @@ test.describe('the comps still decide the layout', () => {
     // phone work especially, since a media query written one breakpoint too
     // wide would land here first.
     //
-    // /brand/readme reads 5490 because the site now honours the aksara's own
+    // /brand/readme reads 5533: the comp's placement note was corrected (the
+    // reason for relative image paths, not the rule), and the longer sentence
+    // grew the board by 43px on both sides. It also honours the aksara's own
     // 112/92 metrics; before U+0020 entered the font's unicode-range the strut
     // fell through to serif and the page came out 16px short. See global.css.
     //
@@ -208,7 +210,7 @@ test.describe('the comps still decide the layout', () => {
       '/brand/warna': 5264,
       '/brand/ui-kit': 9584,
       '/brand/og': 6821,
-      '/brand/readme': 5490,
+      '/brand/readme': 5533,
     }
 
     await page.setViewportSize({ width: 1440, height: 900 })

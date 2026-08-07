@@ -68,7 +68,7 @@ Lambang di seluruh permukaan, kartu OG untuk sebelas rute, README repositori dal
 - **AC-3.3** README shall tidak menyatakan kemampuan yang tidak ada di v0.1 sebagai sudah berjalan. Memori, grup, service latar, lampiran, dan coding agent selain Claude Code termasuk di dalamnya.
 - **AC-3.4** Setiap tautan relatif di README shall menunjuk ke berkas yang ada.
 - **AC-3.5** Situs shall menyertakan diagram alur versi teks polos di dalam `<details>`, karena npm tidak merender gambar berpath relatif.
-- **AC-3.6** Rujukan gambar shall memakai path relatif, bukan URL `raw.githubusercontent` — raw menyajikan SVG sebagai teks.
+- **AC-3.6** Rujukan gambar shall memakai path relatif, bukan URL ke host lain — GitHub menyajikan path relatif dari origin-nya sendiri, sedangkan URL luar dilewatkan proksi gambarnya.
 - **AC-3.7** README bahasa Indonesia shall membawa isi yang setara, bukan terjemahan setengah.
 
 ### AC-4 · Aset
