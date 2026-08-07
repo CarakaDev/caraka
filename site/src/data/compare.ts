@@ -58,7 +58,10 @@ export const rows = [
   { k: 'Channels', a: '22', b: 'via gateway', c: '1 in v0.2', tone: '#95A0AB', weight: '400', range: r(5, 2.2, 22) },
   { k: 'Tokens outside your agent', a: 'Yes, own loop', b: 'Yes', c: 'None', tone: '#8EEE98', weight: '600', range: r(6, 2.2, 22) },
   { k: 'Sandboxing', a: 'Configure it', b: 'Configure it', c: 'Inherited', tone: '#FF7A5E', weight: '600', range: r(7, 2.2, 22) },
-  { k: 'Reported setup time', a: 'Hours', b: 'pip + venv', c: 'Under 3 min', tone: '#FF7A5E', weight: '600', range: r(8, 2.2, 22) },
+  // Comp line 312 presents "Under 3 min" as a report; no setup session has
+  // been recorded yet (status.ts keeps that gate open), and prd.md G1 sets
+  // < 3 menit as a target, so the cell names it one.
+  { k: 'Reported setup time', a: 'Hours', b: 'pip + venv', c: 'Target: under 3 min', tone: '#FF7A5E', weight: '600', range: r(8, 2.2, 22) },
   { k: 'Maturity', a: 'Very high', b: 'High', c: 'v0.2 preview', tone: '#FF93B2', weight: '600', range: r(9, 2.2, 22) },
 ]
 
