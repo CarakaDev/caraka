@@ -106,7 +106,8 @@ import MobileToc from '../components/MobileToc.astro'
         <div style="padding: clamp(30px, 5vw, 44px); background: #0C1116; border: 1px solid #171C22; border-radius: 16px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 30%;">
           <div>
             <div style="font-size: 19px; font-weight: 600; color: #F6F9FC; margin-bottom: 7px;">The spec is public, in full.</div>
-            <div style="font-size: 14px; line-height: 1.6; color: #7A848F; max-width: 420px; text-wrap: pretty;">Nine research documents with sources, plus PRD, FRD, architecture, ERD, security model, and roadmap.</div>
+            {/* Comp line 129 says nine; docs/research/ has held thirteen documents since they landed in e090f1b. */}
+            <div style="font-size: 14px; line-height: 1.6; color: #7A848F; max-width: 420px; text-wrap: pretty;">Thirteen research documents, plus PRD, FRD, architecture, ERD, security model, and roadmap.</div>
           </div>
           <a href="https://github.com/CarakaDev/caraka" class="hv-btn" style="padding: 14px 24px; background: #E2452C; border-radius: 10px; font-family: 'JetBrains Mono', monospace; font-size: 13.5px; color: #FFEDE7; white-space: nowrap; transition: background .2s;">Browse the repo →</a>
         </div>

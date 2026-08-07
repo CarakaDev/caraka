@@ -120,15 +120,17 @@ import { showChrome, badges, legend, projects, tree } from '../../data/readme'
             <a href="https://caraka.dev" style="color: #4493f8; font-weight: 700;">caraka.dev</a> · <a href="#" style="color: #4493f8;">Blueprint</a> · <a href="#" style="color: #4493f8;">Install</a> · <a href="#" style="color: #4493f8;">Threat model</a> · <a href="#" style="color: #4493f8;">Roadmap</a> · <a href="#" style="color: #4493f8;">🇮🇩 Bahasa Indonesia</a>
           </div>
 
+          {/* Comp line 127 says pre-alpha with nothing to install; the blockquote follows the shipped README.md:22. */}
           <div style="padding: 12px 18px; border-left: 4px solid #30363d; color: #8b949e; margin-bottom: 30px; font-size: 15px;">
-            <strong style="color: #e6edf3;">Status: pre-alpha.</strong> The specification is complete and public; implementation is starting. There is nothing useful to install yet. The npm package currently reserves the name.
+            <strong style="color: #e6edf3;">v0.2.</strong> Usable in a private chat and in allowlisted groups, with Claude Code over ACP. English and Indonesian. caraka service prints a unit file you install yourself. Memory, attachments, and coding agents other than Claude Code are not in this release.
           </div>
 
           <div style="height: 1px; background: #21262d; margin-bottom: 26px;"></div>
 
           <h2 style="margin: 0 0 14px; font-size: 25px; font-weight: 600; color: #e6edf3; padding-bottom: 8px; border-bottom: 1px solid #21262d;">What it is</h2>
           <p style="margin: 0 0 16px; color: #c9d1d9; text-wrap: pretty;">Coding agents are locked to one terminal on one machine. Caraka is the missing transport — a thin bridge, not another assistant.</p>
-          <p style="margin: 0 0 26px; color: #c9d1d9; text-wrap: pretty;">It has <strong style="color:#e6edf3;">no agent loop, no tools, no model provider, and no plugin marketplace.</strong> Your coding agent already has all of those, and its versions are better. Caraka adds only what chat needs — identity, sessions, approvals, memory, and audit.</p>
+          {/* Comp line 134 lists memory among what chat needs; memory does not ship and README.md:30 dropped it. */}
+          <p style="margin: 0 0 26px; color: #c9d1d9; text-wrap: pretty;">It has <strong style="color:#e6edf3;">no agent loop, no tools, no model provider, and no plugin marketplace.</strong> Your coding agent already has all of those, and its versions are better. Caraka adds only what chat needs — identity, sessions, approvals, and audit.</p>
 
           <img data-svg="flow" src="/brand/flow.svg" alt="alur" style="display: block; width: 100%; aspect-ratio: 1280 / 380; margin-bottom: 14px;" />
 
@@ -136,12 +138,15 @@ import { showChrome, badges, legend, projects, tree } from '../../data/readme'
             <span style="font-size: 11px;">▸</span> Same thing, as plain text
           </div>
 
-          <h2 style="margin: 0 0 14px; font-size: 25px; font-weight: 600; color: #e6edf3; padding-bottom: 8px; border-bottom: 1px solid #21262d;">Try it (soon)</h2>
+          {/* Comp line 142 says "(soon)"; v0.2.1 is published and installable (package.json, README.md:57). */}
+          <h2 style="margin: 0 0 14px; font-size: 25px; font-weight: 600; color: #e6edf3; padding-bottom: 8px; border-bottom: 1px solid #21262d;">Try it</h2>
           <div style="padding: 16px 18px; background: #161b22; border: 1px solid #30363d; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 13.5px; line-height: 1.8; color: #c9d1d9; margin-bottom: 16px;">
             <div>npx caraka init      <span style="color: #8b949e;"># guided setup — checks Node, finds your agent, pairs the bot</span></div>
-            <div>npx caraka up        <span style="color: #8b949e;"># start the envoy</span></div>
+            {/* Comp line 145 runs `caraka up`; there is no `up` command — the command is `caraka start` (README.md:65). */}
+            <div>npx caraka start     <span style="color: #8b949e;"># start the envoy</span></div>
           </div>
-          <p style="margin: 0; color: #c9d1d9; font-size: 15px; text-wrap: pretty;">No agent installed? <code style="font-family:'JetBrains Mono',monospace;font-size:13.5px;background:#161b22;padding:2px 6px;border-radius:5px;">init</code> offers the free path: Gemini CLI, 1,000 requests a day, no card.</p>
+          {/* Comp line 147 offers the Gemini free path; v0.2 drives Claude Code alone (README.md:59, src/data/docs.ts:94). */}
+          <p style="margin: 0; color: #c9d1d9; font-size: 15px; text-wrap: pretty;">No agent installed? v0.2 needs an authenticated Claude Code installation — other coding agents remain roadmap work.</p>
         </div>
       </div>
     </section>

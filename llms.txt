@@ -1,14 +1,14 @@
 # Caraka
 
-> A thin bridge from Telegram to the coding agent already installed on your machine. Every task lives in its own topic, like tabs in a terminal, with approvals, streaming progress, and memory that can explain itself. Caraka has no agent loop, no execution tools, and no plugin marketplace: the coding agent already has all of those.
+> A thin bridge from Telegram to the coding agent already installed on your machine. Every task lives in its own topic, like tabs in a terminal, with approvals and streaming progress. Caraka has no agent loop, no execution tools, and no plugin marketplace: the coding agent already has all of those.
 
-Caraka speaks [ACP](https://agentclientprotocol.com), the LSP-equivalent for coding agents, so one client covers 28+ agents including Claude Code, Codex CLI, Gemini CLI, Cursor, Cline, Goose and Amp. Memory uses [Titen](https://titen.dev), which separates observation, claim, and context so a conclusion is never confused with the evidence behind it. Status: pre-alpha, MIT, Node ≥ 22.
+Caraka speaks [ACP](https://agentclientprotocol.com), the LSP-equivalent for coding agents; v0.2 drives Claude Code, and the 28+ agents in the ACP registry are a preset away rather than a rewrite. Memory is specified and not shipped; when it arrives it will use [Titen](https://titen.dev), which separates observation, claim, and context so a conclusion is never confused with the evidence behind it. Status: v0.2, MIT, Node ≥ 22.
 
 ## Start here
 
 - [README](https://github.com/CarakaDev/caraka/blob/main/README.md): what it is, why it is small, safety posture
 - [README in Indonesian](https://github.com/CarakaDev/caraka/blob/main/README.id.md)
-- [Install guide](https://github.com/CarakaDev/caraka/blob/main/docs/install-guide.md): prerequisites, what to do with no Node and no agent, costs, the free path, install.sh anatomy
+- [Install guide](https://github.com/CarakaDev/caraka/blob/main/docs/install-guide.md): prerequisites, the agent-assisted path, the manual path, verification, and this release's limits
 - [Blueprint](https://github.com/CarakaDev/caraka/blob/main/docs/blueprint.md): one-page overview and locked decisions
 
 ## Specification

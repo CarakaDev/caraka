@@ -39,9 +39,9 @@ Ia **tidak punya agent loop, tidak punya tool, tidak punya model provider, dan t
 ```
         Telegram (chat pribadi = ruang kerja)
         ├── 📋 General                            ← kontrol
-        ├── 🔵 toko-api · rate limit login   #a91  ← sesi = topic = "tab"
-        ├── 🟡 toko-api · audit dependency   #a92  ← menunggu persetujuanmu
-        └── 🟢 web · revisi hero             #a85  ← selesai, tertutup
+        ├── ▸ toko-api · rate limit login   #a91  ← sesi = topic = "tab"
+        ├── ⏸ toko-api · audit dependency   #a92  ← menunggu persetujuanmu
+        └── ✓ web · revisi hero             #a85  ← selesai, ringkasan terkirim
                         │
                   ┌─────▼─────┐
                   │  caraka   │  identity · router · topics
@@ -199,7 +199,7 @@ npm run smoke   # butuh Claude Code yang sudah login
 | [design.md](docs/design.md) | Arsitektur, interface, protokol |
 | [security.md](docs/security.md) | Model ancaman dan kontrol |
 | [roadmap.md](docs/roadmap.md) | Fase dan gerbang keputusan |
-| [research/](docs/research/) | Delapan dokumen riset bersumber |
+| [research/](docs/research/) | Tiga belas dokumen riset bersumber |
 
 ## Kontribusi
 

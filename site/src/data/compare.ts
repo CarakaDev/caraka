@@ -1,6 +1,8 @@
 // Content for the compare page, transcribed from the renderVals() block of
-// design/mockups/Caraka Compare.dc.html. The mockup is the source of truth:
-// nothing here is authored, reworded, or reordered.
+// design/mockups/Caraka Compare.dc.html. The comp still decides how this page
+// looks; it stopped deciding what is true of the release. Where a line below no
+// longer matches it because the code moved, the comment above it names the comp
+// line and what shipped instead.
 
 import { r } from '../lib/anim'
 
@@ -37,7 +39,10 @@ export const products = [
     us: true,
     range: r(2, 4, 26),
     body: 'A bridge with no runtime of its own. It carries your task to the coding agent you already installed and already pay for.',
-    does: ['Works on your repository', 'Sessions as Telegram topics', 'Approval before every write', 'Memory across sessions', 'Nothing else, on purpose'],
+    // Comp line 300 lists "Memory across sessions"; v0.2 ships no memory
+    // provider (roadmap Fase 3 → v0.3), so the card names the audit log that
+    // did ship.
+    does: ['Works on your repository', 'Sessions as Telegram topics', 'Approval before every write', 'An append-only audit log', 'Nothing else, on purpose'],
   },
 ]
 
@@ -47,7 +52,10 @@ export const rows = [
   { k: 'Agent runtime', a: 'Its own', b: 'Its own', c: 'Yours', tone: '#FF7A5E', weight: '600', range: r(2, 2.2, 22) },
   { k: 'Execution tools', a: '20+', b: 'Yes', c: 'Zero', tone: '#FF7A5E', weight: '600', range: r(3, 2.2, 22) },
   { k: 'Plugin marketplace', a: 'Large', b: 'Yes', c: 'None', tone: '#FF7A5E', weight: '600', range: r(4, 2.2, 22) },
-  { k: 'Channels', a: '22', b: 'via gateway', c: '1 in v1.0', tone: '#95A0AB', weight: '400', range: r(5, 2.2, 22) },
+  // Comp line 309 reads "1 in v1.0"; the one Telegram channel shipped at v0.2,
+  // and roadmap Fase 6 puts WhatsApp at v0.6, so v1.0 is not the one-channel
+  // release.
+  { k: 'Channels', a: '22', b: 'via gateway', c: '1 in v0.2', tone: '#95A0AB', weight: '400', range: r(5, 2.2, 22) },
   { k: 'Tokens outside your agent', a: 'Yes, own loop', b: 'Yes', c: 'None', tone: '#8EEE98', weight: '600', range: r(6, 2.2, 22) },
   { k: 'Sandboxing', a: 'Configure it', b: 'Configure it', c: 'Inherited', tone: '#FF7A5E', weight: '600', range: r(7, 2.2, 22) },
   { k: 'Reported setup time', a: 'Hours', b: 'pip + venv', c: 'Under 3 min', tone: '#FF7A5E', weight: '600', range: r(8, 2.2, 22) },
@@ -59,14 +67,19 @@ export const complaints = [
     tag: 'SETUP',
     quote: 'It is open-source, yes, but installation is a nightmare. I remember spending hours to get it right.',
     src: 'Composio, May 2026',
-    answer: 'npx caraka init. One command, six interactions, target under three minutes. The wizard confirms what it finds rather than asking what it should already know.',
+    // Comp line 317 says six, from the frd target that included a memory step;
+    // the shipped wizard asks four times: language, token, the Start tap, and
+    // the pairing confirmation.
+    answer: 'npx caraka init. One command, four interactions, target under three minutes. The wizard confirms what it finds rather than asking what it should already know.',
     range: r(0, 4, 28),
   },
   {
     tag: 'PLUGINS',
     quote: 'The Skills and Plugin ecosystem is vast, but the experience is horrible.',
     src: 'Composio, May 2026',
-    answer: 'No marketplace at all. Extension happens through a declarative YAML preset or an MCP server you install deliberately. Trust sits with you, not with a registry.',
+    // Comp line 318 promised YAML presets and MCP; v0.2 ships neither
+    // (src/drivers/ holds claude-acp.ts alone, presets/ does not exist yet).
+    answer: 'No marketplace at all. Nothing loads dynamically, and runtime dependencies are pinned in package-lock.json. Trust sits with you, not with a registry.',
     range: r(1, 4, 28),
   },
   {
@@ -141,5 +154,7 @@ export const picks = [
 export const honest = [
   'OpenClaw is far more mature. Hundreds of thousands of stars, tens of thousands of commits, a real community. Caraka v0.2 is an early preview and you should treat it that way.',
   'OpenClaw does work Caraka will never do. Calendar, inbox, browser, home automation. If that is what you need, this is not the answer.',
-  'The complaints quoted above come from early 2026 releases and some may already be fixed. Dates are printed so you can check for yourself rather than take our word for it.',
+  // Comp line 355 says "early 2026"; the Vellum quote on this page is dated
+  // August 2026.
+  'The complaints quoted above come from 2026 releases and some may already be fixed. Dates are printed so you can check for yourself rather than take our word for it.',
 ]

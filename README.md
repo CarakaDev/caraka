@@ -39,9 +39,9 @@ It has **no agent loop, no tools, no model provider, and no plugin marketplace.*
 ```
         Telegram (private chat = workspace)
         ├── 📋 General                            ← control
-        ├── 🔵 toko-api · rate limit login   #a91  ← session = topic = "tab"
-        ├── 🟡 toko-api · dependency audit   #a92  ← waiting for your approval
-        └── 🟢 web · hero revision           #a85  ← done, closed
+        ├── ▸ toko-api · rate limit login   #a91  ← session = topic = "tab"
+        ├── ⏸ toko-api · dependency audit   #a92  ← waiting for your approval
+        └── ✓ web · hero revision           #a85  ← done, summary posted
                         │
                   ┌─────▼─────┐
                   │  caraka   │  identity · router · topics
@@ -195,7 +195,7 @@ npm run smoke   # requires authenticated Claude Code
 | [design.md](docs/design.md) | Architecture, interfaces, protocols |
 | [security.md](docs/security.md) | Threat model and controls |
 | [roadmap.md](docs/roadmap.md) | Phases and decision gates |
-| [research/](docs/research/) | Eight sourced research documents |
+| [research/](docs/research/) | Thirteen sourced research documents |
 
 ## Contributing
 

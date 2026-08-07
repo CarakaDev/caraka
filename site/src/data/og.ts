@@ -1,6 +1,8 @@
 // Content for the Open Graph card board, transcribed from the renderVals() block of
-// design/mockups/Caraka OG Images.dc.html. The mockup is the source of truth:
-// nothing here is authored, reworded, or reordered.
+// design/mockups/Caraka OG Images.dc.html. The comp still decides how this board
+// looks; it stopped deciding what is true of the release. Where a line below no
+// longer matches it because the code moved, the comment above it names the comp
+// line and what shipped instead.
 
 const y = '#8EEE98',
   n = '—'
@@ -25,14 +27,18 @@ export const legend = [
   { aksara: 'ꦩꦒꦧꦛꦔ', gloss: 'both fell', ink: '#7A848F' },
 ]
 
+// Comp lines 531-537 name the specification-era chapters, Memori and Agent lain
+// among them; the docs page ships neither, so the names follow the generator's
+// TOC (site/scripts/gen-assets.mjs:381-389). The num, ink, bar, and tone
+// columns are the comp's own.
 export const toc = [
-  { n: '01', name: 'Gerbang pertama', num: '#FF7A5E', ink: '#F6F9FC', bar: '44px', tone: '#E2452C' },
-  { n: '02', name: 'Sesi & topic', num: '#7A848F', ink: '#D2D8DF', bar: '36px', tone: '#8F2C1C' },
-  { n: '03', name: 'Approval', num: '#7A848F', ink: '#D2D8DF', bar: '30px', tone: '#8F2C1C' },
-  { n: '04', name: 'Memori', num: '#7A848F', ink: '#B2BCC6', bar: '26px', tone: '#5C1F14' },
-  { n: '05', name: 'Agent lain', num: '#7A848F', ink: '#B2BCC6', bar: '22px', tone: '#5C1F14' },
-  { n: '06', name: 'Operasional', num: '#5D666F', ink: '#95A0AB', bar: '17px', tone: '#3D1710' },
-  { n: '07', name: 'Rujukan', num: '#5D666F', ink: '#95A0AB', bar: '12px', tone: '#3D1710' },
+  { n: '01', name: 'Quickstart', num: '#FF7A5E', ink: '#F6F9FC', bar: '44px', tone: '#E2452C' },
+  { n: '02', name: 'Sessions', num: '#7A848F', ink: '#D2D8DF', bar: '36px', tone: '#8F2C1C' },
+  { n: '03', name: 'Agent', num: '#7A848F', ink: '#D2D8DF', bar: '30px', tone: '#8F2C1C' },
+  { n: '04', name: 'Approval', num: '#7A848F', ink: '#B2BCC6', bar: '26px', tone: '#5C1F14' },
+  { n: '05', name: 'Security', num: '#7A848F', ink: '#B2BCC6', bar: '22px', tone: '#5C1F14' },
+  { n: '06', name: 'Config', num: '#5D666F', ink: '#95A0AB', bar: '17px', tone: '#3D1710' },
+  { n: '07', name: 'CLI', num: '#5D666F', ink: '#95A0AB', bar: '12px', tone: '#3D1710' },
 ]
 
 // Fifteen cells for thirteen threats: the last two are the empty remainder of
@@ -46,24 +52,32 @@ export const threats = Array.from({ length: 15 }, (_, i) => {
     : { glyph: '✓', bg: 'rgba(142,238,152,.07)', border: '#1E3524', ink: y }
 })
 
+// Comp lines 549-554 script a Gemini install offer and a `/mulai` greeting;
+// init offers no Gemini install and /mulai is not one of the eight commands, so
+// the lines follow the generator's wizard transcript
+// (site/scripts/gen-assets.mjs:455-462).
 export const term = [
   { sym: '$', mark: '#5D666F', line: 'npx caraka init', ink: '#E9EDF2' },
-  { sym: '›', mark: '#414950', line: 'checking node… v22.4.0 ✓', ink: '#7A848F' },
-  { sym: '›', mark: '#414950', line: 'no agent found', ink: '#FFD67E' },
-  { sym: '›', mark: '#414950', line: 'install gemini-cli? (free) y', ink: '#7A848F' },
-  { sym: '›', mark: '#414950', line: 'paste bot token from @BotFather', ink: '#7A848F' },
-  { sym: '✓', mark: y, line: 'envoy awake — say /mulai', ink: '#8EEE98' },
+  { sym: '✓', mark: y, line: 'workspace · current directory', ink: '#7A848F' },
+  { sym: '✓', mark: y, line: 'claude login · ready', ink: '#7A848F' },
+  { sym: '✓', mark: y, line: 'telegram · paired', ink: '#7A848F' },
+  { sym: '✓', mark: y, line: 'secrets · mode 0600', ink: '#7A848F' },
+  { sym: '$', mark: '#5D666F', line: 'npx caraka start', ink: '#FF7A5E' },
 ]
 
+// Comp lines 558-565 draw phase 0 in flight, which stopped being true when
+// v0.1 shipped and is two phases stale after v0.2. Names and marks follow
+// src/data/status.ts:44-47 through the generator's PHASES
+// (site/scripts/gen-assets.mjs:484-501); the ink shades are the comp's own.
 export const phases = [
-  { n: '0', glyph: '◐', name: 'Verifikasi', tone: '#FFD67E', ink: '#F6F9FC', fill: '62%' },
-  { n: '1', glyph: '○', name: 'Bridge', tone: '#414950', ink: '#95A0AB', fill: '0%' },
-  { n: '2', glyph: '○', name: 'Sesi', tone: '#414950', ink: '#95A0AB', fill: '0%' },
-  { n: '3', glyph: '○', name: 'Approval', tone: '#414950', ink: '#7A848F', fill: '0%' },
-  { n: '4', glyph: '○', name: 'Memori', tone: '#414950', ink: '#7A848F', fill: '0%' },
-  { n: '5', glyph: '○', name: 'Multi-agent', tone: '#414950', ink: '#5D666F', fill: '0%' },
-  { n: '6', glyph: '○', name: 'Hardening', tone: '#414950', ink: '#5D666F', fill: '0%' },
-  { n: '7', glyph: '○', name: '1.0', tone: '#414950', ink: '#5D666F', fill: '0%' },
+  { n: '0', glyph: '●', name: 'Spike', tone: '#8EEE98', ink: '#F6F9FC', fill: '100%' },
+  { n: '1', glyph: '◐', name: 'Dogfood', tone: '#E2452C', ink: '#95A0AB', fill: '62%' },
+  { n: '2', glyph: '◐', name: 'Install', tone: '#E2452C', ink: '#95A0AB', fill: '48%' },
+  { n: '3', glyph: '○', name: 'Memory', tone: '#414950', ink: '#7A848F', fill: '0%' },
+  { n: '4', glyph: '○', name: 'Abstraction', tone: '#414950', ink: '#7A848F', fill: '0%' },
+  { n: '5', glyph: '○', name: 'Closed beta', tone: '#414950', ink: '#5D666F', fill: '0%' },
+  { n: '6', glyph: '○', name: 'WhatsApp', tone: '#414950', ink: '#5D666F', fill: '0%' },
+  { n: '7', glyph: '○', name: 'Public 1.0', tone: '#414950', ink: '#5D666F', fill: '0%' },
 ]
 
 export const meta =

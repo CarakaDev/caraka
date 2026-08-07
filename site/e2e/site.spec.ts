@@ -264,30 +264,32 @@ test.describe('the comps still decide the layout', () => {
     // same pages measure a pixel taller on three routes, which is sub-pixel
     // rounding at a different device scale factor, not a regression.
     //
-    // Five of these no longer track a comp. `/`, `/docs`, `/install`,
-    // `/security` and `/status` carry v0.2 copy, and the comps behind them
-    // describe v0.1 — groups rejected, three CLI commands, no trust window, no
-    // service file. A comp still decides how those five pages look; it stopped
-    // deciding what they claim, so their numbers are now measured from the
-    // built site rather than from design/mockups/*.dc.html, and a diff against
-    // the comp on those five is expected reading rather than a failure. The
-    // seven below them are unchanged and still match their comp exactly:
-    // /compare and /story only swapped a version string of identical length,
-    // and the four /brand routes did not change at all.
+    // Six of these no longer track a comp. `/`, `/docs`, `/compare`,
+    // `/install`, `/security` and `/status` carry v0.2 copy, and the comps
+    // behind them describe v0.1 — groups rejected, three CLI commands, no
+    // trust window, no service file, a Gemini free path that never shipped. A
+    // comp still decides how those six pages look; it stopped deciding what
+    // they claim, so their numbers are now measured from the built site rather
+    // than from design/mockups/*.dc.html, and a diff against the comp on those
+    // six is expected reading rather than a failure. The six below them kept
+    // their comp's height: /story only swapped a version string of identical
+    // length, and the stale-copy pass over the /brand boards — fixed-size OG
+    // cards, badges, one blockquote — moved no line count.
     //
     // Measured 8 August 2026, Chromium at 1440x900, against the copy that
     // shipped with v0.2. Deltas from the v0.1 baselines: / +31, /docs +907,
     // /install +94, /security +371, /status +524. /status then took a further +317
-    // when the 0.2.1 changelog card was added.
+    // when the 0.2.1 changelog card was added, and / a further +29 when the
+    // sessions paragraph stopped claiming icons recolour and topics close.
     const EXPECTED: Record<string, number> = {
       // v0.2 copy — measured from the site (see above)
-      '/': 6421,
+      '/': 6450,
       '/docs': 5874,
+      '/compare': 5873,
       '/install': 5141,
       '/security': 4757,
       '/status': 6160,
       // still measured against the comp
-      '/compare': 5873,
       '/story': 5734,
       '/brand': 10177,
       '/brand/warna': 5264,
