@@ -67,9 +67,11 @@ async function secretQuestion(label: string) {
   });
 }
 
-function workspaceArg(args: string[]) {
+export function workspaceArg(args: string[]) {
   const index = args.indexOf("--workspace");
   const requested = index >= 0 ? args[index + 1] : undefined;
+  if (index >= 0 && (!requested || requested.startsWith("--")))
+    throw new Error("Isi path setelah `--workspace`.");
   return resolve(requested ?? process.cwd());
 }
 
@@ -83,7 +85,7 @@ async function init(args: string[]) {
     throw new Error("Claude Code tidak ditemukan. Pasang Claude Code, lalu jalankan init lagi.");
   if (!claudeAuthenticated())
     throw new Error("Claude Code belum login. Jalankan `claude auth login`, lalu ulangi init.");
-  if (!(await stat(workspace)).isDirectory())
+  if ((await stat(workspace).catch(() => null))?.isDirectory() !== true)
     throw new Error(`Workspace tidak ditemukan: ${workspace}`);
 
   console.log(`\nꦕꦫꦏ  caraka v${VERSION}\nWorkspace: ${workspace}\nClaude: siap\n`);
@@ -142,6 +144,8 @@ async function init(args: string[]) {
   rl.close();
   if (confirmation.trim().toLowerCase() !== "ya")
     throw new Error("Pairing dibatalkan; tidak ada konfigurasi yang disimpan.");
+
+  await telegram.deleteWebhook(true);
 
   const config = defaultConfig(
     workspace,

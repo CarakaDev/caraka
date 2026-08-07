@@ -17,7 +17,12 @@ const fixedSecretPatterns: Array<[RegExp, string]> = [
 export function createScrubber(secrets: string[] = []) {
   const exact = secrets.filter((secret) => secret.length >= 8);
   return (input: unknown) => {
-    let value = typeof input === "string" ? input : JSON.stringify(input);
+    let value: string;
+    try {
+      value = typeof input === "string" ? input : (JSON.stringify(input) ?? String(input));
+    } catch {
+      value = String(input);
+    }
     for (const secret of exact) value = value.split(secret).join("[REDACTED]");
     for (const [pattern, replacement] of fixedSecretPatterns)
       value = value.replace(pattern, replacement);

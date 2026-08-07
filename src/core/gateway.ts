@@ -24,6 +24,7 @@ export class Gateway {
   private queued = 0;
   private active: { local: Session; agentId: string } | undefined;
   private stopping = false;
+  private shutdown: Promise<void> | undefined;
 
   constructor(
     private readonly config: CarakaConfig,
@@ -38,7 +39,7 @@ export class Gateway {
 
   async run() {
     this.store.expireApprovals();
-    await this.telegram.deleteWebhook(this.abort.signal);
+    await this.telegram.deleteWebhook(false, this.abort.signal);
     await this.claude.start();
     for await (const update of this.telegram.updates(this.abort.signal)) this.dispatch(update);
   }
@@ -71,9 +72,9 @@ export class Gateway {
       String(message.from.id),
     );
     const command = /^\/(\w+)(?:@\w+)?(?:\s|$)/.exec(text)?.[1]?.toLowerCase();
-    if (command === "stop") void this.stopActive(message);
-    else if (command === "status") void this.status(message);
-    else if (command === "help" || command === "start") void this.help(message);
+    if (command === "stop") this.respond(message, this.stopActive(message));
+    else if (command === "status") this.respond(message, this.status(message));
+    else if (command === "help" || command === "start") this.respond(message, this.help(message));
     else if (command === "new") this.enqueue(message, () => this.createOnly(message));
     else this.enqueue(message, () => this.runTask(message, text));
   }
@@ -81,13 +82,13 @@ export class Gateway {
   private enqueue(message: TelegramMessage, task: () => Promise<void>) {
     if (this.stopping) return;
     if (this.queued > 0) {
-      void this.telegram
-        .sendText(
-          String(message.chat.id),
-          this.scrub("◌ Tugas masuk antrean."),
-          String(message.message_thread_id ?? ""),
-        )
-        .catch(() => undefined);
+      void this.sendText(
+        String(message.chat.id),
+        this.scrub("◌ Tugas masuk antrean."),
+        String(message.message_thread_id ?? ""),
+        undefined,
+        String(message.from?.id),
+      ).catch(() => undefined);
     }
     this.queued += 1;
     this.queue = this.queue
@@ -100,6 +101,45 @@ export class Gateway {
 
   private route(message: TelegramMessage) {
     return { chatId: String(message.chat.id), threadId: String(message.message_thread_id ?? "") };
+  }
+
+  private respond(message: TelegramMessage, response: Promise<unknown>) {
+    void response
+      .catch((error: unknown) => this.reportError(message, error))
+      .catch(() => undefined);
+  }
+
+  private async sendText(
+    chatId: string,
+    text: string,
+    threadId = "",
+    replyMarkup?: Record<string, unknown>,
+    principal?: string,
+    sessionId?: string,
+  ) {
+    const clean = this.scrub(text);
+    const sent = await this.telegram.sendText(chatId, clean, threadId, replyMarkup);
+    this.store.audit(
+      "msg.out",
+      "sent",
+      { kind: "text", bytes: Buffer.byteLength(clean) },
+      principal,
+      sessionId,
+    );
+    return sent;
+  }
+
+  private async sendResult(session: Session, text: string) {
+    const clean = this.scrub(text);
+    const sent = await this.telegram.sendResult(session.chatId, clean, session.threadId);
+    this.store.audit(
+      "msg.out",
+      "sent",
+      { kind: "result", bytes: Buffer.byteLength(clean) },
+      session.principal,
+      session.id,
+    );
+    return sent;
   }
 
   private title(text: string) {
@@ -147,20 +187,26 @@ export class Gateway {
 
   private async createOnly(message: TelegramMessage) {
     const session = await this.createSession(message, "Tugas baru", true);
-    await this.telegram.sendText(
+    await this.sendText(
       session.chatId,
       this.scrub(`${this.header(session)}Tulis tugas untuk Claude di sini.`),
       session.threadId,
+      undefined,
+      session.principal,
+      session.id,
     );
   }
 
   private async runTask(message: TelegramMessage, prompt: string) {
     const session = await this.sessionFor(message, this.title(prompt));
     this.store.setState(session.id, "running");
-    const progress = await this.telegram.sendText(
+    const progress = await this.sendText(
       session.chatId,
       this.scrub(`${this.header(session)}◌ Claude sedang bekerja…`),
       session.threadId,
+      undefined,
+      session.principal,
+      session.id,
     );
     let output = "";
     let lastEdit = 0;
@@ -196,12 +242,11 @@ export class Gateway {
       });
       const cancelled = result.stopReason === "cancelled";
       this.store.setState(session.id, cancelled ? "cancelled" : "done");
-      await this.telegram.sendResult(
-        session.chatId,
+      await this.sendResult(
+        session,
         this.scrub(
           `${this.header(session)}${output || (cancelled ? "Tugas dibatalkan." : "Claude selesai tanpa keluaran teks.")}`,
         ),
-        session.threadId,
       );
       this.store.audit(
         "run.finish",
@@ -248,7 +293,7 @@ export class Gateway {
       expiresAt,
     });
     this.store.setState(session.id, "awaiting_approval");
-    await this.telegram.sendText(
+    await this.sendText(
       session.chatId,
       this.scrub(
         `${this.header(session)}⏸ Claude meminta izin\n${request.toolCall.title ?? request.toolCall.kind ?? "Operasi tool"}${this.permissionTarget(request)}\n\nBerlaku 10 menit.`,
@@ -262,6 +307,8 @@ export class Gateway {
           ],
         ],
       },
+      session.principal,
+      session.id,
     );
     return new Promise<RequestPermissionResponse>((resolve) => {
       const finish = (response: RequestPermissionResponse) => {
@@ -373,10 +420,12 @@ export class Gateway {
 
   private async stopActive(message: TelegramMessage) {
     if (!this.active) {
-      await this.telegram.sendText(
+      await this.sendText(
         String(message.chat.id),
         this.scrub("Tidak ada tugas yang sedang berjalan."),
         String(message.message_thread_id ?? ""),
+        undefined,
+        String(message.from?.id),
       );
       return;
     }
@@ -387,17 +436,20 @@ export class Gateway {
       this.pending.delete(id);
     }
     this.store.setState(this.active.local.id, "cancelled");
-    await this.telegram.sendText(
+    await this.sendText(
       this.active.local.chatId,
       this.scrub(`${this.header(this.active.local)}Tugas sedang dibatalkan.`),
       this.active.local.threadId,
+      undefined,
+      this.active.local.principal,
+      this.active.local.id,
     );
   }
 
   private async status(message: TelegramMessage) {
     const { chatId, threadId } = this.route(message);
     const session = this.store.sessionFor(chatId, threadId);
-    await this.telegram.sendText(
+    await this.sendText(
       chatId,
       this.scrub(
         session
@@ -405,34 +457,42 @@ export class Gateway {
           : "Belum ada sesi di percakapan ini.",
       ),
       threadId,
+      undefined,
+      String(message.from?.id),
+      session?.id,
     );
   }
 
   private help(message: TelegramMessage) {
-    return this.telegram.sendText(
+    return this.sendText(
       String(message.chat.id),
       this.scrub("Kirim tugas sebagai pesan biasa. Perintah: /new, /status, /stop, /help."),
       String(message.message_thread_id ?? ""),
+      undefined,
+      String(message.from?.id),
     );
   }
 
   private async reportError(message: TelegramMessage, error: unknown) {
     const details = this.scrub(error instanceof Error ? error.message : error);
     this.store.audit("error", "failed", { message: details }, String(message.from?.id));
-    await this.telegram
-      .sendText(
-        String(message.chat.id),
-        this.scrub(
-          `Claude tidak dapat menyelesaikan tugas. ${details}\nCoba /new atau jalankan \`npx caraka doctor\` di komputer.`,
-        ),
-        String(message.message_thread_id ?? ""),
-      )
-      .catch(() => undefined);
+    await this.sendText(
+      String(message.chat.id),
+      this.scrub(
+        `Claude tidak dapat menyelesaikan tugas. ${details}\nCoba /new atau jalankan \`npx caraka doctor\` di komputer.`,
+      ),
+      String(message.message_thread_id ?? ""),
+      undefined,
+      String(message.from?.id),
+    ).catch(() => undefined);
   }
 
-  async stop() {
-    if (this.stopping) return;
+  stop() {
     this.stopping = true;
+    return (this.shutdown ??= this.stopNow());
+  }
+
+  private async stopNow() {
     this.abort.abort();
     for (const pending of this.pending.values())
       pending.finish({ outcome: { outcome: "cancelled" } });

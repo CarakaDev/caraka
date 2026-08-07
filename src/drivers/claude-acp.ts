@@ -13,6 +13,12 @@ export type ClaudeRoute = {
   permission(request: RequestPermissionRequest): Promise<RequestPermissionResponse>;
 };
 
+export function claudeEnvironment(source: NodeJS.ProcessEnv = process.env) {
+  const env = { ...source };
+  delete env.CARAKA_TELEGRAM_TOKEN;
+  return env;
+}
+
 export class ClaudeAcp {
   private child: ChildProcessWithoutNullStreams | undefined;
   private connection: acp.ClientConnection | undefined;
@@ -25,7 +31,7 @@ export class ClaudeAcp {
     );
     this.child = spawn(process.execPath, [adapter], {
       stdio: ["pipe", "pipe", "pipe"],
-      env: process.env,
+      env: claudeEnvironment(),
     });
     this.child.stderr.resume();
     const output = Writable.toWeb(this.child.stdin) as unknown as WritableStream<Uint8Array>;

@@ -23,6 +23,7 @@ test("private allowlisted Telegram message reaches Claude and signed approval re
   let finalSent = false;
   let topicAttempted = false;
   let messageId = 10;
+  let claudeStops = 0;
 
   const telegram = {
     deleteWebhook: async () => true,
@@ -114,7 +115,9 @@ test("private allowlisted Telegram message reaches Claude and signed approval re
       return { stopReason: "end_turn" as const };
     },
     cancel: async () => undefined,
-    stop: async () => undefined,
+    stop: async () => {
+      claudeStops += 1;
+    },
   } as unknown as ClaudeAcp;
 
   const gateway = new Gateway(config, approvalKey, telegram, claude, store, scrub);
@@ -130,5 +133,15 @@ test("private allowlisted Telegram message reaches Claude and signed approval re
   assert.match(result?.text ?? "", /^\[[^\]]+\]/);
   assert.equal(result?.text.includes("synthetic-secret-value"), false);
   assert.equal(store.db.prepare("SELECT decision FROM approvals").get()?.decision, "allow");
-  await gateway.stop();
+  const audits = store.db.prepare("SELECT action, details FROM audit").all();
+  assert.equal(
+    audits.some((audit) => audit.action === "msg.out"),
+    true,
+  );
+  assert.equal(JSON.stringify(audits).includes("synthetic-secret-value"), false);
+  const firstStop = gateway.stop();
+  const secondStop = gateway.stop();
+  assert.equal(firstStop, secondStop);
+  await firstStop;
+  assert.equal(claudeStops, 1);
 });

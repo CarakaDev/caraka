@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { chmod, mkdtemp, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import test from "node:test";
 import { splitTelegramText, Telegram } from "../src/channels/telegram.js";
+import { workspaceArg } from "../src/cli.js";
 import { defaultConfig, loadConfig, saveConfig } from "../src/config.js";
 import { approvalCallbacks, createScrubber, verifyApprovalCallback } from "../src/core/security.js";
+import { claudeEnvironment } from "../src/drivers/claude-acp.js";
 import { Store } from "../src/store/db.js";
 
 test("scrubber removes known secret shapes and exact runtime secrets", () => {
@@ -22,6 +24,18 @@ test("scrubber removes known secret shapes and exact runtime secrets", () => {
   assert.equal(output.includes("very-secret-token-value"), false);
   assert.equal(output.includes("BEGIN PRIVATE KEY"), false);
   assert.match(output, /CARAKA_TOKEN=\[REDACTED\]/);
+  assert.equal(scrub(undefined), "undefined");
+});
+
+test("Claude ACP subprocess does not inherit the Telegram token", () => {
+  const env = claudeEnvironment({ CARAKA_TELEGRAM_TOKEN: "secret", CLAUDE_CONFIG_DIR: "/tmp/c" });
+  assert.equal(env.CARAKA_TELEGRAM_TOKEN, undefined);
+  assert.equal(env.CLAUDE_CONFIG_DIR, "/tmp/c");
+});
+
+test("CLI requires a value after --workspace", () => {
+  assert.throws(() => workspaceArg(["--workspace"]), /Isi path/);
+  assert.equal(workspaceArg(["--workspace", "."]), resolve("."));
 });
 
 test("approval callbacks reject forgery and preserve signed decision", () => {
@@ -127,6 +141,18 @@ test("Telegram retries 429 and falls back from rich Markdown to plain text", asy
   );
   assert.deepEqual(requests[0]?.body.rich_message, { markdown: "**done**" });
   assert.equal(requests[1]?.body.text, "**done**");
+});
+
+test("Telegram can discard pairing updates explicitly", async () => {
+  let body: Record<string, unknown> = {};
+  const fetcher: typeof fetch = async (_input, init) => {
+    body = JSON.parse(String(init?.body));
+    return new Response(JSON.stringify({ ok: true, result: true }), {
+      headers: { "content-type": "application/json" },
+    });
+  };
+  await new Telegram("fake-token", fetcher).deleteWebhook(true);
+  assert.equal(body.drop_pending_updates, true);
 });
 
 test("config keeps token out of YAML and secret files private", async () => {

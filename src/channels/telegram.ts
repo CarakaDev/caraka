@@ -118,8 +118,12 @@ export class Telegram {
     return this.call<TelegramUser>("getMe", {}, signal);
   }
 
-  deleteWebhook(signal?: AbortSignal) {
-    return this.call<boolean>("deleteWebhook", { drop_pending_updates: false }, signal);
+  deleteWebhook(dropPendingUpdates = false, signal?: AbortSignal) {
+    return this.call<boolean>(
+      "deleteWebhook",
+      { drop_pending_updates: dropPendingUpdates },
+      signal,
+    );
   }
 
   getUpdates(offset = this.offset, timeout = 25, signal?: AbortSignal) {
