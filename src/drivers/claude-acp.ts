@@ -2,6 +2,7 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { Readable, Writable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import * as acp from "@agentclientprotocol/sdk";
+import { translator, type Translate } from "../i18n.js";
 import type {
   RequestPermissionRequest,
   RequestPermissionResponse,
@@ -23,6 +24,8 @@ export class ClaudeAcp {
   private child: ChildProcessWithoutNullStreams | undefined;
   private connection: acp.ClientConnection | undefined;
   private readonly routes = new Map<string, ClaudeRoute>();
+
+  constructor(private readonly t: Translate = translator()) {}
 
   async start() {
     if (this.connection) return;
@@ -54,15 +57,13 @@ export class ClaudeAcp {
       });
     } catch {
       await this.stop();
-      throw new Error(
-        "Claude tidak dapat dimulai lewat ACP. Jalankan `claude auth login`, lalu coba lagi.",
-      );
+      throw new Error(this.t("acp.start"));
     }
   }
 
   async session(existing: string | null, cwd: string) {
     const agent = this.connection?.agent;
-    if (!agent) throw new Error("Claude ACP belum dimulai.");
+    if (!agent) throw new Error(this.t("acp.notStarted"));
     if (existing) {
       try {
         await agent.request(acp.methods.agent.session.load, {
@@ -81,7 +82,7 @@ export class ClaudeAcp {
 
   async prompt(sessionId: string, prompt: string, route: ClaudeRoute) {
     const agent = this.connection?.agent;
-    if (!agent) throw new Error("Claude ACP belum dimulai.");
+    if (!agent) throw new Error(this.t("acp.notStarted"));
     this.routes.set(sessionId, route);
     try {
       return await agent.request(acp.methods.agent.session.prompt, {
@@ -91,6 +92,16 @@ export class ClaudeAcp {
     } finally {
       this.routes.delete(sessionId);
     }
+  }
+
+  // Only `caraka trust --bypass` reaches this, and only through a database row
+  // the terminal wrote. Once the adapter takes a ceding mode it answers
+  // permissions locally and stops sending `session/request_permission` at all.
+  setMode(sessionId: string, modeId: string) {
+    return (
+      this.connection?.agent.request(acp.methods.agent.session.setMode, { sessionId, modeId }) ??
+      Promise.resolve(undefined)
+    );
   }
 
   cancel(sessionId: string) {

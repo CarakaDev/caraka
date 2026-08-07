@@ -54,8 +54,12 @@ Di supergroup/Discord hierarkinya sama, hanya wadahnya berbeda.
                    ├── /stop ──► cancelled                      │
                    └── error ──► failed                         │
                                                                 ▼
-                                          closeForumTopic + ringkasan akhir
+                                          editForumTopic + ringkasan akhir
 ```
+
+Sesi yang selesai ditandai lewat `editForumTopic`, tidak ditutup. `closeForumTopic`
+didokumentasikan hanya untuk supergroup, jadi topic sesi di DM tidak punya cara
+berdokumentasi untuk ditutup. Alasan lengkapnya di `telegram-integration.md` §2.
 
 | State | Warna ikon topic | Prefiks nama |
 |---|---|---|
@@ -92,7 +96,7 @@ Judul diperbarui **satu kali** setelah agent memberi respons pertama, bila agent
 | Pesan di topic **General** dengan `@workspace` | Buat sesi baru di topic baru, balas di sana. Di General cukup tinggalkan satu baris tautan. |
 | Pesan di topic **General** tanpa `@workspace` | Pakai workspace terakhir yang aktif. Bila belum ada → tanya (tombol pilih workspace). |
 | Pesan di **topic sesi** | Lanjutkan sesi itu. Tidak pernah membuat topic baru. |
-| Pesan di topic sesi **yang sudah `done`** | `reopenForumTopic` + lanjutkan sesi yang sama (ACP `session/load`). |
+| Pesan di topic sesi **yang sudah `done`** | Lanjutkan sesi yang sama (ACP `session/load`) dan kembalikan penanda state lewat `editForumTopic`. Topic di DM tidak pernah ditutup, jadi tidak ada yang perlu dibuka kembali. |
 | Pesan saat sesi `running` | Masuk antrean sesi tersebut, balas "diantrekan (#n)". |
 | Perintah global (`/ws`, `/status`, `/memori`) | Selalu dijawab di General, dari topic mana pun ia dikirim. |
 
@@ -130,7 +134,7 @@ Ringkasan penutup dikirim **sebelum** topic ditutup, sehingga baris terakhir top
 | Sesi | forum topic | forum topic | thread | — (linear) |
 | Kontrol | topic General | topic General | channel induk | chat yang sama |
 | Membuat | `createForumTopic` (tanpa admin) | butuh `can_manage_topics` | `CREATE_PUBLIC_THREADS` | — |
-| Menutup | `closeForumTopic` | idem | `archived: true` | — |
+| Menandai selesai | `editForumTopic` (tidak ada `closeForumTopic` di DM) | `closeForumTopic`, butuh `can_manage_topics` | `archived: true` | — |
 | Batas | belum terdokumentasi | — | ±50 aktif/channel, 1.000/guild | — |
 | Auto-arsip | manual (kita) | manual | dipaksa Discord (60/1440/4320/10080 mnt) | — |
 

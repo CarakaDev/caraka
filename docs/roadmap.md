@@ -13,8 +13,8 @@ Roadmap ini adalah urutan **pembuktian**, bukan daftar fitur. Setiap fase menjaw
 **Pertanyaan:** apakah tiga fondasi ini benar-benar bekerja seperti yang dijanjikan dokumentasi?
 
 - [x] **ACP + Claude Code:** spawn `claude-agent-acp`, `session/new`/`session/load` → `session/prompt` → konsumsi `session/update` → tangani `session/request_permission` → `session/cancel`. Smoke nyata membuktikan initialize, new, prompt, load, dan prompt lanjutan; e2e membuktikan permission callback.
-- [ ] **Topic di private chat:** `createForumTopic` di DM tanpa hak admin; kirim ke `message_thread_id`; ubah `icon_color`; `closeForumTopic`. Konfirmasi perilaku klien (gelembung "Type any message to create a new thread").
-- [ ] **Rich Messages:** `sendRichMessage` dengan block table + code; `sendRichMessageDraft` untuk streaming; verifikasi tidak ada `editRichMessage` dan pola kirim-baru + hapus-lama bekerja.
+- [ ] **Topic di private chat:** `createForumTopic` di DM tanpa hak admin; kirim ke `message_thread_id`; tetapkan `icon_color` saat membuat, lalu tandai keadaan lewat `editForumTopic` (`name` dan `icon_custom_emoji_id`, karena `icon_color` tidak dapat diubah setelahnya). Konfirmasi perilaku klien (gelembung "Type any message to create a new thread"). Butir ini dulu menyebut `closeForumTopic`; method itu didokumentasikan hanya untuk supergroup, jadi tidak ada yang bisa di-spike di DM (`telegram-integration.md` §2).
+- [ ] **Rich Messages:** `sendRichMessage` dengan block table + code; `sendRichMessageDraft` untuk streaming; uji ulang apakah `editMessageText` ber-`rich_message` (Bot API 10.1) sudah cukup, atau pola kirim-baru + hapus-lama masih dibutuhkan.
 - [ ] **Titen:** `titen bootstrap` + `titen serve`; POST `/v1/observations`, `/v1/context/compile`; ukur latensi compile.
 - [ ] Ukur: latensi ack, RAM, cold start.
 
@@ -58,6 +58,15 @@ gerbang untuk menutup fase ini; nomor paket tidak menggantikan bukti pemakaian.
 - [ ] Uninstall bersih
 - [ ] Rekam 5 sesi setup nyata dari orang yang belum pernah melihat produk ini
 
+Enam pekerjaan lain masuk fase ini lewat `spec/v02.md` §2 dan sudah mendarat:
+bahasa antarmuka alat, `setMyCommands`, kontrol saat tidak diawasi (`stop`,
+`status`, PID file, rate limit, batas durasi run), `caraka service --print`,
+jendela trust dengan `/lock`, serta **grup Telegram lewat allowlist**.
+Yang terakhir dulu berada di Fase 5 dan
+dipasangkan dengan approval ephemeral; pemasangan itu dibatalkan karena ephemeral
+tidak bisa menutupi kartu approval (`security.md` §4). Grup masuk dengan
+pengungkapan yang dinyatakan, bukan dengan kerahasiaan yang dijanjikan.
+
 **Definition of done:** median waktu dari `npx` sampai pesan pertama terkirim **< 3 menit**, tanpa pertanyaan ke penulis.
 
 ---
@@ -96,7 +105,6 @@ gerbang untuk menutup fase ini; nomor paket tidak menggantikan bukti pemakaian.
 
 **Pertanyaan:** apakah produk ini bertahan di tangan orang lain?
 
-- [ ] Grup Telegram + **ephemeral approval** (`receiver_user_id`)
 - [ ] Discord + thread + approval berbasis role (memetakan model sesi yang sama)
 - [ ] Dashboard read-only lokal (htmx)
 - [ ] Rekrut 20 developer beta, utamakan Indonesia

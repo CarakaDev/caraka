@@ -7,7 +7,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8EEE98?style=flat-square&labelColor=05080C" alt="MIT"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%E2%89%A522-E2452C?style=flat-square&labelColor=05080C" alt="node >= 22"></a>
   <a href="https://agentclientprotocol.com"><img src="https://img.shields.io/badge/protocol-ACP-FF7A5E?style=flat-square&labelColor=05080C" alt="ACP"></a>
-  <a href="docs/roadmap.md"><img src="https://img.shields.io/badge/status-v0.1%20preview-FFD67E?style=flat-square&labelColor=05080C" alt="v0.1 preview"></a>
+  <a href="docs/roadmap.md"><img src="https://img.shields.io/badge/status-v0.2-FFD67E?style=flat-square&labelColor=05080C" alt="v0.1 preview"></a>
 </p>
 
 <p align="center">
@@ -19,7 +19,7 @@
   <a href="README.id.md">🇮🇩 Bahasa Indonesia</a>
 </p>
 
-> **v0.1 preview.** Usable with one Telegram account, one bot, one workspace, and Claude Code over ACP. Run it in the foreground while you evaluate it. Memory, groups, background services, attachments, and coding agents other than Claude Code are not in this release.
+> **v0.2.** Usable in a private chat and in allowlisted groups, with Claude Code over ACP. English and Indonesian. `caraka service` prints a unit file you install yourself. Memory, attachments, and coding agents other than Claude Code are not in this release.
 
 ---
 
@@ -110,9 +110,13 @@ Send ordinary text to give Claude a task. Five commands cover the rest:
 | | |
 |---|---|
 | `/new` | start a fresh session |
-| `/status` | report the current session state |
-| `/stop` | cancel the active ACP prompt |
-| `/help` | show the command list |
+| `/status` | report the state of this conversation's session |
+| `/stop` | cancel the running task |
+| `/commands` | list the commands the agent reported |
+| `/usage` | report the context and cost the agent reported |
+| `/yolo <duration>` | open a Caraka trust window for a stated duration |
+| `/lock` | close the trust window now |
+| `/help` | explain how to send a task |
 
 Permission requests arrive as **Allow once** and **Reject** buttons. Each callback is signed, bound to the Telegram principal and the session, expires after ten minutes, and works once. Chat text is never read as approval.
 
@@ -126,7 +130,7 @@ ACP also ships `session/request_permission`, so the approval system is not somet
 
 Since 2026, Telegram bots can create forum topics **in a private chat, with no admin rights at all.** That turns a DM with your bot into a tabbed workspace at zero setup cost.
 
-One session = one topic. Caraka names it, colours its icon by state (🔵 running · 🟡 needs you · 🟢 done · 🔴 failed), posts a closing summary, and closes it. The topic list becomes a status board you can read at a glance without opening anything.
+One session = one topic. Caraka names it, marks its state with a glyph in the name (▸ running · ⏸ needs you · ✓ done · ✗ failed), and posts a closing summary. The icon colour is chosen when the topic is created — Telegram's `editForumTopic` can change a topic's name and emoji afterwards, but not its colour. The topic list becomes a status board you can read at a glance without opening anything.
 
 ## Safe by default
 
@@ -160,6 +164,12 @@ That is why this project has approvals and an audit trail. See [docs/brand.md](d
 Memory is specified and not shipped. When it arrives it will use [Titen](https://titen.dev) — agent memory that never flattens a conclusion into its evidence, with deterministic claim extraction and no model in the loop. Titen and Caraka are written by the same author: one remembers, one is sent.
 
 Groups, background services, attachments, and coding agents other than Claude Code are also specified and not shipped. [roadmap.md](docs/roadmap.md) has the order and the gate that can cancel each next phase.
+
+Two of those carry a condition worth knowing before you wait for them.
+
+**Groups.** When group support lands, adding a group to the allowlist means choosing to show that work to its members: approval cards, file paths, diffs, and command output are readable by every member of the group. Telegram's ephemeral replies cannot hide them — they only work for 15 seconds after a qualifying action, or if the bot is a chat admin, and Caraka never asks to be one. What stays closed is the decision: an approval button is only valid from an account on the allowlist, so other members can read a card without being able to answer it.
+
+**Background services.** Caraka will print a systemd, launchd, or schtasks unit for you to install yourself. It will never install one, has no `postinstall` hook, and never prints the word `sudo`.
 
 ## Verify from source
 

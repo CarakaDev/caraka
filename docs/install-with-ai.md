@@ -2,6 +2,8 @@
 
 Prompt ini dapat ditempel ke coding agent yang berjalan di komputer tempat repository berada. Ia memisahkan pekerjaan instalasi dari input token Telegram.
 
+Prompt berbahasa Indonesia di bawah juga muncul sebagai langkah pertama di [panduan instalasi](install-guide.md). Kalau salah satunya diubah, ubah keduanya.
+
 ## Bahasa Indonesia
 
 ```text

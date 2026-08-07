@@ -101,4 +101,4 @@ Prompt siap-tempel berada di [install-with-ai.md](install-with-ai.md).
 
 ## Keluar dan shutdown
 
-`SIGINT` atau `SIGTERM` menghentikan polling, membatalkan permission ACP yang tertunda, mengirim cancel untuk sesi aktif, menutup adapter Claude, lalu menutup SQLite. Tidak ada service yang dipasang oleh v0.1.
+`SIGINT` atau `SIGTERM` menghentikan polling, membatalkan permission ACP yang tertunda, mengirim cancel untuk sesi aktif, menutup adapter Claude, menghapus PID file, lalu menutup SQLite. `caraka stop` mengirim sinyal itu dari terminal lain. Caraka tidak pernah memasang service; `caraka service --print` mencetak unit untuk operator pasang sendiri.

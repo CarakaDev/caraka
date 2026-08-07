@@ -75,18 +75,44 @@
 | `last_health_at` | INTEGER NULL | |
 | `healthy` | INTEGER | |
 
-### `policy_grant` — izin per principal per workspace
+### `policy_grant` — jendela izin per workspace
+
+Disalin apa adanya dari `src/store/db.ts`, yang adalah sumber kebenarannya. Dokumen
+ini menyalin, bukan mendefinisikan.
+
 | Kolom | Tipe | Ket |
 |---|---|---|
 | `id` | TEXT PK | |
-| `principal_id` | TEXT FK | |
-| `workspace_id` | TEXT FK | |
-| `mode` | TEXT | `read-only`\|`assisted`\|`trusted` |
-| `granted_by` | TEXT | `config`\|`cli` (**tidak pernah** `chat`) |
-| `expires_at` | INTEGER NULL | wajib terisi untuk `trusted` |
-| `created_at` | INTEGER | |
+| `workspace` | TEXT NOT NULL | |
+| `mode` | TEXT NOT NULL | `CHECK(mode IN ('assisted','trusted'))` |
+| `granted_by` | TEXT NOT NULL | `CHECK(granted_by IN ('config','cli','chat'))` |
+| `principal` | TEXT NULL | siapa yang membuka jendela |
+| `agent_mode` | TEXT NULL | terisi hanya untuk jendela `--bypass` |
+| `created_at` | INTEGER NOT NULL | |
+| `expires_at` | INTEGER NULL | |
+| `closed_at` | INTEGER NULL | terisi saat `/lock`, kedaluwarsa, atau restart |
 
-**UNIQUE(`principal_id`, `workspace_id`)**
+**`CHECK(mode <> 'trusted' OR expires_at IS NOT NULL)`** · Index `policy_grant_open(workspace, closed_at, expires_at)`
+
+Tiga penyimpangan dari rancangan awal, semuanya mengikuti build. `read-only` tidak
+ada di CHECK karena ia bukan jendela melainkan ketiadaan jendela. Kunci memakai
+`workspace` dan `principal` sebagai TEXT, bukan FK ke tabel yang belum ada. Tidak
+ada UNIQUE per `(principal, workspace)`: satu jendela ditutup lalu dibuka lagi
+menghasilkan dua baris, dan keduanya perlu bertahan karena keduanya tercatat
+(`spec/v02.md` AC-6.12).
+
+Anotasi lama pada `granted_by` berbunyi "**tidak pernah** `chat`". Itu diganti,
+bukan dihapus, karena kalimat itu dulu satu-satunya tempat larangannya tertulis.
+
+`chat` sekarang sah, dan yang mengotorisasinya bukan pesan chat melainkan
+**callback bertanda tangan sekali pakai** yang terikat `(principal, session,
+request)` dan diverifikasi terhadap allowlist sebelum satu baris pun ditulis
+(`spec/v02.md` AC-6.10). Perintah `/yolo <durasi>` hanya menampilkan kartunya dan
+tidak mengubah state apa pun sebelum tombolnya ditekan. Batas yang menggantikan
+larangan lama: tanda tangan callback, lingkup satu workspace, dan `expires_at`
+yang tetap wajib.
+
+Nilai di luar ketiganya ditolak CHECK constraint yang sama.
 
 ### `session` — percakapan berkelanjutan (= satu "tab")
 | Kolom | Tipe | Ket |
@@ -160,7 +186,7 @@ Index: `(container_id, thread_ref)` UNIQUE · `(workspace_id, state)` · `(state
 | `risk` | TEXT | `low`\|`high` |
 | `nonce` | TEXT UNIQUE | sekali pakai, terikat `(principal, session, request)` |
 | `hmac` | TEXT | tanda tangan payload callback (`callback_data` maks 64 byte → hanya id yang dikirim) |
-| `ephemeral_msg_id` | TEXT NULL | bila kartu dikirim ephemeral di grup |
+| `ephemeral_msg_id` | TEXT NULL | tidak terpakai — kartu approval tidak pernah dikirim ephemeral, lihat `security.md` §4 |
 | `short_code` | TEXT | mis. `A7F3`, untuk channel tanpa tombol |
 | `expires_at` | INTEGER | |
 | `decision` | TEXT NULL | `allow`\|`deny`\|`expired` |
@@ -221,7 +247,10 @@ Tanpa UPDATE/DELETE dari kode aplikasi; pembersihan hanya lewat job retensi.
 ## 3. Aturan integritas
 
 1. Sebuah `session` **wajib** punya `policy_grant` aktif untuk `(principal, workspace)`; kalau tidak → tolak.
-2. `policy_grant.mode = 'trusted'` **wajib** punya `expires_at`. Constraint di level DB.
+2. `policy_grant.mode = 'trusted'` **wajib** punya `expires_at`, ditegakkan
+   `CHECK(mode <> 'trusted' OR expires_at IS NOT NULL)` di `src/store/db.ts`.
+   Sebelum v0.2 tabel ini tidak ada dan tidak ada yang menegakkan kedaluwarsa apa
+   pun; klaim itu dulu benar tentang desain dan salah tentang build.
 3. `approval.nonce` unik global dan hanya bisa dipakai sekali (`decision` sekali tulis).
 4. Maksimal satu `run` berstatus `running` per `workspace_id` — dijaga oleh unique partial index.
 4b. Maksimal satu `session` per `(container_id, thread_ref)` — topic tidak pernah dipakai ulang.

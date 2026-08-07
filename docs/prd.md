@@ -83,7 +83,7 @@ Tim enterprise yang butuh SSO/RBAC/compliance; pengguna non-teknis; orang yang m
 - **Driver:** ACP (utama) + CLI (fallback), keduanya berbasis konfigurasi deklaratif
 - **Agent tervalidasi:** **Claude Code** (utama), lalu Codex CLI, Gemini CLI, Cursor, Goose, Amp (± 6 diuji, sisanya lewat ACP Registry)
 - **Rendering:** hasil sebagai Rich Message (tabel, code block, collapsible); progres sebagai pesan yang di-edit
-- **Approval:** render `session/request_permission` jadi tombol berwarna; nonce + TTL; ephemeral di grup
+- **Approval:** render `session/request_permission` jadi tombol berwarna; nonce + TTL; callback terikat principal, juga di grup
 - **Kebijakan:** `read-only` / `assisted` / `trusted`
 - **Memory:** provider `titen` (default, non-LLM) + `local` (fallback) + `none`
 - **Audit log** append-only

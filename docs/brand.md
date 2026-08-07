@@ -253,7 +253,7 @@ Caraka berbicara seperti utusan yang kompeten: **singkat, spesifik, dan tidak pe
 
 - Tanpa persona buatan, tanpa nama panggilan, tanpa basa-basi. Ini alat, bukan teman.
 - Emoji hanya sebagai penanda status (▸ ⏸ ✓ ✗ ⊘ dan lima warna topic).
-- Bilingual otomatis: balas dalam bahasa yang dipakai user. Dokumentasi ID dan EN setara, bukan terjemahan setengah.
+- Prosa agent mengikuti bahasa user, karena Claude memang melakukannya. String milik Caraka mengikuti `language` di config, bawaan `en`, dipilih sekali saat `init`. Dokumentasi ID dan EN setara, bukan terjemahan setengah.
 - Rujukan budaya dipakai **satu kali di tempat yang tepat** (README, halaman filosofi) — tidak ditaburkan ke seluruh antarmuka.
 
 ---

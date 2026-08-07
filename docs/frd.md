@@ -56,7 +56,7 @@
 | FR-AUTH-02 | P0 | Sender tak dikenal menerima balasan netral (tidak membocorkan keberadaan sistem) dan permintaan pairing dicatat. |
 | FR-AUTH-03 | P0 | Pairing disetujui **di luar chat**: `caraka pair approve <channel> <code>` dari terminal lokal. |
 | FR-AUTH-04 | P0 | Tiga mode kebijakan per principal per workspace: `read-only`, `assisted`, `trusted`. Default `assisted` untuk DM, `read-only` untuk grup. |
-| FR-AUTH-05 | P0 | Mode `trusted` **kedaluwarsa** (default 60 menit) dan hanya bisa diaktifkan dari terminal lokal, bukan dari chat. |
+| FR-AUTH-05 | P0 | Mode `trusted` **kedaluwarsa** (batas 60 menit). Jendela trust Caraka boleh dibuka dari chat lewat callback bertanda tangan sekali pakai, tidak pernah lewat teks. Mode `bypassPermissions` milik Claude hanya dari terminal. Lihat `security.md` §5. |
 | FR-AUTH-06 | P1 | Discord: pemetaan role → mode kebijakan. |
 | FR-AUTH-07 | P0 | Semua keputusan otorisasi tercatat di audit log. |
 
@@ -84,10 +84,10 @@
 |---|---|---|
 | FR-TOPIC-01 | P0 | Setiap sesi baru dibuatkan **forum topic** sendiri via `createForumTopic`, termasuk di **private chat** (tidak butuh hak admin). `message_thread_id` yang dikembalikan disimpan di `session.thread_ref`. |
 | FR-TOPIC-02 | P0 | Nama topic: `<prefiks state> <workspace> · <judul tugas>`. Judul ditetapkan sekali, maksimal diperbaiki **satu kali** setelah respons pertama agent. |
-| FR-TOPIC-03 | P0 | Ikon topic mencerminkan state lewat `editForumTopic`: 🔵 `running` · 🟡 `awaiting_approval` · 🟢 `done` · 🔴 `failed` · 🟣 `cancelled`. Hanya 6 nilai `icon_color` yang sah; perubahan hanya ditulis bila state benar-benar berubah (`session.icon_state`). |
+| FR-TOPIC-03 | P0 | Warna ikon topic dipilih dari 6 nilai `icon_color` yang sah dan ditetapkan sekali lewat `createForumTopic`. **`editForumTopic` tidak menerima `icon_color`**, jadi warna tidak dapat mengikuti perubahan state; yang masih bisa ditulis ulang adalah `name` dan `icon_custom_emoji_id`, dan hanya bila state benar-benar berubah (`session.icon_state`). Pemetaan 🔵 `running` · 🟡 `awaiting_approval` · 🟢 `done` · 🔴 `failed` · 🟣 `cancelled` **perlu keputusan spec** sebelum dibangun. |
 | FR-TOPIC-04 | P0 | State juga muncul sebagai **prefiks teks** (`▸ ⏸ ✓ ✗ ⊘`) agar tidak bergantung pada persepsi warna. |
-| FR-TOPIC-05 | P0 | Topic ditutup (`closeForumTopic`) setelah pesan ringkasan penutup dikirim, sehingga baris terakhir selalu menjelaskan hasilnya. |
-| FR-TOPIC-06 | P0 | Pesan di dalam topic sesi **selalu** melanjutkan sesi itu; tidak pernah membuat topic baru. Pesan di topic sesi yang sudah `done` melakukan `reopenForumTopic` + `session/load`. |
+| FR-TOPIC-05 | P0 | Sesi selesai ditandai lewat `editForumTopic` setelah pesan ringkasan penutup dikirim, sehingga baris terakhir selalu menjelaskan hasilnya. Topic di DM **tidak** ditutup: `closeForumTopic` dan `reopenForumTopic` didokumentasikan hanya untuk supergroup, dan `deleteForumTopic` akan menghapus seluruh transkrip. |
+| FR-TOPIC-06 | P0 | Pesan di dalam topic sesi **selalu** melanjutkan sesi itu; tidak pernah membuat topic baru. Pesan di topic sesi yang sudah `done` memanggil `session/load` dan mengembalikan penanda state lewat `editForumTopic`. |
 | FR-TOPIC-07 | P0 | Topic **General** adalah ruang kontrol: memulai sesi baru, perintah global, dan tautan ke sesi yang dibuat. General tidak pernah ditutup atau dihapus. |
 | FR-TOPIC-08 | P0 | Housekeeping: hapus topic `done` setelah 7 hari (dapat diatur; `0` = jangan pernah); batas **5 sesi aktif** bersamaan — melebihi itu tawarkan menutup yang terlama; `/pin` mengecualikan dari auto-hapus. |
 | FR-TOPIC-09 | P0 | **Deteksi kemampuan wajib.** `createForumTopic` di supergroup **gagal diam-diam** bila forum mode mati. Sistem mendeteksi sekali saat startup, menyimpan `container.supports_threads`, dan jatuh ke **mode linear** (header `[ws · #id]` di setiap balasan) tanpa gagal keras. |
@@ -101,9 +101,9 @@
 | ID | P | Kebutuhan |
 |---|---|---|
 | FR-RICH-01 | P0 | Ack dikirim sebagai teks polos dalam < 1 detik; progres diperbarui lewat `editMessageText` dengan throttle ≥ 1,5 detik. |
-| FR-RICH-02 | P0 | Hasil akhir dikirim sebagai **`sendRichMessage` baru**, lalu pesan progres dihapus. **Tidak boleh** mencoba meng-edit pesan streaming menjadi rich message — tidak ada `editRichMessage`, dan hasilnya merusak format menjadi teks polos bertanda mentah. |
+| FR-RICH-02 | P0 | Hasil akhir dikirim sebagai **`sendRichMessage` baru**, lalu pesan progres dihapus. Alasannya bukan lagi ketiadaan API: `editMessageText` menerima `rich_message` sejak Bot API 10.1, jadi meng-edit menjadi rich message **bisa** dilakukan. Yang tersisa adalah laporan lapangan bahwa format rich hancur saat di-edit di tengah stream, dan laporan itu **belum diuji ulang** setelah 10.1. |
 | FR-RICH-03 | P0 | Pemetaan block: ringkasan → paragraph · berkas berubah → **table** · isi diff → **code block** · hasil test → task list · rencana agent → list · log panjang → **details/collapsible** · peringatan → blockquote. |
-| FR-RICH-04 | P1 | Bila tersedia, penalaran agent saat streaming dirender lewat `sendRichMessageDraft` + **`RichBlockThinking`** (dapat dimatikan bila terbukti berisik). |
+| FR-RICH-04 | P1 | Bila tersedia, penalaran agent saat streaming dirender lewat `sendRichMessageDraft` + **`InputRichBlockThinking`** (dapat dimatikan bila terbukti berisik). `RichBlockThinking` adalah sisi terima dan tidak dapat dikirim. |
 | FR-RICH-05 | P0 | Batas 32.768 karakter dihormati; melebihi itu dipotong **di batas block** dan sisanya dikirim sebagai berkas. Code block tidak pernah terpotong di tengah. |
 | FR-RICH-06 | P0 | `sendRichMessage` gagal → fallback otomatis ke MarkdownV2 (dengan sanitizer escaping), dan kegagalan dicatat. |
 | FR-RICH-07 | P0 | Seluruh pemanggilan method baru (`sendRichMessage`, `sendRichMessageDraft`, method ephemeral) melewati **satu adapter tipis** yang memanggil HTTP langsung, sehingga migrasi ke tipe pustaka resmi cukup mengubah satu berkas. |
@@ -136,7 +136,7 @@
 | FR-APPR-03 | P0 | Approval **hanya** valid dari principal pemilik sesi. Callback ditandatangani; teks chat biasa **tidak pernah** dapat menyetujui. |
 | FR-APPR-04 | P0 | Channel tanpa tombol memakai fallback: balasan berupa kode pendek (`ok A7F3` / `no A7F3`), tetap terikat nonce. |
 | FR-APPR-04b | P1 | Tombol memakai `style` (hijau/merah) dan `icon_custom_emoji_id` bila tersedia — **peningkatan opsional**, bukan syarat. |
-| FR-APPR-04c | P1 | Di grup, kartu approval dikirim sebagai **ephemeral message** (`receiver_user_id` = operator) sehingga hanya operator yang melihatnya; `callback_query_id` dipakai untuk membalas penekanan tombol secara ephemeral. |
+| FR-APPR-04c | P0 | Di grup, kartu approval terbaca seluruh anggota dan itu dinyatakan saat pairing, bukan disembunyikan. Ephemeral **tidak** dipakai: `receiver_user_id` hanya berlaku 15 detik setelah aksi yang memenuhi syarat, atau bila bot adalah admin chat. Yang tetap tertutup adalah keputusannya — callback approval terikat principal. Lihat `security.md` §4. |
 | FR-APPR-04d | P0 | `callback_data` maksimal 64 byte → payload disimpan di DB dan hanya id-nya yang dikirim, ditandatangani HMAC. |
 | FR-APPR-05 | P0 | Mode `read-only` menolak semua permintaan tulis/eksekusi otomatis, dengan penjelasan cara menaikkan mode. |
 | FR-APPR-06 | P0 | Aksi berisiko tinggi (`git push --force`, `rm -rf`, migrasi DB, deploy, akses path terlarang) selalu butuh approval **meski** mode `trusted`, dan ditandai ⚠️. |
@@ -185,8 +185,8 @@
 | ID | P | Kebutuhan |
 |---|---|---|
 | FR-OPS-01 | P0 | Gateway bind ke `127.0.0.1` secara default; membuka ke alamat lain memerlukan flag eksplisit + peringatan. |
-| FR-OPS-02 | P0 | Perintah: `start`, `stop`, `status`, `logs`, `doctor`, `pair`, `audit`, `session`, `config`. |
-| FR-OPS-03 | P1 | Install sebagai service (launchd/systemd) opsional. |
+| FR-OPS-02 | P0 | Perintah: `start`, `stop`, `status`, `logs`, `doctor`, `pair`, `audit`, `session`, `config`. Terpasang: `init`, `doctor`, `start`, `stop`, `status`, `trust`, `service`. **Dispesifikasikan, belum di v0.2:** `logs`, `pair`, `audit`, `session`, `config`. |
+| FR-OPS-03 | P1 | **Cetak** berkas service untuk tiga platform (systemd user unit, launchd agent, schtasks) lewat `caraka service --print`. Caraka tidak pernah memasangnya, tidak punya hook `postinstall`, dan tidak pernah mencetak `sudo`. Windows dulu tidak disebut di baris ini meski CLI-nya tiga platform; sekarang disebut, dan kata "install" diganti "cetak". Template launchd dan schtasks dikirim **belum diuji**. |
 | FR-OPS-04 | P0 | Reload konfigurasi tanpa kehilangan sesi aktif bila memungkinkan. |
 | FR-OPS-05 | P1 | Cron/jadwal sederhana untuk memicu prompt berulang (default: nonaktif). |
 
@@ -204,4 +204,4 @@
 | NFR-06 | Platform | macOS, Linux, Windows (WSL2 untuk channel tertentu) |
 | NFR-07 | Uptime lokal | reconnect otomatis; tidak ada kondisi butuh restart manual pada operasi normal |
 | NFR-08 | Ukuran kode inti | ≤ 8.000 LOC |
-| NFR-09 | Bahasa antarmuka | Indonesia & Inggris (deteksi dari bahasa pesan) |
+| NFR-09 | Bahasa antarmuka | Prosa agent mengikuti bahasa user karena Claude melakukannya. String milik Caraka mengikuti field `language` di `config.yaml` (`en` bawaan, `id` opsional), dipilih sekali saat `init`. Tidak ada deteksi per pesan. |

@@ -13,7 +13,7 @@
 3. **Status terlihat tanpa dibuka.** Warna ikon topic memberi tahu keadaan lima sesi sekaligus dalam satu pandangan.
 4. **Keputusan berbahaya butuh ketukan, bukan ketikan.**
 5. **Diam itu bagus.** Tanpa aktivitas → tanpa pesan. Heartbeat mati secara default.
-6. **Bilingual otomatis.** Balas dalam bahasa yang dipakai user.
+6. **Bahasa dipilih sekali, bukan ditebak.** Prosa agent mengikuti bahasa prompt karena Claude melakukannya; string milik Caraka mengikuti `language` di config.
 7. **Gagal dengan jalan keluar.** Setiap error menyebut langkah berikutnya.
 
 ---
@@ -59,19 +59,26 @@ Tanpa prefiks → memakai workspace terakhir. Bot membalas satu baris dan memind
 Ketik biasa. Tidak perlu prefiks, tidak perlu perintah. **Topic adalah konteksnya.**
 
 ### Perintah
-| Perintah | Di mana | Fungsi |
-|---|---|---|
-| `/ws` | mana saja → dijawab di General | daftar workspace |
-| `/new` | topic sesi | mulai sesi baru (topic baru) |
-| `/stop` | topic sesi | batalkan run |
-| `/status` | mana saja | ringkasan semua sesi aktif |
-| `/switch <agent>` | topic sesi | ganti coding agent |
-| `/mode read-only\|assisted` | topic sesi | turunkan/naikkan izin |
-| `/pin` `/unpin` | topic sesi | kecualikan dari auto-hapus |
-| `/ingat <teks>` `/lupakan <id>` `/memori` | mana saja | kelola memori |
-| `/help` | mana saja | bantuan singkat |
+| Perintah | Di mana | Fungsi | Status |
+|---|---|---|---|
+| `/new` | topic sesi | mulai sesi baru (topic baru) | terpasang |
+| `/stop` | topic sesi | batalkan run | terpasang |
+| `/status` | mana saja | ringkasan semua sesi aktif | terpasang |
+| `/help` | mana saja | bantuan singkat | terpasang |
+| `/start` | mana saja | pairing deep link | terpasang |
+| `/commands` `/usage` | mana saja | daftar perintah agent, pemakaian terakhir | terpasang |
+| `/yolo <durasi>` `/lock` | topic sesi | buka dan tutup jendela trust | terpasang |
+| `/ws` | mana saja → dijawab di General | daftar workspace | dispesifikasikan, belum di v0.2 |
+| `/switch <agent>` | topic sesi | ganti coding agent | dispesifikasikan, belum di v0.2 |
+| `/mode read-only\|assisted` | topic sesi | turunkan/naikkan izin | dispesifikasikan, belum di v0.2 |
+| `/pin` `/unpin` | topic sesi | kecualikan dari auto-hapus | dispesifikasikan, belum di v0.2 |
+| `/ingat <teks>` `/lupakan <id>` `/memori` | mana saja | kelola memori | dispesifikasikan, belum di v0.2 |
 
 Perintah sengaja sedikit. Kalau butuh dokumentasi untuk memakainya, terlalu banyak.
+
+`/mode` dan `/switch` tidak boleh mengeraskan nama mode milik agent: id mode adalah
+string spesifik per agent, jadi keduanya menunggu Caraka membaca `configOptions`
+dari `session/new` dan aliran `config_option_update`.
 
 ---
 
@@ -113,7 +120,7 @@ Maksimal 5 baris terakhir; sisanya digulung. Bila `sendRichMessageDraft` tersedi
   [ 🚀 Push ]  [ ❌ Batal ]
 ```
 
-Kenapa dikirim sebagai pesan baru, bukan hasil edit: **tidak ada `editRichMessage`** di Bot API, dan meng-edit pesan streaming merusak format rich menjadi teks polos bertanda mentah. Pola kirim-baru + hapus-progres adalah perbaikan yang sudah terbukti di implementasi lain.
+Kenapa dikirim sebagai pesan baru, bukan hasil edit: `editMessageText` sebenarnya bisa meng-edit sebuah pesan menjadi rich message sejak Bot API 10.1 menambahkan parameter `rich_message`. Yang menahan adalah laporan bahwa format rich hancur menjadi teks polos bertanda mentah saat di-edit di tengah stream, dan laporan itu **belum diuji ulang** setelahnya. Pola kirim-baru + hapus-progres dipertahankan karena ia sudah bekerja.
 
 ### 4.4 Kartu approval
 ```
@@ -127,7 +134,7 @@ Kenapa dikirim sebagai pesan baru, bukan hasil edit: **tidak ada `editRichMessag
      [ ✅ Setujui ]   [ 👁 Lihat isi ]   [ ❌ Tolak ]
          hijau             netral            merah
 ```
-Topic berubah 🟡 saat kartu muncul, kembali 🔵 setelah diputuskan. Di grup, kartu dikirim **ephemeral** — hanya operator yang melihatnya.
+Topic berubah 🟡 saat kartu muncul, kembali 🔵 setelah diputuskan. Di grup, kartu yang sama terbaca setiap anggota; yang tetap tertutup adalah keputusannya, karena tombolnya hanya sah dari principal di allowlist (`security.md` §4).
 
 ### 4.5 Penutup (sebelum topic ditutup)
 ```
@@ -153,7 +160,7 @@ Baris terakhir setiap topic selalu menjelaskan apa yang terjadi — sehingga daf
 | Sesi | forum topic (DM, tanpa admin) | thread (auto-arsip 7 hari) | linear + header `[ws · #id]` |
 | Status sesi | warna ikon topic | prefiks nama | prefiks nama |
 | Hasil | `sendRichMessage` (tabel, code, collapsible) | embed + code block | teks + file |
-| Approval | tombol berwarna (+ ephemeral di grup) | button/select + role | kode teks `ok A7F3` |
+| Approval | tombol berwarna, terikat principal | button/select + role | kode teks `ok A7F3` |
 | Progres | edit pesan / rich draft | edit pesan | maks 1 update / 30 dtk |
 | Batas | 32.768 karakter | 2.000 | praktis pendek |
 | Diff panjang | collapsible → file bila > batas | file | file |
@@ -171,16 +178,27 @@ Lihat `install-flow.md` untuk alur lengkap. Kualitas yang dikejar: **wizard meng
 ## 7. Permukaan CLI
 
 ```
-caraka start | stop | status | logs [-f]
-caraka doctor [--fix]
-caraka ws add | list | remove
-caraka pair list | approve <channel> <code> | revoke <id>
-caraka trust <workspace> --for 60m      # satu-satunya jalan ke mode trusted
-caraka audit --since 24h [--workspace x]
-caraka session list | export <id>
-caraka memory status | export
-caraka config edit | validate
+caraka init                             # terpasang
+caraka doctor [--fix]                   # terpasang (--fix belum)
+caraka start                            # terpasang
+caraka stop | status                    # terpasang
+caraka service --print systemd|launchd|schtasks   # terpasang
+caraka trust <workspace> --for 60m      # terpasang
+caraka trust <workspace> --bypass --for 60m       # terpasang
+caraka logs [-f]                        # dispesifikasikan, belum di v0.2
+caraka ws add | list | remove           # dispesifikasikan, belum di v0.2
+caraka pair list | approve <channel> <code> | revoke <id>   # dispesifikasikan, belum di v0.2
+caraka audit --since 24h [--workspace x]           # dispesifikasikan, belum di v0.2
+caraka session list | export <id>       # dispesifikasikan, belum di v0.2
+caraka memory status | export           # dispesifikasikan, belum di v0.2
+caraka config edit | validate           # dispesifikasikan, belum di v0.2
 ```
+
+`--bypass` menyalakan mode `bypassPermissions` milik Claude, dan itu satu-satunya
+jalan menuju mode tersebut. Selama jendela itu terbuka Caraka berhenti menerima
+`session/request_permission`, jadi ia tidak melihat keputusan izin apa pun dan
+tidak mengaudit isinya. Tanpa `--bypass`, perintah yang sama membuka jendela trust
+Caraka, yang tetap menerima setiap permintaan izin.
 
 `doctor` adalah alat dukungan utama: read-only, deterministik, rahasia teredaksi, aman ditempel ke issue.
 

@@ -69,7 +69,7 @@ Berurutan: sudah tekan Start? Bot tidak diblokir? Nomor atau id kamu ada di `all
 Token tersalin sebagian. Salin ulang seluruhnya dari BotFather, termasuk angka sebelum titik dua.
 
 **Topic tidak pernah terbuat**
-Di supergroup, forum mode mati atau bot tidak punya `can_manage_topics`. Method-nya gagal diam-diam, jadi Caraka mendeteksi sekali di startup lalu memakai mode linear. Aktifkan Topics di pengaturan grup, lalu `caraka doctor --fix`.
+Di supergroup, forum mode mati atau bot tidak punya `can_manage_topics`. Method-nya gagal diam-diam, jadi Caraka mendeteksi sekali di startup lalu memakai mode linear. Aktifkan Topics di pengaturan grup, lalu jalankan `caraka doctor` lagi. Flag `--fix` **dispesifikasikan, belum di v0.2**.
 
 **Pesan panjang terpotong di tengah code block**
 Bug. Laporkan dengan keluaran `caraka doctor` dan panjang pesannya. Code block tidak boleh pernah terpotong.
@@ -95,11 +95,15 @@ Nonce sudah kedaluwarsa, TTL bawaan 10 menit. Kartu yang kedaluwarsa otomatis me
 **Kartu approval muncul untuk operasi baca**
 Bug. Mode `read-only` dan `assisted` tidak boleh meminta izin untuk membaca.
 
-**Tidak bisa menaikkan ke mode `trusted` dari chat**
-Memang begitu, dan tidak akan diubah. Hanya dari terminal, dan selalu kedaluwarsa:
+**Membuka jendela trust**
+Dari chat, `/yolo <durasi>` menampilkan kartu berkonfirmasi; tombolnya yang membuka jendela, bukan teksnya. Dari terminal:
 ```bash
 caraka trust toko-api --for 60m
 ```
+Keduanya wajib berdurasi, maksimal 60 menit, dan tertutup sendiri saat kedaluwarsa maupun saat gateway mulai ulang. `/lock` menutupnya seketika.
+
+**Mode `bypassPermissions` Claude tidak bisa dinyalakan dari chat**
+Memang begitu, dan tidak akan diubah. Hanya `caraka trust <workspace> --bypass --for <durasi>` dari terminal. Selama jendela itu terbuka Claude berhenti meminta izin kepada Caraka, jadi Caraka tidak melihat keputusannya dan tidak mengauditnya; yang tercatat hanya jendelanya.
 
 **Aksi berisiko tetap minta izin di mode `trusted`**
 Juga memang begitu. Force-push, `rm -rf`, migrasi database, dan deploy selalu meminta konfirmasi.

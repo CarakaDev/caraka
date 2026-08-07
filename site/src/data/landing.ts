@@ -4,6 +4,18 @@
 
 import { r } from '../lib/anim'
 
+/**
+ * The one string on this page that is not the mockup's. The comp reads
+ * `MEMBUKA GERBANG` on a route that declares `lang="en"`; AC-1.2 makes the
+ * label match the language the page claims. `OPENING THE GATE` is the literal
+ * reading of the Indonesian and keeps the gate image the veil is drawing.
+ *
+ * It lives here as a constant so a test can hold it: `fidelity.test.js` fails
+ * on a non-ASCII character in it, and fails if `site/AGENTS.md` stops naming
+ * the deviation. See site/AGENTS.md for the record AC-1.7 asks for.
+ */
+export const VEIL_LABEL = 'OPENING THE GATE'
+
 export const nav = [
   { id: 'hero', href: '#hero', label: 'GATE' },
   { id: 'gap', href: '#gap', label: 'THE GAP' },

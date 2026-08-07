@@ -1,4 +1,4 @@
-# Panduan instalasi Caraka v0.1
+# Panduan instalasi Caraka
 
 **Tanggal:** 7 Agustus 2026
 **Lingkup rilis:** Telegram pribadi → Claude Code, satu operator, satu workspace
@@ -17,9 +17,47 @@ Caraka memakai software yang sudah ada di komputermu:
 
 Docker, akun cloud, domain, webhook, dan port terbuka tidak dibutuhkan.
 
-## Jalur utama
+## Jalur tercepat: suruh coding agent yang memasangnya
 
-Masuk ke repository yang ingin dikerjakan Claude, lalu jalankan:
+Kalau Codex atau Claude sudah berjalan di komputer tempat repository berada,
+tempel prompt ini ke sana. Ia memeriksa prasyarat, memasang yang kurang, lalu
+menyerahkan bagian token kembali kepadamu.
+
+```text
+Pasang Caraka untuk repository di working directory saya saat ini.
+
+Baca https://github.com/CarakaDev/caraka lebih dulu. Verifikasi Node.js 22
+atau lebih baru, Git, Claude Code, dan `claude auth status`. Perbaiki hanya
+prasyarat yang kurang tanpa mengubah repository saya. Jika Caraka sudah
+dikonfigurasi, jalankan `npx caraka doctor`.
+
+Untuk pairing Telegram, jangan pernah meminta saya menempel, membuka, atau
+mengulang token bot lewat chat, output command, log, atau berkas yang akan
+di-commit. Minta saya membuat bot lewat @BotFather, lalu berikan perintah ini
+untuk saya jalankan sendiri di terminal lokal:
+
+  npx caraka init --workspace "$PWD"
+
+Tunggu saat saya memasukkan token secara privat dan menyetujui deep link
+Telegram. Setelah saya mengonfirmasi init selesai, jalankan
+`npx caraka doctor`, jelaskan check yang gagal, lalu mulai dengan
+`npx caraka start`. Jangan mengaktifkan webhook, membuka port, memasang service,
+atau mengubah konfigurasi model/provider milik Claude.
+```
+
+**Token tetap diketik di terminalmu sendiri dan tidak pernah masuk ke percakapan
+agent.** Wizard menyembunyikan input dan menulis token langsung ke
+`~/.caraka/secrets/telegram.token`. Transkrip chat, tool log, dan histori terminal
+bisa disimpan oleh klien coding agent, jadi memindahkan token lewat chat
+menghilangkan perlindungan itu. Prompt di atas melarangnya secara eksplisit.
+
+Versi Inggris prompt ini beserta alasan lengkapnya ada di
+[prompt instalasi untuk coding agent](install-with-ai.md).
+
+## Jalur manual
+
+Semua yang dilakukan prompt di atas bisa dijalankan sendiri. Masuk ke repository
+yang ingin dikerjakan Claude, lalu jalankan:
 
 ```bash
 cd /path/ke/repository
@@ -67,15 +105,26 @@ Check yang gagal menyebutkan tindakan berikutnya. `doctor` keluar dengan kode `1
 npx caraka start
 ```
 
-Biarkan proses hidup di terminal. Caraka memakai long-polling dan tidak membuka listener jaringan. Hentikan dengan `Ctrl-C`; proses akan membatalkan approval tertunda, menutup ACP, lalu menutup SQLite.
+Biarkan proses hidup di terminal. Caraka memakai long-polling dan tidak membuka listener jaringan. Hentikan dengan `Ctrl-C`, atau dari terminal lain:
+
+```bash
+npx caraka status
+npx caraka stop
+```
+
+`start` menulis PID-nya ke `~/.caraka/caraka.pid` dengan mode `0600` dan menghapusnya saat berhenti. Menjalankan `start` kedua kali saat yang pertama masih hidup berhenti dengan exit code `78` tanpa memulai poller kedua.
 
 Di Telegram:
 
 ```text
-/new      mulai sesi baru
-/status   lihat keadaan sesi
-/stop     batalkan tugas aktif
-/help     tampilkan bantuan
+/new         mulai sesi baru
+/status      lihat keadaan sesi
+/stop        batalkan tugas aktif
+/commands    daftar perintah yang dilaporkan Claude
+/usage       pemakaian terakhir yang dilaporkan Claude
+/yolo 30m    tawarkan jendela trust berdurasi
+/lock        tutup jendela trust seketika
+/help        tampilkan bantuan
 ```
 
 Pesan selain command diteruskan ke Claude apa adanya. Jika topic mode bot aktif di BotFather, sesi baru mendapat topic. Kegagalan membuat topic tidak menghentikan gateway; balasan memakai header `[workspace · #id]`.
@@ -85,6 +134,16 @@ Pesan selain command diteruskan ke Claude apa adanya. Jika topic mode bot aktif 
 Saat adapter ACP meminta izin tool, Caraka menampilkan tombol **Setujui sekali** dan **Tolak**. Callback berisi ID acak dan HMAC, terikat ke operator serta sesi, berlaku sepuluh menit, lalu tidak dapat dipakai ulang.
 
 Caraka tidak menerima kata seperti `ya`, `allow`, atau `setuju` sebagai approval. Pesan seperti itu tetap diperlakukan sebagai prompt biasa.
+
+`/yolo <durasi>` menawarkan jendela di mana aksi biasa berjalan tanpa kartu. Perintah itu sendiri tidak mengubah apa pun; yang membukanya adalah tombol konfirmasinya, dan tombol itu diverifikasi seperti approval lain. Selama jendela terbuka, aksi berisiko tinggi tetap memunculkan kartu, setiap aksi tetap masuk audit, dan `/lock` menutupnya seketika. Jendela tertutup sendiri saat kedaluwarsa dan saat gateway mulai ulang.
+
+Mode `bypassPermissions` milik Claude adalah hal yang berbeda dan hanya bisa dinyalakan dari terminal:
+
+```bash
+npx caraka trust /path/ke/repository --bypass --for 30m
+```
+
+Selama jendela itu terbuka Claude berhenti meminta izin kepada Caraka, jadi Caraka tidak melihat satu pun keputusan dan tidak bisa mengauditnya. Yang tercatat hanya jendelanya. Tanpa `--bypass`, perintah yang sama membuka jendela trust Caraka, yang tetap melihat setiap permintaan.
 
 ## Instalasi global
 
@@ -98,12 +157,6 @@ caraka start
 ```
 
 Kedua jalur memakai config yang sama di `~/.caraka`.
-
-## Minta bantuan Codex atau Claude
-
-Buka [prompt instalasi untuk coding agent](install-with-ai.md), lalu tempel prompt tersebut ke Codex atau Claude. Prompt sengaja melarang agent meminta token lewat chat.
-
-Coding agent dapat memeriksa prasyarat, memasang paket, menjalankan `doctor`, dan memulai gateway. Bagian token tetap dilakukan di terminal lokal. Jika klien agent mendukung terminal interaktif yang dapat diambil alih user, wizard boleh dijalankan di sana.
 
 ## Masalah umum
 
@@ -131,6 +184,16 @@ npm uninstall --global caraka
 
 Pemakaian lewat `npx` tidak membuat instalasi global. Config dan audit sengaja tidak dihapus otomatis. Setelah memastikan data itu tidak dibutuhkan, hapus direktori `~/.caraka` sendiri. Repository dan konfigurasi Claude tidak pernah disentuh oleh penghapusan paket.
 
-## Batas v0.1
+## Batas rilis ini
 
-Rilis ini belum menyediakan service latar, grup Telegram, banyak operator, banyak workspace, lampiran, memori, atau agent selain Claude Code. Batas itu dicatat agar instalasi tidak menjanjikan fitur roadmap sebagai fitur yang sudah tersedia.
+Belum tersedia: banyak operator, banyak workspace, lampiran, memori, dan agent selain Claude Code. Batas itu dicatat agar instalasi tidak menjanjikan fitur roadmap sebagai fitur yang sudah tersedia.
+
+**Service latar.** Rilis ini tidak memasang service, dan Caraka tidak akan pernah memasangnya sendiri. Paket tidak punya hook `postinstall` dan keluaran Caraka tidak pernah memuat kata `sudo`. Yang ada di v0.2 adalah `caraka service --print systemd|launchd|schtasks`, yang **mencetak** unit ke stdout untuk kamu pasang sendiri, lalu mencetak langkah manualnya.
+
+Template launchd dan schtasks dikirim dengan status **belum diuji**; keduanya tidak dapat dijalankan di mesin pengembang. Di macOS, jawaban jujurnya adalah mulai saat login, bukan saat boot: agent per-user di `~/Library/LaunchAgents` dimuat saat user login dan berhenti saat logout. `loginctl enable-linger` di Linux adalah langkah opt-in terpisah, karena di situlah profil risikonya berubah.
+
+**Kalau kamu memasukkan grup Telegram ke allowlist.** Satu hal tidak bisa direkayasa hilang, jadi ia dinyatakan di sini dan diulang saat pairing:
+
+> Memasukkan grup ke allowlist berarti memilih untuk memperlihatkan pekerjaan itu kepada anggotanya: kartu approval, path berkas, diff, dan keluaran perintah akan terbaca setiap anggota grup.
+
+Yang tetap tertutup adalah persetujuannya. Tombol approval hanya sah dari akun yang ada di allowlist, jadi anggota grup lain bisa membaca kartunya tanpa bisa memutuskannya. Kalau sesuatu terlalu sensitif untuk dilihat anggota grup, tempatnya bukan di grup.

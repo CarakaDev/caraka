@@ -1,4 +1,5 @@
 import { test, expect, describe } from 'vitest'
+import { VEIL_LABEL } from '../src/data/landing.ts'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -158,5 +159,49 @@ describe('ports', () => {
       }
     }
     expect(broken).toEqual([])
+  })
+})
+
+describe('the opening veil', () => {
+  const index = readFileSync(join(SITE, 'src', 'pages', 'index.astro'), 'utf8')
+  const agentsMd = readFileSync(join(SITE, 'AGENTS.md'), 'utf8')
+
+  test('the label is English and the page renders the constant', () => {
+    // AC-1.2 — `lang="en"` on / is a promise about this string, and a label
+    // outside printable ASCII is a promise broken in a way nobody reads.
+    expect(VEIL_LABEL).toMatch(/^[ -~]+$/)
+    expect(index).toContain('{VEIL_LABEL}')
+    expect(index).not.toContain('MEMBUKA GERBANG')
+  })
+
+  test('AGENTS.md still records the deviation from the comp', () => {
+    // AC-1.7. Anchored on the comp too: if the mockup is ever redrawn in
+    // English there is no deviation left to explain, and this test says so.
+    expect(mockup('Caraka Landing.dc.html')).toContain('MEMBUKA GERBANG')
+    expect(agentsMd).toContain(VEIL_LABEL)
+    expect(agentsMd).toMatch(/mockup/i)
+  })
+
+  test('the replay flag is decided in <head>, ahead of the veil markup', () => {
+    // AC-1.4, the half no browser observation can prove: Playwright can only
+    // measure after the element exists. Ordering is structural, so it is
+    // asserted on source — which also keeps this check runnable without a
+    // build. <head> is parsed before <body> in every engine there is.
+    const base = readFileSync(join(SITE, 'src', 'layouts', 'Base.astro'), 'utf8')
+    expect(base.slice(base.indexOf('<head>'), base.indexOf('</head>'))).toContain('<slot name="head" />')
+
+    const head = index.indexOf('slot="head"')
+    expect(head, 'index.astro no longer fills the head slot').toBeGreaterThan(-1)
+    expect(index.indexOf('<div data-veil')).toBeGreaterThan(head)
+    expect(index).toMatch(/<script is:inline>[\s\S]*?sessionStorage[\s\S]*?<\/script>/)
+  })
+
+  test('the hide rule can beat the inline display the comp gave the veil', () => {
+    // The other half of AC-1.4, and the half that shipped broken: the veil's
+    // `display: flex` is an inline style, so a stylesheet rule without
+    // `!important` loses every time. Asserted here as well as in Playwright
+    // because this suite runs without a build.
+    expect(index).toMatch(/\[data-veil-seen\]\s*\[data-veil\]\s*\{[^}]*display:\s*none\s*!important/)
+    expect(index).toMatch(/<div data-veil[^>]*display:\s*flex/)
   })
 })

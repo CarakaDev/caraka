@@ -5,16 +5,52 @@
 import Base from '../layouts/Base.astro'
 import GapVisual from '../components/GapVisual.astro'
 import '../styles/pages/landing.css'
-import { nav, gaps, states, topics, agents, layers, mem, safety, term, verse, footerLinks } from '../data/landing'
+import { nav, gaps, states, topics, agents, layers, mem, safety, term, verse, footerLinks, VEIL_LABEL } from '../data/landing'
 import MobileMenu from '../components/MobileMenu.astro'
 ---
 
 <Base page="landing">
+
+  {/* AC-1.4 — a repeat visit in the same tab must not show the veil at all,
+      not even for one frame. The veil markup is the first thing in <body>, so
+      the only code that can still run ahead of it is an inline script in
+      <head>; ck.js is a module and runs after parse. `is:inline` is what keeps
+      Astro from hoisting this into that bundle.
+
+      The flag is set on load, not when the animation finishes. Someone who
+      leaves after one second has seen the gate open, and a second timer to
+      record it would be the only reason this page needs one.
+
+      Two placements decided here rather than by the spec. The hide rule is a
+      one-line stylesheet next to its script instead of an edit to
+      landing.css, because that file is asserted byte-for-byte against the
+      mockup's own <style> block (test/fidelity.test.js) and an added rule
+      turns the whole comp red. And `data-veil-seen` sits on <html> because
+      that is the only element that exists when the script runs. */}
+  <Fragment slot="head">
+    <script is:inline>
+      try {
+        if (sessionStorage.getItem('ck-veil') === '1') document.documentElement.dataset.veilSeen = '1'
+        else sessionStorage.setItem('ck-veil', '1')
+      } catch {
+        // AC-1.5 — Safari with cookies blocked and a full storage quota both
+        // throw here. Doing nothing leaves the veil playing, which is the
+        // first-visit behaviour, not a broken page.
+      }
+    </script>
+    {/* `!important` is load-bearing. The veil carries `display: flex` in the
+        inline style transcribed from the comp, and an inline declaration beats
+        a stylesheet rule at any specificity. Without it the rule parses, wins
+        nothing, and the veil replays on every load in all three engines. */}
+    <style is:inline>[data-veil-seen] [data-veil] { display: none !important; }</style>
+  </Fragment>
+
   <div style="width: 100%; background: #05080C; font-family: 'Public Sans', sans-serif; color: #E9EDF2; position: relative; overflow-x: hidden;">
 
     {/* The opening veil. In the mockup a timer unmounts it; here ck-veil ends on
-        visibility: hidden, so CSS retires it and no script is needed. */}
-    <div aria-hidden="true" style="position: fixed; inset: 0; z-index: 300; background: #05080C; display: flex; align-items: center; justify-content: center; animation: ck-veil 2.6s cubic-bezier(.65,0,.2,1) forwards; pointer-events: none;">
+        visibility: hidden, so CSS retires it once it has played. Whether it
+        plays at all is the head script's decision, above. */}
+    <div data-veil aria-hidden="true" style="position: fixed; inset: 0; z-index: 300; background: #05080C; display: flex; align-items: center; justify-content: center; animation: ck-veil 2.6s cubic-bezier(.65,0,.2,1) forwards; pointer-events: none;">
       <div style="position: relative; width: 260px; height: 260px;">
         <div style="position: absolute; left: 50%; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #E2452C; box-shadow: 0 0 30px 10px rgba(226,69,44,.55); animation: ck-seed .5s cubic-bezier(.2,1.4,.4,1) both, ck-fade .3s .7s reverse both;"></div>
         <div style="position: absolute; left: 50%; top: 50%; width: 108px; height: 108px; margin: -54px 0 0 -108px; border-radius: 50%; border: 1.5px solid #E2452C; animation: ck-ringIn .65s cubic-bezier(.2,1.25,.4,1) .28s both, ck-partL 1s cubic-bezier(.6,0,.15,1) 1.55s both;"></div>
@@ -26,7 +62,7 @@ import MobileMenu from '../components/MobileMenu.astro'
         <div style="width: 132px; height: 1px; background: #171C22; overflow: hidden;">
           <div style="width: 100%; height: 100%; background: #E2452C; transform-origin: left; animation: ck-bootbar 1.9s cubic-bezier(.3,.7,.3,1) both;"></div>
         </div>
-        <span style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: .3em; color: #414950; animation: ck-fade .6s .35s both;">MEMBUKA GERBANG</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: .3em; color: #414950; animation: ck-fade .6s .35s both;">{VEIL_LABEL}</span>
       </div>
     </div>
 

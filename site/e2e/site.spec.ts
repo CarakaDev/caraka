@@ -1,7 +1,10 @@
 import { test, expect, type Page } from '@playwright/test'
-import { PAGES, ogPath } from '../src/lib/site'
+import { PAGES, ogPath, type PageKey } from '../src/lib/site'
+import { VEIL_LABEL } from '../src/data/landing'
 
-const ROUTES = Object.entries(PAGES).map(([key, meta]) => ({ key, ...meta }))
+// Object.entries widens the key to string and ogPath only takes a PageKey; the
+// cast is what PAGES already guarantees. Without it `npm run typecheck` is red.
+const ROUTES = (Object.entries(PAGES) as [PageKey, (typeof PAGES)[PageKey]][]).map(([key, meta]) => ({ key, ...meta }))
 
 /** The landing page opens behind a 2.6s veil; everything else paints at once. */
 const settle = async (page: Page) => page.waitForTimeout(3000)
@@ -95,6 +98,68 @@ test.describe('motion', () => {
     await expect(page.locator('h1')).toBeVisible()
     await expect(page.locator('h1')).toContainText('Send the task.')
     await page.close()
+  })
+})
+
+test.describe('the opening veil', () => {
+  const veil = (page: Page) => page.locator('[data-veil]')
+
+  test('plays in full on the first visit of a tab', async ({ page }) => {
+    // AC-1.3 and AC-1.2. Each test gets its own context, so every one of these
+    // is a first visit unless it navigates twice itself.
+    await page.goto('/')
+    await expect(veil(page)).toBeVisible()
+    await expect(veil(page)).toContainText(VEIL_LABEL)
+    expect(await veil(page).evaluate((el) => getComputedStyle(el).animationDuration)).toBe('2.6s')
+
+    // AC-1.6 is measured by the height baselines at the bottom of this file.
+    // This is the reason those numbers are allowed to stay put: a fixed
+    // element contributes nothing to document height, so retexting or hiding
+    // it cannot move one. Asserted rather than assumed.
+    expect(await veil(page).evaluate((el) => getComputedStyle(el).position)).toBe('fixed')
+
+    await settle(page)
+    await expect(veil(page)).toBeHidden()
+  })
+
+  test('exists on / and on no other route', async ({ page }) => {
+    // AC-1.1
+    for (const r of ROUTES.filter((r) => r.path !== '/')) {
+      await page.goto(r.path)
+      await expect(veil(page), r.path).toHaveCount(0)
+    }
+  })
+
+  test('is already hidden when the second load of the tab parses it', async ({ page }) => {
+    // AC-1.4. The trip through /docs is what makes this provable: that route
+    // has no [data-veil] at all, so an element found after `commit` can only
+    // belong to the new document. Waiting for `attached` then reading display
+    // is the earliest point Playwright can observe anything; that the rule was
+    // in place before the first paint is fixed by ordering, asserted in
+    // test/fidelity.test.js.
+    await page.goto('/')
+    await expect(veil(page)).toBeVisible()
+    await page.goto('/docs')
+
+    await page.goto('/', { waitUntil: 'commit' })
+    const el = veil(page)
+    await el.waitFor({ state: 'attached' })
+    expect(await el.evaluate((e) => getComputedStyle(e).display)).toBe('none')
+  })
+
+  test('a sessionStorage that throws is treated as a first visit', async ({ page }) => {
+    // AC-1.5 — Safari with cookies blocked, and a storage quota that is full.
+    // Overriding the prototype method rather than the `sessionStorage` getter
+    // because the getter lives in a different place in each engine.
+    await page.addInitScript(() => {
+      Storage.prototype.getItem = () => {
+        throw new Error('storage blocked')
+      }
+    })
+    await page.goto('/')
+    await expect(veil(page)).toBeVisible()
+    await page.goto('/')
+    await expect(veil(page)).toBeVisible()
   })
 })
 

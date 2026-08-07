@@ -157,4 +157,4 @@ Bot  : ┌──────────────────────┬�
 | Q1 | Ketersediaan `caraka.dev`, npm `caraka`, dan handle GitHub | Perlu dicek; cadangan: `caraka.sh`, npm `carakadev` |
 | Q2 | Berapa sesi aktif maksimum sebelum terasa berantakan? | 5 — divalidasi saat dogfood |
 | Q3 | Titen dipasang otomatis atau ditawarkan? | Ditawarkan (satu pilihan di wizard) |
-| Q4 | Apakah `RichBlockThinking` terlalu berisik untuk dipakai default? | Nyalakan di dogfood, matikan bila mengganggu |
+| Q4 | Apakah `InputRichBlockThinking` terlalu berisik untuk dipakai default? | Nyalakan di dogfood, matikan bila mengganggu |

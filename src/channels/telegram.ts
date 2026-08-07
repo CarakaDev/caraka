@@ -1,4 +1,5 @@
 import { setTimeout as delay } from "node:timers/promises";
+import { translator, type Translate } from "../i18n.js";
 
 export type TelegramUser = {
   id: number;
@@ -6,14 +7,28 @@ export type TelegramUser = {
   first_name: string;
   is_bot: boolean;
   has_topics_enabled?: boolean;
+  allows_users_to_create_topics?: boolean;
+};
+
+export type TelegramChat = {
+  id: number;
+  type: string;
+  title?: string;
+  is_forum?: boolean;
 };
 
 export type TelegramMessage = {
   message_id: number;
   message_thread_id?: number;
   from?: TelegramUser;
-  chat: { id: number; type: string };
+  chat: TelegramChat;
   text?: string;
+};
+
+export type TelegramChatMember = {
+  status: string;
+  user?: TelegramUser;
+  can_manage_topics?: boolean;
 };
 
 export type TelegramUpdate = {
@@ -25,7 +40,28 @@ export type TelegramUpdate = {
     message?: TelegramMessage;
     data?: string;
   };
+  my_chat_member?: {
+    chat: TelegramChat;
+    from: TelegramUser;
+    new_chat_member: TelegramChatMember;
+    old_chat_member?: TelegramChatMember;
+  };
 };
+
+export type BotCommand = { command: string; description: string };
+
+// A name is 1–32 characters of lowercase a-z, digits, and underscores; a
+// description is 1–256 characters. Telegram rejects the whole call otherwise.
+export const gatewayCommands: BotCommand[] = [
+  { command: "new", description: "Start a fresh session in this conversation" },
+  { command: "status", description: "Report the state of this conversation's session" },
+  { command: "stop", description: "Cancel the running task" },
+  { command: "commands", description: "List the commands the agent reported" },
+  { command: "usage", description: "Report the context and cost the agent reported" },
+  { command: "yolo", description: "Open a Caraka trust window for a stated duration" },
+  { command: "lock", description: "Close the trust window now" },
+  { command: "help", description: "Explain how to send a task" },
+];
 
 type ApiResponse<T> = {
   ok: boolean;
@@ -50,8 +86,8 @@ function toggledFence(line: string, openFence: string | null) {
   return openFence ? null : (match[1] ?? "```");
 }
 
-export function splitTelegramText(input: string, limit = 3900) {
-  const text = input.trim() || "(Claude tidak mengirim teks.)";
+export function splitTelegramText(input: string, limit = 3900, empty = "(Claude sent no text.)") {
+  const text = input.trim() || empty;
   const lines: string[] = [];
   for (let line of text.match(/[^\n]*\n|[^\n]+$/g) ?? [text]) {
     while (line.length > limit - 16) {
@@ -77,6 +113,10 @@ export function splitTelegramText(input: string, limit = 3900) {
   return chunks;
 }
 
+function topicName(name: string, fallback: string) {
+  return name.replace(/\s+/g, " ").trim().slice(0, 128) || fallback;
+}
+
 export class Telegram {
   private offset = 0;
 
@@ -84,6 +124,7 @@ export class Telegram {
     private readonly token: string,
     private readonly fetcher: typeof fetch = fetch,
     private readonly base = "https://api.telegram.org",
+    private readonly t: Translate = translator(),
   ) {}
 
   async call<T>(
@@ -102,7 +143,7 @@ export class Telegram {
         });
       } catch (error) {
         if (signal?.aborted) throw error;
-        throw new TelegramError(`Telegram ${method} tidak dapat dihubungi.`);
+        throw new TelegramError(this.t("telegram.unreachable", { method }));
       }
       const body = (await response.json()) as ApiResponse<T>;
       if (body.ok && body.result !== undefined) return body.result;
@@ -110,7 +151,10 @@ export class Telegram {
         await delay(body.parameters.retry_after * 1000, undefined, signal ? { signal } : undefined);
         continue;
       }
-      throw new TelegramError(body.description ?? `Telegram menolak ${method}.`, body.error_code);
+      throw new TelegramError(
+        body.description ?? this.t("telegram.refused", { method }),
+        body.error_code,
+      );
     }
   }
 
@@ -126,12 +170,25 @@ export class Telegram {
     );
   }
 
+  // `my_chat_member` is the only signal that the bot was blocked or added to a
+  // group. Leaving it out of this list is what made both paths unreachable.
   getUpdates(offset = this.offset, timeout = 25, signal?: AbortSignal) {
     return this.call<TelegramUpdate[]>(
       "getUpdates",
-      { offset, timeout, allowed_updates: ["message", "callback_query"] },
+      {
+        offset,
+        timeout,
+        allowed_updates: ["message", "callback_query", "my_chat_member"],
+      },
       signal,
     );
+  }
+
+  setMyCommands(commands: BotCommand[], chatId: string) {
+    return this.call<boolean>("setMyCommands", {
+      commands,
+      scope: { type: "chat", chat_id: chatId },
+    });
   }
 
   async *updates(signal: AbortSignal) {
@@ -164,14 +221,14 @@ export class Telegram {
 
   async sendPlain(chatId: string, text: string, threadId = "") {
     const sent: TelegramMessage[] = [];
-    for (const chunk of splitTelegramText(text))
+    for (const chunk of splitTelegramText(text, 3900, this.t("telegram.empty")))
       sent.push(await this.sendText(chatId, chunk, threadId));
     return sent;
   }
 
   async sendResult(chatId: string, markdown: string, threadId = "") {
     const sent: TelegramMessage[] = [];
-    for (const chunk of splitTelegramText(markdown, 30_000)) {
+    for (const chunk of splitTelegramText(markdown, 30_000, this.t("telegram.empty"))) {
       try {
         sent.push(
           await this.call<TelegramMessage>("sendRichMessage", {
@@ -202,7 +259,18 @@ export class Telegram {
   createTopic(chatId: string, name: string) {
     return this.call<{ message_thread_id: number }>("createForumTopic", {
       chat_id: chatId,
-      name: name.replace(/\s+/g, " ").trim().slice(0, 128) || "Tugas baru",
+      name: topicName(name, this.t("session.untitled")),
+    });
+  }
+
+  // `editForumTopic` is documented for a private chat too, and it exposes only
+  // `name` and `icon_custom_emoji_id`. `closeForumTopic` is documented for
+  // supergroups alone, so a finished session is marked, never closed or deleted.
+  editTopic(chatId: string, threadId: string, name: string) {
+    return this.call<boolean>("editForumTopic", {
+      chat_id: chatId,
+      message_thread_id: Number(threadId),
+      name: topicName(name, this.t("session.untitled")),
     });
   }
 

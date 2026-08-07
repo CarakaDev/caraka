@@ -7,7 +7,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/lisensi-MIT-8EEE98?style=flat-square&labelColor=05080C" alt="MIT"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%E2%89%A522-E2452C?style=flat-square&labelColor=05080C" alt="node >= 22"></a>
   <a href="https://agentclientprotocol.com"><img src="https://img.shields.io/badge/protokol-ACP-FF7A5E?style=flat-square&labelColor=05080C" alt="ACP"></a>
-  <a href="docs/roadmap.md"><img src="https://img.shields.io/badge/status-v0.1%20preview-FFD67E?style=flat-square&labelColor=05080C" alt="v0.1 preview"></a>
+  <a href="docs/roadmap.md"><img src="https://img.shields.io/badge/status-v0.2-FFD67E?style=flat-square&labelColor=05080C" alt="v0.1 preview"></a>
 </p>
 
 <p align="center">
@@ -19,7 +19,7 @@
   <a href="README.md">🇬🇧 English</a>
 </p>
 
-> **Pratinjau v0.1.** Bisa dipakai dengan satu akun Telegram, satu bot, satu workspace, dan Claude Code lewat ACP. Jalankan di foreground selama kamu menilainya. Memori, grup, service latar, lampiran, dan coding agent selain Claude Code belum ada di rilis ini.
+> **v0.2.** Bisa dipakai di chat pribadi dan di grup yang masuk allowlist, dengan Claude Code lewat ACP. Bahasa Inggris dan Indonesia. `caraka service` mencetak berkas unit yang kamu pasang sendiri. Memori, lampiran, dan coding agent selain Claude Code belum ada di rilis ini.
 
 ---
 
@@ -112,9 +112,13 @@ Kirim teks biasa untuk memberi Claude tugas. Sisanya cukup empat perintah:
 | | |
 |---|---|
 | `/new` | memulai sesi baru |
-| `/status` | menampilkan keadaan sesi |
-| `/stop` | membatalkan prompt ACP yang aktif |
-| `/help` | menampilkan daftar perintah |
+| `/status` | menampilkan keadaan sesi percakapan ini |
+| `/stop` | membatalkan tugas yang berjalan |
+| `/commands` | mendaftar perintah yang dilaporkan agent |
+| `/usage` | melaporkan konteks dan biaya yang dilaporkan agent |
+| `/yolo <durasi>` | membuka jendela trust Caraka selama durasi yang disebut |
+| `/lock` | menutup jendela trust sekarang |
+| `/help` | menjelaskan cara mengirim tugas |
 
 Permintaan izin tampil sebagai tombol **Setujui sekali** dan **Tolak**. Setiap callback ditandatangani, terikat ke principal Telegram dan sesi, kedaluwarsa setelah sepuluh menit, serta hanya bisa dipakai sekali. Teks chat tidak pernah dibaca sebagai persetujuan.
 
@@ -128,7 +132,7 @@ ACP juga sudah menyediakan `session/request_permission`, jadi sistem approval bu
 
 Sejak 2026, bot Telegram bisa membuat forum topic **di chat pribadi, tanpa hak admin sama sekali.** Itu mengubah DM dengan bot-mu menjadi ruang kerja ber-tab, tanpa setup apa pun.
 
-Satu sesi = satu topic. Caraka menamainya, mewarnai ikonnya sesuai keadaan (🔵 jalan · 🟡 butuh kamu · 🟢 selesai · 🔴 gagal), mengirim ringkasan penutup, lalu menutupnya. Daftar topic menjadi papan status yang bisa dibaca sekilas tanpa membuka apa pun.
+Satu sesi = satu topic. Caraka menamainya, menandai keadaannya lewat glif di nama (▸ jalan · ⏸ butuh kamu · ✓ selesai · ✗ gagal), lalu mengirim ringkasan penutup. Warna ikon dipilih saat topic dibuat — `editForumTopic` Telegram bisa mengubah nama dan emoji topic, tetapi tidak warnanya. Daftar topic menjadi papan status yang bisa dibaca sekilas tanpa membuka apa pun.
 
 Bila topic tidak tersedia, Caraka jatuh ke mode linear dengan header sesi. Tidak ada yang gagal keras.
 
@@ -164,6 +168,12 @@ Itulah sebabnya proyek ini punya approval dan jejak audit. Selengkapnya di [docs
 Memori sudah dispesifikasikan dan belum dikirim. Saat tiba nanti ia memakai [Titen](https://titen.dev) — memori agent yang tidak pernah meratakan kesimpulan dengan buktinya, dengan ekstraksi claim yang deterministik dan tanpa model di dalam loop. Titen dan Caraka ditulis oleh orang yang sama: satu mengingat, satu diutus.
 
 Grup, service latar, lampiran, dan coding agent selain Claude Code juga sudah dispesifikasikan dan belum dikirim. [roadmap.md](docs/roadmap.md) memuat urutannya dan gerbang yang bisa membatalkan fase berikutnya.
+
+Dua di antaranya membawa syarat yang layak diketahui sebelum kamu menunggunya.
+
+**Grup.** Saat dukungan grup mendarat, memasukkan grup ke allowlist berarti memilih untuk memperlihatkan pekerjaan itu kepada anggotanya: kartu approval, path berkas, diff, dan keluaran perintah akan terbaca setiap anggota grup. Balasan ephemeral Telegram tidak bisa menyembunyikannya — ia hanya berlaku 15 detik setelah aksi yang memenuhi syarat, atau bila bot adalah admin chat, dan Caraka tidak pernah meminta hak itu. Yang tetap tertutup adalah keputusannya: tombol approval hanya sah dari akun yang ada di allowlist, jadi anggota lain bisa membaca kartunya tanpa bisa menjawabnya.
+
+**Service latar.** Caraka akan mencetak unit systemd, launchd, atau schtasks untuk kamu pasang sendiri. Ia tidak pernah memasangnya, tidak punya hook `postinstall`, dan tidak pernah mencetak kata `sudo`.
 
 ## Verifikasi dari source
 

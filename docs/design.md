@@ -356,9 +356,9 @@ progress   → editMessageText pesan ack, throttle 1,5 dtk
 result     → sendRichMessage BARU  +  deleteMessage(progress)
 ```
 
-**Kenapa hasil akhir bukan hasil edit:** tidak ada `editRichMessage` di Bot API, dan meng-edit pesan streaming merusak format rich menjadi teks polos bertanda mentah. Pola kirim-baru + hapus-lama adalah perbaikan yang sudah terbukti di implementasi lain.
+**Kenapa hasil akhir bukan hasil edit:** bukan karena API melarangnya. `editMessageText` menerima parameter `rich_message` sejak Bot API 10.1, jadi sebuah pesan bisa di-edit menjadi rich message. Yang menahan adalah laporan lapangan bahwa format rich hancur menjadi teks polos bertanda mentah saat di-edit di tengah stream — laporan yang **belum diuji ulang** setelah 10.1. Pola kirim-baru + hapus-lama dipertahankan karena ia sudah bekerja.
 
-Peta block: ringkasan → paragraph · berkas berubah → **table** · diff → **code block** · hasil test → task list · rencana → list · log panjang → **details** · peringatan → blockquote · penalaran streaming → `RichBlockThinking`.
+Peta block: ringkasan → paragraph · berkas berubah → **table** · diff → **code block** · hasil test → task list · rencana → list · log panjang → **details** · peringatan → blockquote · penalaran streaming → `InputRichBlockThinking`.
 
 Seluruh method Bot API terbaru (`sendRichMessage`, `sendRichMessageDraft`, `editEphemeralMessage*`, `deleteEphemeralMessage`) dipanggil lewat **satu adapter HTTP tipis** (`channels/telegram/raw.ts`) karena pustaka masih tertinggal dari API. Migrasi ke tipe resmi kelak cukup mengubah satu berkas. Fallback bila `sendRichMessage` gagal: MarkdownV2 dengan sanitizer escaping.
 

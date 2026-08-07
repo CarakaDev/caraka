@@ -91,7 +91,7 @@ Ditolak: `whatsapp-web.js` (Puppeteer = Chromium ±300 MB, melanggar target ukur
 | Spawn agent | `node:child_process` (`spawn`) + manajemen lifecycle sendiri |
 | Antrean | In-memory + persist ke SQLite (tidak perlu Redis/BullMQ untuk 1 operator) |
 | Cron (P2) | `croner` — ringan, tanpa dependensi |
-| Service | launchd plist / systemd unit yang di-generate CLI (opsional) |
+| Service | tiga template unit (systemd user, launchd agent, schtasks) yang **dicetak** CLI ke stdout; operator sendiri yang memasangnya |
 
 ---
 

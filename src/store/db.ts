@@ -12,6 +12,18 @@ export type Session = {
   state: string;
 };
 
+export type PolicyGrant = {
+  id: string;
+  workspace: string;
+  mode: string;
+  grantedBy: string;
+  principal: string | null;
+  agentMode: string | null;
+  createdAt: number;
+  expiresAt: number | null;
+  closedAt: number | null;
+};
+
 export type Approval = {
   id: string;
   principal: string;
@@ -75,7 +87,87 @@ export class Store {
       CREATE TRIGGER IF NOT EXISTS audit_no_delete BEFORE DELETE ON audit BEGIN
         SELECT RAISE(ABORT, 'audit is append-only');
       END;
+      CREATE TABLE IF NOT EXISTS policy_grant (
+        id TEXT PRIMARY KEY,
+        workspace TEXT NOT NULL,
+        mode TEXT NOT NULL CHECK(mode IN ('assisted', 'trusted')),
+        granted_by TEXT NOT NULL CHECK(granted_by IN ('config', 'cli', 'chat')),
+        principal TEXT,
+        agent_mode TEXT,
+        created_at INTEGER NOT NULL,
+        expires_at INTEGER,
+        closed_at INTEGER,
+        CHECK(mode <> 'trusted' OR expires_at IS NOT NULL)
+      ) STRICT;
+      CREATE INDEX IF NOT EXISTS policy_grant_open ON policy_grant(workspace, closed_at, expires_at);
+      CREATE TABLE IF NOT EXISTS meta (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      ) STRICT;
     `);
+  }
+
+  // A window is open only while the row says so and the clock agrees. Expiry is
+  // read from the row on every check, so a process that never wakes up cannot
+  // leave one open.
+  openGrant(grant: Omit<PolicyGrant, "id" | "createdAt" | "closedAt">) {
+    const id = randomBytes(8).toString("hex");
+    this.db
+      .prepare(
+        `INSERT INTO policy_grant(id, workspace, mode, granted_by, principal, agent_mode, created_at, expires_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        id,
+        grant.workspace,
+        grant.mode,
+        grant.grantedBy,
+        grant.principal,
+        grant.agentMode,
+        Date.now(),
+        grant.expiresAt,
+      );
+    return id;
+  }
+
+  activeGrant(workspace: string, now = Date.now()) {
+    return this.db
+      .prepare(
+        `SELECT id, workspace, mode, granted_by AS grantedBy, principal, agent_mode AS agentMode,
+                created_at AS createdAt, expires_at AS expiresAt, closed_at AS closedAt
+         FROM policy_grant
+         WHERE workspace = ? AND mode = 'trusted' AND closed_at IS NULL AND expires_at > ?
+         ORDER BY created_at DESC LIMIT 1`,
+      )
+      .get(workspace, now) as PolicyGrant | undefined;
+  }
+
+  closeGrants(workspace?: string) {
+    const now = Date.now();
+    return workspace === undefined
+      ? this.db.prepare("UPDATE policy_grant SET closed_at = ? WHERE closed_at IS NULL").run(now)
+          .changes
+      : this.db
+          .prepare(
+            "UPDATE policy_grant SET closed_at = ? WHERE closed_at IS NULL AND workspace = ?",
+          )
+          .run(now, workspace).changes;
+  }
+
+  meta(key: string) {
+    return (
+      this.db.prepare("SELECT value FROM meta WHERE key = ?").get(key) as
+        | { value: string }
+        | undefined
+    )?.value;
+  }
+
+  setMeta(key: string, value: string) {
+    this.db
+      .prepare(
+        "INSERT INTO meta(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = ?",
+      )
+      .run(key, value, value);
   }
 
   createSession(input: Omit<Session, "id" | "agentSessionId" | "state">) {

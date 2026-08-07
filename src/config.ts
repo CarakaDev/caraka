@@ -4,9 +4,12 @@ import { homedir } from "node:os";
 import { basename, isAbsolute, join, resolve } from "node:path";
 import { parse, stringify } from "yaml";
 import { z } from "zod";
+import type { Language } from "./i18n.js";
 
 const configSchema = z.object({
   version: z.literal(1),
+  // Absent in every v0.1 file on disk. English is the answer when nobody chose.
+  language: z.enum(["en", "id"]).optional(),
   workspace: z.object({
     name: z.string().min(1),
     path: z.string().refine(isAbsolute, "workspace.path must be absolute"),
@@ -14,6 +17,10 @@ const configSchema = z.object({
   telegram: z.object({
     botUsername: z.string().min(1),
     allowFrom: z.array(z.string()).min(1),
+    // Two lists, two decisions: a message is served only when its chat is here
+    // and its sender is in `allowFrom`. A v0.1 file has neither the key nor a
+    // group, and its DM chat id is the operator's own id.
+    allowChats: z.array(z.string()).default([]),
     topics: z.boolean(),
   }),
   agent: z.object({
@@ -32,6 +39,7 @@ export function carakaPaths(root = process.env.CARAKA_HOME ?? join(homedir(), ".
     token: join(base, "secrets", "telegram.token"),
     approvalKey: join(base, "secrets", "approval.key"),
     database: join(base, "caraka.db"),
+    pid: join(base, "caraka.pid"),
   };
 }
 
@@ -80,12 +88,28 @@ export function defaultConfig(
   botUsername: string,
   principal: string,
   topics: boolean,
+  language: Language = "en",
 ): CarakaConfig {
   const path = resolve(workspace);
   return {
     version: 1,
+    language,
     workspace: { name: basename(path), path },
-    telegram: { botUsername, allowFrom: [principal], topics },
+    telegram: { botUsername, allowFrom: [principal], allowChats: [principal], topics },
     agent: { adapter: "claude-agent-acp", adapterVersion: "0.63.0" },
   };
+}
+
+export async function addAllowedChat(config: CarakaConfig, chatId: string) {
+  if (config.telegram.allowChats.includes(chatId)) return config;
+  const next: CarakaConfig = {
+    ...config,
+    telegram: { ...config.telegram, allowChats: [...config.telegram.allowChats, chatId] },
+  };
+  const paths = carakaPaths();
+  const temporary = `${paths.config}.${process.pid}.tmp`;
+  await writeFile(temporary, stringify(next), { mode: 0o600 });
+  await chmod(temporary, 0o600);
+  await rename(temporary, paths.config);
+  return next;
 }

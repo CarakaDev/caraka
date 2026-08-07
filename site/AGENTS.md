@@ -40,6 +40,24 @@ Everything else — every inline `style`, every `animation`, every `animation-ra
 
 **Scroll-driven animations must survive an engine that lacks them.** An element carrying `animation: ck-rise linear both` with no duration is invisible until its timeline advances. Where `animation-timeline` is unsupported the declaration is dropped, the animation runs for 0s, and `both` leaves the element on its final frame — visible. The e2e suite asserts this in Firefox and WebKit, not just Chromium. If you add a scroll-driven animation, add it to that assertion.
 
+## The one place the port leaves the mockup
+
+`Caraka Landing.dc.html` labels the opening veil `MEMBUKA GERBANG`. The port
+reads `OPENING THE GATE` (`VEIL_LABEL` in `src/data/landing.ts`), because `/`
+declares `lang="en"` and the comp's own label is the only Indonesian on it. The
+English is the literal reading, so the gate the animation draws survives. Every
+other character of that mockup is ported unchanged, and `test/fidelity.test.js`
+fails if this deviation stops being written down here.
+
+The veil also plays once per tab session rather than on every load. The flag is
+read by an inline `<script is:inline>` in the `<head>` of `index.astro`, which
+is the only code that runs before the veil markup is parsed — `ck.js` is a
+module and arrives after. **A Content-Security-Policy header would break this
+silently:** the site ships no CSP and no `_headers` today, and the day one lands
+that script needs its hash in `script-src` and the one-line `<style is:inline>`
+beside it needs its own in `style-src`. Without them the veil replays on every
+visit and nothing turns red.
+
 ## Content
 
 `src/data/*.ts` holds what the lists render. Every value there traces to `../docs/`. The v0.1 preview supports one private Telegram operator and Claude Code; copy must distinguish that verified scope from roadmap work. Never imply memory, groups, background services, attachments, or other coding agents ship in v0.1, and never introduce a number, date, version, or quotation that is not already in the docs.
