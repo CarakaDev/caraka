@@ -14,6 +14,7 @@
     "prebuild": "node scripts/gen-assets.mjs",
     "lint": "oxlint src scripts test",
     "typecheck": "astro check",
+    "pretest": "npm run assets",
     "test": "vitest run",
     "e2e": "playwright test",
     "deploy": "wrangler deploy",
@@ -39,6 +40,6 @@
     "sharp": "^0.35.3",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10",
-    "wrangler": "^4.119.0"
+    "wrangler": "^4.120.0"
   }
 }

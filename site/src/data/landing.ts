@@ -32,8 +32,8 @@ export const gaps = [
     delay: '1.1s',
   },
   {
-    title: 'Every session starts at zero',
-    body: "Yesterday's decision, the branch convention, the reason you rejected that approach — explained again, every day.",
+    title: 'A restart can lose the thread',
+    body: 'Without a persisted agent session, the next phone message starts a fresh context instead of resuming the task.',
     visual: 'forget' as const,
     range: r(2, 5, 28),
     delay: '2.2s',
@@ -51,43 +51,45 @@ export const states = [
 export const topics = [
   { glyph: '▸', name: 'toko-api · rate limit login', id: '#a91', color: '#6FB9F0', ink: '#F6F9FC', bg: '#0C1116', bar: 1, delay: '0s', range: r(0, 3.5, 30) },
   { glyph: '⏸', name: 'toko-api · dependency audit', id: '#a92', color: '#FFD67E', ink: '#E9EDF2', bg: '#12100F', bar: 1, delay: '.6s', range: r(1, 3.5, 30) },
-  { glyph: '▸', name: 'web-landing · hero revision', id: '#a93', color: '#6FB9F0', ink: '#F6F9FC', bg: '#0C1116', bar: 1, delay: '1.2s', range: r(2, 3.5, 30) },
+  { glyph: '▸', name: 'toko-api · hero revision', id: '#a93', color: '#6FB9F0', ink: '#F6F9FC', bg: '#0C1116', bar: 1, delay: '1.2s', range: r(2, 3.5, 30) },
   { glyph: '✓', name: 'toko-api · fix checkout 500', id: '#a88', color: '#8EEE98', ink: '#7A848F', bg: '#0C1116', bar: 0, delay: '0s', range: r(3, 3.5, 30) },
-  { glyph: '✗', name: 'api-gateway · prisma migrate', id: '#a84', color: '#FF93B2', ink: '#7A848F', bg: '#0C1116', bar: 0, delay: '0s', range: r(4, 3.5, 30) },
-  { glyph: '⊘', name: 'docs · restructure', id: '#a81', color: '#CB86DB', ink: '#5D666F', bg: '#0C1116', bar: 0, delay: '0s', range: r(5, 3.5, 30) },
+  { glyph: '✗', name: 'toko-api · prisma migrate', id: '#a84', color: '#FF93B2', ink: '#7A848F', bg: '#0C1116', bar: 0, delay: '0s', range: r(4, 3.5, 30) },
+  { glyph: '⊘', name: 'toko-api · restructure docs', id: '#a81', color: '#CB86DB', ink: '#5D666F', bg: '#0C1116', bar: 0, delay: '0s', range: r(5, 3.5, 30) },
 ]
 
 export const agents = [
-  'Claude Code', 'Codex CLI', 'Gemini CLI', 'Cursor', 'Cline', 'Goose', 'Amp',
-  'Copilot CLI', 'Devin', 'Factory Droid', 'Auggie', 'OpenHands', 'Qwen Code', '+ 15 more',
+  'Claude Code · v0.1', 'Codex CLI · roadmap', 'Gemini CLI · roadmap', 'Cursor · roadmap',
+  'Cline · roadmap', 'Goose · roadmap', 'Amp · roadmap', 'Copilot CLI · roadmap',
+  'Devin · roadmap', 'Factory Droid · roadmap', 'Auggie · roadmap',
+  'OpenHands · roadmap', 'Qwen Code · roadmap', 'ACP keeps the path open',
 ].map((n, i) => ({ n, range: r(i, 1.6, 24) }))
 
 export const layers = [
   {
     tag: 'ACP · PRIMARY',
     tone: '#FF7A5E',
-    title: 'One client, every agent',
-    body: 'JSON-RPC over stdio. Streaming updates, native permission requests, diffs, multi-session — straight from the protocol.',
+    title: 'Claude first, one protocol',
+    body: 'v0.1 uses Claude Code through ACP over stdio: streaming updates, permission requests, cancellation, and persisted sessions.',
     bg: '#12100F',
     border: '#2B1612',
     delay: '0s',
     range: r(0, 4, 28),
   },
   {
-    tag: 'CLI · FALLBACK',
+    tag: 'CLI · ROADMAP',
     tone: '#7A848F',
-    title: 'A YAML file, not code',
-    body: 'Agents without ACP are driven by a declarative preset. Adding one is a single file in presets/agents/.',
+    title: 'One YAML when it lands',
+    body: 'The planned CLI route adds agents through presets/agents/. It is not part of v0.1.',
     bg: '#0C1116',
     border: '#171C22',
     delay: '1.3s',
     range: r(1, 4, 28),
   },
   {
-    tag: 'MCP · IDE AGENTS',
+    tag: 'MCP · ROADMAP',
     tone: '#7A848F',
-    title: 'We become the server',
-    body: 'Cline, Kilo, Windsurf, Kiro and Antigravity are all MCP clients — so they pull messages from our inbox instead.',
+    title: 'An inbox for IDE agents',
+    body: 'The planned MCP route lets IDE agents pull messages. v0.1 starts only the Claude ACP adapter.',
     bg: '#0C1116',
     border: '#171C22',
     delay: '2.6s',
@@ -103,10 +105,10 @@ export const mem = [
 
 export const safety = [
   'The allowlist is mandatory — the gateway refuses to start without one.',
-  'Default mode is assisted: writes and commands require your approval.',
+  'Only private messages from the paired Telegram principal reach Claude.',
   'Approvals are signed, single-use callbacks with a TTL. Chat text can never approve.',
-  'Binds to 127.0.0.1. Telegram uses long-polling, so no port is ever exposed.',
-  'Secrets are scrubbed from every outbound message and every log line.',
+  'Telegram uses long-polling. v0.1 opens no listening port.',
+  'Secrets are scrubbed from outbound messages and append-only audit details.',
   'Model API keys are never touched — those belong to your coding agent.',
 ].map((t, i) => ({ t, range: r(i, 2.6, 26) }))
 
@@ -115,10 +117,10 @@ export const term = [
   { t: '', tone: '#5D666F', range: r(1, 2.4, 22) },
   { t: 'caraka · v0.1.0', tone: '#F6F9FC', mark: 'ꦕꦫꦏ', markTone: '#E2452C', range: r(2, 2.4, 22) },
   { t: '', tone: '#5D666F', range: r(3, 2.4, 22) },
-  { t: 'claude 2.4.1 · acp', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(4, 2.4, 22) },
-  { t: 'titen 0.7.0 · lokal', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(5, 2.4, 22) },
+  { t: 'claude login · ready', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(4, 2.4, 22) },
+  { t: 'telegram · paired', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(5, 2.4, 22) },
   { t: 'workspace toko-api', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(6, 2.4, 22) },
-  { t: 'menunggu pesan pertama', tone: '#B2BCC6', mark: '▸', markTone: '#FF7A5E', caret: true, range: r(7, 2.4, 22) },
+  { t: 'run npx caraka start', tone: '#B2BCC6', mark: '▸', markTone: '#FF7A5E', caret: true, range: r(7, 2.4, 22) },
 ] as { t: string; tone: string; mark?: string; markTone?: string; caret?: boolean; range: string }[]
 
 export const verse = [

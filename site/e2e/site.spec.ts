@@ -188,12 +188,12 @@ test.describe('the comps still decide the layout', () => {
     // same pages measure a pixel taller on three routes, which is sub-pixel
     // rounding at a different device scale factor, not a regression.
     const EXPECTED: Record<string, number> = {
-      '/': 6374,
-      '/docs': 5220,
-      '/install': 4934,
+      '/': 6390,
+      '/docs': 4967,
+      '/install': 5047,
       '/compare': 5873,
-      '/security': 4546,
-      '/status': 5008,
+      '/security': 4386,
+      '/status': 5319,
       '/story': 5734,
       '/brand': 10171,
       '/brand/warna': 5258,

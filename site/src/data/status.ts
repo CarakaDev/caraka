@@ -9,15 +9,13 @@
 import { r } from '../lib/anim'
 
 export const stats = [
-  { n: '0.0.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
-  { n: 'Phase 0', label: 'TECHNICAL SPIKE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
-  { n: '~16 wk', label: 'ESTIMATE TO v1.0', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
-  { n: '23', label: 'SPEC DOCUMENTS', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
+  { n: '0.1.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: 'Preview', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
+  { n: 'Claude', label: 'SUPPORTED AGENT', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
+  { n: '1', label: 'PRIVATE OPERATOR', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
 ]
 
-/** The three phase palettes the mockup spreads into each row. `done` is defined
- *  there but never used — no phase has shipped yet — and is kept so the set
- *  stays whole. */
+/** The three phase palettes the mockup spreads into each row. */
 export const done = { ring: '#8EEE98', bg: '#0C1116', border: '#171C22', chipBg: '#0E1F14', chipInk: '#8EEE98', state: 'done' }
 const now = { ring: '#E2452C', bg: '#12100F', border: '#2B1612', chipBg: '#2B1612', chipInk: '#FF7A5E', state: 'in progress' }
 const next = { ring: '#5D666F', bg: '#0C1116', border: '#171C22', chipBg: '#171C22', chipInk: '#7A848F', state: 'planned' }
@@ -39,11 +37,11 @@ interface Phase {
 }
 
 export const phases: Phase[] = [
-  { n: '0', title: 'Technical spike', dur: '1 week', live: true, ...now,
+  { n: '0', title: 'Technical spike', dur: '1 week', ...done,
     q: 'Do the three foundations behave the way the documentation says?',
     gate: 'ACP permission requests fire for writes on Claude Code, createForumTopic works in a private chat with no admin rights, and sendRichMessage renders as specified. If the permission hook is unreliable, the approval architecture is redesigned before anything else is written.',
     range: r(0, 3, 26) },
-  { n: '1', title: 'MVP dogfood · v0.1', dur: '3 weeks', ...next,
+  { n: '1', title: 'MVP dogfood · v0.1', dur: '3 weeks', live: true, ...now,
     q: 'Is this actually useful in daily work?',
     gate: 'The author uses it for a full week and finishes five real tasks without opening a laptop, and the topic list feels tidier than one flat chat. If it is annoying, fix it before adding anything.',
     range: r(1, 3, 26) },
@@ -74,16 +72,28 @@ export const phases: Phase[] = [
 ]
 
 export const releases = [
-  { v: 'Unreleased', state: 'phase 0', date: 'in progress', tone: '#FF7A5E', chipBg: '#2B1612', chipInk: '#FF7A5E', headBg: '#12100F', border: '#2B1612', range: r(0, 4, 28),
+  { v: 'Unreleased', state: 'dogfood', date: 'in progress', tone: '#FF7A5E', chipBg: '#2B1612', chipInk: '#FF7A5E', headBg: '#12100F', border: '#2B1612', range: r(0, 4, 28),
     groups: [
-      { label: 'TO CONFIRM', tone: '#FFD67E', items: [
-        'ACP permission requests actually fire for write operations on Claude Code',
-        'createForumTopic works in a private chat with no admin rights',
-        'sendRichMessage and sendRichMessageDraft behave as documented, and no editRichMessage exists',
-        'Titen bootstrap and serve, with compile latency measured',
+      { label: 'OPEN GATES', tone: '#FFD67E', items: [
+        'Complete live topic and Rich Message checks with the release bot',
+        'Use v0.1 for one full week and finish five real tasks',
+        'Record setup feedback before broadening the supported scope',
       ] },
     ] },
-  { v: '0.0.0', state: 'released', date: '7 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+  { v: '0.1.0', state: 'preview', date: '7 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'ADDED', tone: '#8EEE98', items: [
+        'Private Telegram DM to Claude Code over the official ACP adapter',
+        'Persisted sessions, progress streaming, cancellation, topics with linear fallback',
+        'Signed single-use approvals, secret scrubbing, and append-only audit',
+        'Init, read-only doctor, safe AI install prompt, and foreground start',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'One operator, bot, workspace, and Claude adapter',
+        'No groups, service manager, memory, attachments, or other coding agents yet',
+      ] },
+    ] },
+  { v: '0.0.0', state: 'released', date: '7 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
     groups: [
       { label: 'ADDED', tone: '#8EEE98', items: [
         'Full public specification: PRD, FRD, BRD, design, ERD, security model, roadmap',
@@ -92,9 +102,9 @@ export const releases = [
         'bin/caraka.mjs prints status and a link to the repository',
       ] },
       { label: 'DECIDED', tone: '#6FB9F0', items: [
-        'Telegram is the first and only channel in v1.0, with long-polling so no port is exposed',
+        'Telegram is the first channel; v0.1 uses private-DM long-polling with no listener',
         'Claude Code is the first agent, over ACP',
-        'Titen is the default memory provider, deterministic and running locally',
+        'Titen is selected for future memory work and is not shipped in v0.1',
         'Kesumba #E2452C is the brand colour, the only candidate clearing 3:1 against both light and dark browser chrome',
         'No plugin marketplace, ever',
       ] },

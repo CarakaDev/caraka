@@ -55,7 +55,7 @@ export const PAGES: Record<PageKey, PageMeta> = {
     lang: 'en',
     title: 'caraka — send the task, Caraka runs it',
     description:
-      'Caraka connects Telegram to the coding agent already installed on your machine. Every task lives in its own topic, with approvals, streaming progress, and memory that cites its sources.',
+      'Caraka v0.1 connects a private Telegram chat to Claude Code, with persisted sessions, signed approvals, streaming progress, secret scrubbing, and audit.',
     ogHeadline: 'Send the task. Caraka runs it.',
     // Latin-1 only. Two constraints meet here: wide tracking breaks the
     // aksara's conjunct shaping (the mark beside it already carries ꦕ), and
@@ -67,7 +67,7 @@ export const PAGES: Record<PageKey, PageMeta> = {
     lang: 'en',
     title: 'Documentation — caraka',
     description:
-      'The full Caraka specification: architecture, session model, protocols, data model, and the decisions that are locked. Written before the implementation, and public in full.',
+      'Caraka documentation: the usable v0.1 Telegram-to-Claude scope, architecture, session model, security controls, and roadmap.',
     ogHeadline: 'Everything Caraka does, and what it deliberately does not.',
     ogKicker: 'DOCUMENTATION',
   },
@@ -76,8 +76,8 @@ export const PAGES: Record<PageKey, PageMeta> = {
     lang: 'en',
     title: 'Install — caraka',
     description:
-      'What has to exist before Caraka can run, what each path costs, and how setup goes. Caraka is MIT and free; any cost belongs to the coding agent you already use.',
-    ogHeadline: 'Three things must exist. Caraka is the cheapest of them.',
+      'Install Caraka v0.1 for private Telegram chat and Claude Code, by command or with a safe prompt for Codex and Claude.',
+    ogHeadline: 'Telegram to Claude Code, from one command.',
     ogKicker: 'INSTALL',
   },
   compare: {
@@ -103,8 +103,8 @@ export const PAGES: Record<PageKey, PageMeta> = {
     lang: 'en',
     title: 'Status & roadmap — caraka',
     description:
-      'Nothing is implemented yet, and that is the honest headline. The phases, the decision gate that can cancel each next one, and what will never be built.',
-    ogHeadline: 'Nothing is implemented yet. That is the honest headline.',
+      'Caraka v0.1 is a usable Telegram-to-Claude preview. See the open dogfood gates, release scope, and work that remains planned.',
+    ogHeadline: 'v0.1 is usable. The dogfood gate is still open.',
     ogKicker: 'STATUS',
   },
   story: {

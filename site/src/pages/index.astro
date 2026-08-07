@@ -95,7 +95,7 @@ import MobileMenu from '../components/MobileMenu.astro'
 
         <h1 style="margin: 0; font-size: clamp(34px, 6.2vw, 66px); font-weight: 700; letter-spacing: -.03em; line-height: 1.05; color: #F6F9FC; text-wrap: balance; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) 2.42s both;">Send the task.<br /><span style="color: #FF7A5E;">Caraka runs it.</span></h1>
 
-        <p style="margin: 0; max-width: 620px; font-size: clamp(15px, 1.9vw, 19px); line-height: 1.65; color: #95A0AB; text-wrap: pretty; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) 2.55s both;">A thin bridge from Telegram to the coding agent already installed on your machine. Every task lives in its own topic — like tabs in a terminal — with approvals, streaming progress, and memory that can explain itself.</p>
+        <p style="margin: 0; max-width: 620px; font-size: clamp(15px, 1.9vw, 19px); line-height: 1.65; color: #95A0AB; text-wrap: pretty; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) 2.55s both;">A local bridge from private Telegram chat to Claude Code. v0.1 ships sessions, signed approvals, streaming progress, secret scrubbing, and audit without adding another agent loop.</p>
 
         <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) 2.68s both;">
           <button type="button" data-copy="npx caraka init" class="hv-ring-tint" style="display: flex; align-items: center; gap: 14px; padding: 15px 20px; background: #0C1116; border: 1px solid #292E35; border-radius: 11px; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: clamp(13px, 1.6vw, 15px); color: #E9EDF2; transition: border-color .2s, background .2s;">
@@ -106,8 +106,8 @@ import MobileMenu from '../components/MobileMenu.astro'
         </div>
 
         <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: clamp(14px, 3vw, 26px); font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .12em; color: #5D666F; animation: ck-fade 1s 2.85s both;">
-          <span style="display: flex; align-items: center; gap: 8px;"><span style="position: relative; width: 6px; height: 6px; border-radius: 50%; background: #FFD67E;"><span style="position: absolute; inset: 0; border-radius: 50%; background: #FFD67E; animation: ck-pulse 2.4s ease-out infinite;"></span></span>PRE-ALPHA</span>
-          <span>MIT</span><span>NODE ≥ 22</span><span>28+ AGENTS VIA ACP</span>
+          <span style="display: flex; align-items: center; gap: 8px;"><span style="position: relative; width: 6px; height: 6px; border-radius: 50%; background: #FFD67E;"><span style="position: absolute; inset: 0; border-radius: 50%; background: #FFD67E; animation: ck-pulse 2.4s ease-out infinite;"></span></span>v0.1 PREVIEW</span>
+          <span>MIT</span><span>NODE ≥ 22</span><span>CLAUDE CODE VIA ACP</span>
         </div>
       </div>
 
@@ -234,9 +234,9 @@ import MobileMenu from '../components/MobileMenu.astro'
             <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .22em; color: #E2452C;">04 — MEMORY</span>
             <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent); transform-origin: left; animation: ck-drawX linear both; animation-timeline: view(); animation-range: entry 0% cover 20%;"></span>
           </div>
-          <h2 style="margin: 0 0 20px; font-size: clamp(26px, 4.4vw, 44px); font-weight: 700; letter-spacing: -.025em; line-height: 1.14; color: #F6F9FC; text-wrap: balance; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">Memory that can explain itself.</h2>
-          <p style="margin: 0 0 18px; font-size: clamp(15px, 1.8vw, 17px); line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 4% cover 30%;">Caraka uses <a href="https://titen.dev">Titen</a>, which never flattens a conclusion into its evidence. Observations carry content hashes. Claims cite the observations they came from. Context records exactly what the agent was handed — and what the budget cut.</p>
-          <p style="margin: 0; font-size: clamp(15px, 1.8vw, 17px); line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 6% cover 32%;">Claim extraction is <strong style="color: #D2D8DF; font-weight: 600;">deterministic — no model in the loop.</strong> It works without an LLM by default, and <em>"why does it think that?"</em> always has an answer.</p>
+          <h2 style="margin: 0 0 20px; font-size: clamp(26px, 4.4vw, 44px); font-weight: 700; letter-spacing: -.025em; line-height: 1.14; color: #F6F9FC; text-wrap: balance; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">Memory is roadmap work, not hidden scope.</h2>
+          <p style="margin: 0 0 18px; font-size: clamp(15px, 1.8vw, 17px); line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 4% cover 30%;">v0.1 does not install or run a memory provider. The planned integration is <a href="https://titen.dev">Titen</a>, where observations keep content hashes and claims cite their evidence.</p>
+          <p style="margin: 0; font-size: clamp(15px, 1.8vw, 17px); line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 6% cover 32%;">It enters only after Telegram and Claude survive dogfood. Until then, every session relies on Claude's own context and persisted ACP session.</p>
         </div>
         <div style="position: relative; display: flex; flex-direction: column;">
           <div style="position: absolute; left: 17px; top: 20px; bottom: 96px; width: 1px; background: linear-gradient(180deg, #E2452C, #2B1612); transform-origin: top; animation: ck-drawY linear both; animation-timeline: view(); animation-range: entry 10% cover 46%;"></div>
@@ -339,7 +339,7 @@ import MobileMenu from '../components/MobileMenu.astro'
           </div>
           <div style="display: flex; flex-direction: column; gap: 3px;">
             <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: .18em; color: #B2BCC6;">caraka</span>
-            <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #414950;">MIT · pre-alpha</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #414950;">MIT · v0.1 preview</span>
           </div>
         </div>
         <div style="display: flex; flex-wrap: wrap; gap: clamp(14px, 2.6vw, 28px); font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">

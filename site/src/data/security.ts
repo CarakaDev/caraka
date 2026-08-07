@@ -1,9 +1,4 @@
-// Content for the security page, transcribed from the renderVals() block of
-// design/mockups/Caraka Security.dc.html. The mockup is the source of truth:
-// nothing here is authored, reworded, or reordered.
-//
-// The mockup's own helper defaults to `r(i, step = 2.4, span = 24)`, so every
-// call below passes those numbers explicitly to the shared helper.
+// Security-page copy follows docs/security.md and the shipped v0.1 runtime.
 
 import { r } from '../lib/anim'
 
@@ -14,24 +9,24 @@ const ok = '#8EEE98',
 export const toc = [
   { no: '01', id: 'boundary', href: '#boundary', title: 'Trust boundary' },
   { no: '02', id: 'threats', href: '#threats', title: 'Threats' },
-  { no: '03', id: 'modes', href: '#modes', title: 'Policy modes' },
+  { no: '03', id: 'modes', href: '#modes', title: 'Telegram routes' },
   { no: '04', id: 'defaults', href: '#defaults', title: 'Defaults' },
   { no: '05', id: 'honest', href: '#honest', title: 'What we do not claim' },
   { no: '06', id: 'report', href: '#report', title: 'Reporting' },
 ]
 
 export const headline = [
-  { tag: 'NO PORT', t: 'Binds to 127.0.0.1. Telegram uses long-polling, so v1.0 has no webhook at all.' },
+  { tag: 'NO PORT', t: 'Telegram uses long-polling. v0.1 opens no listener or webhook.' },
   { tag: 'NO KEYS', t: 'Model API keys are never requested, stored, or transmitted. Those belong to your agent.' },
-  { tag: 'NO NEW SURFACE', t: "Execution happens inside the coding agent's sandbox. We add none of our own." },
+  { tag: 'NO TOOLS', t: "Caraka ships no execution tools. Claude owns the tool policy and sandbox." },
   { tag: 'NO MARKETPLACE', t: 'No plugin registry, no dynamic loading, no third-party skill supply chain.' },
 ]
 
 export const untrusted = [
-  'Message content from any chat',
-  'Web pages and repo files the agent reads',
-  'Memory returned from a recall',
-  'Output from third-party MCP servers',
+  'Telegram messages and callback payloads',
+  'Text streamed back by Claude',
+  'Tool titles, targets, and raw input from ACP',
+  'Unknown fields in Telegram updates',
 ]
 
 export const trusted = [
@@ -57,53 +52,54 @@ export const threats = [
     id: 'T3',
     name: 'Indirect injection via README or issue',
     control:
-      'External content and memory are labelled as data, never instruction. High-risk actions ask even in trusted mode.',
+      'Claude owns content handling and tool policy. Caraka never turns agent output or ordinary chat text into approval.',
   },
   {
     id: 'T4',
     name: 'Secret exfiltration through a reply',
-    control: 'Outbound scrubber runs before send and before disk. Deny-list on ~/.ssh, ~/.aws, *.env, keychain.',
+    control:
+      'Outbound text and audit details are scrubbed. The Telegram token is removed from the Claude subprocess environment.',
   },
   {
     id: 'T5',
     name: 'Destructive action',
-    control: 'Force-push, rm -rf, migrations and deploys always require approval. Run timeout plus /stop.',
+    control:
+      'Caraka relays every ACP permission request and /stop sends session/cancel. Claude decides which tools require permission.',
   },
   {
     id: 'T6',
     name: 'Leaking into a group',
-    control:
-      'Groups are read-only and require a mention. Sensitive output uses ephemeral messages visible only to the operator.',
+    control: 'v0.1 rejects every non-private chat before a prompt reaches Claude.',
   },
   {
     id: 'T7',
     name: 'Gateway exposed to the internet',
-    control: 'Binds to 127.0.0.1. Opening it needs an explicit flag, prints a warning, and writes an audit event.',
+    control: 'The gateway only makes outbound Telegram requests and starts no network listener.',
   },
   {
     id: 'T8',
     name: 'Plugin supply chain',
-    control: 'No marketplace and no dynamic loading. Dependencies capped at 25 direct runtime packages.',
+    control: 'No marketplace or dynamic loading. Runtime dependencies are pinned in package-lock.json.',
   },
   {
     id: 'T9',
     name: 'WhatsApp account ban',
-    control: 'Not applicable in v1.0. When it lands: two providers, forced allowlist, rate limits, never a first contact.',
+    control: 'Not applicable: v0.1 contains no WhatsApp channel code.',
   },
   {
     id: 'T10',
     name: 'Runaway cost',
-    control: 'One run per workspace, 30-minute timeout, heartbeat off by default.',
+    control: 'Tasks run serially. Caraka has no model provider, reasoning loop, heartbeat, or background scheduler.',
   },
   {
     id: 'T11',
     name: 'No way to audit',
-    control: 'Append-only log from the first commit. caraka audit --since 24h.',
+    control: 'SQLite records inbound, outbound, runs, approvals, and errors; triggers reject audit updates and deletes.',
   },
   {
     id: 'T12',
     name: 'Memory poisoning',
-    control: 'Memory is labelled data, capped at 6 items or 800 tokens, and every claim traces to its evidence.',
+    control: 'Not applicable: v0.1 does not install, query, or write a memory provider.',
   },
   {
     id: 'T13',
@@ -114,39 +110,37 @@ export const threats = [
 ].map((t, i) => ({ ...t, range: r(i, 2.4, 24) }))
 
 export const modes = [
-  { name: 'read-only', tone: '#95A0AB', bg: '#0C1116', w: '✗', wTone: no, e: '✗', eTone: no, p: '✗', pTone: no, range: r(0, 3, 24) },
-  { name: 'assisted', tone: '#FF7A5E', bg: '#12100F', w: '⏸ ask', wTone: warn, e: '⏸ ask', eTone: warn, p: '✗', pTone: no, range: r(1, 3, 24) },
-  { name: 'trusted', tone: '#95A0AB', bg: '#0C1116', w: '✓', wTone: ok, e: '✓', eTone: ok, p: '⏸ ask', pTone: warn, range: r(2, 3, 24) },
-  { name: 'group', tone: '#95A0AB', bg: '#0C1116', w: '✗', wTone: no, e: '✗', eTone: no, p: '✗', pTone: no, range: r(3, 3, 24) },
+  { name: 'allowed DM', tone: '#FF7A5E', bg: '#12100F', r: '✓', rTone: ok, w: '✓', wTone: ok, e: 'button', eTone: warn, p: '✓', pTone: ok, range: r(0, 3, 24) },
+  { name: 'unknown user', tone: '#95A0AB', bg: '#0C1116', r: '✗', rTone: no, w: '✗', wTone: no, e: '✗', eTone: no, p: '✗', pTone: no, range: r(1, 3, 24) },
+  { name: 'group chat', tone: '#95A0AB', bg: '#0C1116', r: '✗', rTone: no, w: '✗', wTone: no, e: '✗', eTone: no, p: '✗', pTone: no, range: r(2, 3, 24) },
+  { name: 'signed callback', tone: '#95A0AB', bg: '#0C1116', r: '✓', rTone: ok, w: '—', wTone: no, e: '✓', eTone: ok, p: '✓', pTone: ok, range: r(3, 3, 24) },
 ]
 
 export const risky = [
-  'git push --force',
-  'git reset --hard',
-  'rm -rf',
-  'DB migration',
-  'terraform apply',
-  'kubectl delete',
-  'deploy',
-  '~/.ssh · *.env · *.pem',
-  'pipe to sh',
+  'allow_once only',
+  'reject_once',
+  '10-minute TTL',
+  'principal-bound',
+  'session-bound',
+  'single-use',
+  'HMAC-signed',
 ]
 
 export const mandatory = [
   'The allowlist cannot be empty. The gateway stops with an error that explains how to fix it.',
-  'Approval only through a signed, single-use callback with a TTL. The text fallback is nonce-bound too.',
-  'Trusted mode is terminal-only and must expire, enforced by a database constraint.',
-  'The outbound scrubber is always on, for chat messages and log lines alike.',
-  'Authorisation decisions always reach the audit log.',
-  'Groups never receive write or execute permission without an explicit opt-in.',
-  'Callback payloads are never trusted as sent. Always an id plus HMAC, validated server-side.',
+  'Only private chats from the paired Telegram principal can reach Claude.',
+  'Approval only through a signed, single-use callback with a TTL. Chat text is never a fallback.',
+  'Token and approval key files use mode 0600 inside a mode-0700 secrets directory.',
+  'The outbound scrubber runs before Telegram messages and audit details.',
+  'SQLite triggers keep audit rows append-only.',
+  'Long-polling opens no listener; unavailable topics fall back to linear mode.',
 ].map((t, i) => ({ t, range: r(i, 3, 24) }))
 
 export const notClaimed = [
-  'We cannot stop the agent doing something unwise after you approve it. Approval is a human decision and Caraka does not second-guess it.',
-  'We cannot prevent prompt injection outright. What we guarantee is that its consequences require a human tap.',
+  'Caraka cannot guarantee that Claude asks before every operation. The coding agent owns its tool policy and sandbox.',
+  'A signed button proves who approved one request; it does not make the approved operation safe.',
   'We have not had a third-party security audit. This will be stated openly until it changes.',
-  'Caraka is pre-alpha. Treat it as software that has not yet been attacked in the wild.',
+  'Caraka v0.1 is an early preview. Treat it as software that has not yet been attacked in the wild.',
   'Vulnerabilities in your coding agent, in Telegram, or in their libraries are theirs to fix. We will help route the report.',
 ]
 
@@ -160,15 +154,15 @@ export const inScope = [
   'Bypassing the approval flow in any way',
   'Escaping the allowlist or the pairing mechanism',
   'Forging, replaying, or reusing an approval nonce',
-  'Prompt injection that leads to execution without approval',
-  'Secret leakage through messages, logs, memory, or audit entries',
-  'Reading or writing outside a configured workspace',
+  'A group message or unknown user reaching Claude',
+  'Secret leakage through Caraka messages or audit entries',
+  'Caraka opening an undocumented network listener',
 ]
 
 export const outScope = [
   'Anything the operator explicitly approved',
   'Vulnerabilities in the coding agent itself',
   'Vulnerabilities in Telegram or its libraries',
-  'WhatsApp bans from unofficial providers, which are documented and accepted',
-  'Missing hardening that is documented as a deliberate trade-off',
+  'Tool access enabled directly in the coding agent configuration',
+  'Channels and policy modes not shipped in v0.1',
 ]

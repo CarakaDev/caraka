@@ -118,21 +118,21 @@ import MobileToc from '../components/MobileToc.astro'
         <section id="modes" style="margin-bottom: clamp(48px, 8vh, 80px); scroll-margin-top: 90px;">
           <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
             <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">03</span>
-            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Policy modes</h2>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Telegram routes</h2>
           </div>
-          <p style="margin: 0 0 24px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Assisted is the default for direct messages, read-only for groups. Trusted can only be granted from a local terminal, and it always expires.</p>
+          <p style="margin: 0 0 24px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">v0.1 has no Caraka policy modes. Identity and chat type decide whether input reaches Claude; Claude decides when a tool needs permission.</p>
           <div style="border: 1px solid #171C22; border-radius: 14px; overflow: hidden;">
             <div style="display: flex; padding: 13px 20px; background: #12100F; border-bottom: 1px solid #2B1612; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .14em; color: #7A848F;">
-              <span style="flex: 1.3; min-width: 92px;">MODE</span>
-              <span style="flex: .7; min-width: 46px;">READ</span>
-              <span style="flex: .9; min-width: 62px;">WRITE</span>
-              <span style="flex: .9; min-width: 62px;">EXEC</span>
-              <span style="flex: 1; min-width: 70px;">PUSH</span>
+              <span style="flex: 1.3; min-width: 92px;">ROUTE</span>
+              <span style="flex: .7; min-width: 46px;">GET</span>
+              <span style="flex: .9; min-width: 62px;">PROMPT</span>
+              <span style="flex: .9; min-width: 62px;">APPROVE</span>
+              <span style="flex: 1; min-width: 70px;">REPLY</span>
             </div>
             {modes.map((m) => (
               <div style={`display: flex; padding: 15px 20px; border-bottom: 1px solid #171C22; background: ${m.bg}; font-size: 13px; align-items: center; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: ${m.range};`}>
                 <span style={`flex: 1.3; min-width: 92px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: ${m.tone};`}>{m.name}</span>
-                <span style="flex: .7; min-width: 46px; color: #8EEE98;">✓</span>
+                <span style={`flex: .7; min-width: 46px; color: ${m.rTone};`}>{m.r}</span>
                 <span style={`flex: .9; min-width: 62px; color: ${m.wTone};`}>{m.w}</span>
                 <span style={`flex: .9; min-width: 62px; color: ${m.eTone};`}>{m.e}</span>
                 <span style={`flex: 1; min-width: 70px; color: ${m.pTone};`}>{m.p}</span>
@@ -140,7 +140,7 @@ import MobileToc from '../components/MobileToc.astro'
             ))}
           </div>
           <div style="margin-top: 16px; padding: 18px 20px; background: #12100F; border-left: 2px solid #E2452C; border-radius: 0 11px 11px 0; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">
-            <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .16em; color: #FF7A5E; margin-bottom: 11px;">ALWAYS ASKS, IN EVERY MODE</div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .16em; color: #FF7A5E; margin-bottom: 11px;">WHEN CLAUDE REQUESTS PERMISSION</div>
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
               {risky.map((r) => (
                 <span style="padding: 6px 12px; background: #05070A; border: 1px solid #2B1612; border-radius: 7px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #E0B4A8;">{r}</span>
@@ -154,7 +154,7 @@ import MobileToc from '../components/MobileToc.astro'
             <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">04</span>
             <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">What ships turned on</h2>
           </div>
-          <p style="margin: 0 0 24px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Seven controls have no configuration option to disable them. The rest are defaults you can loosen deliberately.</p>
+          <p style="margin: 0 0 24px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">These controls are fixed in v0.1. There is no configuration switch that disables them.</p>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: 14px;">
             {mandatory.map((m) => (
               <div class="hv-ring-soft" style={`padding: 22px 24px; background: #0C1116; border: 1px solid #171C22; border-radius: 13px; display: flex; gap: 13px; align-items: flex-start; transition: border-color .25s; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: ${m.range};`}>

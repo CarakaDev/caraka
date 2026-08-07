@@ -4,7 +4,7 @@
 // design-comp runtime.
 import Base from '../layouts/Base.astro'
 import '../styles/pages/install.css'
-import { toc, chain, notNeeded, nodeRows, agents, prices, costNotes, paths, scriptRules, verifyLines } from '../data/install'
+import { toc, chain, notNeeded, nodeRows, agents, prices, costNotes, paths, agentPrompt, scriptRules, verifyLines } from '../data/install'
 import MobileMenu from '../components/MobileMenu.astro'
 import MobileToc from '../components/MobileToc.astro'
 ---
@@ -45,8 +45,8 @@ import MobileToc from '../components/MobileToc.astro'
           <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .22em; color: #E2452C;">INSTALL</span>
           <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent); transform-origin: left; animation: ck-drawX 1s cubic-bezier(.3,.7,.3,1) .25s both;"></span>
         </div>
-        <h1 style="margin: 0 0 18px; max-width: 880px; font-size: clamp(30px, 5.4vw, 56px); font-weight: 700; letter-spacing: -.03em; line-height: 1.08; color: #F6F9FC; text-wrap: balance; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) .15s both;">Three things must exist. Caraka is the cheapest of them.</h1>
-        <p style="margin: 0 0 28px; max-width: 640px; font-size: clamp(15px, 1.9vw, 18px); line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) .28s both;">Caraka is free, MIT, and never asks for a card. Any cost you see belongs to your coding agent, and it applies whether Caraka exists or not. There is a genuinely free path, and it is listed first.</p>
+        <h1 style="margin: 0 0 18px; max-width: 880px; font-size: clamp(30px, 5.4vw, 56px); font-weight: 700; letter-spacing: -.03em; line-height: 1.08; color: #F6F9FC; text-wrap: balance; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) .15s both;">Telegram to Claude Code, from one command.</h1>
+        <p style="margin: 0 0 28px; max-width: 640px; font-size: clamp(15px, 1.9vw, 18px); line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) .28s both;">Caraka v0.1 runs locally with one private Telegram account, one workspace, and Claude Code. No webhook, open port, model key, or hand-written config.</p>
 
         <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) .4s both;">
           <button type="button" data-copy="npx caraka init" class="hv-ring-tint" style="display: flex; align-items: center; gap: 14px; padding: 16px 22px; background: #0C1116; border: 1px solid #292E35; border-radius: 11px; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: clamp(13px, 1.7vw, 15px); color: #E9EDF2; transition: border-color .2s, background .2s;">
@@ -65,9 +65,9 @@ import MobileToc from '../components/MobileToc.astro'
         <section id="chain" style="margin-bottom: clamp(46px, 8vh, 78px); scroll-margin-top: 90px;">
           <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
             <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">01</span>
-            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">What has to be there</h2>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">What must be there</h2>
           </div>
-          <p style="margin: 0 0 24px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">The wizard checks each one in order and stops at the first gap, with the exact command to close it.</p>
+          <p style="margin: 0 0 24px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">The wizard checks local prerequisites before it asks for the value it cannot discover: your Telegram bot token.</p>
           <div style="position: relative; display: flex; flex-direction: column;">
             <div aria-hidden="true" style="position: absolute; left: 19px; top: 24px; bottom: 52px; width: 1px; background: linear-gradient(180deg, #E2452C, #2B1612); transform-origin: top; animation: ck-drawY linear both; animation-timeline: view(); animation-range: entry 8% cover 44%;"></div>
             {chain.map((c) => (
@@ -109,9 +109,9 @@ import MobileToc from '../components/MobileToc.astro'
         <section id="agent" style="margin-bottom: clamp(46px, 8vh, 78px); scroll-margin-top: 90px;">
           <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
             <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">03</span>
-            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">No coding agent yet</h2>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Claude Code and Telegram</h2>
           </div>
-          <p style="margin: 0 0 22px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Caraka has no agent of its own, so this is the one real dead end. Install one, authenticate, then run init again. Already have one? The wizard finds it on PATH and you only confirm.</p>
+          <p style="margin: 0 0 22px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">This release supports Claude Code through the official ACP adapter. Telegram supplies transport and identity; Claude keeps its runtime, tools, and model access.</p>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: 14px;">
             {agents.map((a) => (
               <div style={`padding: 24px 26px; background: ${a.bg}; border: 1px solid ${a.border}; border-radius: 14px; display: flex; flex-direction: column; gap: 12px; animation: ck-rise linear both; animation-timeline: view(); animation-range: ${a.range};`}>
@@ -133,15 +133,15 @@ import MobileToc from '../components/MobileToc.astro'
         <section id="cost" style="margin-bottom: clamp(46px, 8vh, 78px); scroll-margin-top: 90px;">
           <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
             <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">04</span>
-            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">What it costs</h2>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">What init checks</h2>
           </div>
-          <p style="margin: 0 0 22px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Verified August 2026 from vendor pricing pages. Prices move, so check the source before you buy.</p>
+          <p style="margin: 0 0 22px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Every check happens before config is written. A rejected token or unconfirmed pairing leaves no new credential behind.</p>
           <div style="border: 1px solid #171C22; border-radius: 14px; overflow: hidden; margin-bottom: 20px;">
             <div style="display: flex; padding: 13px 20px; background: #12100F; border-bottom: 1px solid #2B1612; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .14em; color: #7A848F;">
-              <span style="flex: 1.4; min-width: 118px;">PLAN</span>
-              <span style="flex: 1; min-width: 92px;">CLAUDE CODE</span>
-              <span style="flex: 1; min-width: 84px;">CODEX CLI</span>
-              <span style="flex: 1; min-width: 84px;">GEMINI CLI</span>
+              <span style="flex: 1.4; min-width: 118px;">CHECK</span>
+              <span style="flex: 1; min-width: 92px;">COMMAND</span>
+              <span style="flex: 1; min-width: 84px;">READY</span>
+              <span style="flex: 1; min-width: 84px;">IF MISSING</span>
             </div>
             {prices.map((p) => (
               <div style={`display: flex; padding: 14px 20px; border-bottom: 1px solid #171C22; background: ${p.bg}; font-size: 13px; align-items: center; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: ${p.range};`}>
@@ -165,7 +165,7 @@ import MobileToc from '../components/MobileToc.astro'
         <section id="which" style="margin-bottom: clamp(46px, 8vh, 78px); scroll-margin-top: 90px;">
           <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 18px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
             <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">05</span>
-            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Which path is yours</h2>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Choose an install path</h2>
           </div>
           <div style="display: flex; flex-direction: column; gap: 11px;">
             {paths.map((p) => (
@@ -180,18 +180,14 @@ import MobileToc from '../components/MobileToc.astro'
         <section id="script" style="margin-bottom: clamp(46px, 8vh, 78px); scroll-margin-top: 90px;">
           <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
             <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">06</span>
-            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">install.sh, and why you can read it first</h2>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Ask Codex or Claude to install it</h2>
           </div>
-          <p style="margin: 0 0 20px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Piping curl into bash has a bad reputation that is partly deserved. Eight properties make this one worth trusting, and the first is that we show you how to read it before running it.</p>
-          <div style="background: #05070A; border: 1px solid #171C22; border-radius: 13px; padding: clamp(18px, 2.6vw, 26px); margin-bottom: 18px; font-family: 'JetBrains Mono', monospace; font-size: clamp(11.5px, 1.5vw, 13px); line-height: 1.95; overflow-x: auto; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">
-            <div style="color: #5D666F;"># read it first</div>
-            <div style="color: #FF7A5E;">curl -fsSL https://caraka.dev/install.sh | less</div>
-            <div style="height: 10px;"></div>
-            <div style="color: #5D666F;"># see the plan without changing anything</div>
-            <div style="color: #FF7A5E;">curl -fsSL https://caraka.dev/install.sh | bash -s -- --dry-run</div>
-            <div style="height: 10px;"></div>
-            <div style="color: #5D666F;"># pin a version for a reproducible environment</div>
-            <div style="color: #FF7A5E;">CARAKA_VERSION=0.4.0 curl -fsSL https://caraka.dev/install.sh | bash</div>
+          <p style="margin: 0 0 20px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Paste this into either coding agent. It lets the agent handle checks while keeping the Telegram token out of the conversation transcript.</p>
+          <div style="background: #05070A; border: 1px solid #171C22; border-radius: 13px; padding: clamp(18px, 2.6vw, 26px); margin-bottom: 18px; font-family: 'JetBrains Mono', monospace; font-size: clamp(11.5px, 1.5vw, 13px); line-height: 1.7; overflow-x: auto; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">
+            <pre style="margin: 0 0 18px; color: #B2BCC6; white-space: pre-wrap; word-break: break-word; font: inherit;">{agentPrompt}</pre>
+            <button type="button" data-copy={agentPrompt} class="hv-ring-tint" style="padding: 10px 16px; background: #0C1116; border: 1px solid #292E35; border-radius: 8px; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #E9EDF2;">
+              <span data-copy-label="COPY PROMPT" data-copied="COPIED" data-tone="#E9EDF2">COPY PROMPT</span>
+            </button>
           </div>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px;">
             {scriptRules.map((s) => (
@@ -206,9 +202,9 @@ import MobileToc from '../components/MobileToc.astro'
         <section id="verify" style="scroll-margin-top: 90px;">
           <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
             <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">07</span>
-            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Verify, fix, remove</h2>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Verify and run</h2>
           </div>
-          <p style="margin: 0 0 20px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Trying this should be cheap and reversible. Uninstall is clean, and it never touches your repositories or your agent's configuration.</p>
+          <p style="margin: 0 0 20px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Doctor is read-only. Start keeps the gateway in the foreground so you can stop it with Ctrl-C while evaluating v0.1.</p>
           <div style="background: #05070A; border: 1px solid #171C22; border-radius: 13px; padding: clamp(18px, 2.6vw, 26px); font-family: 'JetBrains Mono', monospace; font-size: clamp(11.5px, 1.5vw, 13px); line-height: 1.95; overflow-x: auto; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">
             {verifyLines.map((v) => (
               <div style={`display: flex; gap: 9px; color: ${v.tone}; white-space: pre;`}>{v.mark && (<span style={`color: ${v.markTone};`}>{v.mark}</span>)}<span>{v.t}</span></div>
@@ -217,7 +213,7 @@ import MobileToc from '../components/MobileToc.astro'
           <div style="margin-top: 22px; padding: clamp(24px, 3.4vw, 34px); background: #12100F; border: 1px solid #2B1612; border-radius: 15px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 28%;">
             <div>
               <div style="font-size: 18px; font-weight: 600; color: #F6F9FC; margin-bottom: 6px;">Still stuck?</div>
-              <div style="font-size: 14px; line-height: 1.6; color: #95A0AB; max-width: 400px; text-wrap: pretty;">Every planned failure has a documented fix. Paste your doctor output into an issue; it is already redacted.</div>
+              <div style="font-size: 14px; line-height: 1.6; color: #95A0AB; max-width: 400px; text-wrap: pretty;">Every failed check names the next action. Never include your Telegram token in an issue.</div>
             </div>
             <div style="display: flex; flex-wrap: wrap; gap: 10px;">
               <a href="https://github.com/CarakaDev/caraka/blob/main/docs/troubleshooting.md" class="hv-btn" style="padding: 13px 22px; background: #E2452C; border-radius: 10px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #FFEDE7; white-space: nowrap; transition: background .2s;">Troubleshooting →</a>
@@ -241,7 +237,7 @@ import MobileToc from '../components/MobileToc.astro'
 
     <footer style="padding: clamp(44px, 7vh, 70px) clamp(20px, 5vw, 60px); border-top: 1px solid #0C1116;">
       <div style="width: min(1240px, 100%); margin: 0 auto; display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between;">
-        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #414950;">ꦕ caraka · MIT · pre-alpha</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #414950;">ꦕ caraka · MIT · v0.1 preview</span>
         <div style="display: flex; flex-wrap: wrap; gap: clamp(14px, 2.6vw, 28px); font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
           <a href="/" class="hv-ink" style="color: #7A848F;">Home</a>
           <a href="/docs" class="hv-ink" style="color: #7A848F;">Docs</a>
