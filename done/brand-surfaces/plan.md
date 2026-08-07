@@ -139,3 +139,29 @@ Tidak diperbaiki dengan `ascent-override`, karena penyebabnya bukan di situs. Se
 ### Satu duplikasi dihapus
 
 `assets/*.svg` dan `site/public/brand/*.svg` sempat menjadi dua salinan berkas yang sama, siap menyimpang. `assets/` kini satu-satunya sumber; `gen-assets.mjs` menyalinnya saat prebuild dan `site/public/brand/` masuk `.gitignore`.
+
+---
+
+## 9. Dua pertanyaan terbuka, ditutup
+
+Spec ini menyisakan dua hal untuk keputusan pemilik. Keduanya dijawab, dan keduanya ternyata cacat di comp, bukan di port.
+
+### Cincin 46px di kartu error
+
+`Caraka UI Kit.dc.html` menggambar mark kartu error dengan cincin 46px, dua piksel di bawah ambang 48px yang aturan 07 di comp yang sama tetapkan.
+
+**Dinaikkan ke 48px, bukan diubah jadi kotak padat.** Warna cincin di kartu itu membawa jenis error — `#414950` untuk 404, `#FF93B2` untuk 500, `#FFD67E` untuk 503, `#E2452C` untuk 424. Kotak padat selalu kesumba, dan sinyal itu hilang. Naik dua piksel memenuhi aturan tanpa membuang apa pun. Comp ikut dikoreksi; posisinya absolut di dalam bingkai 96×48, jadi tidak ada tata letak yang bergeser.
+
+Yang 503 tidak tersentuh: cincinnya berputar, dan `docs/brand.md` mengecualikan indikator gerak dengan menyebut alasannya.
+
+### Verse README 16px lebih pendek
+
+Diagnosis pertama salah, dan salahnya menarik untuk dicatat. Angkanya sempat dikaitkan ke asal berkas font — comp menarik dari CDN Google, situs self-host subset fontsource — dengan kesimpulan bahwa metriknya berbeda dan selisihnya harus diterima.
+
+Metriknya diukur, dan **identik: 112/92 di kedua berkas**, persis angka yang `docs/brand.md` §6 catat. Lebar teks juga sama, 87px di keduanya, jadi glyph memang dirender font yang sama.
+
+Yang berbeda hanya kotak barisnya: port memakai metrik `serif` (14/3), comp memakai metrik aksara (18/15). Penyebabnya satu karakter. CSS memilih *first available font* — yang metriknya menentukan strut baris — sebagai keluarga pertama yang punya glyph untuk spasi. `unicode-range` di sini tidak memuat `U+0020`, jadi subset ini dilewati untuk keperluan itu dan strut-nya jatuh ke `serif`.
+
+`U+0020` ditambahkan ke ketiga muka Javanese. `/brand/readme` kini merender 5490px, sama dengan comp-nya, dan angka 112/92 yang `docs/brand.md` ukur akhirnya benar-benar berlaku di situs. Tidak ada rute lain yang bergerak: setiap aksara lain membawa `line-height: 1; display: block`, yang mengunci kotaknya.
+
+**Pelajarannya:** "metrik font berbeda" adalah dugaan yang masuk akal dan salah. Membaca metrik kedua berkas — dua perintah — membalikkannya, dan menunjuk ke perbaikan satu karakter alih-alih `ascent-override` yang akan menyembunyikan gejalanya sambil membiarkan sebabnya.
