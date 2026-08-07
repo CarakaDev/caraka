@@ -4,7 +4,25 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] — 2026-08-08
+
+Memory. What a run leaves behind rides in front of the next prompt, and its failure never blocks a reply.
+
+### Added
+
+- A `MemoryProvider` interface with three providers: `titen`, an HTTP adapter for a local [Titen](https://titen.dev) process; `local`, SQLite + FTS5 inside Caraka's own database with no embeddings; and `none`. A config file from before v0.3 reads as `local`.
+- Compiled memory is injected in front of the prompt as a labelled data block, at most 6 items in 800 tokens. The bound is enforced on what the provider returns, not only passed to it, and `<memory` markers inside recalled text are stripped — recalled data cannot close the block and pose as instruction.
+- Every run feeds memory back: the user's prompt and the agent's output become observations when the run ends, tool-call titles as they arrive, and the injected context receives its outcome. When the output's observation id returns within the time bound, the reply closes with `Memory saved: <id>`.
+- Chat commands `/ingat <text>`, `/lupakan <id>`, and `/memori`, accepted from any topic and answered in General when topics are on.
+- Degradation: a compile that fails or outlives 500 ms is skipped, audited as `memory_degraded`, and the run continues. Text bound for a provider passes the secret scrubber field by field before it leaves the process.
+- The wizard offers to install Titen after pairing; declining, or a failed install, writes `provider: local` and finishes as usual. `doctor` probes Titen's `/health` when configured and says so when the memory endpoint is not loopback, because memory data then leaves the machine.
+
+### Limited
+
+- The `titen` adapter has only ever answered a mocked fetch; no check in this repository talks to a live Titen. Its routes were read from the Titen v0.7.0 source, a pre-1.0 surface that can move, and `local` keeps working without it.
+- On `titen`, `forget` by filter deletes nothing, because v0.7.0 has no bulk delete route. Deleting by id works.
+- The wizard's install command was not run while closing this release, and no automated test covers `init` or `doctor`.
+- The phase's A/B across twenty tasks stays open, moved past the release by owner decision on 8 August 2026.
 
 ### Changed
 
@@ -64,7 +82,7 @@ First usable preview for one private Telegram operator and Claude Code.
 
 Name reservation on npm and the initial public specification.
 
-[Unreleased]: https://github.com/CarakaDev/caraka/compare/v0.2.1...HEAD
+[0.3.0]: https://github.com/CarakaDev/caraka/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/CarakaDev/caraka/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/CarakaDev/caraka/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/CarakaDev/caraka/compare/v0.0.0...v0.1.0
