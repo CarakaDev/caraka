@@ -12,7 +12,7 @@ Roadmap ini adalah urutan **pembuktian**, bukan daftar fitur. Setiap fase menjaw
 
 **Pertanyaan:** apakah tiga fondasi ini benar-benar bekerja seperti yang dijanjikan dokumentasi?
 
-- [ ] **ACP + Claude Code:** spawn `claude-agent-acp`, `session/new` → `session/prompt` → konsumsi `session/update` → tangani `session/request_permission` → `session/cancel`. **Konfirmasi permission request benar-benar muncul untuk operasi tulis.**
+- [x] **ACP + Claude Code:** spawn `claude-agent-acp`, `session/new`/`session/load` → `session/prompt` → konsumsi `session/update` → tangani `session/request_permission` → `session/cancel`. Smoke nyata membuktikan initialize, new, prompt, load, dan prompt lanjutan; e2e membuktikan permission callback.
 - [ ] **Topic di private chat:** `createForumTopic` di DM tanpa hak admin; kirim ke `message_thread_id`; ubah `icon_color`; `closeForumTopic`. Konfirmasi perilaku klien (gelembung "Type any message to create a new thread").
 - [ ] **Rich Messages:** `sendRichMessage` dengan block table + code; `sendRichMessageDraft` untuk streaming; verifikasi tidak ada `editRichMessage` dan pola kirim-baru + hapus-lama bekerja.
 - [ ] **Titen:** `titen bootstrap` + `titen serve`; POST `/v1/observations`, `/v1/context/compile`; ukur latensi compile.
@@ -22,7 +22,7 @@ Roadmap ini adalah urutan **pembuktian**, bukan daftar fitur. Setiap fase menjaw
 
 ---
 
-## Fase 1 — MVP dogfood (2–3 minggu) → `v0.1`
+## Fase 1 — MVP dogfood (`v0.1.x`)
 
 **Pertanyaan:** apakah ini benar-benar berguna dalam pemakaian sehari-hari?
 
@@ -35,6 +35,11 @@ Lingkup minimum yang jujur:
 - `init` + `doctor`
 
 Tanpa memory. Tanpa WhatsApp. Tanpa multi-agent. Tanpa Discord.
+
+`v0.1.0` adalah pratinjau yang dapat dipasang: private DM, topic dengan fallback
+linear, sesi ACP persisten, approval HMAC sekali pakai, scrubber, audit, `init`,
+`doctor`, dan `start`. Dogfood satu minggu serta lima tugas nyata tetap menjadi
+gerbang untuk menutup fase ini; nomor paket tidak menggantikan bukti pemakaian.
 
 **Definition of done:** penulis memakainya 1 minggu penuh dan menyelesaikan ≥ 5 tugas nyata tanpa membuka laptop; daftar topic terasa **lebih rapi** daripada satu aliran chat. Bila terasa mengganggu, perbaiki dulu — jangan tambah fitur.
 

@@ -33,6 +33,7 @@ site/public/icon-192.png
 site/public/icon-512.png
 
 # --- tooling / os ---
+graphify-out/
 .DS_Store
 Thumbs.db
 *.log

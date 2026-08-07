@@ -34,7 +34,7 @@
 | FR-CHAN-01 | P0 | **Telegram (Bot API 10.2) adalah satu-satunya channel di v1.0.** Discord & WhatsApp P1, Signal P2. |
 | FR-CHAN-01b | P0 | Telegram memakai **long-polling** (bukan webhook) sehingga gateway tetap dapat `bind 127.0.0.1` tanpa port terbuka atau tunnel. |
 | FR-CHAN-01c | P0 | Update yang memuat field tak dikenal **wajib diproses, tidak boleh dijatuhkan** — ini penyebab kerusakan paling umum saat versi Bot API naik. |
-| FR-CHAN-02 | P0 | Semua channel mengimplementasikan interface `Channel` yang sama; capability opsional (`edit`, `askChoice`, `sendFile`, `setTyping`) dideklarasikan, dan core melakukan **fallback anggun** bila tidak tersedia (mis. approval jadi balasan teks `ya`/`tidak` bertanda kode). |
+| FR-CHAN-02 | P0 | Semua channel mengimplementasikan interface `Channel` yang sama; capability opsional (`edit`, `askChoice`, `sendFile`, `setTyping`) dideklarasikan, dan core melakukan **fallback anggun** bila tidak tersedia. Permission ditolak bila channel tidak punya callback pilihan; approval tidak pernah berpindah ke teks chat. |
 | FR-CHAN-03 | P0 | WhatsApp mendukung dua provider yang dapat dipilih: `baileys` dan `cloud-api`, dengan konfigurasi berbeda tapi perilaku core identik. |
 | FR-CHAN-04 | P0 | Inbound: teks, gambar, dokumen, voice note (path file lokal disediakan ke agent). Voice note ditranskripsi hanya bila user mengonfigurasi transcriber. |
 | FR-CHAN-05 | P0 | Outbound: teks (dengan code block), file, dan gambar. Konvensi lampiran: baris `MEDIA:<path-atau-url>` yang berdiri sendiri diekstrak core dan dikirim sebagai lampiran. |

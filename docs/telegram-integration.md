@@ -26,9 +26,9 @@ Target versi: **Bot API 10.2** dengan degradasi otomatis ke jalur lama bila serv
 | Sesi ber-tab | `createForumTopic` di private chat | mode linear + header `[ws · #id]` |
 | Status sesi terlihat sekilas | `editForumTopic` warna ikon | prefiks di nama topic |
 | Menutup sesi | `closeForumTopic` | pesan penutup saja |
-| Hasil terstruktur (diff, tabel, test) | `sendRichMessage` + blocks | MarkdownV2 + file `.diff` |
+| Hasil terstruktur (diff, tabel, test) | `sendRichMessage` dengan input Markdown | teks polos yang sudah di-scrub dan dipecah |
 | Streaming progres | `sendRichMessageDraft` + `RichBlockThinking` | `editMessageText` teks polos |
-| Approval | `InlineKeyboardButton` + `style` + `icon_custom_emoji_id` | teks kode `ok A7F3` |
+| Approval | `InlineKeyboardButton` | tolak permission bila callback tidak tersedia; teks tidak pernah menjadi approval |
 | Approval privat di grup | `receiver_user_id` (ephemeral) | grup tetap `read-only` |
 | Lampiran keluar | `sendDocument` / `sendPhoto` | tautan file |
 | Voice note masuk | unduh file → transcriber user (opsional) | tolak dengan pesan jelas |
@@ -49,24 +49,15 @@ Target versi: **Bot API 10.2** dengan degradasi otomatis ke jalur lama bila serv
 
 **Jangan** mencoba meng-`editMessageText` sebuah pesan menjadi rich message di tengah stream. Laporan implementasi nyata menunjukkan format rich hancur menjadi teks polos dengan penanda sintaks mentah, dan **tidak ada `editRichMessage`**. Pola kirim-baru + hapus-lama adalah perbaikan yang terbukti.
 
-### Peta block yang kita pakai
-
-| Isi | Block |
-|---|---|
-| Ringkasan hasil | paragraph |
-| "Berkas yang berubah" | table (path · +/− · catatan) |
-| Isi diff | code block dengan bahasa |
-| Hasil test | task list (✓/✗ per suite) |
-| Rencana agent | list bernomor |
-| Penalaran agent saat streaming | **`RichBlockThinking`** |
-| Log panjang | details / collapsible |
-| Peringatan | blockquote |
-
-Batas 32.768 karakter per pesan sudah cukup untuk hampir semua diff; di atas itu → kirim sebagai file dengan ringkasan tabel di pesan.
+v0.1 mengirim `InputRichMessage.markdown`. Keluaran panjang dipecah pada batas
+baris sambil menutup dan membuka kembali code fence. Block terstruktur dan
+lampiran diff tetap berada di roadmap.
 
 ### Ketersediaan pustaka
 
-Dukungan pustaka masih tertinggal dari API (`python-telegram-bot` masih membuka isu untuk 10.1). **Rencana:** panggil `sendRichMessage`/`sendRichMessageDraft`/method ephemeral **langsung lewat HTTP** di satu adapter tipis (`telegram/raw.ts`), dan ganti ke tipe pustaka resmi saat mendarat. Semua pemakaian melewati fungsi `richSend()` sendiri sehingga migrasi cukup satu file.
+Dukungan pustaka masih tertinggal dari API. v0.1 memanggil Bot API langsung
+lewat `src/channels/telegram.ts`. Migrasi tipe nanti tetap terpusat di satu
+berkas.
 
 **Aturan wajib:** jangan pernah menolak/menjatuhkan update yang memuat field tak dikenal — ini penyebab kerusakan paling umum saat versi Bot API naik.
 
@@ -88,8 +79,7 @@ Dukungan pustaka masih tertinggal dari API (`python-telegram-bot` masih membuka 
 
 - Warna tombol memakai field `style` pada `InlineKeyboardButton`; ikon memakai `icon_custom_emoji_id` bila pemilik bot punya Premium — keduanya **peningkatan opsional**, bukan syarat.
 - `callback_data` memuat `approval_id` + nonce sekali pakai. Payload divalidasi terhadap `(principal, session, request)`; nonce kedaluwarsa 10 menit.
-- Di grup: kartu dikirim dengan `receiver_user_id` = operator, sehingga **hanya operator yang melihatnya**. Anggota lain tidak melihat apa pun.
-- `callback_query_id` dipakai untuk membalas penekanan tombol secara ephemeral.
+- Grup belum diterima oleh v0.1; update non-private ditolak sebelum mencapai Claude.
 
 ---
 
@@ -99,17 +89,12 @@ Didaftarkan lewat `setMyCommands`, dengan scope berbeda untuk private chat dan g
 
 | Perintah | Scope | `is_ephemeral` |
 |---|---|---|
-| `/ws` | semua | ✅ di grup |
-| `/new` | semua | — |
-| `/stop` | semua | — |
-| `/status` | semua | ✅ di grup |
-| `/switch` | private | — |
-| `/mode` | private | — |
-| `/pin`, `/unpin` | private | — |
-| `/ingat`, `/lupakan`, `/memori` | private | — |
-| `/help` | semua | ✅ di grup |
+| `/new` | private | mulai sesi baru |
+| `/stop` | private | kirim `session/cancel` |
+| `/status` | private | tampilkan state sesi |
+| `/help` | private | tampilkan command |
 
-`BotCommand.is_ephemeral` membuat balasan perintah di grup hanya terlihat oleh pemanggil — sangat berguna untuk `/status` yang bisa memuat nama repo.
+Command lain belum didaftarkan pada v0.1.
 
 ---
 
@@ -131,12 +116,12 @@ Didaftarkan lewat `setMyCommands`, dengan scope berbeda untuk private chat dan g
 
 | Situasi | Penanganan |
 |---|---|
-| 429 Too Many Requests | hormati `retry_after`, antre, backoff eksponensial |
+| 429 Too Many Requests | hormati `retry_after`, lalu ulangi request |
 | Edit terlalu sering | throttle update status ≥ 1,5 detik |
-| Pesan > 32.768 karakter | potong di batas block, sisanya sebagai file |
+| Pesan > 32.768 karakter | pecah di batas baris dan jaga code fence seimbang |
 | `createForumTopic` gagal diam-diam | deteksi kemampuan sekali di startup → `container.supports_threads = false` → mode linear |
 | Bot diblokir user | tandai identity `revoked`, hentikan pengiriman, catat audit |
-| `sendRichMessage` gagal | fallback otomatis ke MarkdownV2 (dan catat agar bisa diperbaiki) |
+| `sendRichMessage` gagal | fallback otomatis ke teks polos yang sudah di-scrub |
 | Field baru tak dikenal di update | **abaikan, jangan drop update** |
 
 ---

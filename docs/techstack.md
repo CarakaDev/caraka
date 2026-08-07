@@ -18,9 +18,9 @@ Setiap pilihan di bawah punya alasan dan alternatif yang ditolak. Kriteria utama
 
 ## 2. Penyimpanan
 
-| Pilihan | **SQLite** via `better-sqlite3` (WAL) + **FTS5** |
+| Pilihan | **`node:sqlite`** bawaan Node (WAL) |
 |---|---|
-| Alasan | Satu file, tanpa server, tanpa Docker. Sinkron & cepat untuk beban lokal. **Lingkupnya menyusut di v0.2:** memori kini dimiliki Titen, jadi SQLite hanya menyimpan sesi, run, approval, container/topic, dan audit. `sqlite-vec` **tidak lagi diperlukan** di sisi kita (Titen memakainya di dalam dirinya sendiri). |
+| Alasan | Satu file, tanpa server, native dependency, atau Docker. v0.1 hanya menyimpan sesi, approval, dan audit. Tabel audit dilindungi trigger append-only. |
 | Alternatif ditolak | **Postgres + pgvector** — kekuatan berlebih untuk single-user, menambah beban instalasi. **Qdrant/Chroma** — proses/container terpisah, melanggar "satu proses". **LanceDB** — bagus, tapi menambah ~50 MB. **JSON files** — tidak scale untuk memory & audit. |
 | Migrasi | SQL bernomor maju-saja, dijalankan saat start. |
 
@@ -44,7 +44,7 @@ Setiap pilihan di bawah punya alasan dan alternatif yang ditolak. Kriteria utama
 | Pilihan | **ACP TypeScript SDK** (`agentclientprotocol/typescript-sdk`) sebagai jalur utama |
 |---|---|
 | Alasan | Menghindari implementasi ulang JSON-RPC + skema; SDK resmi mengikuti evolusi v1→v2. Satu integrasi → 28+ agent. |
-| Pelengkap | **Driver CLI sendiri** (±300 baris) untuk agent tanpa ACP; **MCP SDK** (`@modelcontextprotocol/sdk`) untuk mode inbox. |
+| Implementasi v0.1 | `@agentclientprotocol/sdk@1.3.0` + adapter resmi `@agentclientprotocol/claude-agent-acp@0.63.0`, keduanya dikunci di package. Driver CLI dan MCP inbox tetap roadmap. |
 | Alternatif ditolak | Menulis klien ACP dari nol — hanya menambah beban pemeliharaan skema. Bergantung **hanya** pada CLI — kehilangan streaming, permission, dan diff. |
 
 ---
@@ -53,7 +53,7 @@ Setiap pilihan di bawah punya alasan dan alternatif yang ditolak. Kriteria utama
 
 | Channel | Library | Alasan |
 |---|---|---|
-| Telegram | **`grammY`** + adapter HTTP tipis sendiri | Modern, TypeScript-first, middleware bersih untuk callback tombol. **Penting:** pustaka masih tertinggal dari Bot API 10.1/10.2 — `sendRichMessage`, `sendRichMessageDraft`, dan method ephemeral dipanggil langsung lewat HTTP di `channels/telegram/raw.ts`, lalu diganti ke tipe resmi saat mendarat. Jangan menunggu pustaka. |
+| Telegram | **`fetch` bawaan Node** | v0.1 hanya memakai beberapa method Bot API 10.2. Satu adapter HTTP menangani long-polling, 429, topic, rich result, edit progres, dan callback tanpa framework bot. |
 | WhatsApp (unofficial) | **`@whiskeysockets/baileys`** | Standar de-facto; WebSocket (tanpa Puppeteer), jauh lebih ringan dari `whatsapp-web.js`. |
 | WhatsApp (official) | **Graph API langsung** (`fetch`) | Tidak butuh SDK; webhook + REST sederhana. Memberi jalan keluar dari risiko ban. |
 | Discord | **`discord.js`** | Standar; button, thread, role permission. |
@@ -77,10 +77,10 @@ Ditolak: `whatsapp-web.js` (Puppeteer = Chromium ±300 MB, melanggar target ukur
 
 | Komponen | Pilihan |
 |---|---|
-| Parser perintah | `citty` atau `commander` (ringan, tanpa dependensi berat) |
-| Prompt interaktif | `@clack/prompts` — wizard modern, animasi halus, ukuran kecil |
-| Warna/tabel | `picocolors` + format manual (hindari `chalk`+`ink` demi ukuran) |
-| Logger | `pino` (JSON terstruktur) + `pino-pretty` hanya di dev |
+| Parser perintah | beberapa perbandingan string; tidak ada dependency CLI |
+| Prompt interaktif | `node:readline/promises` + input raw untuk token |
+| Warna/tabel | format teks manual |
+| Logger | audit SQLite; tidak ada dependency logger |
 
 ---
 
@@ -108,10 +108,10 @@ Ditolak: `whatsapp-web.js` (Puppeteer = Chromium ±300 MB, melanggar target ukur
 
 | Aspek | Pilihan |
 |---|---|
-| Test | `node:test` bawaan + `vitest` untuk unit yang butuh mocking |
+| Test | `node:test` bawaan; `tsx` hanya menjalankan test TypeScript |
 | Smoke test agent | Matriks CI per preset agent (spawn → prompt sederhana → assert balasan). Ini pertahanan utama saat vendor mengubah flag CLI. |
 | Lint/format | `oxlint` + `oxfmt` (cepat, tanpa konfigurasi berat) |
-| Build | `tsdown` → ESM + `.d.ts` |
+| Build | `tsc` → ESM + `.d.ts` |
 | Distribusi | npm (`caraka`), `npx caraka init` sebagai jalur utama; Docker image opsional |
 | Versioning | SemVer; skema DB punya versi sendiri |
 | Lisensi | MIT |

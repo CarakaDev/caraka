@@ -1,16 +1,25 @@
-# ꦕꦫꦏ caraka
+<p align="center">
+  <img src="assets/banner.svg" width="100%" alt="caraka — send the task, Caraka runs it">
+</p>
 
-**Send the task. Caraka runs it.**
+<p align="center">
+  <a href="https://www.npmjs.com/package/caraka"><img src="https://img.shields.io/npm/v/caraka?style=flat-square&labelColor=05080C&color=E2452C&label=npm" alt="npm"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8EEE98?style=flat-square&labelColor=05080C" alt="MIT"></a>
+  <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%E2%89%A522-E2452C?style=flat-square&labelColor=05080C" alt="node >= 22"></a>
+  <a href="https://agentclientprotocol.com"><img src="https://img.shields.io/badge/protocol-ACP-FF7A5E?style=flat-square&labelColor=05080C" alt="ACP"></a>
+  <a href="docs/roadmap.md"><img src="https://img.shields.io/badge/status-v0.1%20preview-FFD67E?style=flat-square&labelColor=05080C" alt="v0.1 preview"></a>
+</p>
 
-Caraka connects Telegram to the coding agent already installed on your machine. Every task lives in its own topic — like tabs in a terminal — with approvals, streaming progress, and memory that can explain itself.
+<p align="center">
+  <a href="https://caraka.dev"><b>caraka.dev</b></a> ·
+  <a href="docs/blueprint.md">Blueprint</a> ·
+  <a href="docs/install-guide.md">Install</a> ·
+  <a href="docs/security.md">Threat model</a> ·
+  <a href="docs/roadmap.md">Roadmap</a> ·
+  <a href="README.id.md">🇮🇩 Bahasa Indonesia</a>
+</p>
 
-[![npm](https://img.shields.io/npm/v/caraka?style=flat-square&labelColor=05080C&color=E2452C)](https://www.npmjs.com/package/caraka)
-[![license](https://img.shields.io/badge/license-MIT-8EEE98?style=flat-square&labelColor=05080C)](LICENSE)
-[![node](https://img.shields.io/badge/node-%E2%89%A522-E2452C?style=flat-square&labelColor=05080C)](https://nodejs.org)
-
-🇮🇩 [Baca dalam Bahasa Indonesia](README.id.md)
-
-> **Status: pre-alpha.** The specification is complete and public; implementation is starting. There is nothing useful to install yet. The npm package currently reserves the name. Follow the [roadmap](docs/roadmap.md) — Phase 0 is a technical spike, not a release.
+> **v0.1 preview.** Usable with one Telegram account, one bot, one workspace, and Claude Code over ACP. Run it in the foreground while you evaluate it. Memory, groups, background services, attachments, and coding agents other than Claude Code are not in this release.
 
 ---
 
@@ -18,7 +27,14 @@ Caraka connects Telegram to the coding agent already installed on your machine. 
 
 Coding agents are locked to one terminal on one machine. Caraka is the missing transport — a thin bridge, not another assistant.
 
-It has **no agent loop, no tools, no model provider, and no plugin marketplace.** Your coding agent already has all of those, and its versions are better: real sandboxing, repo context, diff review, git awareness. Caraka adds only what chat needs — identity, sessions, approvals, memory, and audit.
+It has **no agent loop, no tools, no model provider, and no plugin marketplace.** Your coding agent already has all of those, and its versions are better: real sandboxing, repo context, diff review, git awareness. Caraka adds only what chat needs — identity, sessions, approvals, and audit.
+
+<p align="center">
+  <img src="assets/flow.svg" width="100%" alt="Telegram topics to caraka to your coding agent">
+</p>
+
+<details>
+<summary>Same thing, as plain text</summary>
 
 ```
         Telegram (private chat = workspace)
@@ -29,16 +45,80 @@ It has **no agent loop, no tools, no model provider, and no plugin marketplace.*
                         │
                   ┌─────▼─────┐
                   │  caraka   │  identity · router · topics
-                  │           │  policy · approval · memory · audit
+                  │           │  policy · approval · audit
                   └─────┬─────┘
                         │ ACP (Agent Client Protocol)
                         ▼
               your coding agent — runtime, tools, sandbox, model
 ```
 
+</details>
+
+## Install
+
+Node.js 22+, Git, and an authenticated Claude Code installation.
+
+```bash
+claude auth status
+npx caraka init
+npx caraka doctor
+npx caraka start
+```
+
+`init` validates the bot token through Telegram, opens a one-time pairing link, asks for confirmation in the terminal, then stores the token outside `config.yaml` in a mode-`0600` file. Create the token with [@BotFather](https://t.me/BotFather). Do not paste it into an issue or into an AI chat.
+
+Enable topic mode for the bot in BotFather if you want one Telegram topic per session. Where topics are unavailable, Caraka keeps working in linear mode with a session header.
+
+Installing globally is optional:
+
+```bash
+npm install --global caraka
+caraka init
+caraka start
+```
+
+### Ask Codex or Claude to help
+
+Paste this into either coding agent. It handles the environment checks and explains the rest, and it is written so the agent never asks you to send the Telegram token through chat.
+
+```text
+Install Caraka for the repository in my current working directory.
+
+Read https://github.com/CarakaDev/caraka first. Verify Node.js 22 or newer,
+Git, Claude Code, and `claude auth status`. Fix only missing prerequisites that
+can be installed without changing my repository. Then run `npx caraka doctor`
+if Caraka is already configured.
+
+For Telegram pairing, never ask me to paste, reveal, or repeat the bot token in
+chat, command output, logs, or a committed file. Tell me to create a bot with
+@BotFather, then hand me this exact command to run myself in a local terminal:
+
+  npx caraka init --workspace "$PWD"
+
+Wait while I enter the token privately and approve the Telegram deep link.
+After I confirm init is complete, run `npx caraka doctor`, explain any failed
+check, and start it with `npx caraka start`. Do not enable a webhook, open a
+port, install a service, or modify Claude's model/provider configuration.
+```
+
+Some coding-agent clients can hold an interactive terminal open for the wizard. If yours cannot, run the one `init` command yourself and let the agent continue with `doctor` and `start`. That boundary is what keeps the token out of the conversation transcript.
+
+## Using it
+
+Send ordinary text to give Claude a task. Five commands cover the rest:
+
+| | |
+|---|---|
+| `/new` | start a fresh session |
+| `/status` | report the current session state |
+| `/stop` | cancel the active ACP prompt |
+| `/help` | show the command list |
+
+Permission requests arrive as **Allow once** and **Reject** buttons. Each callback is signed, bound to the Telegram principal and the session, expires after ten minutes, and works once. Chat text is never read as approval.
+
 ## Why it's small
 
-One protocol does the heavy lifting. [ACP](https://agentclientprotocol.com) is the LSP-equivalent for coding agents: JSON-RPC 2.0 over stdio, created by Zed, co-led by JetBrains, with 28+ agents in its registry. Writing **one** ACP client covers nearly all of them — including agents that do not exist yet.
+One protocol does the heavy lifting. [ACP](https://agentclientprotocol.com) is the LSP-equivalent for coding agents: JSON-RPC 2.0 over stdio, created by Zed, co-led by JetBrains, with 28+ agents in its registry. Writing **one** ACP client is what keeps the door open to the rest of them — v0.1 drives Claude Code, and the others are a preset away rather than a rewrite.
 
 ACP also ships `session/request_permission`, so the approval system is not something Caraka invents. It renders the protocol's own permission requests as buttons in your chat.
 
@@ -48,29 +128,19 @@ Since 2026, Telegram bots can create forum topics **in a private chat, with no a
 
 One session = one topic. Caraka names it, colours its icon by state (🔵 running · 🟡 needs you · 🟢 done · 🔴 failed), posts a closing summary, and closes it. The topic list becomes a status board you can read at a glance without opening anything.
 
-Where topics are unavailable, Caraka falls back to linear mode with a `[workspace · #id]` header. Nothing hard-fails.
-
-## Memory that can explain itself
-
-Caraka uses [Titen](https://titen.dev) — open-source agent memory that never flattens a conclusion into its evidence. Observations carry content hashes, claims cite the observations they came from, and context records exactly what the agent was handed and what the budget cut.
-
-Claim extraction is **deterministic — no model in the loop.** Memory works without an LLM by default. Every claim traces back to its source, so *"why does it think that?"* always has an answer.
-
-Titen and Caraka are written by the same author. Two Javanese-named projects: one remembers, one is sent.
-
 ## Safe by default
 
 Caraka connects untrusted input (chat) to code execution on your machine. It is deliberately boring out of the box:
 
-- Allowlist is **mandatory** — the gateway refuses to start without one
-- Default mode is `assisted`: writes and commands require approval
-- Approvals come from **signed, single-use callbacks with a TTL** — chat text can never approve anything
-- Groups are read-only; sensitive output is sent as ephemeral messages visible only to you
-- Binds to `127.0.0.1`; Telegram uses long-polling, so no port is ever exposed
-- Secrets are scrubbed from every outbound message and every log line
+- Private chats and an explicit allowlist are **mandatory** — the gateway refuses to start without one
+- Writes and commands require approval; approvals are **signed, single-use callbacks with a TTL**, so chat text can never approve anything
+- Telegram uses long-polling. Caraka opens **no listening port**
+- The bot token and the approval key are separate mode-`0600` files under `~/.caraka/secrets/`
+- Every outbound message and every audit entry passes through the secret scrubber
+- The SQLite audit table rejects updates and deletes
 - Model API keys are never touched — those belong to your coding agent
 
-Read the [threat model](docs/security.md) before connecting anything.
+Read the [threat model](docs/security.md) before connecting a sensitive repository.
 
 ## Philosophy
 
@@ -83,17 +153,35 @@ Read the [threat model](docs/security.md) before connecting anything.
 
 Both obeyed perfectly. Both were right according to the instructions they held. Both died — killed not by disloyalty but by **loyalty without context**: two orders that collided, no way to verify, and no human between them at the moment it mattered.
 
-That is why this project has approvals, provenance-backed memory, and an audit trail. See [docs/brand.md](docs/brand.md).
+That is why this project has approvals and an audit trail. See [docs/brand.md](docs/brand.md).
+
+## What is not in v0.1
+
+Memory is specified and not shipped. When it arrives it will use [Titen](https://titen.dev) — agent memory that never flattens a conclusion into its evidence, with deterministic claim extraction and no model in the loop. Titen and Caraka are written by the same author: one remembers, one is sent.
+
+Groups, background services, attachments, and coding agents other than Claude Code are also specified and not shipped. [roadmap.md](docs/roadmap.md) has the order and the gate that can cancel each next phase.
+
+## Verify from source
+
+```bash
+npm install
+npm run lint
+npm run typecheck
+npm test
+npm run e2e
+npm run smoke   # requires authenticated Claude Code
+```
 
 ## Documentation
 
 | | |
 |---|---|
+| [install-guide.md](docs/install-guide.md) | Setup, step by step |
+| [install-with-ai.md](docs/install-with-ai.md) | The prompt above, and why it is shaped that way |
 | [blueprint.md](docs/blueprint.md) | One-page overview and locked decisions |
 | [session-model.md](docs/session-model.md) | Sessions as topics: lifecycle, routing, housekeeping |
 | [design.md](docs/design.md) | Architecture, interfaces, protocols |
 | [security.md](docs/security.md) | Threat model and controls |
-| [install-flow.md](docs/install-flow.md) | Setup in under three minutes |
 | [roadmap.md](docs/roadmap.md) | Phases and decision gates |
 | [research/](docs/research/) | Eight sourced research documents |
 

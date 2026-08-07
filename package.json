@@ -1,40 +1,64 @@
 {
   "name": "caraka",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Send the task. Caraka runs it. — a thin bridge from Telegram to the coding agent already installed on your machine.",
   "keywords": [
     "acp",
     "agent-client-protocol",
-    "coding-agent",
-    "claude-code",
-    "telegram",
-    "telegram-bot",
-    "mcp",
     "ai-agent",
-    "developer-tools"
+    "claude-code",
+    "coding-agent",
+    "developer-tools",
+    "mcp",
+    "telegram",
+    "telegram-bot"
   ],
   "homepage": "https://caraka.dev",
   "bugs": {
     "url": "https://github.com/CarakaDev/caraka/issues",
     "email": "halo@caraka.dev"
   },
+  "license": "MIT",
+  "author": "Rama Aditya <halo@caraka.dev> (https://caraka.dev)",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/CarakaDev/caraka.git"
   },
-  "license": "MIT",
-  "author": "Rama Aditya <halo@caraka.dev> (https://caraka.dev)",
-  "type": "module",
   "bin": {
     "caraka": "bin/caraka.mjs"
   },
   "files": [
-    "bin"
+    "bin",
+    "dist"
   ],
-  "engines": {
-    "node": ">=22"
-  },
+  "type": "module",
   "publishConfig": {
     "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "oxlint src test scripts && oxfmt --check src test scripts bin package.json tsconfig.json",
+    "test": "node --import tsx --test test/unit.test.ts",
+    "e2e": "node --import tsx --test test/e2e.test.ts",
+    "smoke": "npm run build && node scripts/smoke-claude.mjs",
+    "verify": "npm run lint && npm run typecheck && npm test && npm run e2e && npm run build",
+    "prepublishOnly": "npm run verify"
+  },
+  "dependencies": {
+    "@agentclientprotocol/claude-agent-acp": "0.63.0",
+    "@agentclientprotocol/sdk": "1.3.0",
+    "yaml": "2.9.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "26.1.2",
+    "oxfmt": "0.62.0",
+    "oxlint": "1.77.0",
+    "tsx": "4.23.10",
+    "typescript": "6.0.3"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
