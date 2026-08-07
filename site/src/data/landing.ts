@@ -1,6 +1,11 @@
 // Content for the landing page, transcribed from the renderVals() block of
-// design/mockups/Caraka Landing.dc.html. The mockup is the source of truth:
-// nothing here is authored, reworded, or reordered.
+// design/mockups/Caraka Landing.dc.html.
+//
+// The comp decides the design and no longer decides the release facts. Four
+// blocks below already left it before v0.2 — `agents` (comp:509), `layers`
+// (comp:512-516), `safety` (comp:524-531) and `term` (comp:533-541) name what
+// the code does, not what the comp imagined. Every other value is the comp's,
+// unreworded and unreordered. Each divergence carries its own note.
 
 import { r } from '../lib/anim'
 
@@ -69,19 +74,23 @@ export const topics = [
   { glyph: '⊘', name: 'toko-api · restructure docs', id: '#a81', color: '#CB86DB', ink: '#5D666F', bg: '#0C1116', bar: 0, delay: '0s', range: r(5, 3.5, 30) },
 ]
 
+// comp:509 lists 13 agents plus "+ 15 more" with no status. Only Claude Code is
+// driven today: `src/drivers/` holds `claude-acp.ts` and nothing else.
 export const agents = [
-  'Claude Code · v0.1', 'Codex CLI · roadmap', 'Gemini CLI · roadmap', 'Cursor · roadmap',
+  'Claude Code · v0.2', 'Codex CLI · roadmap', 'Gemini CLI · roadmap', 'Cursor · roadmap',
   'Cline · roadmap', 'Goose · roadmap', 'Amp · roadmap', 'Copilot CLI · roadmap',
   'Devin · roadmap', 'Factory Droid · roadmap', 'Auggie · roadmap',
   'OpenHands · roadmap', 'Qwen Code · roadmap', 'ACP keeps the path open',
 ].map((n, i) => ({ n, range: r(i, 1.6, 24) }))
 
+// comp:512-516 describes all three routes as working. Two are still roadmap:
+// there is no `presets/agents/` directory and no MCP server in the package.
 export const layers = [
   {
     tag: 'ACP · PRIMARY',
     tone: '#FF7A5E',
     title: 'Claude first, one protocol',
-    body: 'v0.1 uses Claude Code through ACP over stdio: streaming updates, permission requests, cancellation, and persisted sessions.',
+    body: 'v0.2 uses Claude Code through ACP over stdio: streaming updates, permission requests, cancellation, and persisted sessions.',
     bg: '#12100F',
     border: '#2B1612',
     delay: '0s',
@@ -91,7 +100,7 @@ export const layers = [
     tag: 'CLI · ROADMAP',
     tone: '#7A848F',
     title: 'One YAML when it lands',
-    body: 'The planned CLI route adds agents through presets/agents/. It is not part of v0.1.',
+    body: 'The planned CLI route adds agents through presets/agents/. It is not part of v0.2.',
     bg: '#0C1116',
     border: '#171C22',
     delay: '1.3s',
@@ -101,7 +110,7 @@ export const layers = [
     tag: 'MCP · ROADMAP',
     tone: '#7A848F',
     title: 'An inbox for IDE agents',
-    body: 'The planned MCP route lets IDE agents pull messages. v0.1 starts only the Claude ACP adapter.',
+    body: 'The planned MCP route lets IDE agents pull messages. v0.2 starts only the Claude ACP adapter.',
     bg: '#0C1116',
     border: '#171C22',
     delay: '2.6s',
@@ -115,19 +124,34 @@ export const mem = [
   { n: '3', k: 'context', v: 'Exactly what was handed to the agent, why each record was chosen, and what the token budget cut.', range: r(2, 5, 34) },
 ]
 
+/**
+ * comp:524-531 is a v0.1 list. Two lines no longer describe the code.
+ *
+ * "Only private messages from the paired Telegram principal reach Claude" was
+ * true when every non-private chat was refused. `src/core/gateway.ts:161-165`
+ * now consults two sets: `allowedChats` for the chat and `allowed` for the
+ * sender, and a message needs both. Channels are still refused outright.
+ *
+ * The seventh line is new, not the comp's. `/yolo` opens a trust window
+ * (`gateway.ts:720-793`), so a summary of what Caraka refuses to do has to say
+ * that a window exists and where it stops: `isHighRisk` keeps the buttons on,
+ * and the row expires by database constraint whatever anyone taps.
+ */
 export const safety = [
   'The allowlist is mandatory — the gateway refuses to start without one.',
-  'Only private messages from the paired Telegram principal reach Claude.',
+  'The chat and the sender are separate allowlists, and a message must pass both.',
   'Approvals are signed, single-use callbacks with a TTL. Chat text can never approve.',
-  'Telegram uses long-polling. v0.1 opens no listening port.',
+  'Telegram uses long-polling. v0.2 opens no listening port.',
   'Secrets are scrubbed from outbound messages and append-only audit details.',
   'Model API keys are never touched — those belong to your coding agent.',
+  'A trust window expires on the clock, and high-risk actions still ask for a tap.',
 ].map((t, i) => ({ t, range: r(i, 2.6, 26) }))
 
 export const term = [
   { t: '$ npx caraka init', tone: '#5D666F', range: r(0, 2.4, 22) },
   { t: '', tone: '#5D666F', range: r(1, 2.4, 22) },
-  { t: 'caraka · v0.1.0', tone: '#F6F9FC', mark: 'ꦕꦫꦏ', markTone: '#E2452C', range: r(2, 2.4, 22) },
+  // comp:535 reads `caraka · v0.1.0`; `VERSION` in src/cli.ts is 0.2.0.
+  { t: 'caraka · v0.2.0', tone: '#F6F9FC', mark: 'ꦕꦫꦏ', markTone: '#E2452C', range: r(2, 2.4, 22) },
   { t: '', tone: '#5D666F', range: r(3, 2.4, 22) },
   { t: 'claude login · ready', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(4, 2.4, 22) },
   { t: 'telegram · paired', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(5, 2.4, 22) },

@@ -480,24 +480,32 @@ const motifTerminal = () =>
     ),
   )
 
-/** 07 — the eight phases, phase 0 in flight. Titles follow src/data/status.ts. */
+/**
+ * 07 — the eight phases. Comp §00 rule 3 says the motif repeats what the page
+ * says, so the marks here follow `phases` in src/data/status.ts rather than the
+ * comp: 0 done, 1 and 2 in progress, and the half ring on the one that carries
+ * `live: true`. The comp drew phase 0 in flight, which stopped being true when
+ * v0.1 shipped and is two phases stale after v0.2.
+ *
+ * The fifth column is how far the bar is drawn; the sixth marks the live row.
+ */
 const PHASES = [
-  ['0', 'Spike', WARN, WHITE, '62%'],
-  ['1', 'Dogfood', N_300, N_600, '0%'],
-  ['2', 'Install', N_300, N_600, '0%'],
-  ['3', 'Memory', N_300, N_500, '0%'],
-  ['4', 'Abstraction', N_300, N_500, '0%'],
-  ['5', 'Closed beta', N_300, N_400, '0%'],
-  ['6', 'WhatsApp', N_300, N_400, '0%'],
-  ['7', 'Public 1.0', N_300, N_400, '0%'],
+  ['0', 'Spike', OK, WHITE, '100%', false],
+  ['1', 'Dogfood', KESUMBA_500, WHITE, '62%', false],
+  ['2', 'Install', KESUMBA_500, WHITE, '48%', true],
+  ['3', 'Memory', N_300, N_500, '0%', false],
+  ['4', 'Abstraction', N_300, N_500, '0%', false],
+  ['5', 'Closed beta', N_300, N_400, '0%', false],
+  ['6', 'WhatsApp', N_300, N_400, '0%', false],
+  ['7', 'Public 1.0', N_300, N_400, '0%', false],
 ]
 
 const motifPhases = () =>
   panel(400, { flexDirection: 'column', gap: 15, padding: '26px 28px' },
-    ...PHASES.map(([n, name, tone, ink, fill], i) =>
+    ...PHASES.map(([n, name, tone, ink, fill, live]) =>
       box({ alignItems: 'center', gap: 13 },
         box({ width: 16, flexShrink: 0, ...mono(11, N_400) }, n),
-        box({ width: 12, flexShrink: 0, justifyContent: 'center' }, i === 0 ? halfRing(11, tone) : ring(11, tone)),
+        box({ width: 12, flexShrink: 0, justifyContent: 'center' }, live ? halfRing(11, tone) : ring(11, tone)),
         box({ width: 110, flexShrink: 0, fontSize: 13, color: ink }, name),
         box({ flexGrow: 1, flexBasis: 0, height: 5, borderRadius: 3, background: N_100, overflow: 'hidden' },
           box({ width: fill, height: 5, borderRadius: 3, background: tone })),
@@ -535,7 +543,7 @@ const neutralCard = () =>
 // --- per-card data the comp holds and site.ts does not ----------------------
 // Percentages are read off the comp card by card; they encode the page's place
 // in the site order and are not interpolated. Body and facts follow src/data/
-// and docs/, so nothing here claims scope the v0.1 preview does not have.
+// and docs/, so nothing here claims scope the v0.2 preview does not have.
 const CARDS = {
   landing: {
     percent: 12.5,

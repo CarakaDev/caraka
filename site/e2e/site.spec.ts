@@ -263,13 +263,30 @@ test.describe('the comps still decide the layout', () => {
     // This lives in the desktop suite on purpose. Under device emulation the
     // same pages measure a pixel taller on three routes, which is sub-pixel
     // rounding at a different device scale factor, not a regression.
+    //
+    // Five of these no longer track a comp. `/`, `/docs`, `/install`,
+    // `/security` and `/status` carry v0.2 copy, and the comps behind them
+    // describe v0.1 — groups rejected, three CLI commands, no trust window, no
+    // service file. A comp still decides how those five pages look; it stopped
+    // deciding what they claim, so their numbers are now measured from the
+    // built site rather than from design/mockups/*.dc.html, and a diff against
+    // the comp on those five is expected reading rather than a failure. The
+    // seven below them are unchanged and still match their comp exactly:
+    // /compare and /story only swapped a version string of identical length,
+    // and the four /brand routes did not change at all.
+    //
+    // Measured 8 August 2026, Chromium at 1440x900, against the copy that
+    // shipped with v0.2. Deltas from the v0.1 baselines: / +31, /docs +907,
+    // /install +94, /security +371, /status +524.
     const EXPECTED: Record<string, number> = {
-      '/': 6390,
-      '/docs': 4967,
-      '/install': 5047,
+      // v0.2 copy — measured from the site (see above)
+      '/': 6421,
+      '/docs': 5874,
+      '/install': 5141,
+      '/security': 4757,
+      '/status': 5843,
+      // still measured against the comp
       '/compare': 5873,
-      '/security': 4386,
-      '/status': 5319,
       '/story': 5734,
       '/brand': 10177,
       '/brand/warna': 5264,

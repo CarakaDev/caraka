@@ -60,7 +60,9 @@ visit and nothing turns red.
 
 ## Content
 
-`src/data/*.ts` holds what the lists render. Every value there traces to `../docs/`. The v0.1 preview supports one private Telegram operator and Claude Code; copy must distinguish that verified scope from roadmap work. Never imply memory, groups, background services, attachments, or other coding agents ship in v0.1, and never introduce a number, date, version, or quotation that is not already in the docs.
+`src/data/*.ts` holds what the lists render. Every value there traces to `../docs/` and `../src/`. The v0.2 preview supports one Telegram operator, the chats on `telegram.allowChats` — a DM and any group paired there — and Claude Code; copy must distinguish that verified scope from roadmap work. Never imply memory, attachments, or other coding agents ship, never say Caraka installs a background service (`caraka service --print` prints a unit and writes nothing), and never introduce a number, date, version, or quotation that is not already in the docs.
+
+A comp is authoritative for design and is no longer authoritative for release facts. Where a value here contradicts `design/mockups/*.dc.html` because the code moved, keep the truth and leave a comment naming the comp line it left and the code that made it wrong. A false claim is never kept for fidelity, and prose that is merely improvable is left alone — every changed line costs a height baseline in `e2e/site.spec.ts`.
 
 ## Assets
 

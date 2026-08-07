@@ -51,7 +51,7 @@ export const rows = [
   { k: 'Tokens outside your agent', a: 'Yes, own loop', b: 'Yes', c: 'None', tone: '#8EEE98', weight: '600', range: r(6, 2.2, 22) },
   { k: 'Sandboxing', a: 'Configure it', b: 'Configure it', c: 'Inherited', tone: '#FF7A5E', weight: '600', range: r(7, 2.2, 22) },
   { k: 'Reported setup time', a: 'Hours', b: 'pip + venv', c: 'Under 3 min', tone: '#FF7A5E', weight: '600', range: r(8, 2.2, 22) },
-  { k: 'Maturity', a: 'Very high', b: 'High', c: 'v0.1 preview', tone: '#FF93B2', weight: '600', range: r(9, 2.2, 22) },
+  { k: 'Maturity', a: 'Very high', b: 'High', c: 'v0.2 preview', tone: '#FF93B2', weight: '600', range: r(9, 2.2, 22) },
 ]
 
 export const complaints = [
@@ -139,7 +139,7 @@ export const picks = [
 ]
 
 export const honest = [
-  'OpenClaw is far more mature. Hundreds of thousands of stars, tens of thousands of commits, a real community. Caraka v0.1 is an early preview and you should treat it that way.',
+  'OpenClaw is far more mature. Hundreds of thousands of stars, tens of thousands of commits, a real community. Caraka v0.2 is an early preview and you should treat it that way.',
   'OpenClaw does work Caraka will never do. Calendar, inbox, browser, home automation. If that is what you need, this is not the answer.',
   'The complaints quoted above come from early 2026 releases and some may already be fixed. Dates are printed so you can check for yourself rather than take our word for it.',
 ]

@@ -1,5 +1,8 @@
 // Install-page copy follows docs/install-guide.md and docs/install-with-ai.md.
-// The layout stays aligned with design/mockups/Caraka Install.dc.html.
+// The layout stays aligned with design/mockups/Caraka Install.dc.html. That comp
+// documents an install script and a pricing table that were never built, so this
+// file already carries its own text; the comments below mark where v0.2 changed
+// what that text can say.
 
 import { r } from '../lib/anim'
 
@@ -20,7 +23,7 @@ export const toc = [
 export const chain = [
   { n: '1', title: 'Node.js 22 or newer', body: 'The runtime for Caraka and npx. Check it with node --version before starting.', range: r(0, 5, 28) },
   { n: '2', title: 'Git', body: 'Claude works inside the repository you choose. Caraka checks that Git is available before pairing.', range: r(1, 5, 28) },
-  { n: '3', title: 'Claude Code, signed in', body: 'v0.1 connects to the official Claude ACP adapter. Run claude auth status to confirm access.', range: r(2, 5, 28) },
+  { n: '3', title: 'Claude Code, signed in', body: 'v0.2 connects to the official Claude ACP adapter. Run claude auth status to confirm access.', range: r(2, 5, 28) },
 ]
 
 export const notNeeded = ['Docker', 'a cloud account', 'a domain', 'an open port', 'a webhook', 'a reverse proxy', 'a TLS certificate', 'a background service']
@@ -53,7 +56,12 @@ export const costNotes = [
   { tag: 'NO MODEL KEY', tone: '#8EEE98', bg: '#12100F', border: '#2B1612', t: 'Claude keeps its own authentication, model, tools, and sandbox.', range: r(0, 3, 24) },
   { tag: 'NO LISTENER', tone: '#8EEE98', bg: '#0C1116', border: '#171C22', t: 'Telegram uses long-polling. Caraka does not bind a network port.', range: r(1, 3, 24) },
   { tag: 'PRIVATE TOKEN', tone: '#FFD67E', bg: '#0C1116', border: '#171C22', t: 'The bot token stays outside config.yaml in a mode-0600 file.', range: r(2, 3, 24) },
-  { tag: 'ONE WORKSPACE', tone: '#7A848F', bg: '#0C1116', border: '#171C22', t: 'v0.1 deliberately supports one operator, bot, workspace, and Claude adapter.', range: r(3, 3, 24) },
+  { tag: 'ONE WORKSPACE', tone: '#7A848F', bg: '#0C1116', border: '#171C22', t: 'v0.2 deliberately supports one operator, bot, workspace, and Claude adapter.', range: r(3, 3, 24) },
+  // Comp lines 364-369 hold four pricing notes the port replaced with what init
+  // does. This fifth card is the language question v0.2 asks once at init
+  // (src/cli.ts:141-148); the second sentence is what it deliberately does not
+  // do (done/v02/spec.md §3.3).
+  { tag: 'LANGUAGE ASKED ONCE', tone: '#7A848F', bg: '#0C1116', border: '#171C22', t: 'init asks for English or Indonesian and writes the answer to config.yaml. Caraka never picks a language from the text of a message.', range: r(4, 3, 24) },
 ]
 
 export const paths = [
@@ -86,7 +94,11 @@ export const scriptRules = [
   { t: 'The user performs the private token step in the local init wizard.', range: r(2, 2, 24) },
   { t: 'The agent may continue with doctor after pairing is complete.', range: r(3, 2, 24) },
   { t: 'No webhook or listening port is enabled.', range: r(4, 2, 24) },
-  { t: 'No background service is promised by v0.1.', range: r(5, 2, 24) },
+  // Was "No background service is promised by v0.1", which v0.2 makes false:
+  // `caraka service --print` exists (src/service.ts). What stays true is that
+  // nothing installs it — no file is written and the package has no
+  // postinstall hook (AC-5.1, AC-5.9).
+  { t: 'The agent installs no service. caraka service --print writes a unit to stdout for you to install yourself.', range: r(5, 2, 24) },
   { t: 'Claude keeps its current model and provider configuration.', range: r(6, 2, 24) },
   { t: 'Repository files are not changed by the installer.', range: r(7, 2, 24) },
 ]
@@ -101,5 +113,12 @@ export const verifyLines = [
   { t: 'Allowlist · ready', tone: g, mark: '✓', markTone: ok, range: r(6, 2, 24) },
   { t: '', tone: d, range: r(7, 2, 24) },
   { t: '$ npx caraka start', tone: '#FF7A5E', range: r(8, 2, 24) },
-  { t: 'Ctrl-C stops the foreground gateway', tone: d, range: r(9, 2, 24) },
+  { t: 'Ctrl-C stops it here; npx caraka stop ends one started elsewhere', tone: d, range: r(9, 2, 24) },
+  // Three lines the comp has no counterpart for (its transcript, lines 390-401,
+  // ends on `caraka doctor --fix` and `caraka uninstall`, neither of which
+  // exists). `service` prints and returns; the macOS caveat is the honest
+  // reading of a per-user LaunchAgent (src/service.ts:74-86).
+  { t: '', tone: d, range: r(10, 2, 24) },
+  { t: '$ npx caraka service --print systemd', tone: '#FF7A5E', range: r(11, 2, 24) },
+  { t: 'prints a unit and writes nothing; the macOS agent starts at login, not at boot', tone: d, range: r(12, 2, 24) },
 ] as { t: string; tone: string; mark?: string; markTone?: string; range: string }[]

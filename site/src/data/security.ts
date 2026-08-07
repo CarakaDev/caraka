@@ -1,4 +1,8 @@
-// Security-page copy follows docs/security.md and the shipped v0.1 runtime.
+// Security-page copy follows docs/security.md and the shipped v0.2 runtime.
+// Where a line below no longer matches design/mockups/Caraka Security.dc.html,
+// the comment above it names the comp line and what shipped instead. The comp
+// still decides how this page looks; it stopped deciding what is true of the
+// release.
 
 import { r } from '../lib/anim'
 
@@ -16,7 +20,7 @@ export const toc = [
 ]
 
 export const headline = [
-  { tag: 'NO PORT', t: 'Telegram uses long-polling. v0.1 opens no listener or webhook.' },
+  { tag: 'NO PORT', t: 'Telegram uses long-polling. v0.2 opens no listener or webhook.' },
   { tag: 'NO KEYS', t: 'Model API keys are never requested, stored, or transmitted. Those belong to your agent.' },
   { tag: 'NO TOOLS', t: "Caraka ships no execution tools. Claude owns the tool policy and sandbox." },
   { tag: 'NO MARKETPLACE', t: 'No plugin registry, no dynamic loading, no third-party skill supply chain.' },
@@ -33,15 +37,20 @@ export const trusted = [
   'config.yaml on disk',
   'Signed callbacks from a button press',
   'Commands typed in your local terminal',
-  'The principal allowlist',
+  // Comp line 303 reads "The principal allowlist". v0.2 keeps two lists and
+  // consults both before a message is served (src/core/gateway.ts:161-165).
+  'The chat and sender allowlists',
 ]
 
 export const threats = [
   {
     id: 'T1',
     name: 'A stranger sends commands',
+    // Comp line 306 ends "Pairing is approved from the terminal, never from
+    // chat". Operator pairing still is (src/cli.ts:193-197), but v0.2 pairs a
+    // group from a signed button in the operator's DM (gateway.ts:811-886).
     control:
-      'Mandatory allowlist; the gateway refuses to start without one. Pairing is approved from the terminal, never from chat.',
+      'Mandatory allowlist; the gateway refuses to start without one. The operator pairs from the terminal, and a group is confirmed by a signed button in the DM of that same operator.',
   },
   {
     id: 'T2',
@@ -69,7 +78,12 @@ export const threats = [
   {
     id: 'T6',
     name: 'Leaking into a group',
-    control: 'v0.1 rejects every non-private chat before a prompt reaches Claude.',
+    // Comp line 311 promises read-only groups behind a mention, with ephemeral
+    // messages for sensitive output. v0.2 ships neither: a group message needs
+    // both allowlists (gateway.ts:161-165), and ephemeral was refused as a
+    // control (done/v02/spec.md §2b.2), so the disclosure is stated instead.
+    control:
+      'A group message needs its chat and its sender on the allowlists, and pairing is confirmed in the operator DM. Caraka never asks for group admin, so a bot left in privacy mode reads only commands and replies to itself. Every member of a paired group sees the approval cards, paths, and command output.',
   },
   {
     id: 'T7',
@@ -84,7 +98,7 @@ export const threats = [
   {
     id: 'T9',
     name: 'WhatsApp account ban',
-    control: 'Not applicable: v0.1 contains no WhatsApp channel code.',
+    control: 'Not applicable: v0.2 contains no WhatsApp channel code.',
   },
   {
     id: 'T10',
@@ -99,7 +113,7 @@ export const threats = [
   {
     id: 'T12',
     name: 'Memory poisoning',
-    control: 'Not applicable: v0.1 does not install, query, or write a memory provider.',
+    control: 'Not applicable: v0.2 does not install, query, or write a memory provider.',
   },
   {
     id: 'T13',
@@ -109,10 +123,13 @@ export const threats = [
   },
 ].map((t, i) => ({ ...t, range: r(i, 2.4, 24) }))
 
+// Comp line 325 gives the group row four crosses. In v0.2 an allowlisted group
+// runs like the DM it was paired from, and the row that stays empty is the one
+// missing either list. Colours and column order are the comp's.
 export const modes = [
   { name: 'allowed DM', tone: '#FF7A5E', bg: '#12100F', r: '✓', rTone: ok, w: '✓', wTone: ok, e: 'button', eTone: warn, p: '✓', pTone: ok, range: r(0, 3, 24) },
-  { name: 'unknown user', tone: '#95A0AB', bg: '#0C1116', r: '✗', rTone: no, w: '✗', wTone: no, e: '✗', eTone: no, p: '✗', pTone: no, range: r(1, 3, 24) },
-  { name: 'group chat', tone: '#95A0AB', bg: '#0C1116', r: '✗', rTone: no, w: '✗', wTone: no, e: '✗', eTone: no, p: '✗', pTone: no, range: r(2, 3, 24) },
+  { name: 'unlisted chat or user', tone: '#95A0AB', bg: '#0C1116', r: '✗', rTone: no, w: '✗', wTone: no, e: '✗', eTone: no, p: '✗', pTone: no, range: r(1, 3, 24) },
+  { name: 'allowed group', tone: '#95A0AB', bg: '#0C1116', r: '✓', rTone: ok, w: '✓', wTone: ok, e: 'button', eTone: warn, p: '✓', pTone: ok, range: r(2, 3, 24) },
   { name: 'signed callback', tone: '#95A0AB', bg: '#0C1116', r: '✓', rTone: ok, w: '—', wTone: no, e: '✓', eTone: ok, p: '✓', pTone: ok, range: r(3, 3, 24) },
 ]
 
@@ -128,19 +145,30 @@ export const risky = [
 
 export const mandatory = [
   'The allowlist cannot be empty. The gateway stops with an error that explains how to fix it.',
-  'Only private chats from the paired Telegram principal can reach Claude.',
+  // Was "Only private chats from the paired Telegram principal can reach
+  // Claude", which v0.2 makes false; the comp line it ported (336) asked for
+  // groups behind an explicit opt-in, and the two allowlists are that opt-in.
+  'A message reaches Claude only when its chat is on the chat allowlist and its sender is on the sender allowlist.',
   'Approval only through a signed, single-use callback with a TTL. Chat text is never a fallback.',
   'Token and approval key files use mode 0600 inside a mode-0700 secrets directory.',
   'The outbound scrubber runs before Telegram messages and audit details.',
   'SQLite triggers keep audit rows append-only.',
   'Long-polling opens no listener; unavailable topics fall back to linear mode.',
+  // Comp line 333 already asked for a trust window that expires under a
+  // database constraint. v0.2 has it (src/store/db.ts:100), so the card states
+  // what the window does not suspend (gateway.ts:546-570).
+  'A trust window is opened by a signed callback, never by chat text, and it must state a duration. It closes on /lock, at expiry, or when the gateway restarts. Caraka still receives every permission request inside it, keeps the button on high-risk actions, and audits each decision it makes for you.',
 ].map((t, i) => ({ t, range: r(i, 3, 24) }))
 
 export const notClaimed = [
   'Caraka cannot guarantee that Claude asks before every operation. The coding agent owns its tool policy and sandbox.',
   'A signed button proves who approved one request; it does not make the approved operation safe.',
   'We have not had a third-party security audit. This will be stated openly until it changes.',
-  'Caraka v0.1 is an early preview. Treat it as software that has not yet been attacked in the wild.',
+  // The second tier, which has no line in the comp because the comp has no
+  // trust window. Terminal-only by AC-6.13/6.14; the audit records the window
+  // and says so (src/cli.ts:366-397, gateway.ts:969-977).
+  'The bypassPermissions mode belongs to Claude and is opened from the terminal alone. Inside that window Caraka is never asked for permission, so its audit records that the window was open and not what ran inside it.',
+  'Caraka v0.2 is an early preview. Treat it as software that has not yet been attacked in the wild.',
   'Vulnerabilities in your coding agent, in Telegram, or in their libraries are theirs to fix. We will help route the report.',
 ]
 
@@ -154,7 +182,9 @@ export const inScope = [
   'Bypassing the approval flow in any way',
   'Escaping the allowlist or the pairing mechanism',
   'Forging, replaying, or reusing an approval nonce',
-  'A group message or unknown user reaching Claude',
+  // A group message reaching Claude is the shipped behaviour now, so the
+  // reportable failure is a chat or sender that is on neither list.
+  'A message from a chat or sender outside the allowlists reaching Claude',
   'Secret leakage through Caraka messages or audit entries',
   'Caraka opening an undocumented network listener',
 ]
@@ -164,5 +194,5 @@ export const outScope = [
   'Vulnerabilities in the coding agent itself',
   'Vulnerabilities in Telegram or its libraries',
   'Tool access enabled directly in the coding agent configuration',
-  'Channels and policy modes not shipped in v0.1',
+  'Channels and policy modes not shipped in v0.2',
 ]
