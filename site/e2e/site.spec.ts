@@ -284,6 +284,10 @@ test.describe('the comps still decide the layout', () => {
     // The 0.3.0 card moved nothing; the 0.4.0 card and the fifth open gate
     // moved /status +628 (measured 8 August 2026, same viewport). The v0.4
     // lines on / rode inside their existing chips and card, moving nothing.
+    // v0.5 moved /status +808 to 7596: the 0.5.0 card and two more open gates.
+    // Measured 8 August 2026, Chromium, same 1440x900 viewport. The other six
+    // routes hold — the Discord and dashboard rewrites on /, /docs, /compare,
+    // /install and /security stayed inside rows and cards that already existed.
     const EXPECTED: Record<string, number> = {
       // v0.2 copy — measured from the site (see above)
       '/': 6450,
@@ -291,7 +295,7 @@ test.describe('the comps still decide the layout', () => {
       '/compare': 5873,
       '/install': 5141,
       '/security': 4757,
-      '/status': 6788,
+      '/status': 7596,
       // still measured against the comp
       '/story': 5734,
       '/brand': 10177,

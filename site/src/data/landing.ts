@@ -79,7 +79,7 @@ export const topics = [
 // others since v0.4 — flags transcribed, marked unverified inside each file —
 // so their rows read "preset", a file that exists, not a claim it was run here.
 export const agents = [
-  'Claude Code · v0.2', 'Codex CLI · preset', 'Gemini CLI · preset', 'Cursor · preset',
+  'Claude Code · verified', 'Codex CLI · preset', 'Gemini CLI · preset', 'Cursor · preset',
   'Cline · roadmap', 'Goose · preset', 'Amp · preset', 'Copilot CLI · roadmap',
   'Devin · roadmap', 'Factory Droid · roadmap', 'Auggie · roadmap',
   'OpenHands · roadmap', 'Qwen Code · roadmap', 'ACP keeps the path open',
@@ -93,7 +93,7 @@ export const layers = [
     tag: 'ACP · PRIMARY',
     tone: '#FF7A5E',
     title: 'Claude first, one protocol',
-    body: 'v0.2 uses Claude Code through ACP over stdio: streaming updates, permission requests, cancellation, and persisted sessions.',
+    body: 'ACP over stdio carries streaming updates, permission requests, cancellation, and persisted sessions. Claude Code is the one agent verified live on it.',
     bg: '#12100F',
     border: '#2B1612',
     delay: '0s',
@@ -113,7 +113,7 @@ export const layers = [
     tag: 'MCP · ROADMAP',
     tone: '#7A848F',
     title: 'An inbox for IDE agents',
-    body: 'The planned MCP route lets IDE agents pull messages. v0.2 starts only the Claude ACP adapter.',
+    body: 'The planned MCP route lets IDE agents pull messages. Nothing in the package starts an MCP server.',
     bg: '#0C1116',
     border: '#171C22',
     delay: '2.6s',
@@ -153,8 +153,8 @@ export const safety = [
 export const term = [
   { t: '$ npx caraka init', tone: '#5D666F', range: r(0, 2.4, 22) },
   { t: '', tone: '#5D666F', range: r(1, 2.4, 22) },
-  // comp:535 reads `caraka · v0.1.0`; `VERSION` in src/cli.ts is 0.2.1.
-  { t: 'caraka · v0.2.1', tone: '#F6F9FC', mark: 'ꦕꦫꦏ', markTone: '#E2452C', range: r(2, 2.4, 22) },
+  // comp:535 reads `caraka · v0.1.0`; `VERSION` in src/cli.ts is 0.5.0.
+  { t: 'caraka · v0.5.0', tone: '#F6F9FC', mark: 'ꦕꦫꦏ', markTone: '#E2452C', range: r(2, 2.4, 22) },
   { t: '', tone: '#5D666F', range: r(3, 2.4, 22) },
   { t: 'claude login · ready', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(4, 2.4, 22) },
   { t: 'telegram · paired', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(5, 2.4, 22) },

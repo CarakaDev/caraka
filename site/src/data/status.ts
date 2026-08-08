@@ -13,9 +13,11 @@ import { r } from '../lib/anim'
 // three specification-era stats. The version is package.json's; the other three
 // were already replaced when v0.1 shipped.
 export const stats = [
-  { n: '0.4.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
-  { n: 'Preview', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
-  { n: 'Claude', label: 'SUPPORTED AGENT', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
+  { n: '0.5.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: 'Closed beta', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
+  // Seven presets load; Claude Code is the one route ever run against a live
+  // agent here, and the channel count is what v0.5 added.
+  { n: '2', label: 'CHANNELS', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
   { n: '1', label: 'PRIVATE OPERATOR', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
 ]
 
@@ -41,12 +43,12 @@ interface Phase {
 }
 
 // Leaves the comp at Caraka Status.dc.html:245,249,253, which pulses phase 0 and
-// plans phases 1 and 2. v0.4 is published, so the pulse marks phase 4; only one
-// phase pulses because the comp draws one. Phases 1-4 keep "in progress" rather
+// plans phases 1 and 2. v0.5 is published, so the pulse marks phase 5; only one
+// phase pulses because the comp draws one. Phases 1-5 keep "in progress" rather
 // than "done" because roadmap.md still holds a field gate open on each: the
-// dogfood week, the three-minute install, phase 3's A/B, and phase 4's watch of
-// someone adding an agent without asking — the last two moved past their
-// releases by owner decision on 8 August 2026.
+// dogfood week, the three-minute install, phase 3's A/B, phase 4's watch of
+// someone adding an agent without asking, and phase 5's twenty beta developers.
+// The last three moved past their releases by owner decision on 8 August 2026.
 export const phases: Phase[] = [
   { n: '0', title: 'Technical spike', dur: '1 week', ...done,
     q: 'Do the three foundations behave the way the documentation says?',
@@ -64,11 +66,11 @@ export const phases: Phase[] = [
     q: 'Does memory improve the answer, or just add noise?',
     gate: 'A personal A/B across twenty tasks, with and without memory. If it does not feel better, reduce memory rather than add more.',
     range: r(3, 3, 26) },
-  { n: '4', title: 'Proving the abstraction · v0.4', dur: '2 weeks', live: true, ...now,
+  { n: '4', title: 'Proving the abstraction · v0.4', dur: '2 weeks', ...now,
     q: 'Is the driver layer genuinely generic, or only generic-looking?',
     gate: 'Adding a new agent is one YAML file with no core code touched. If it needs code, the abstraction is wrong and gets fixed now.',
     range: r(4, 3, 26) },
-  { n: '5', title: 'Closed beta · v0.5', dur: '3 weeks', ...next,
+  { n: '5', title: 'Closed beta · v0.5', dur: '3 weeks', live: true, ...now,
     q: "Does it survive in other people's hands?",
     gate: 'At least 60% of participants send a first message within 24 hours without asking anything, and there are zero incidents of execution without approval.',
     range: r(5, 3, 26) },
@@ -94,6 +96,31 @@ export const releases = [
         'Record five real setup sessions from people who have never seen it',
         'Run the personal A/B across twenty tasks, with and without memory',
         'Watch someone add an agent preset without asking a question',
+        'Recruit twenty beta developers and answer both v0.5 gate numbers with their runs, not the author\u2019s',
+        'Watch the dashboard swap a panel in a real browser with the CSP live',
+      ] },
+    ] },
+  { v: '0.5.0', state: 'closed beta', date: '8 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'ADDED', tone: '#8EEE98', items: [
+        'A Channel contract named from the twelve methods the gateway already called, not from the onMessage/onChoice sketch the specification carried. Updates stay an async generator the gateway drives in one line, so a channel that pushes bridges into a generator inside its own adapter',
+        'caps with three fields \u2014 threads, buttons, maxChars \u2014 because three are all core has anything to ask about. Without buttons a permission request is refused and audited, never moved to chat text; maxChars decides how much of the progress tail survives',
+        'One gateway holding a list of channels. Allowlists are maps keyed by channel id and the run slot stays keyed by workspace slug, so one workspace runs one task at a time whichever channel asked',
+        "Discord on the built-in fetch and Node's global WebSocket: no new dependency, and the module is imported only when a discord: block exists. Identify, heartbeat, resume, backoff reconnect, a half-open socket closed rather than left hanging, and a fatal close code that stops instead of retrying",
+        'One public thread per Discord session with auto_archive_duration 10080, the state glyph in the thread name, and archived: true after the closing summary. Archiving never claims to free quota, because Discord counts archived threads; the limit arrives as a thrown error and that container falls to linear mode',
+        'Approval on Discord with the primitive untouched: the same 33-character signed payload as custom_id, a deferred ack before core touches the database, and components disabled at the same fork that clears a Telegram keyboard. A Discord role authorises nothing',
+        'No privileged intent is requested, so the text of an ordinary Discord message never arrives. The readiness message says so and names what does arrive: a slash command, and a button on a card Caraka sent',
+        'caraka dashboard: seven read-only panels on 127.0.0.1:7718 with the database opened readOnly. Anything but GET is refused before a query runs, every statement is a literal with bound parameters, and a request whose Host is not a loopback literal is refused',
+        'Runs and the beta numbers are derived from the audit log rather than from new tables. The opt-in is on sharing the two numbers, not on collecting them \u2014 the audit log is a mandatory control and was never optional',
+        'Two leaks closed: every CARAKA_ variable is now stripped from an agent subprocess rather than one named token, and the scrubber learned the shape of a Discord bot token that both the Telegram and the JWT pattern missed',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'No live Discord credential was ever used on this machine. Every Discord check answers a mocked fetch and a mocked WebSocket, which leaves the real payload shapes, the real 429 behaviour, and the real permission set unproven',
+        'The dashboard has no authentication, deliberately. While it runs, anyone on that machine who can reach 127.0.0.1 can read it, including a local user with no read permission on the database file. Loopback is not an authentication boundary',
+        'caraka init discord is not built. A discord: block is written by hand, and saveConfig writes the token file at mode 0600',
+        'The htmx swap has never been watched in a real browser with the CSP live',
+        'Role to policy-mode mapping on Discord is not built, and not for lack of time: no policy-mode gate exists on the run path for any channel, so mapping a role to read-only would promise a refusal that does not happen',
+        'Both human halves of the phase gate stay open \u2014 twenty beta developers are not recruited, and neither gate number can be answered by the author. Moved past the release by owner decision on 8 August 2026',
       ] },
     ] },
   { v: '0.4.0', state: 'preview', date: '8 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),

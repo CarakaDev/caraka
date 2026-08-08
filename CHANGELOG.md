@@ -4,6 +4,37 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] — 2026-08-08
+
+A second channel and a page to watch it from. Discord proves the `Channel` seam was real rather than a name, and `caraka dashboard` reads the database the gateway writes without being allowed to change it.
+
+### Added
+
+- A `Channel` contract in `src/core/channel.ts`, named from the twelve methods the gateway already called rather than from the `onMessage`/`onChoice`/`send` sketch the specification carried. Updates stay an async generator that `Gateway.run()` drives in one line, so a channel that pushes bridges into a generator inside its own adapter.
+- `caps` with three fields — `threads`, `buttons`, `maxChars` — because three are all core has anything to ask about. Without `buttons` a permission request is refused and audited; it never falls back to chat text. `maxChars` decides how much of the progress tail survives, so the newest output is what stays.
+- One Gateway holding a list of channels. Allowlists and the operator are maps keyed by `channel.id`, and the run slot stays keyed by workspace slug, so one workspace still runs one task at a time no matter which channel asked.
+- `src/channels/discord.ts` on the built-in `fetch` and Node's global `WebSocket`: no new dependency, and the module is imported only when a `discord:` block exists in config. Gateway identify, heartbeat, resume, backoff reconnect, a half-open socket closed rather than left to hang, and a fatal close code that stops instead of retrying.
+- One public thread per Discord session, `auto_archive_duration` 10080, the state glyph in the thread name, and `archived: true` after the closing summary. Archiving is never claimed to free quota, because Discord counts archived threads against the active limit; the limit arrives as a thrown error and that container falls to linear mode.
+- Thread capability on Discord is detected by catching that error, not by creating and deleting a test thread. The marker lives in the existing `meta` table and `doctor` clears it.
+- Approval on Discord with the primitive untouched: the same 33-character signed payload travels as `custom_id`, the deferred ack is sent before core touches the database, and components are disabled at the same fork that clears a Telegram keyboard. A Discord role authorises nothing.
+- Caraka asks Discord for no privileged intent, so the text of an ordinary message never arrives. The readiness message says that in as many words and names what does arrive: a slash command, and a button on a card Caraka sent.
+- An optional `discord:` config block, additive with `version` still 1. `telegram:` became optional in the same shape, and start refuses when no channel is configured or when a configured channel has an empty `allowFrom`, naming which.
+- `caraka dashboard [--port n] [--bind addr]`: seven read-only panels — sessions, runs, approvals, audit, policy, memory, beta — served from `127.0.0.1:7718` with the database opened `readOnly`. Anything other than GET or HEAD is refused before a query runs, every statement is a literal with bound parameters, and a request whose `Host` is not a loopback literal is refused so a web page cannot read a panel as its own origin.
+- Runs and the beta numbers are derived from the audit log rather than from new tables. Setup time is the first `gateway.start` to the first `msg.in`; activation is a `run.finish` that ended a turn within 24 hours. The opt-in is on sharing the two numbers, not on collecting them — the audit log is a mandatory control and was never optional.
+- htmx is vendored to `assets/dashboard/htmx.min.js` and served by the page itself. The page contacts no third-party origin and works with no network at all.
+- Two leaks closed. `claudeEnvironment()` stopped removing one variable name and now removes every key beginning `CARAKA_`, so the next channel's token cannot escape the way this one would have. The scrubber learned the shape of a Discord bot token, which the Telegram and JWT patterns both missed.
+
+### Limited
+
+- No live Discord credential was ever used on this machine. Every Discord check answers a mocked `fetch` and a mocked `WebSocket`, which leaves the real payload shapes, the real 429 behaviour, and the real permission set unproven. This follows the same posture as the printed-untested service units in 0.2.0 and the credential-free CI matrix in 0.4.0.
+- The dashboard has no authentication, deliberately and not by omission. While it runs, anyone on that machine who can reach `127.0.0.1` can read it, including a local user with no read permission on `~/.caraka/caraka.db`. Loopback is not an authentication boundary; the real boundary is the file mode, and the dashboard widens it for as long as it is up.
+- `caraka init discord` is not built. A `discord:` block is written by hand today, and `saveConfig` writes the token file at mode 0600. The wizard is the remaining step of `done/discord-v05/plan.md`.
+- The dashboard's htmx swap has never been watched in a real browser with the CSP live. What is checked automatically: every anchor carries `hx-get`, `hx-target`, and an `href` to the same path, an `HX-Request` returns the fragment alone, and every panel carries `hx-trigger="every 10s"`.
+- Role to policy-mode mapping on Discord (FR-AUTH-06) is not built, and the reason is not time. No policy-mode gate exists on the run path for any channel, so mapping a role to `read-only` would promise a refusal that does not happen. The `grup (default) read-only` row in `docs/security.md` §5 is marked as design rather than build for the same reason.
+- Embeds, attachments, and a typing indicator are still absent on both channels. A long Discord answer past three pieces travels as one `.md` file; everything else is plain markdown.
+- A Discord session's route is stored as a namespaced `chat_id` rather than a `channel` column, so no query can filter by channel without matching a prefix. The column arrives with the first reader that genuinely needs it.
+- Both human halves of the phase gate stay open: twenty beta developers have not been recruited, and neither DoD number — 60% first message within 24 hours, zero unapproved executions — can be answered by the author. Both moved past the release by owner decision on 8 August 2026.
+
 ## [0.4.0] — 2026-08-08
 
 Seven agent presets and more than one workspace. The driver layer stops being Claude-shaped, and a test now proves that adding an agent is one YAML file.

@@ -8,12 +8,17 @@
 export const showChrome = true
 
 export const badges = [
-  // Comp line 256 reads v0.0.0; package.json is 0.2.1.
+  // Comp line 256 reads v0.0.0. This chip is the npm registry badge, so it
+  // tracks what is published, not package.json. 0.2.1 is the last version the
+  // owner pushed to the registry; 0.3.0, 0.4.0, and 0.5.0 are tagged in the
+  // repository and unpublished. Bump this only after an npm publish.
   { k: 'npm', v: 'v0.2.1', tone: '#E2452C', ink: '#FFEDE7' },
   { k: 'license', v: 'MIT', tone: '#8EEE98', ink: '#05300C' },
   { k: 'node', v: '≥22', tone: '#E2452C', ink: '#FFEDE7' },
   { k: 'protocol', v: 'ACP', tone: '#FF7A5E', ink: '#2B0D06' },
-  // Comp line 260 reads pre-alpha; the README status badge reads v0.2.
+  // Comp line 260 reads pre-alpha. This mirrors the README's own status badge,
+  // and the README body is still written to the v0.2 surface, so the badge is
+  // v0.2 until that copy is swept. The release the code is at is 0.5.0.
   { k: 'status', v: 'v0.2', tone: '#FFD67E', ink: '#3A2A00' },
 ]
 
@@ -27,9 +32,10 @@ export const legend = [
 export const projects = [
   {
     name: 'caraka',
-    desc: 'The envoy. A thin bridge from Telegram to the coding agent already on your machine — sessions as topics, approvals as buttons, nothing executed without a human in between.',
-    // Comp line 271 says pre-alpha; v0.2.1 is published (CHANGELOG.md).
-    status: 'v0.2 preview',
+    desc: 'The envoy. A thin bridge from Telegram or Discord to the coding agent already on your machine — sessions as topics or threads, approvals as buttons, nothing executed without a human in between.',
+    // Comp line 271 says pre-alpha. 0.5.0 is the release in the CHANGELOG;
+    // 0.2.1 is the last one on npm, which is what the chip above shows.
+    status: 'v0.5 closed beta',
     tone: '#FFD67E',
   },
   {

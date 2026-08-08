@@ -60,7 +60,11 @@ visit and nothing turns red.
 
 ## Content
 
-`src/data/*.ts` holds what the lists render. Every value there traces to `../docs/` and `../src/`. The v0.2 preview supports one Telegram operator, the chats on `telegram.allowChats` — a DM and any group paired there — and Claude Code; copy must distinguish that verified scope from roadmap work. Never imply memory, attachments, or other coding agents ship, never say Caraka installs a background service (`caraka service --print` prints a unit and writes nothing), and never introduce a number, date, version, or quotation that is not already in the docs.
+`src/data/*.ts` holds what the lists render. Every value there traces to `../docs/` and `../src/`. Copy must distinguish the verified scope below from roadmap work, and never introduce a number, date, version, or quotation that is not already in the docs.
+
+What v0.5 verifiably supports: one operator across two channels, Telegram and Discord, both on the same `Channel` contract, with the chats and guild channels their allowlists name; seven agent presets, of which only Claude Code has ever been run here; memory through Titen, a local SQLite provider, or none; more than one workspace; and a read-only dashboard on `127.0.0.1` that `caraka dashboard` starts. Every one of those has a limit worth naming when the copy claims it: the Discord path has never touched a real Discord, six of the seven presets are transcribed rather than run, the Titen adapter has only answered a mocked fetch, and the dashboard has no authentication — a loopback listener is not an authentication boundary.
+
+Still not shipped, and never to be implied: attachments, a typing indicator, embeds, a policy-mode gate on the run path (the `read-only` group row in `docs/security.md` §5 is design, not build), and role-to-policy mapping on Discord. A role never authorises an approval. Caraka also never installs a background service — `caraka service --print` prints a unit and writes nothing.
 
 A comp is authoritative for design and is no longer authoritative for release facts. Where a value here contradicts `design/mockups/*.dc.html` because the code moved, keep the truth and leave a comment naming the comp line it left and the code that made it wrong. A false claim is never kept for fidelity, and prose that is merely improvable is left alone — every changed line costs a height baseline in `e2e/site.spec.ts`.
 

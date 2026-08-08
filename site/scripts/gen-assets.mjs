@@ -485,17 +485,22 @@ const motifTerminal = () =>
  * says, so the marks here follow `phases` in src/data/status.ts rather than the
  * comp: 0 done, 1 and 2 in progress, and the half ring on the one that carries
  * `live: true`. The comp drew phase 0 in flight, which stopped being true when
- * v0.1 shipped and is two phases stale after v0.2.
+ * v0.1 shipped and is five phases stale after v0.5.
  *
  * The fifth column is how far the bar is drawn; the sixth marks the live row.
+ * The comp's 62% and 48% were a drawing, not a measurement, and there is no
+ * source in the docs for a fraction of a phase. The bar is binary now: full
+ * where the release shipped, empty where the work has not started. Kesumba
+ * rather than green on 1 to 5 is what src/data/status.ts already says — each of
+ * those keeps a field gate open in roadmap.md that only other people can close.
  */
 const PHASES = [
   ['0', 'Spike', OK, WHITE, '100%', false],
-  ['1', 'Dogfood', KESUMBA_500, WHITE, '62%', false],
-  ['2', 'Install', KESUMBA_500, WHITE, '48%', true],
-  ['3', 'Memory', N_300, N_500, '0%', false],
-  ['4', 'Abstraction', N_300, N_500, '0%', false],
-  ['5', 'Closed beta', N_300, N_400, '0%', false],
+  ['1', 'Dogfood', KESUMBA_500, WHITE, '100%', false],
+  ['2', 'Install', KESUMBA_500, WHITE, '100%', false],
+  ['3', 'Memory', KESUMBA_500, WHITE, '100%', false],
+  ['4', 'Abstraction', KESUMBA_500, WHITE, '100%', false],
+  ['5', 'Closed beta', KESUMBA_500, WHITE, '100%', true],
   ['6', 'WhatsApp', N_300, N_400, '0%', false],
   ['7', 'Public 1.0', N_300, N_400, '0%', false],
 ]
