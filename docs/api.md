@@ -39,7 +39,7 @@ Skema Zod-nya (`src/drivers/preset.ts`) memuat persis field yang dibaca loader d
 | `resumeOutput` | sama | format giliran lanjutan bila berbeda |
 | `sessionIdFields[]` | string[] | kunci yang dibaca untuk menemukan id sesi |
 | `env` | map | env tambahan untuk proses agent |
-| `acp` | `{command, args[], env}` | spawn adapter ACP; `command` di-resolve terhadap `PATH` plus `node_modules/.bin` paket |
+| `acp` | `{command, args[], env, asksPermission}` | spawn adapter ACP; `command` di-resolve terhadap `PATH` plus `node_modules/.bin` paket. `asksPermission` menyatakan bahwa adapter ini pernah terlihat mengirim `session/request_permission` di mesin nyata; default `false`, dan run `read-only` menolak route yang tidak menyatakannya (§5 `security.md`) |
 
 Dua amandemen 8 Agustus 2026 (pekerjaan `driver-v04`) membentuk tabel ini. Pertama, blok `acp:` masuk: tabel lama hanya mengenal field jalur CLI, padahal spawn ACP dikeraskan di kode driver — dan `{command, args, env}` terbukti cukup, vscode-acp berbicara ke sembilan agent berbeda hanya dengan tiga field itu per agent. Satu preset boleh memuat kedua jalur; pemilihan otomatis jatuh dari ACP ke CLI (FR-DRV-07). Kedua, field `sessionMode`, `systemPromptArg`, `systemPromptWhen`, `modelArg`/`modelAliases`, `imageArg`/`imageMode`, dan `serialize` keluar dari tabel: belum ada satu pun pembacanya di `src/`, dan skema yang menerima field tanpa pembaca menjanjikan perilaku yang tidak ada. Masing-masing kembali saat ada driver yang membacanya.
 

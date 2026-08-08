@@ -194,7 +194,7 @@ npm run lint
 npm run typecheck
 npm test
 npm run e2e
-npm run smoke   # requires authenticated Claude Code
+npm run smoke   # Claude Code signed in; the codex step skips when codex is absent
 ```
 
 ## Documentation

@@ -196,7 +196,7 @@ npm run lint
 npm run typecheck
 npm test
 npm run e2e
-npm run smoke   # butuh Claude Code yang sudah login
+npm run smoke   # Claude Code harus login; langkah codex dilewati bila codex tidak terpasang
 ```
 
 ## Dokumentasi
