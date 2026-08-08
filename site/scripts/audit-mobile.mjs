@@ -3,7 +3,7 @@
 // and tap targets below the 44px floor.
 import { chromium } from '@playwright/test'
 
-const ROUTES = ['/', '/docs', '/install', '/compare', '/security', '/status', '/story', '/brand', '/brand/warna', '/brand/ui-kit', '/404']
+const ROUTES = ['/', '/docs', '/install', '/compare', '/security', '/whatsapp-risk', '/status', '/story', '/brand', '/brand/warna', '/brand/ui-kit', '/404']
 const SIZES = [
   { name: 'iPhone SE  375', width: 375, height: 667 },
   { name: 'iPhone 14  390', width: 390, height: 844 },

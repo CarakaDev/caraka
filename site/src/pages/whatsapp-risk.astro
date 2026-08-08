@@ -1,0 +1,286 @@
+---
+// The WhatsApp risk document, on the site. Phase 7 asked for a route to it and
+// v1.0 shipped without one, so the page was reachable from the repository and
+// from the error refusing `provider: baileys` and nowhere else.
+//
+// There is no design comp for this route. It is built from the shapes the
+// security page already ports — the same header, the same numbered sections,
+// the same disclosure panel — and it imports that page's stylesheet rather than
+// copying it, so the two keep one set of keyframe values instead of two that
+// can drift. Every sentence comes from docs/whatsapp-risiko.en.md; see
+// src/data/whatsapp-risk.ts.
+import Base from '../layouts/Base.astro'
+import '../styles/pages/security.css'
+import {
+  toc,
+  headline,
+  beforeYouLink,
+  figures,
+  signals,
+  gates,
+  separateNumber,
+  cloudApi,
+  notPromised,
+  sources,
+} from '../data/whatsapp-risk'
+import MobileMenu from '../components/MobileMenu.astro'
+import MobileToc from '../components/MobileToc.astro'
+---
+
+<Base page="whatsappRisk">
+  <div style="width: 100%; background: #05080C; font-family: 'Public Sans', sans-serif; color: #E9EDF2; position: relative; overflow-x: hidden;">
+
+    <div aria-hidden="true" style="position: fixed; left: 0; top: 0; right: 0; height: 2px; z-index: 110; background: #171C22;">
+      <div style="height: 100%; width: 100%; background: linear-gradient(90deg, #E2452C, #FF7A5E); transform-origin: left; transform: scaleX(var(--ck-sp, 0));"></div>
+    </div>
+
+    <header style="position: fixed; left: 0; right: 0; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px clamp(16px, 4vw, 34px); background: rgba(5,8,12,.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid #0C1116;">
+      <a href="/" style="display: flex; align-items: center; gap: 12px;">
+        <span style="width: 27px; height: 27px; border-radius: 7px; background: #E2452C; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><span style="font-family: 'Noto Sans Javanese', serif; font-size: 16px; line-height: 1; display: block; transform: translateY(17.5%); color: #FFEDE7;">ꦕ</span></span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: .2em; color: #E9EDF2;">caraka</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .16em; color: #E2452C; padding: 3px 8px; border: 1px solid #2B1612; border-radius: 5px;">WHATSAPP</span>
+      </a>
+      <nav data-navlinks="1" style="display: flex; align-items: center; gap: clamp(14px, 2.4vw, 26px); font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+        <a href="/" class="hv-ink" style="color: #7A848F;">Home</a>
+        <a href="/docs" class="hv-ink" style="color: #7A848F;">Docs</a>
+        <a href="/security" class="hv-ink" style="color: #7A848F;">Security</a>
+      </nav>
+      <a href={sources[0].href} class="hv-ring-ink" style="padding: 9px 16px; border: 1px solid #292E35; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B2BCC6; transition: border-color .2s, color .2s; white-space: nowrap;">Source ↗</a>
+      <MobileMenu links={[{ label: 'Home', href: '/' }, { label: 'Docs', href: '/docs' }, { label: 'Security', href: '/security' }]} cta={{ label: 'Source ↗', href: sources[0].href }} />
+    </header>
+
+    <section id="main" style="position: relative; padding: clamp(118px, 17vh, 172px) clamp(20px, 5vw, 60px) clamp(50px, 7vh, 80px); overflow: hidden;">
+      <div aria-hidden="true" style="position: absolute; left: 50%; top: 30%; width: min(760px, 120vw); height: min(760px, 120vw); margin-left: min(-380px, -60vw); margin-top: min(-380px, -60vw); border-radius: 50%; background: radial-gradient(circle, rgba(226,69,44,.11), transparent 62%); animation: ck-bloom 8s ease-in-out infinite; pointer-events: none;"></div>
+      <div style="position: relative; width: min(1120px, 100%); margin: 0 auto;">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px; animation: ck-boot .8s cubic-bezier(.2,.9,.3,1) both;">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .22em; color: #E2452C;">BAILEYS PROVIDER</span>
+          <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent); transform-origin: left; animation: ck-drawX 1s cubic-bezier(.3,.7,.3,1) .25s both;"></span>
+        </div>
+        <h1 style="margin: 0 0 20px; max-width: 880px; font-size: clamp(30px, 5.4vw, 56px); font-weight: 700; letter-spacing: -.03em; line-height: 1.08; color: #F6F9FC; text-wrap: balance; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) .15s both;">Read this before you pick <span style="color: #FF7A5E; font-family: 'JetBrains Mono', monospace; font-size: .78em;">provider: baileys</span></h1>
+        <p style="margin: 0 0 14px; max-width: 660px; font-size: clamp(15px, 1.9vw, 18px); line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) .28s both;">This is the page <span style="color: #B2BCC6; font-family: 'JetBrains Mono', monospace; font-size: .88em;">caraka start</span> points at when the config picks that provider, and it exists so that you can decide not to use it. Caraka cannot stop WhatsApp from blocking your number if you choose an unofficial provider. What we can do is explain what you are wagering before you wager it.</p>
+        <p style="margin: 0 0 30px; max-width: 660px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.8; color: #5D666F; overflow-wrap: anywhere; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) .34s both;">8 August 2026 · supporting research: docs/research/channel-chat-indonesia-baileys-telegram-multi-sumber.md §2</p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) .4s both;">
+          {headline.map((h) => (
+            <div style="padding: 20px 22px; background: #0C1116; border: 1px solid #171C22; border-radius: 13px; display: flex; flex-direction: column; gap: 7px;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .16em; color: #FF7A5E;">{h.tag}</span>
+              <span style="font-size: 14.5px; line-height: 1.55; color: #B2BCC6; text-wrap: pretty;">{h.t}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <div style="display: flex; gap: clamp(28px, 4vw, 56px); width: min(1240px, 100%); margin: 0 auto; padding: clamp(30px, 5vh, 60px) clamp(20px, 4vw, 44px) clamp(70px, 12vh, 120px);">
+      <main style="flex: 1; min-width: 0;">
+        <MobileToc chapters={toc} breakpoint={1080} />
+
+
+        <section id="today" style="margin-bottom: clamp(48px, 8vh, 80px); scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">01</span>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Where this stands today</h2>
+          </div>
+          <p style="margin: 0 0 16px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">The WhatsApp channel shipped in 0.6.0 on 8 August 2026 with two providers, baileys and cloud-api. This page covers baileys alone; cloud-api is Meta’s official route and carries none of this class of risk.</p>
+          <p style="margin: 0; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 2% cover 26%;">What has not happened: the 14-day field test that closes Phase 6. That gate reads 14 days of real use on a separate number with no ban and no manual relink, or an honest finding that makes Cloud API the primary recommendation. No live WhatsApp number has ever been linked to this code, so every figure on this page comes from other people’s reports; we have nothing of our own to add yet.</p>
+        </section>
+
+        <section id="linking" style="margin-bottom: clamp(48px, 8vh, 80px); scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">02</span>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">What linking a device actually does</h2>
+          </div>
+          <p style="margin: 0 0 16px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Baileys reads the reverse-engineered WhatsApp Web multi-device protocol. You enter a pairing code, and your number gains a new linked device that is not the WhatsApp app.</p>
+          <p style="margin: 0 0 24px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 2% cover 26%;">It is free, it takes two minutes, it needs no business verification, and it gives that device full access to your personal chats. All of that convenience comes from one fact: the device sits inside your account with the same reach as WhatsApp Web. To Meta it is not an integration; it is a client they did not write, and the consequence lands on the number rather than on Caraka.</p>
+          <div style="padding: clamp(24px, 3.4vw, 34px); background: #12100F; border: 1px solid #2B1612; border-radius: 15px; display: flex; flex-direction: column; gap: 15px; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 28%;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .16em; color: #FF7A5E;">TWO THINGS TO KNOW BEFORE YOU LINK</div>
+            {beforeYouLink.map((b) => (
+              <div style="display: flex; gap: 13px;">
+                <span style="color: #FF93B2; font-family: 'JetBrains Mono', monospace; font-size: 12px; flex-shrink: 0; padding-top: 3px;">·</span>
+                <span style="font-size: 14.5px; line-height: 1.68; color: #B2BCC6; text-wrap: pretty;">{b}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="figures" style="margin-bottom: clamp(48px, 8vh, 80px); scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">03</span>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">The figures we actually have</h2>
+          </div>
+          <p style="margin: 0 0 24px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">There is no official base rate. There are field reports, and the research above collects them.</p>
+          <div style="border: 1px solid #171C22; border-radius: 14px; overflow: hidden;">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 13px 20px; background: #12100F; border-bottom: 1px solid #2B1612; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .14em; color: #7A848F;">
+              <span style="width: 104px; flex-shrink: 0;">FIGURE</span>
+              <span style="flex: 1; min-width: 190px;">WHAT IT SAYS</span>
+              <span style="flex: 1; min-width: 190px;">ITS LIMIT</span>
+            </div>
+            {figures.map((f) => (
+              <div class="hv-row" style={`display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 16px 20px; border-bottom: 1px solid #171C22; background: #0C1116; transition: background .2s; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: ${f.range};`}>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.5; color: #FF7A5E; width: 104px; flex-shrink: 0;">{f.n}</span>
+                <span style="flex: 1; min-width: 190px; font-size: 13.5px; line-height: 1.55; color: #D2D8DF; text-wrap: pretty;">{f.says}</span>
+                <span style="flex: 1; min-width: 190px; font-size: 13.5px; line-height: 1.55; color: #7A848F; text-wrap: pretty;">{f.limit}</span>
+              </div>
+            ))}
+          </div>
+          <p style="margin: 22px 0 16px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">Both figures come from our research summary dated 7 August 2026, which lists its third-party sources as a single list and does not say which one measured which. The 68% describes accounts doing business messaging work toward strangers, not one developer replying to himself: it is an upper bound on behaviour we do not perform, not a forecast for behaviour we do. We have no figure for a Caraka-shaped installation, and we will not invent one.</p>
+          <p style="margin: 0; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 2% cover 28%;">OpenClaw issue #23093 reports something more concrete: repeated session logouts, 401 errors, and bans, mostly after a reconnect or when the bridge sends a reply. Neighbouring issues read “WhatsApp linking stuck at logging in” and “can’t link new devices at this time”. Reconnecting and sending replies are a bridge’s ordinary working day, so those reports land on exactly how Caraka behaves — which is why the reconnect ceiling in the table below is ten times Discord’s.</p>
+        </section>
+
+        <section id="signals" style="margin-bottom: clamp(48px, 8vh, 80px); scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">04</span>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">The detection signals, and what Caraka does about each</h2>
+          </div>
+          <p style="margin: 0 0 24px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Four signals are reported, and here is where Caraka stands against them. Four of the five rows below are code that can fail rather than sentences in a document; test/unit.test.ts exercises the ceiling, the gap, the first-contact refusal, and the reconnect bound.</p>
+          <div style="border: 1px solid #171C22; border-radius: 14px; overflow: hidden;">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 13px 20px; background: #12100F; border-bottom: 1px solid #2B1612; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .14em; color: #7A848F;">
+              <span style="width: 104px; flex-shrink: 0;">SIGNAL</span>
+              <span style="flex: 1; min-width: 190px;">WHAT IS REPORTED</span>
+              <span style="flex: 1.5; min-width: 250px;">WHERE CARAKA STANDS</span>
+            </div>
+            {signals.map((s) => (
+              <div class="hv-row" style={`display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 16px 20px; border-bottom: 1px solid #171C22; background: #0C1116; transition: background .2s; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: ${s.range};`}>
+                <span style="font-size: 14px; line-height: 1.5; color: #D2D8DF; width: 104px; flex-shrink: 0;">{s.name}</span>
+                <span style="flex: 1; min-width: 190px; font-size: 13.5px; line-height: 1.55; color: #95A0AB; text-wrap: pretty;">{s.reported}</span>
+                <span style="flex: 1.5; min-width: 250px; font-size: 13.5px; line-height: 1.55; color: #7A848F; text-wrap: pretty;">{s.stance}</span>
+              </div>
+            ))}
+          </div>
+          <p style="margin: 22px 0 16px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">One way out, and only one: every WhatsApp send goes through emit(), so no caller can skip any of those three guards.</p>
+          <p style="margin: 0; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 2% cover 28%;">The same research notes that “anti-ban wrappers” and random delays touch only part of the signals. None of them guarantees anything. Evolution API, WAHA, and Whapi.Cloud are not an answer either: they all run Baileys or whatsmeow underneath, so the ban risk is identical and what differs is who operates the infrastructure. Caraka declines that route for one duller reason on top: an extra process for the same risk.</p>
+        </section>
+
+        <section id="shape" style="margin-bottom: clamp(48px, 8vh, 80px); scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">05</span>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Why Caraka’s shape sits at the low end</h2>
+          </div>
+          <p style="margin: 0 0 16px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">One number. One operator. Replies only ever land in conversations that already exist. Strangers are never contacted. Volume is low, and the reply ratio sits near 100%. The research describes a setup that only reads and replies to existing conversations as carrying far lower risk than sending first-contact messages.</p>
+          <p style="margin: 0; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 2% cover 26%;">None of that is a guarantee. The four signals above are what people report, not a rulebook WhatsApp confirms, and an unpredictable risk does not become predictable because your profile looks good.</p>
+        </section>
+
+        <section id="gates" style="margin-bottom: clamp(48px, 8vh, 80px); scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">06</span>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">What is a gate in code, and what is not</h2>
+          </div>
+          <p style="margin: 0 0 24px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">The research names five mandatory mitigations. Four are program behaviour.</p>
+          <div style="border: 1px solid #171C22; border-radius: 14px; overflow: hidden;">
+            {gates.map((g) => (
+              <div class="hv-row" style={`display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 16px 20px; border-bottom: 1px solid #171C22; background: #0C1116; transition: background .2s; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: ${g.range};`}>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #FF93B2; width: 34px; flex-shrink: 0; padding-top: 2px;">{g.n}</span>
+                <span style="flex: 1; min-width: 190px; font-size: 14px; line-height: 1.5; color: #D2D8DF; text-wrap: pretty;">{g.title}</span>
+                <span style="flex: 1.5; min-width: 250px; font-size: 13.5px; line-height: 1.55; color: #7A848F; text-wrap: pretty;">{g.body}</span>
+              </div>
+            ))}
+          </div>
+          <div style="margin-top: 16px; padding: 18px 20px; background: #12100F; border-left: 2px solid #E2452C; border-radius: 0 11px 11px 0; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .16em; color: #FF7A5E; margin-bottom: 11px;">THE FIFTH IS HALF-DONE</div>
+            <p style="margin: 0; font-size: 14px; line-height: 1.65; color: #E0B4A8; text-wrap: pretty;">The research asks for the separate-number warning during onboarding; caraka init whatsapp is not built, so a whatsapp: block is written by hand. What exists instead is a warning printed on every caraka start when the baileys provider is selected, carrying the separate-number sentence and a link to this page. It is still a warning nobody can skip, but it arrives after the decision is written rather than before it.</p>
+          </div>
+        </section>
+
+        <section id="number" style="margin-bottom: clamp(48px, 8vh, 80px); scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">07</span>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Use a separate number</h2>
+          </div>
+          <p style="margin: 0 0 14px; max-width: 660px; font-size: clamp(17px, 2.2vw, 21px); font-weight: 600; line-height: 1.5; color: #F6F9FC; text-wrap: balance; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Link a number you can afford to lose.</p>
+          <p style="margin: 0 0 24px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 2% cover 26%;">The rule is as plain as it looks. The device you link gets full access to that number’s personal chats, and if a block arrives, that number is what gets blocked. The official route asks for the same thing for a different reason: Cloud API requires a dedicated number that cannot be shared with your personal WhatsApp.</p>
+          <div style="border: 1px solid #171C22; border-radius: 14px; overflow: hidden;">
+            {separateNumber.map((s) => (
+              <div class="hv-row" style={`display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 16px 20px; border-bottom: 1px solid #171C22; background: #0C1116; transition: background .2s; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: ${s.range};`}>
+                <span style="flex: 1; min-width: 190px; font-size: 14px; line-height: 1.5; color: #D2D8DF; text-wrap: pretty;">{s.title}</span>
+                <span style="flex: 1.5; min-width: 250px; font-size: 13.5px; line-height: 1.55; color: #7A848F; text-wrap: pretty;">{s.body}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="cloud-api" style="margin-bottom: clamp(48px, 8vh, 80px); scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">08</span>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Cloud API: the price, the requirements, and when it is the right answer</h2>
+          </div>
+          <p style="margin: 0 0 24px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Meta’s official route removes this class of risk. There are no bans, it communicates over webhooks without WebSocket fragility, Meta supports it, and its features go further (templates, interactive messages, media, read receipts).</p>
+          <div style="border: 1px solid #171C22; border-radius: 14px; overflow: hidden;">
+            <div style="display: flex; padding: 13px 20px; background: #12100F; border-bottom: 1px solid #2B1612; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .14em; color: #7A848F;">WHAT YOU SUPPLY IN EXCHANGE</div>
+            {cloudApi.map((c) => (
+              <div class="hv-row" style={`display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 16px 20px; border-bottom: 1px solid #171C22; background: #0C1116; transition: background .2s; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: ${c.range};`}>
+                <span style="flex: 1; min-width: 190px; font-size: 14px; line-height: 1.5; color: #D2D8DF; text-wrap: pretty;">{c.title}</span>
+                <span style="flex: 1.5; min-width: 250px; font-size: 13.5px; line-height: 1.55; color: #7A848F; text-wrap: pretty;">{c.body}</span>
+              </div>
+            ))}
+          </div>
+          <div style="margin-top: 16px; padding: 18px 20px; background: #12100F; border-left: 2px solid #E2452C; border-radius: 0 11px 11px 0; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .16em; color: #FF7A5E; margin-bottom: 11px;">THOSE PRICES AGE</div>
+            <p style="margin: 0; font-size: 14px; line-height: 1.65; color: #E0B4A8; text-wrap: pretty;">They were recorded in our research dated 7 August 2026, so check Meta’s own price list before you budget against them.</p>
+          </div>
+          <p style="margin: 22px 0 16px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">Cloud API is the right answer when the number belongs to your business, or when losing it means losing customers, and you accept the verification, the dedicated number, the per-message bill, and one endpoint you have to look after. The same config works for both: provider is all that changes, and the only difference core sees is caps.edit, because the Cloud API has no edit endpoint and progress there stops at a single ack.</p>
+          <p style="margin: 0; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 2% cover 28%;">If what you actually want is to drive your coding agent from chat, and a WhatsApp number is no part of that requirement, Telegram has shipped since 0.1.0: the official Bot API, free, with no ban risk, and long-polling that opens no port.</p>
+        </section>
+
+        <section id="hit" style="margin-bottom: clamp(48px, 8vh, 80px); scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">09</span>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">If the number gets hit</h2>
+          </div>
+          <p style="margin: 0; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">The full runbook is in docs/troubleshooting.md, under WhatsApp. In short: stop the gateway, do not reconnect, delete ~/.caraka/secrets/whatsapp/, and decide whether the next number is worth wagering or it is time to move to cloud-api.</p>
+        </section>
+
+        <section id="promise" style="margin-bottom: clamp(48px, 8vh, 80px); scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">10</span>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">What we do not promise</h2>
+          </div>
+          <div style="padding: clamp(24px, 3.4vw, 34px); background: #12100F; border: 1px solid #2B1612; border-radius: 15px; display: flex; flex-direction: column; gap: 15px; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 28%;">
+            {notPromised.map((n) => (
+              <div style="display: flex; gap: 13px;">
+                <span style="color: #FF93B2; font-family: 'JetBrains Mono', monospace; font-size: 12px; flex-shrink: 0; padding-top: 3px;">·</span>
+                <span style="font-size: 14.5px; line-height: 1.68; color: #B2BCC6; text-wrap: pretty;">{n}</span>
+              </div>
+            ))}
+          </div>
+          <p style="margin: 22px 0 0; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">If, having read this, you conclude that the wager is not worth it for your number, that conclusion is one this page genuinely offers. Telegram does the same work without it.</p>
+        </section>
+
+        <section id="source" style="scroll-margin-top: 90px;">
+          <div style="padding: clamp(30px, 5vw, 44px); background: #0C1116; border: 1px solid #171C22; border-radius: 16px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 30%;">
+            <div>
+              <div style="font-size: 19px; font-weight: 600; color: #F6F9FC; margin-bottom: 7px;">The same document, in both languages.</div>
+              <div style="font-size: 14px; line-height: 1.6; color: #7A848F; max-width: 420px; text-wrap: pretty;">This page is the English text. The Indonesian original is the one caraka start links when the config picks the unofficial provider.</div>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+              {sources.map((s) => (
+                <a href={s.href} class="hv-ring-ink" style="padding: 13px 20px; border: 1px solid #292E35; border-radius: 10px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #B2BCC6; transition: border-color .2s, color .2s; white-space: nowrap;">{s.label} ↗</a>
+              ))}
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <aside data-toc="1" style="width: 186px; flex-shrink: 0;">
+        <div style="position: sticky; top: 104px; display: flex; flex-direction: column; gap: 2px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .2em; color: #414950; margin-bottom: 12px;">ON THIS PAGE</div>
+          {toc.map((t) => (
+            <a href={t.href} class="hv-ring-ink" style="display: flex; align-items: baseline; gap: 9px; padding: 7px 0 7px 12px; border-left: 1px solid #171C22; font-size: 12.5px; color: #7A848F; transition: color .2s, border-color .2s;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #414950;">{t.no}</span><span>{t.title}</span>
+            </a>
+          ))}
+        </div>
+      </aside>
+    </div>
+
+    <footer style="padding: clamp(44px, 7vh, 70px) clamp(20px, 5vw, 60px); border-top: 1px solid #0C1116;">
+      <div style="width: min(1240px, 100%); margin: 0 auto; display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #414950;">ꦕ caraka · halo@caraka.dev</span>
+        <div style="display: flex; flex-wrap: wrap; gap: clamp(14px, 2.6vw, 28px); font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+          <a href="/" class="hv-ink" style="color: #7A848F;">Home</a>
+          <a href="/docs" class="hv-ink" style="color: #7A848F;">Docs</a>
+          <a href="/security" class="hv-ink" style="color: #7A848F;">Security</a>
+          <a href={sources[1].href} class="hv-ink" style="color: #7A848F;">whatsapp-risiko.md</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+</Base>

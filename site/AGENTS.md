@@ -36,7 +36,9 @@ Everything else — every inline `style`, every `animation`, every `animation-ra
 
 ## Two rules that are easy to break by accident
 
-**Keyframes belong to their page.** Nine keyframe names appear in more than one mockup with different values: `ck-rise` travels 18, 22, 24, 26, or 28 pixels depending on which page you are on. `src/styles/pages/<slug>.css` holds one mockup's `<style>` block, unedited, imported by that page alone. Never merge them into `global.css`.
+**Keyframes belong to their page.** Nine keyframe names appear in more than one mockup with different values: `ck-rise` travels 18, 22, 24, 26, or 28 pixels depending on which page you are on. `src/styles/pages/<slug>.css` holds one mockup's `<style>` block, unedited, imported by the page that ports that mockup. Never merge them into `global.css`.
+
+One route has no mockup: `/whatsapp-risk` renders `../docs/whatsapp-risiko.en.md`, and it imports `security.css` rather than owning a copy of it. That is the rule holding rather than bending — the page is built from the security comp's shapes, so the security comp's keyframe values are the correct ones, and one file cannot drift from itself. A page with a comp of its own never shares.
 
 **Scroll-driven animations must survive an engine that lacks them.** An element carrying `animation: ck-rise linear both` with no duration is invisible until its timeline advances. Where `animation-timeline` is unsupported the declaration is dropped, the animation runs for 0s, and `both` leaves the element on its final frame — visible. The e2e suite asserts this in Firefox and WebKit, not just Chromium. If you add a scroll-driven animation, add it to that assertion.
 

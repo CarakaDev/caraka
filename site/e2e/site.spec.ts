@@ -320,13 +320,23 @@ test.describe('the comps still decide the layout', () => {
     // /brand/readme −16 to 5533, the height it held before v0.6, because the
     // repo card's status chip and the board's blockquote were both rewritten
     // shorter.
+    //
+    // /whatsapp-risk is the thirteenth entry and the first route here that
+    // never had a comp: it renders docs/whatsapp-risiko.en.md, and it borrows
+    // the security page's shapes and stylesheet. 6857 is its first baseline.
+    // /security moved with it, +65 to 5901, for the one line under "what we do
+    // not claim" that points at it. /docs took the same link in its footer and
+    // held at 6805 — the row had room for a seventh link at 1440px. Measured
+    // 8 August 2026, Chromium at 1440x900, against `rm -rf dist && npm run
+    // build`, twice, identical both times.
     const EXPECTED: Record<string, number> = {
       // v1.0 copy — measured from the site (see above)
       '/': 6580,
       '/docs': 6805,
       '/compare': 5931,
       '/install': 5364,
-      '/security': 5836,
+      '/security': 5901,
+      '/whatsapp-risk': 6857,
       '/status': 10813,
       '/brand/readme': 5533,
       // still measured against the comp

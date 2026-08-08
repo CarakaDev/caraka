@@ -29,6 +29,7 @@ export type PageKey =
   | 'install'
   | 'compare'
   | 'security'
+  | 'whatsappRisk'
   | 'status'
   | 'story'
   | 'brand'
@@ -115,6 +116,19 @@ export const PAGES: Record<PageKey, PageMeta> = {
     // in a timeline. Thirteen is the length of `threats` in src/data/security.ts.
     ogHeadline: '13 threats mapped. · Each has a control.',
     ogKicker: 'THREAT MODEL',
+  },
+  whatsappRisk: {
+    path: '/whatsapp-risk',
+    lang: 'en',
+    title: 'WhatsApp risk — caraka',
+    // The page renders docs/whatsapp-risiko.en.md. `lang` is `en` for the same
+    // reason every other content route is: the English half exists, and the
+    // site has no bilingual routing to invent one for. The Indonesian original
+    // is linked from the page and from the footer.
+    description:
+      'The baileys provider links a real WhatsApp account as a device. What is known about the ban risk, where each figure comes from, and when to pick Cloud API.',
+    ogHeadline: 'What you are wagering, · before you wager it.',
+    ogKicker: 'WHATSAPP RISK',
   },
   status: {
     path: '/status',
