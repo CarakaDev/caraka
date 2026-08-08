@@ -132,11 +132,20 @@ function toggledFence(line: string, openFence: string | null) {
  */
 export function splitMarkdown(input: string, limit = 3900, empty = "(Claude sent no text.)") {
   const text = input.trim() || empty;
+  // A cut inside a fenced block costs the reopening marker on the next piece
+  // and "\n```" on this one. The longest marker in the input decides how much
+  // of the limit a hard-split line has to leave behind; 16 is the floor.
+  // A hostile info string can be longer than the limit itself, so the marker a
+  // cut reopens with is capped: past the cap the language hint is dropped and
+  // the block reopens bare. Losing a highlight beats losing the text.
+  const cap = Math.max(3, Math.floor(limit / 2) - 5);
+  const longest = Math.max(...(text.match(/^[^\S\n]*```[^\r\n]*/gm) ?? [""]).map((f) => f.trim().length));
+  const room = Math.max(1, limit - Math.max(16, Math.min(longest, cap) + 5));
   const lines: string[] = [];
   for (let line of text.match(/[^\n]*\n|[^\n]+$/g) ?? [text]) {
-    while (line.length > limit - 16) {
-      lines.push(line.slice(0, limit - 16));
-      line = line.slice(limit - 16);
+    while (line.length > room) {
+      lines.push(line.slice(0, room));
+      line = line.slice(room);
     }
     if (line) lines.push(line);
   }
@@ -145,10 +154,15 @@ export function splitMarkdown(input: string, limit = 3900, empty = "(Claude sent
   let fence: string | null = null;
 
   for (const line of lines) {
+    // Budget the fence this line leaves behind, not the one it arrived to: a
+    // line that opens a block adds a closing marker the old state knows
+    // nothing about, and the piece silently overran the channel's limit.
     const closing = fence ? "\n```" : "";
-    if (current && current.length + line.length + closing.length > limit) {
+    const after = toggledFence(line, fence) ? "\n```" : "";
+    if (current && current.length + line.length + after.length > limit) {
       chunks.push(`${current.trimEnd()}${closing}`);
-      current = fence ? `${fence}\n` : "";
+      const reopen = fence && fence.length > cap ? "```" : fence;
+      current = reopen ? `${reopen}\n` : "";
     }
     current += line;
     fence = toggledFence(line, fence);

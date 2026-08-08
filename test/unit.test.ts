@@ -374,15 +374,13 @@ test("a seeded corpus of hostile text breaks none of the three parsers", async (
     // One: the splitter. Fences have to come out balanced, because the chunk
     // after an unbalanced one renders as prose in a code block or worse.
     const chunks = splitMarkdown(input, limit);
-    // `splitMarkdown` budgets the text of a chunk and not the fence it reopens
-    // at the top of the next one, nor the fence it appends to the last one, so
-    // a chunk can run past the limit the caller gave it. Both sites are in
-    // `src/core/channel.ts`, which this wave does not touch, so what the loop
-    // asserts is the bound that does hold: an input carrying no fence never
-    // overruns, and one carrying a fence overruns by at most the reopened fence
-    // and its closing pair, which cannot exceed a second chunk's worth. Box
-    // three of §13 stays deferred, and this is the witness.
-    const fenced = input.includes("```");
+    // This corpus caught a real one: the splitter budgeted the fence a line had
+    // arrived to and not the one it left behind, so a line that opened a block
+    // bought a closing marker nobody had counted, and the chunk ran past the
+    // limit. Every channel passes its own limit and then slices the overflow
+    // away, so the tail of a long answer went missing without a word. Fixed in
+    // `splitMarkdown`; the assertion is now the flat limit, and it is the thing
+    // that fails if the budget regresses.
     for (const chunk of chunks) {
       // A fence is a line that opens with one, the way `toggledFence` reads it.
       // Three backticks in the middle of a line are inline code, and counting
@@ -390,7 +388,7 @@ test("a seeded corpus of hostile text breaks none of the three parsers", async (
       const fences = (chunk.match(/^[ \t]*```/gm) ?? []).length;
       assert.equal(fences % 2, 0, `round ${round}: ${fences} fence lines in one chunk`);
       assert.ok(
-        chunk.length <= (fenced ? 2 * limit : limit),
+        chunk.length <= limit,
         `round ${round}: ${chunk.length} past a limit of ${limit}`,
       );
     }
