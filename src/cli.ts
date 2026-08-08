@@ -30,7 +30,7 @@ import { TitenMemory } from "./memory/titen.js";
 import { isServiceKind, serviceUnit } from "./service.js";
 import { Store } from "./store/db.js";
 
-const VERSION = "0.6.0";
+const VERSION = "1.0.0";
 // The preset a session runs until `/switch` names another.
 const DEFAULT_AGENT = "claude-code";
 

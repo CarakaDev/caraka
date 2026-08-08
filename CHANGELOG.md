@@ -4,6 +4,33 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] — 2026-08-08
+
+The version number, and not one capability that was not already running under it. Every phase in `docs/roadmap.md` carries shipped code at the same time, which is what the number says. It says nothing about use: every field gate in that document is still open, and each was moved past this release by the owner's decision on 8 August 2026 with the date written beside it.
+
+### Added
+
+- `docs/openclaw-vs-caraka.md`, with an English copy beside it. The comparison phase 7 asked for, written so that choosing OpenClaw is a conclusion it offers rather than one it argues against.
+- `docs/integrasi-ekosistem.md`, with an English copy beside it: what this client needed from ACP and from Titen, what it could not say in the protocol's own vocabulary, and which half of that pair comes from an author who also writes the other one.
+- English copies of the pages an English reader was until now sent to in Indonesian — `docs/faq.en.md`, `docs/install-guide.en.md`, `docs/security.en.md`, `docs/troubleshooting.en.md`. Seven documents under `docs/` now carry an English pair; thirty-eight do not, and that includes every architecture decision record and every research document.
+- Every runtime string that named a document now prints its address on GitHub instead of a repository path, and the English catalogue points at the English copy. `docs/` is not in the package's `files` list, so the reconnect message and both risk warnings had been sending an installer to a path that exists only for someone who cloned the repository.
+- The pre-release checklist in `docs/security.md` §13 answered against the code as it stands rather than against the audit that filled it in when the version still read 0.2. Nine of its thirteen rows are met, and each names the test that fails when the claim stops being true. Four are deferred with the date and with what has to happen to close them: the incoming-text parsers have no fuzz corpus, `splitMarkdown` can hand a channel a chunk past the channel's own limit, `npm audit` runs on no schedule and never sees the optional Baileys peer, and the shipped-defaults claim has no policy-mode gate on the run path to rest on. The thirteenth row is new and arrived already deferred: the seeded corpus found the splitter bug while proving something else.
+- Measurements in `docs/roadmap.md` and `docs/techstack.md` where both files carried estimates: cold start, peak RSS, idle RAM, `caraka doctor`, the tarball, and the tree an install actually leaves on disk, each with the machine and the command it was read from. Two of them miss goal G3 in `docs/prd.md`. Idle RAM is 94,324 kB against a target of 80 MB, and `node -e ''` alone accounts for 42 MB of it. An install with `--omit=dev` occupies 309,248,851 bytes against a target of 15 MB, of which 275,013,181 bytes is the Claude Agent SDK platform binary that arrives through the ACP adapter. The published tarball is the part that meets the target.
+
+### Changed
+
+- Repeated code across the gateway, the dashboard, the store, the config loader, and the two push channels folded into named helpers, with no behaviour moved along with it. `src/` drops from 7,996 lines to 7,880 against the ~8,000 ceiling in `AGENTS.md`.
+- CI gained a second job that runs the site's lint, type check, and unit tests. The site's Playwright suite stays a per-machine command, for the same reason the agent smoke does: the runner has no browsers to give it and a workflow that pretends otherwise is worth less than no workflow.
+
+### Limited
+
+- **No field gate in this project has been answered by a human, the author included.** There was no dogfood week, no five recorded setup sessions, no memory A/B across twenty tasks, no cohort of twenty beta developers, and no fourteen days on a real WhatsApp number. Each was moved past its release by the owner's decision on 8 August 2026 and written into `docs/roadmap.md` with that date beside it, rather than ticked. Reaching 1.0 says the code for every phase landed and passes the checks this repository can run. Whether any of it survives a day on someone else's machine is not known.
+- Discord, WhatsApp, and Titen have only ever answered mocks and fixtures. No Discord bot token, no WhatsApp number, no Cloud API webhook, and no running Titen process has ever been used from here, so the real payload shapes, the real 429 behaviour, the real pairing flow, the ban behaviour, and Titen's live routes are all unproven. Telegram with Claude Code over ACP is the one path that has been driven end to end by a person.
+- Six of the seven presets are transcribed rather than run. Claude Code is the only agent ever started against a live binary on this machine, and only through its ACP route, so goal G2 in `docs/prd.md` (≥ 15 agents covered) is not met.
+- Phase 7 asked for the WhatsApp risk page and for a route to it on caraka.dev. The page has been in both languages since v0.6, because the error refusing `provider: baileys` links it; the site route is not built, so the page is reachable from the repository and from that error message and nowhere else.
+- The npm registry still holds 0.2.1. Every release since is tagged in this repository and unpublished, because `npm publish` is the owner's command.
+- There has been no third-party security audit, and this line stays until there is one.
+
 ## [0.6.0] — 2026-08-08
 
 A third channel, and the first one that cannot show a button. WhatsApp arrives as another implementation of the contract Discord already answered, so what this release actually builds is the two things that seam left unanswered: how a permission is granted where there is nothing to press, and how a bridge behaves on a network that bans numbers for behaving like one.
