@@ -54,7 +54,13 @@ Bisa. Semuanya didaftarkan, ganti dengan `/switch <agent>` per workspace.
 Bot API resmi tanpa risiko ban, long-polling sehingga tidak ada port terbuka, dan satu-satunya platform yang mengizinkan bot membuat topic di chat pribadi tanpa hak admin. Itu yang membuat sesi ber-tab mungkin tanpa setup apa pun.
 
 **Channel apa saja yang sudah jalan?**
-Telegram dan, sejak v0.5, Discord: satu public thread per sesi di sebuah text channel, glif state di nama thread, dan kartu approval bertombol yang tetap terikat principal pemilik sesi. Sebuah role Discord tidak pernah memberi otoritas approval. Keduanya memakai interface `Channel` yang sama, dan core tidak tahu channel mana yang menjawab. WhatsApp menyusul di Fase 6, Signal setelahnya.
+Tiga. Telegram; sejak v0.5 Discord, satu public thread per sesi di sebuah text channel dengan glif state di nama thread dan kartu approval bertombol yang tetap terikat principal pemilik sesi; dan sejak v0.6 WhatsApp, satu lawan satu, mode linear berheader, dua provider di balik satu blok config. Sebuah role Discord tidak pernah memberi otoritas approval. Ketiganya memakai interface `Channel` yang sama, dan core tidak tahu channel mana yang menjawab. Signal belum dijadwalkan.
+
+**Kenapa WhatsApp tidak pakai tombol?**
+WhatsApp tidak punya tombol callback seperti Telegram dan Discord, jadi kartu approval-nya membawa satu kode empat karakter dan hanya balasan `ok <kode>` atau `no <kode>` yang memutuskannya. Yang memutuskan bukan kata `ok` — itu kodenya, dan kode itu dibangkitkan di server, hanya tampil di kartu yang Caraka tulis, tidak pernah masuk konteks agent, dan sekali pakai. Prompt injection bisa memproduksi kata "ya"; ia tidak bisa memproduksi kode yang tidak pernah ia lihat. Detailnya di ADR-0009.
+
+**Nomor WhatsApp saya bisa kena ban?**
+Bisa, kalau kamu memilih provider `baileys`. Ia masuk sebagai perangkat tertaut pada akun sungguhan lewat protokol hasil rekayasa balik, dan itu melanggar ToS WhatsApp. Caraka menegakkan empat mitigasi di kode — `allowFrom` wajib, plafon outbound, jeda acak, dan larangan mengirim ke nomor yang belum pernah menulis — tetapi tidak satu pun menjamin apa pun. Baca `docs/whatsapp-risiko.md` sebelum memasang, dan pakai nomor yang kamu sanggup kehilangan. Provider `cloud-api` adalah jalur resmi Meta dan tidak punya risiko ini.
 
 **Isi pesan biasa di Discord tidak sampai ke bot?**
 Betul, dan itu disengaja. Caraka tidak meminta intent `MESSAGE_CONTENT` yang punya privilege, dengan alasan yang sama seperti privacy mode Telegram tetap menyala: bot ini tidak perlu membaca percakapan orang untuk mengerjakan tugas. Yang sampai adalah slash command dan tombol pada kartu yang Caraka kirim sendiri. Kalimat itu ditampilkan sekali di channel yang baru dipasangkan, bukan dikubur di sini.

@@ -124,21 +124,23 @@ Dua baris mesin fase ini tercentang saat `v0.5.0` dirilis. Yang tersisa adalah g
 
 **Pertanyaan:** bisakah kita menyediakan WhatsApp tanpa membakar nomor pengguna?
 
-- [ ] Provider `baileys` (QR, persistensi sesi, reconnect) + provider `cloud-api`
-- [ ] Mode linear + header `[ws · #id]` (WhatsApp tidak punya konsep tab)
-- [ ] Fallback approval kode `ok A7F3`
-- [ ] Rate limit + jitter + larangan first-contact **di level kode**
-- [ ] Alur peringatan risiko yang tidak bisa dilewati
+- [x] Provider `baileys` (persistensi sesi di `secrets/whatsapp/`, reconnect berplafon) + provider `cloud-api` — `done/whatsapp-v06/spec.md`. Baris ini dulu menulis "QR"; payload `qr` Baileys adalah bahan gambar dan tidak ada renderer di repositori ini, jadi yang dipakai adalah `requestPairingCode`, delapan karakter yang bisa diketik.
+- [x] Mode linear + header `[ws · #id]` (WhatsApp tidak punya konsep tab) — tanpa satu baris pun kode mode linear yang baru di core: `caps.threads: false` dan `header()` yang sudah ada mengerjakannya
+- [x] Fallback approval kode `ok A7F3` — kolom `short_code`, index unik parsial, batas lima percobaan salah, dan plafon lima approval menunggu per sesi. Aturan keras 2 di `AGENTS.md` diamendemen di PR yang sama, ADR-0009
+- [x] Rate limit + jitter + larangan first-contact **di level kode** — satu fungsi kirim yang tidak bisa dilewati pemanggil mana pun; 12 pesan / 60 detik bergulir, jeda acak 1.200–3.500 md
+- [x] Alur peringatan risiko yang tidak bisa dilewati — `provider: baileys` tanpa `acknowledgeRisk: true` menghentikan start dengan pesan yang menautkan `docs/whatsapp-risiko.md`, dan peringatan nomor terpisah dicetak setiap `caraka start`. Setengahnya belum: `caraka init whatsapp` tidak dibangun, jadi peringatannya tiba sesudah blok config ditulis tangan, bukan sebelum
 - [ ] Uji lapangan 14 hari di nomor terpisah
 
 **Definition of done:** 14 hari pemakaian nyata tanpa ban dan tanpa relink manual — **atau** temuan jujur yang menjadikan Cloud API sebagai rekomendasi utama.
+
+Lima baris mesin fase ini tercentang saat `v0.6.0` dirilis. Yang tersisa adalah gerbang lapangan, dan ia tidak bisa dijawab dari repositori: tidak ada nomor WhatsApp hidup yang pernah ditautkan ke kode ini, dan tidak ada webhook Cloud API hidup yang pernah diterima. Ia dipindah menjadi validasi pasca-rilis atas keputusan pemilik 8 Agustus 2026 (`spec/v10.md`), bentuk yang sama dengan Fase 3, 4, dan 5, dan hasilnya dicatat di sini begitu ada. Sampai itu tiba, rekomendasi yang berlaku sudah tertulis di `docs/whatsapp-risiko.md`: `cloud-api` bila nomor itu penting bagimu.
 
 ---
 
 ## Fase 7 — Rilis publik (2 minggu) → `v1.0`
 
 - [ ] Checklist keamanan `security.md` tuntas
-- [ ] Dokumentasi dwibahasa (ID/EN) + halaman risiko WhatsApp
+- [ ] Dokumentasi dwibahasa (ID/EN) + halaman risiko WhatsApp — separuhnya sudah mendarat lebih awal: halaman risikonya ditulis di v0.6 dalam dua bahasa (`docs/whatsapp-risiko.md`, `docs/whatsapp-risiko.en.md`) karena pesan galat yang menolak `provider: baileys` menautkannya. Sisa dokumentasi dwibahasa, dan halaman risiko di `caraka.dev`, tetap pekerjaan fase ini
 - [ ] ≥ 15 agent tercakup (7 diuji langsung, sisanya via ACP Registry)
 - [ ] `SECURITY.md`, `CONTRIBUTING.md`, lisensi MIT, repo publik
 - [ ] Artikel pembanding jujur: "Kapan pakai OpenClaw, kapan pakai Caraka"

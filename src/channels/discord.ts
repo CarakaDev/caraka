@@ -195,7 +195,12 @@ export class Discord implements Channel {
       options.socketFor ?? ((url: string) => new WebSocket(url) as unknown as Socket);
     this.t = options.t ?? translator();
     this.log = options.log;
-    this.caps = { threads: options.threads ?? true, buttons: true, maxChars: MESSAGE_LIMIT };
+    this.caps = {
+      threads: options.threads ?? true,
+      buttons: true,
+      edit: true,
+      maxChars: MESSAGE_LIMIT,
+    };
   }
 
   // ---- REST -------------------------------------------------------------

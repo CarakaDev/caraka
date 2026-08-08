@@ -14,3 +14,4 @@ ADR tidak pernah diedit setelah diterima. Kalau keputusannya berubah, tulis ADR 
 | [0006](0006-telegram-sebagai-channel-pertama.md) | Telegram sebagai channel pertama dan satu-satunya di v1.0 | Diterima · bagian "satu-satunya" digantikan ADR-0008 |
 | [0007](0007-kesumba-sebagai-warna-merek.md) | Kesumba sebagai satu-satunya hue merek | Diterima |
 | [0008](0008-discord-sebagai-channel-kedua.md) | Discord sebagai channel kedua, di atas `fetch` dan `WebSocket` | Diterima |
+| [0009](0009-approval-lewat-kode-di-channel-tanpa-tombol.md) | Approval lewat kode di channel tanpa tombol, dan dua provider WhatsApp | Diterima |

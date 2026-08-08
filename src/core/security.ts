@@ -79,6 +79,32 @@ export function verifyApprovalCallback(
   return { id, decision } as const;
 }
 
+// `spec/whatsapp-v06.md` §7: 4 characters over a 32-symbol alphabet, so 2^20
+// codes. `I`, `O`, `0`, and `1` are absent because the code is read off a screen
+// and typed back on a phone.
+const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+export const APPROVAL_CODE_LENGTH = 4;
+// `spec/whatsapp-v06.md` §7, spec-set: five wrong codes per session per TTL.
+// With five live codes at most, that is 25 chances in 2^20 inside ten minutes.
+export const APPROVAL_CODE_ATTEMPTS = 5;
+/** What a code-shaped reply looks like. Case is not part of the code. */
+export const APPROVAL_CODE_REPLY = new RegExp(
+  `^(ok|no)[\\s:]+([${CODE_ALPHABET}${CODE_ALPHABET.toLowerCase()}]{${APPROVAL_CODE_LENGTH}})$`,
+  "i",
+);
+
+/**
+ * The card's short code: random material of its own, not a slice of a MAC. The
+ * alphabet has 32 symbols and a byte has 256 values, so the modulo is uniform
+ * and rejection sampling would buy nothing.
+ */
+export function shortCode() {
+  return Array.from(
+    randomBytes(APPROVAL_CODE_LENGTH),
+    (byte) => CODE_ALPHABET[byte % CODE_ALPHABET.length],
+  ).join("");
+}
+
 export function callbackPurpose(callback: string): CallbackPurpose | null {
   const head = callback.slice(0, 2);
   return head === "c:" || head === "t:" || head === "g:" ? (head[0] as CallbackPurpose) : null;

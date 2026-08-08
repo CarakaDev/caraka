@@ -12,7 +12,15 @@ const en = {
   "run.timeout": "Run passed {minutes} minutes and was cancelled.",
   "permission.header": "⏸ Claude asks for permission",
   "permission.fallbackTitle": "Tool operation",
-  "permission.ttl": "Valid for 10 minutes.",
+  "permission.ttl": "Valid for 10 minutes",
+  // Where there are no buttons the code is the decision, so the card says both
+  // words it answers to and how long they last.
+  "permission.ttlReply":
+    "Valid for 10 minutes · code {code}\nReply `ok {code}` to allow it once, or `no {code}` to refuse.",
+  "approval.codeInvalid":
+    "That code matches nothing waiting in this conversation. The code is printed on the card itself.",
+  "approval.codeLocked":
+    "Five wrong codes. Caraka stops reading codes in this session until the waiting request is decided or its ten minutes are up.",
   "permission.target": "Target",
   "permission.auto": "▸ Trust window: {tool}{target}",
   "button.reject": "Reject",
@@ -59,6 +67,8 @@ const en = {
   "start.notice": "Caraka is up on {host}. Workspace {workspace}, version {version}.",
   "trust.needDuration": "Write a duration, for example /yolo 30m. The longest is 60 minutes.",
   "trust.tooLong": "The longest trust window is 60 minutes.",
+  "trust.needButtons":
+    "A trust window is confirmed by pressing a button, and this channel has none. Open it from the terminal instead: `caraka trust <workspace> --for 30m`.",
   "trust.alreadyOpen":
     "A trust window is already open. Close it with /lock, then open a new one; both are recorded.",
   "trust.card":
@@ -94,6 +104,29 @@ const en = {
   "discord.acknowledged": "Caraka has it.",
   "discord.fatalClose":
     "Discord closed the gateway with code {code} and would close it again, so Caraka stopped instead of retrying. Check the bot token and the invite in the Discord developer portal, then start again.",
+  "whatsapp.noGroups":
+    "Caraka does not run in a WhatsApp group. A group message names the group as its sender, so every member would drive the agent as one person and every member would read the approval code. Only a one-to-one conversation with a number on the whatsapp allowlist reaches Caraka.",
+  "whatsapp.ready":
+    "How it works here\n\nSessions run one after another in this conversation, with a header like [ws · #4f2a] in front of each reply, because WhatsApp holds no threads.\n\nApproval has no button here. The card carries a code, and only a reply of `ok <code>` or `no <code>` from you decides it — the code is on the card and nowhere else.",
+  "whatsapp.asFile": "The answer was longer than four messages, so it is attached as a file.",
+  "whatsapp.noThreads": "WhatsApp has no threads, so a session cannot be given one.",
+  "whatsapp.notStarted": "The WhatsApp channel has not started.",
+  "whatsapp.firstContact":
+    "Caraka never writes to a number that has not written to it first. Send one message from that number, or put it on the whatsapp allowlist.",
+  "whatsapp.baileysMissing":
+    "The baileys provider needs its module, and it is not installed. Run `{install}`, then start Caraka again. It is an optional peer dependency on purpose: an install that only uses Telegram never downloads it.",
+  "whatsapp.loggedOut":
+    "WhatsApp logged this device out, so Caraka stopped instead of reconnecting — repeated reconnects after a logout are the reported way to lose the account. Delete `~/.caraka/secrets/whatsapp/` and start Caraka again to link the device from scratch.",
+  "whatsapp.gaveUp":
+    "WhatsApp did not come back after {attempts} attempts, so Caraka stopped trying. Read `docs/troubleshooting.md`, then start again once the connection is back.",
+  "whatsapp.pairingCode":
+    "\nThis device is not linked yet. On the phone, open WhatsApp → Linked devices → Link with phone number, and type:\n{code}\n",
+  "whatsapp.pairingNoNumber":
+    '\nThis device is not linked, and linking needs the number Caraka will run as. Put `number: "628…"` in the whatsapp block of config.yaml — a number kept apart from the personal one — then start Caraka again.\n',
+  "whatsapp.webhookExposed":
+    "\n════════════════════════════════════════════════════════════\n⚠  The WhatsApp webhook will listen on {host}:{port}, not on\n   127.0.0.1. Every request is still checked against\n   X-Hub-Signature-256, and nothing else about that address is\n   protected. Put a reverse proxy with TLS in front of it.\n════════════════════════════════════════════════════════════\n",
+  "whatsapp.riskNotice":
+    "\n⚠  WhatsApp provider: baileys. This logs in as a linked device on a real\n   account, and the account can be banned for it. Use a number kept apart from\n   the personal one, and read docs/whatsapp-risiko.md for what is known about how\n   often this happens.\n",
   "acp.start": "Claude could not start over ACP. Run `claude auth login`, then try again.",
   "acp.notStarted": "Claude ACP has not started.",
   "preset.invalid": "Preset {file} is invalid at `{field}` and was skipped.",
@@ -237,7 +270,13 @@ const id: Record<MessageKey, string> = {
   "run.timeout": "Run melewati {minutes} menit dan dibatalkan.",
   "permission.header": "⏸ Claude meminta izin",
   "permission.fallbackTitle": "Operasi tool",
-  "permission.ttl": "Berlaku 10 menit.",
+  "permission.ttl": "Berlaku 10 menit",
+  "permission.ttlReply":
+    "Berlaku 10 menit · kode {code}\nBalas `ok {code}` untuk menyetujui sekali, atau `no {code}` untuk menolak.",
+  "approval.codeInvalid":
+    "Kode itu tidak cocok dengan apa pun yang menunggu di percakapan ini. Kodenya tertulis di kartunya sendiri.",
+  "approval.codeLocked":
+    "Lima kode salah. Caraka berhenti membaca kode di sesi ini sampai permintaan yang menunggu diputuskan atau sepuluh menitnya habis.",
   "permission.target": "Target",
   "permission.auto": "▸ Jendela trust: {tool}{target}",
   "button.reject": "Tolak",
@@ -283,6 +322,8 @@ const id: Record<MessageKey, string> = {
   "start.notice": "Caraka aktif di {host}. Workspace {workspace}, versi {version}.",
   "trust.needDuration": "Tulis durasinya, misalnya /yolo 30m. Paling lama 60 menit.",
   "trust.tooLong": "Jendela trust paling lama 60 menit.",
+  "trust.needButtons":
+    "Jendela trust dikonfirmasi dengan menekan tombol, dan channel ini tidak punya tombol. Bukalah dari terminal: `caraka trust <workspace> --for 30m`.",
   "trust.alreadyOpen":
     "Jendela trust sudah terbuka. Tutup dengan /lock lalu buka yang baru; keduanya tercatat.",
   "trust.card":
@@ -316,6 +357,30 @@ const id: Record<MessageKey, string> = {
   "discord.acknowledged": "Caraka sudah menerimanya.",
   "discord.fatalClose":
     "Discord menutup gateway dengan kode {code} dan akan menutupnya lagi, jadi Caraka berhenti alih-alih mencoba ulang. Periksa token bot dan undangannya di Discord developer portal, lalu jalankan lagi.",
+  "whatsapp.noGroups":
+    "Caraka tidak berjalan di grup WhatsApp. Pesan grup menyebut grup itu sendiri sebagai pengirim, jadi setiap anggota akan menyetir agent sebagai satu orang dan setiap anggota membaca kode approval. Hanya percakapan satu lawan satu dengan nomor di allowlist whatsapp yang sampai ke Caraka.",
+  "whatsapp.ready":
+    "Cara kerjanya di sini\n\nSesi berjalan berurutan di percakapan ini, dengan header seperti [ws · #4f2a] di depan tiap balasan, karena WhatsApp tidak punya thread.\n\nApproval di sini tidak pakai tombol. Kartunya membawa satu kode, dan hanya balasan `ok <kode>` atau `no <kode>` dari kamu yang memutuskannya — kodenya ada di kartu itu dan tidak di tempat lain.",
+  "whatsapp.asFile":
+    "Jawabannya lebih panjang daripada empat pesan, jadi dilampirkan sebagai berkas.",
+  "whatsapp.noThreads": "WhatsApp tidak punya thread, jadi sesi tidak bisa diberi satu.",
+  "whatsapp.notStarted": "Channel WhatsApp belum dimulai.",
+  "whatsapp.firstContact":
+    "Caraka tidak pernah menulis ke nomor yang belum pernah menulis lebih dulu. Kirim satu pesan dari nomor itu, atau masukkan ke allowlist whatsapp.",
+  "whatsapp.baileysMissing":
+    "Provider baileys butuh modulnya, dan modul itu belum terpasang. Jalankan `{install}`, lalu mulai Caraka lagi. Ia peer dependency opsional dengan sengaja: pemasangan yang hanya memakai Telegram tidak pernah mengunduhnya.",
+  "whatsapp.loggedOut":
+    "WhatsApp mengeluarkan perangkat ini, jadi Caraka berhenti alih-alih menyambung ulang — sambung ulang berulang sesudah logout adalah pola yang dilaporkan menghilangkan akun. Hapus `~/.caraka/secrets/whatsapp/` lalu jalankan Caraka lagi untuk menautkan perangkat dari awal.",
+  "whatsapp.gaveUp":
+    "WhatsApp tidak kembali sesudah {attempts} percobaan, jadi Caraka berhenti mencoba. Baca `docs/troubleshooting.md`, lalu jalankan lagi setelah koneksinya pulih.",
+  "whatsapp.pairingCode":
+    "\nPerangkat ini belum tertaut. Di ponsel, buka WhatsApp → Perangkat tertaut → Tautkan dengan nomor telepon, lalu ketik:\n{code}\n",
+  "whatsapp.pairingNoNumber":
+    '\nPerangkat ini belum tertaut, dan penautan butuh nomor yang akan dipakai Caraka. Tulis `number: "628…"` di blok whatsapp pada config.yaml — nomor yang terpisah dari nomor pribadi — lalu jalankan Caraka lagi.\n',
+  "whatsapp.webhookExposed":
+    "\n════════════════════════════════════════════════════════════\n⚠  Webhook WhatsApp akan mendengarkan di {host}:{port}, bukan\n   127.0.0.1. Setiap request tetap diperiksa terhadap\n   X-Hub-Signature-256, dan selain itu alamat tersebut tidak\n   terlindungi. Pasang reverse proxy ber-TLS di depannya.\n════════════════════════════════════════════════════════════\n",
+  "whatsapp.riskNotice":
+    "\n⚠  Provider WhatsApp: baileys. Ini masuk sebagai perangkat tertaut pada akun\n   sungguhan, dan akun itu bisa diblokir karenanya. Pakai nomor yang terpisah\n   dari nomor pribadi, dan baca docs/whatsapp-risiko.md untuk apa yang diketahui\n   tentang seberapa sering hal itu terjadi.\n",
   "acp.start":
     "Claude tidak dapat dimulai lewat ACP. Jalankan `claude auth login`, lalu coba lagi.",
   "acp.notStarted": "Claude ACP belum dimulai.",

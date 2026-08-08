@@ -136,6 +136,8 @@ Kenapa dikirim sebagai pesan baru, bukan hasil edit: `editMessageText` sebenarny
 ```
 Topic berubah 🟡 saat kartu muncul, kembali 🔵 setelah diputuskan. Di grup, kartu yang sama terbaca setiap anggota; yang tetap tertutup adalah keputusannya, karena tombolnya hanya sah dari principal di allowlist (`security.md` §4).
 
+Baris `kode A7F3` di gambar itu **tidak** muncul di channel bertombol. Sejak v0.6 kode hanya dibangkitkan ketika `caps.buttons` false, dan kartu bertombol tidak membawa kode sama sekali: dua bearer secret untuk satu keputusan berarti dua permukaan tebakan tanpa satu pun kemampuan baru. Di WhatsApp kartunya kehilangan tiga tombol itu dan menyebut kedua bentuk balasan beserta masa berlakunya.
+
 ### 4.5 Penutup (sebelum topic ditutup)
 ```
   ✓ Selesai · 1:12 · 2 berkas · 18 test lulus
@@ -155,17 +157,17 @@ Baris terakhir setiap topic selalu menjelaskan apa yang terjadi — sehingga daf
 
 ## 5. Aturan format lintas channel
 
-Kolom Telegram dan Discord adalah yang terpasang sejak v0.5; kolom WhatsApp masih rencana. Sel yang belum terbangun ditandai di bawah tabel.
+Kolom Telegram dan Discord terpasang sejak v0.5, kolom WhatsApp sejak v0.6. Sel yang belum terbangun ditandai di bawah tabel.
 
 | Aspek | Telegram | Discord | WhatsApp |
 |---|---|---|---|
 | Sesi | forum topic (DM, tanpa admin) | public thread di text channel, `auto_archive_duration` 10080 mnt | linear + header `[ws · #id]` |
-| Status sesi | glif di nama topic (warna ikon dikunci saat dibuat) | glif di nama thread | prefiks nama |
-| Hasil | `sendRichMessage`, jatuh ke pesan biasa bila ditolak | pesan markdown biasa | teks + file |
-| Approval | tombol, terikat principal | tombol, terikat principal — role tidak pernah mengotorisasi (ADR-0008) | kode teks `ok A7F3` |
-| Progres | edit pesan, ekor 3.900 karakter | edit pesan, ekor sepanjang `caps.maxChars` | maks 1 update / 30 dtk |
-| Batas | 30.000 karakter per rich message, 4.096 per pesan biasa | 2.000 | praktis pendek |
-| Diff panjang | dipecah pada batas block | dipecah; lewat tiga pecahan dikirim sebagai satu berkas `.md` | file |
+| Status sesi | glif di nama topic (warna ikon dikunci saat dibuat) | glif di nama thread | glif di header balasan |
+| Hasil | `sendRichMessage`, jatuh ke pesan biasa bila ditolak | pesan markdown biasa | teks; lewat tiga pecahan menjadi satu berkas `.md` |
+| Approval | tombol, terikat principal | tombol, terikat principal — role tidak pernah mengotorisasi (ADR-0008) | kode sekali pakai di kartu, `ok A7F3` / `no A7F3`, terikat principal dan sesi (ADR-0009) |
+| Progres | edit pesan, ekor 3.900 karakter | edit pesan, ekor sepanjang `caps.maxChars` | `baileys` mengedit pesan, maks 1 update / 30 dtk; `cloud-api` tidak punya endpoint edit, jadi `caps.edit` false dan progres berhenti di satu ack |
+| Batas | 30.000 karakter per rich message, 4.096 per pesan biasa | 2.000 | 4.096 |
+| Diff panjang | dipecah pada batas block | dipecah; lewat tiga pecahan dikirim sebagai satu berkas `.md` | sama, lewat `splitMarkdown` yang sama |
 
 Aturan keras: **code block tidak pernah terpotong di tengah.** Melebihi batas → potong di batas block, dan pesan berikutnya membuka pagarnya kembali. Satu fungsi melakukannya untuk kedua channel (`splitMarkdown` di `src/core/channel.ts`), jadi tidak ada channel yang bisa memotongnya dengan cara sendiri. Ambang tiga pecahan pada baris Discord adalah keputusan keterbacaan, bukan batas platform: dinding empat pesan lebih sulit dibaca daripada satu lampiran.
 

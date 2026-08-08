@@ -54,7 +54,7 @@ export const prices = [
 
 export const costNotes = [
   { tag: 'NO MODEL KEY', tone: '#8EEE98', bg: '#12100F', border: '#2B1612', t: 'Claude keeps its own authentication, model, tools, and sandbox.', range: r(0, 3, 24) },
-  { tag: 'NO LISTENER', tone: '#8EEE98', bg: '#0C1116', border: '#171C22', t: 'No channel binds a port: Telegram is polled, Discord is an outbound socket. Only caraka dashboard listens, on 127.0.0.1, and only when you start it.', range: r(1, 3, 24) },
+  { tag: 'LOOPBACK ONLY', tone: '#8EEE98', bg: '#0C1116', border: '#171C22', t: 'Nothing is opened to the internet. Telegram is polled, Discord and Baileys are outbound sockets, and both listeners — the dashboard and the WhatsApp Cloud API webhook — bind 127.0.0.1 unless you say otherwise.', range: r(1, 3, 24) },
   { tag: 'PRIVATE TOKEN', tone: '#FFD67E', bg: '#0C1116', border: '#171C22', t: 'The bot token stays outside config.yaml in a mode-0600 file.', range: r(2, 3, 24) },
   { tag: 'ONE OPERATOR', tone: '#7A848F', bg: '#0C1116', border: '#171C22', t: 'One operator, deliberately. More than one workspace is supported, and @slug in front of a message picks which.', range: r(3, 3, 24) },
   // Comp lines 364-369 hold four pricing notes the port replaced with what init

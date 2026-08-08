@@ -94,7 +94,7 @@ export class Telegram implements Channel {
     private readonly t: Translate = translator(),
     topics = true,
   ) {
-    this.caps = { threads: topics, buttons: true, maxChars: 4096 };
+    this.caps = { threads: topics, buttons: true, edit: true, maxChars: 4096 };
   }
 
   async call<T>(

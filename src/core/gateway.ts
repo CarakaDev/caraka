@@ -30,12 +30,15 @@ import { withTimeout, type MemoryProvider, type Scope } from "../memory/index.js
 import { Store, type Session } from "../store/db.js";
 import { STATE_GLYPH } from "./status.js";
 import {
+  APPROVAL_CODE_ATTEMPTS,
+  APPROVAL_CODE_REPLY,
   approvalCallbacks,
   callbackPurpose,
   cedesPermission,
   guardPermission,
   isHighRisk,
   parseDuration,
+  shortCode,
   trustLimitMinutes,
   verifyApprovalCallback,
   type createScrubber,
@@ -92,6 +95,12 @@ export class Gateway {
     string,
     { principal: string; chatId: string; title: string; expiresAt: number }
   >();
+  // Wrong codes per session and per principal, in memory because the window
+  // they cover is the ten minutes the `pending` map beside them already lives
+  // for. The inner key is the principal, so one sender's typos cannot close the
+  // code path on the sender who owns the card (AC-4.1). Cleared when the
+  // approval is decided or expires.
+  private readonly codeMisses = new Map<string, Map<string, number>>();
   private readonly facts = new Map<string, SessionFacts>();
   private readonly rate = new Map<string, number[]>();
   private readonly rateNoticed = new Set<string>();
@@ -249,11 +258,32 @@ export class Gateway {
     await this.driver("", this.home.driver);
     // One queue map for the whole process, so a second channel cannot start a
     // second run in a workspace that is already busy (FR-SESS-04).
-    await Promise.all(
-      this.channels.map(async (channel) => {
-        for await (const update of channel.updates(this.abort.signal)) this.dispatch(update);
-      }),
-    );
+    await Promise.all(this.channels.map((channel) => this.pump(channel)));
+  }
+
+  /**
+   * One channel's updates, and one channel's ending. A channel that stops for
+   * good — a Discord close it would only repeat, a WhatsApp link that ran out
+   * of reconnects — takes itself out of the process and leaves the others
+   * answering (AC-9.2). With nothing else configured the error is raised the
+   * way it always was, so `caraka start` still ends with a sentence (AC-9.3).
+   */
+  private async pump(channel: Channel) {
+    try {
+      for await (const update of channel.updates(this.abort.signal)) this.dispatch(update);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.store.audit("channel.stopped", "raised", { channel: channel.id, message });
+      if (this.channels.length < 2) throw error;
+      for (const other of this.channels) {
+        if (other.id === channel.id) continue;
+        const operator = this.operators.get(other.id);
+        if (!operator) continue;
+        await this.directTo(other, operator)
+          .then((chatId) => this.sendText(chatId, message, "", undefined, operator))
+          .catch(() => undefined);
+      }
+    }
   }
 
   private async registerCommands() {
@@ -331,6 +361,13 @@ export class Gateway {
       { bytes: Buffer.byteLength(text), sha256: createHash("sha256").update(text).digest("hex") },
       principal,
     );
+    // Before the command router and before anything reaches an agent: on a
+    // channel with no buttons the card's code is the only way a decision can
+    // arrive, and a message shaped like one is never a prompt (AC-3.5).
+    if (!this.channelOf(chatId).caps.buttons && APPROVAL_CODE_REPLY.test(text)) {
+      this.respond(message, this.decideByCode(message, text));
+      return;
+    }
     const command = /^\/(\w+)(?:@\w+)?(?:\s|$)/.exec(text)?.[1]?.toLowerCase();
     const argument = text.replace(/^\/\w+(?:@\w+)?\s*/, "").trim();
     if (command === "stop") this.respond(message, this.stopActive(message));
@@ -421,17 +458,24 @@ export class Gateway {
       text,
       expiresAt: Date.now() + 10 * 60_000,
     });
+    // Without buttons the same choice is the `@slug` a task could have carried
+    // all along, so the slugs go out as text rather than as a card nobody can
+    // press.
+    const slugs = this.workspaces.map((workspace) => `@${workspace.slug}`);
+    const buttons = this.channelOf(chatId).caps.buttons;
     this.respond(
       message,
       this.sendText(
         chatId,
-        this.t("ws.choose"),
+        buttons ? this.t("ws.choose") : `${this.t("ws.choose")}\n${slugs.join("\n")}`,
         threadId,
-        {
-          inline_keyboard: this.workspaces.map((workspace) => [
-            { text: `@${workspace.slug}`, callback_data: `w:${workspace.slug}` },
-          ]),
-        },
+        buttons
+          ? {
+              inline_keyboard: this.workspaces.map((workspace) => [
+                { text: `@${workspace.slug}`, callback_data: `w:${workspace.slug}` },
+              ]),
+            }
+          : undefined,
         principal,
       ),
     );
@@ -805,6 +849,11 @@ export class Gateway {
             const text = this.agentText(notification);
             if (!text) return;
             output = `${output}${text}`.slice(-240_000);
+            // A channel that cannot rewrite a message gets the ack and then
+            // silence until the result: the alternative is one new message per
+            // update, which is a wall of text and, on a channel with an
+            // outbound ceiling, most of the budget for one run.
+            if (!this.channelOf(session.chatId).caps.edit) return;
             const now = Date.now();
             if (now - lastEdit < 1500) return;
             lastEdit = now;
@@ -1099,20 +1148,6 @@ export class Gateway {
     const reject = request.options.find((option) => option.kind === "reject_once");
     if (!allow) return { outcome: { outcome: "cancelled" } } as PermissionResponse;
 
-    // Approval never falls back to chat text (FR-CHAN-02). A channel that
-    // cannot carry a callback button cannot carry a decision either, so the
-    // request is refused and the refusal is on the record.
-    if (!this.channelOf(session.chatId).caps.buttons) {
-      this.store.audit(
-        "approval.decide",
-        "unsupported",
-        { toolCallId: request.toolCall.toolCallId, channel: this.channelOf(session.chatId).id },
-        session.principal,
-        session.id,
-      );
-      return { outcome: { outcome: "cancelled" } } as PermissionResponse;
-    }
-
     const grant = this.store.activeGrant(this.workspaceOf(session).path);
     if (grant && !isHighRisk(request)) {
       const line = `${this.header(session)}${this.t("permission.auto", {
@@ -1141,37 +1176,71 @@ export class Gateway {
 
     const callback = approvalCallbacks(this.approvalKey);
     const expiresAt = Date.now() + 10 * 60_000;
-    this.store.createApproval({
-      id: callback.id,
-      principal: session.principal,
-      sessionId: session.id,
-      agentSessionId: agentId,
-      toolCallId: request.toolCall.toolCallId,
-      allowOptionId: allow.optionId,
-      rejectOptionId: reject?.optionId ?? null,
-      expiresAt,
-    });
+    const buttons = this.channelOf(session.chatId).caps.buttons;
+    // The code is a bearer secret, so it is only born where it decides
+    // something (AC-3.2). Where a signed button already carries the decision,
+    // a typeable code adds a second way in, decides nothing the first could
+    // not, and sits in the transcript for every member of that container to
+    // read.
+    const newCode = () => (buttons ? null : shortCode());
+    let code = newCode();
+    let created: boolean | undefined;
+    for (let attempt = 0; created === undefined && attempt < 3; attempt += 1) {
+      try {
+        created = this.store.createApproval({
+          id: callback.id,
+          principal: session.principal,
+          sessionId: session.id,
+          agentSessionId: agentId,
+          toolCallId: request.toolCall.toolCallId,
+          allowOptionId: allow.optionId,
+          rejectOptionId: reject?.optionId ?? null,
+          expiresAt,
+          shortCode: code,
+        });
+      } catch {
+        // The partial unique index refused a code already live in this session.
+        code = newCode();
+      }
+    }
+    // Past the pending ceiling there is no card and no message: a session that
+    // is already holding five questions does not get a sixth (AC-4.3).
+    if (created !== true) {
+      this.store.audit(
+        "approval.decide",
+        "toomany",
+        {
+          toolCallId: request.toolCall.toolCallId,
+          pending: this.store.pendingApprovals(session.id),
+        },
+        session.principal,
+        session.id,
+      );
+      return { outcome: { outcome: "cancelled" } } as PermissionResponse;
+    }
     await this.setState(session, "awaiting_approval");
     await this.sendText(
       session.chatId,
-      `${this.header(session)}${this.t("permission.header")}\n${request.toolCall.title ?? request.toolCall.kind ?? this.t("permission.fallbackTitle")}${this.permissionTarget(request)}\n\n${this.t("permission.ttl")}`,
+      `${this.header(session)}${this.t("permission.header")}\n${request.toolCall.title ?? request.toolCall.kind ?? this.t("permission.fallbackTitle")}${this.permissionTarget(request)}\n\n${this.t(buttons ? "permission.ttl" : "permission.ttlReply", { code: code ?? "" })}`,
       session.threadId,
-      {
-        inline_keyboard: [
-          [
-            // The button says what the agent named the option, not what Caraka
-            // assumes it means.
-            {
-              text: (allow.name || this.t("button.allow")).slice(0, BUTTON_TEXT_LIMIT),
-              callback_data: callback.allow,
-            },
-            {
-              text: (reject?.name || this.t("button.reject")).slice(0, BUTTON_TEXT_LIMIT),
-              callback_data: callback.reject,
-            },
-          ],
-        ],
-      },
+      buttons
+        ? {
+            inline_keyboard: [
+              [
+                // The button says what the agent named the option, not what
+                // Caraka assumes it means.
+                {
+                  text: (allow.name || this.t("button.allow")).slice(0, BUTTON_TEXT_LIMIT),
+                  callback_data: callback.allow,
+                },
+                {
+                  text: (reject?.name || this.t("button.reject")).slice(0, BUTTON_TEXT_LIMIT),
+                  callback_data: callback.reject,
+                },
+              ],
+            ],
+          }
+        : undefined,
       session.principal,
       session.id,
     );
@@ -1180,6 +1249,9 @@ export class Gateway {
         const pending = this.pending.get(callback.id);
         if (pending) clearTimeout(pending.timer);
         this.pending.delete(callback.id);
+        // The attempt counter covers a waiting question, so it goes when the
+        // question does — decided here, or expired by the timer below.
+        this.codeMisses.delete(session.id);
         // Not awaited: this resolves an ACP permission promise, and the rename
         // is cosmetic — a slow editForumTopic must not delay the agent.
         if (!this.stopping) void this.setState(session, "running");
@@ -1217,6 +1289,81 @@ export class Gateway {
         return `\n${key}: ${this.scrub(input[key]).slice(0, 700)}`;
     }
     return "";
+  }
+
+  /**
+   * The card's code, arriving as the only transport a channel without buttons
+   * has. What decides is `A7F3`, not the word in front of it: the code is
+   * generated server-side, appears in nothing but the card Caraka wrote to the
+   * operator, and never enters an agent's context, so an injected "yes" cannot
+   * produce one. Past the lookup this is the button path — same principal, same
+   * session, same TTL, same single-use write.
+   */
+  private async decideByCode(message: InboundMessage, text: string) {
+    const { chatId, threadId } = this.route(message);
+    const principal = String(message.from?.id);
+    const match = APPROVAL_CODE_REPLY.exec(text);
+    const decision = match?.[1]?.toLowerCase() === "ok" ? "allow" : "reject";
+    const code = (match?.[2] ?? "").toUpperCase();
+    const session = this.store.sessionFor(chatId, threadId);
+    const reply = (key: "approval.codeInvalid" | "approval.codeLocked" | "callback.used") =>
+      this.sendText(
+        chatId,
+        `${session ? this.header(session) : ""}${this.t(key)}`,
+        threadId,
+        undefined,
+        principal,
+        session?.id,
+      );
+    if (!session) return reply("approval.codeInvalid");
+
+    const tally = this.codeMisses.get(session.id);
+    const seen = tally?.get(principal) ?? 0;
+    // The limit answers once and then says nothing, so a stuck sender cannot
+    // turn the refusal into the outbound traffic the refusal exists to prevent.
+    if (seen >= APPROVAL_CODE_ATTEMPTS) return undefined;
+
+    const approval = this.store.resolveApprovalByCode(code, principal, session.id, decision);
+    const pending = approval ? this.pending.get(approval.id) : undefined;
+    if (!approval || !pending) {
+      // A code this principal was already shown is a double tap, not a guess.
+      if (this.store.usedCode(code, principal, session.id)) return reply("callback.used");
+      // The counter covers a waiting question (AC-4.1). With nothing waiting
+      // there is nothing to guess at, and ordinary chat that happens to fit the
+      // shape — `ok next`, `no test` — would otherwise spend the attempts and
+      // leave the session unable to answer the next real card. It is still one
+      // audit line either way (AC-4.2).
+      const waiting = this.store.pendingApprovals(session.id) > 0;
+      const misses = waiting ? seen + 1 : seen;
+      if (waiting) this.codeMisses.set(session.id, (tally ?? new Map()).set(principal, misses));
+      // The line names who and where, never what was typed (AC-3.12).
+      this.store.audit("approval.decide", "badcode", { misses }, principal, session.id);
+      return reply(
+        misses >= APPROVAL_CODE_ATTEMPTS ? "approval.codeLocked" : "approval.codeInvalid",
+      );
+    }
+    pending.finish(
+      decision === "allow" && approval.allowOptionId
+        ? { outcome: { outcome: "selected", optionId: approval.allowOptionId } }
+        : approval.rejectOptionId
+          ? { outcome: { outcome: "selected", optionId: approval.rejectOptionId } }
+          : { outcome: { outcome: "cancelled" } },
+    );
+    this.store.audit(
+      "approval.decide",
+      decision,
+      { toolCallId: approval.toolCallId },
+      principal,
+      session.id,
+    );
+    return this.sendText(
+      chatId,
+      `${this.header(session)}${this.t(decision === "allow" ? "callback.allowed" : "callback.rejected")}`,
+      threadId,
+      undefined,
+      principal,
+      session.id,
+    );
   }
 
   private async handleCallback(update: InboundEvent) {
@@ -1301,6 +1448,11 @@ export class Gateway {
   private async offerTrust(message: InboundMessage, argument: string) {
     const { chatId, threadId } = this.route(message);
     const principal = String(message.from?.id);
+    // The trust card is confirmed by a signed button and by nothing else, so a
+    // channel without one is told that rather than handed a card it cannot
+    // answer. `caraka trust` from the terminal is the route that still works.
+    if (!this.channelOf(chatId).caps.buttons)
+      return this.sendText(chatId, this.t("trust.needButtons"), threadId, undefined, principal);
     const minutes = parseDuration(argument);
     if (!minutes)
       return this.sendText(chatId, this.t("trust.needDuration"), threadId, undefined, principal);
@@ -1534,10 +1686,22 @@ export class Gateway {
 
   private async status(message: InboundMessage) {
     const { chatId, threadId } = this.route(message);
-    const session = this.store.sessionFor(chatId, threadId);
-    const base = session
-      ? `${this.header(session)}${this.t("status.session", { state: session.state })}`
+    // With threads a route holds one session and the answer is that session.
+    // Without them every session in the conversation shares the route, so the
+    // answer names all of them; the header each line already carries is what
+    // tells them apart (AC-1.8).
+    const sessions = this.channelOf(chatId).caps.threads
+      ? [this.store.sessionFor(chatId, threadId)].filter((one) => one !== undefined)
+      : this.store.sessionsFor(chatId, threadId);
+    const base = sessions.length
+      ? sessions
+          .map(
+            (session) =>
+              `${this.header(session)}${this.t("status.session", { state: session.state })}`,
+          )
+          .join("\n")
       : this.t("status.none");
+    const session = sessions[0];
     // In a room the honest answer to "what is going on" includes what the
     // channel will and will not hand us, so `/status` repeats the pairing report.
     const body =

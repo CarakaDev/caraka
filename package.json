@@ -60,6 +60,14 @@
     "tsx": "4.23.10",
     "typescript": "6.0.3"
   },
+  "peerDependencies": {
+    "@whiskeysockets/baileys": "6.7.18"
+  },
+  "peerDependenciesMeta": {
+    "@whiskeysockets/baileys": {
+      "optional": true
+    }
+  },
   "engines": {
     "node": ">=22"
   }

@@ -42,7 +42,7 @@ export const products = [
     // Comp line 300 lists "Memory across sessions"; v0.2 ships no memory
     // provider (roadmap Fase 3 → v0.3), so the card names the audit log that
     // did ship.
-    does: ['Works on your repository', 'Sessions as Telegram topics or Discord threads', 'Approval before every write', 'An append-only audit log', 'Nothing else, on purpose'],
+    does: ['Works on your repository', 'Sessions as topics, threads, or a header', 'Approval before every write', 'An append-only audit log', 'Nothing else, on purpose'],
   },
 ]
 
@@ -52,17 +52,17 @@ export const rows = [
   { k: 'Agent runtime', a: 'Its own', b: 'Its own', c: 'Yours', tone: '#FF7A5E', weight: '600', range: r(2, 2.2, 22) },
   { k: 'Execution tools', a: '20+', b: 'Yes', c: 'Zero', tone: '#FF7A5E', weight: '600', range: r(3, 2.2, 22) },
   { k: 'Plugin marketplace', a: 'Large', b: 'Yes', c: 'None', tone: '#FF7A5E', weight: '600', range: r(4, 2.2, 22) },
-  // Comp line 309 reads "1 in v1.0". Telegram shipped at v0.2 and Discord at
-  // v0.5 on the same Channel contract, and roadmap Fase 6 puts WhatsApp at
-  // v0.6, so v1.0 is not the one-channel release either.
-  { k: 'Channels', a: '22', b: 'via gateway', c: '2 in v0.5', tone: '#95A0AB', weight: '400', range: r(5, 2.2, 22) },
+  // Comp line 309 reads "1 in v1.0". Telegram shipped at v0.2, Discord at v0.5,
+  // and WhatsApp at v0.6, all three on the same Channel contract, so v1.0 is not
+  // the one-channel release either. Signal is unscheduled.
+  { k: 'Channels', a: '22', b: 'via gateway', c: '3 in v0.6', tone: '#95A0AB', weight: '400', range: r(5, 2.2, 22) },
   { k: 'Tokens outside your agent', a: 'Yes, own loop', b: 'Yes', c: 'None', tone: '#8EEE98', weight: '600', range: r(6, 2.2, 22) },
   { k: 'Sandboxing', a: 'Configure it', b: 'Configure it', c: 'Inherited', tone: '#FF7A5E', weight: '600', range: r(7, 2.2, 22) },
   // Comp line 312 presents "Under 3 min" as a report; no setup session has
   // been recorded yet (status.ts keeps that gate open), and prd.md G1 sets
   // < 3 menit as a target, so the cell names it one.
   { k: 'Reported setup time', a: 'Hours', b: 'pip + venv', c: 'Target: under 3 min', tone: '#FF7A5E', weight: '600', range: r(8, 2.2, 22) },
-  { k: 'Maturity', a: 'Very high', b: 'High', c: 'v0.5 closed beta', tone: '#FF93B2', weight: '600', range: r(9, 2.2, 22) },
+  { k: 'Maturity', a: 'Very high', b: 'High', c: 'v0.6 closed beta', tone: '#FF93B2', weight: '600', range: r(9, 2.2, 22) },
 ]
 
 export const complaints = [
@@ -155,7 +155,7 @@ export const picks = [
 ]
 
 export const honest = [
-  'OpenClaw is far more mature. Hundreds of thousands of stars, tens of thousands of commits, a real community. Caraka v0.2 is an early preview and you should treat it that way.',
+  'OpenClaw is far more mature. Hundreds of thousands of stars, tens of thousands of commits, a real community. Caraka v0.6 is an early preview and you should treat it that way.',
   'OpenClaw does work Caraka will never do. Calendar, inbox, browser, home automation. If that is what you need, this is not the answer.',
   // Comp line 355 says "early 2026"; the Vellum quote on this page is dated
   // August 2026.

@@ -64,6 +64,49 @@ const configShape = {
       threads: z.boolean().default(true),
     })
     .optional(),
+  // Additive as well, and the third channel to use `allowlists`. Two providers
+  // sit behind one block because core's behaviour is identical either way apart
+  // from `caps.edit` (FR-CHAN-03, `spec/whatsapp-v06.md` §6). No token lives
+  // here: `docs/security.md` §7 keeps channel credentials in `secrets/`.
+  whatsapp: z
+    .object({
+      provider: z.enum(["baileys", "cloud-api"]),
+      // One list, not two: a WhatsApp group names itself as the sender, so
+      // Caraka refuses group messages outright (`src/channels/whatsapp.ts`
+      // `receive`) and there is no room for a room allowlist to gate.
+      allowFrom: allowlists.allowFrom,
+      // The number the linked device runs as. AC-8.10: keep it apart from the
+      // personal number.
+      number: z.string().min(1).optional(),
+      // FR-SETUP-06. `baileys` logs in as a linked device on a real account, and
+      // the account can be banned for it; the flag is where the operator says so.
+      acknowledgeRisk: z.boolean().default(false),
+      phoneNumberId: z.string().min(1).optional(),
+      // Only the Cloud API listens, and only on loopback unless `caraka start`
+      // is given `--bind` (`docs/frd.md` FR-OPS-01).
+      webhook: z
+        .object({
+          port: z.number().int().min(0).max(65535).default(7719),
+          path: z.string().startsWith("/").default("/whatsapp"),
+        })
+        .default({ port: 7719, path: "/whatsapp" }),
+    })
+    .superRefine((block, ctx) => {
+      if (block.provider === "baileys" && !block.acknowledgeRisk)
+        ctx.addIssue({
+          code: "custom",
+          path: ["acknowledgeRisk"],
+          message:
+            "whatsapp.provider baileys needs acknowledgeRisk: true. The account can be banned for it; docs/whatsapp-risiko.md says what is known about how often.",
+        });
+      if (block.provider === "cloud-api" && !block.phoneNumberId)
+        ctx.addIssue({
+          code: "custom",
+          path: ["phoneNumberId"],
+          message: "whatsapp.provider cloud-api needs phoneNumberId from the Meta app.",
+        });
+    })
+    .optional(),
   agent: z.object({
     adapter: z.literal("claude-agent-acp"),
     adapterVersion: z.literal("0.63.0"),
@@ -82,8 +125,9 @@ const configShape = {
 // on, and finding that out on the first task is finding it out too late.
 const configSchema = z
   .object(configShape)
-  .refine((config) => Boolean(config.telegram ?? config.discord), {
-    message: "No channel is configured. Add a telegram: or discord: block to config.yaml.",
+  .refine((config) => Boolean(config.telegram ?? config.discord ?? config.whatsapp), {
+    message:
+      "No channel is configured. Add a telegram:, discord: or whatsapp: block to config.yaml.",
     path: ["telegram"],
   });
 
@@ -99,7 +143,7 @@ export type ChannelBlock = { allowFrom: string[]; allowChats: string[]; threads:
  * survives past `src/config.ts` (hard rule 1).
  */
 export function channelBlocks(config: CarakaConfig): Record<string, ChannelBlock> {
-  const { telegram, discord } = config;
+  const { telegram, discord, whatsapp } = config;
   return {
     ...(telegram
       ? {
@@ -116,6 +160,18 @@ export function channelBlocks(config: CarakaConfig): Record<string, ChannelBlock
             allowFrom: discord.allowFrom,
             allowChats: discord.allowChats,
             threads: discord.threads,
+          },
+        }
+      : {}),
+    // WhatsApp holds no threads on either provider, so every session there runs
+    // linear behind the header core already writes. The room list is empty
+    // because no room reaches this channel at all.
+    ...(whatsapp
+      ? {
+          whatsapp: {
+            allowFrom: whatsapp.allowFrom,
+            allowChats: [],
+            threads: false,
           },
         }
       : {}),
@@ -141,6 +197,15 @@ export function carakaPaths(root = process.env.CARAKA_HOME ?? join(homedir(), ".
     // sites and changes nothing.
     token: join(base, "secrets", "telegram.token"),
     discordToken: join(base, "secrets", "discord.token"),
+    // The Baileys auth state is a credential, not session state: whoever holds
+    // the directory holds the WhatsApp session of that number
+    // (`docs/security.md` §7), so it sits under `secrets/` at 0700.
+    whatsappSession: join(base, "secrets", "whatsapp"),
+    whatsappToken: join(base, "secrets", "whatsapp.token"),
+    whatsappVerify: join(base, "secrets", "whatsapp.verify"),
+    // What Meta signs `X-Hub-Signature-256` with. A different secret from the
+    // verify token, which only answers the GET handshake.
+    whatsappAppSecret: join(base, "secrets", "whatsapp.appsecret"),
     approvalKey: join(base, "secrets", "approval.key"),
     database: join(base, "caraka.db"),
     pid: join(base, "caraka.pid"),
@@ -154,13 +219,33 @@ export async function atomicSecret(path: string, value: string) {
   await rename(temporary, path);
 }
 
-export async function saveConfig(config: CarakaConfig, token: string, discordToken?: string) {
+/** The credentials a channel block needs, each written 0600 and never to YAML. */
+export type ChannelSecrets = {
+  discordToken?: string;
+  whatsappToken?: string;
+  whatsappVerify?: string;
+  whatsappAppSecret?: string;
+};
+
+export async function saveConfig(
+  config: CarakaConfig,
+  token: string,
+  secrets: ChannelSecrets = {},
+) {
   const paths = carakaPaths();
   await mkdir(join(paths.root, "secrets"), { recursive: true, mode: 0o700 });
   await chmod(paths.root, 0o700);
   await chmod(join(paths.root, "secrets"), 0o700);
   if (token) await atomicSecret(paths.token, `${token.trim()}\n`);
-  if (discordToken) await atomicSecret(paths.discordToken, `${discordToken.trim()}\n`);
+  for (const name of [
+    "discordToken",
+    "whatsappToken",
+    "whatsappVerify",
+    "whatsappAppSecret",
+  ] as const) {
+    const value = secrets[name];
+    if (value) await atomicSecret(paths[name], `${value.trim()}\n`);
+  }
   try {
     await stat(paths.approvalKey);
   } catch {
@@ -186,10 +271,32 @@ export async function loadConfig() {
   const discordToken = config.discord
     ? await channelToken("CARAKA_DISCORD_TOKEN", paths.discordToken)
     : "";
+  // Baileys carries its own linked-device credential in `secrets/whatsapp/` and
+  // needs none of these three. A missing file reads as an empty string here so
+  // the sentence below can name what is missing instead of raising ENOENT.
+  const cloud = config.whatsapp?.provider === "cloud-api";
+  const read = async (variable: string, path: string) =>
+    cloud ? channelToken(variable, path).catch(() => "") : "";
+  const whatsappToken = await read("CARAKA_WHATSAPP_TOKEN", paths.whatsappToken);
+  const whatsappVerify = await read("CARAKA_WHATSAPP_VERIFY_TOKEN", paths.whatsappVerify);
+  const whatsappAppSecret = await read("CARAKA_WHATSAPP_APP_SECRET", paths.whatsappAppSecret);
   const approvalKey = Buffer.from((await readFile(paths.approvalKey, "utf8")).trim(), "base64url");
   if ((config.telegram && !token) || (config.discord && !discordToken) || approvalKey.length < 32)
     throw new Error("Caraka secrets are incomplete. Run `caraka init` again.");
-  return { config, token, discordToken, approvalKey, paths };
+  if (cloud && !(whatsappToken && whatsappVerify && whatsappAppSecret))
+    throw new Error(
+      "The WhatsApp Cloud API needs an access token, a webhook verify token, and the app secret in ~/.caraka/secrets/ or in CARAKA_WHATSAPP_TOKEN, CARAKA_WHATSAPP_VERIFY_TOKEN and CARAKA_WHATSAPP_APP_SECRET.",
+    );
+  return {
+    config,
+    token,
+    discordToken,
+    whatsappToken,
+    whatsappVerify,
+    whatsappAppSecret,
+    approvalKey,
+    paths,
+  };
 }
 
 export async function privateFile(path: string) {
@@ -217,6 +324,8 @@ export function defaultConfig(
 }
 
 export async function addAllowedChat(config: CarakaConfig, channel: string, chatId: string) {
+  // WhatsApp is absent on purpose: it has no room list, because no room reaches
+  // it (`src/channels/whatsapp.ts` `receive`).
   const block = channel === "discord" ? config.discord : config.telegram;
   if (!block || block.allowChats.includes(chatId)) return config;
   const next: CarakaConfig = {

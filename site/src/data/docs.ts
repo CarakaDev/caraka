@@ -1,4 +1,4 @@
-// Documentation-page copy follows the shipped v0.5 implementation and docs/.
+// Documentation-page copy follows the shipped v0.6 implementation and docs/.
 // design/mockups/Caraka Docs.dc.html decides the layout and stopped deciding
 // the content at v0.1: its chapter 05 is Memory, which does not ship, and its
 // row lists name commands that were never built. Where a line here contradicts
@@ -64,7 +64,7 @@ export const chapters: Chapter[] = [
   },
   {
     no: '02', id: 'sessions', href: '#sessions', label: 'Sessions', title: 'Sessions & topics',
-    intro: 'A Telegram topic or a Discord thread maps to one persisted agent session. Where threads are unavailable, or creating one fails, the same task runs in linear mode with a workspace and session header.',
+    intro: 'A Telegram topic or a Discord thread maps to one persisted agent session. Where threads are unavailable — a failed creation, or WhatsApp, which has none — the same task runs in linear mode behind a workspace and session header.',
     // comp:219-233 lists nine chat commands. Thirteen are registered, and they
     // are these: `gatewayCommands` in src/core/channel.ts, sent through
     // setMyCommands on Telegram and registered as application commands on
@@ -104,7 +104,7 @@ export const chapters: Chapter[] = [
   },
   {
     no: '04', id: 'approval', href: '#approval', label: 'Approval', title: 'Signed approvals',
-    intro: 'ACP permission requests become buttons on whichever channel asked. Ordinary text is never interpreted as approval.',
+    intro: 'ACP permission requests become a button on whichever channel has buttons, and a one-time code on the card where none exist. An ordinary word is never interpreted as approval.',
     // comp:245-256 names read-only, assisted and trusted as chat-selectable
     // modes. Only the trust window exists, and it is not a mode: see the row
     // below and `guardPermission` in src/core/security.ts:107-121.
@@ -113,6 +113,7 @@ export const chapters: Chapter[] = [
       { k: 'reject', v: 'Select reject_once when available; otherwise cancel the permission request.' },
       { k: 'trust window', v: 'While one is open, an ordinary request is allowed once, announced in the chat, and audited; a high-risk one keeps its buttons.' },
       { k: 'callback', v: 'Random id plus truncated HMAC, 33 characters — inside Telegram’s 64-byte callback_data and inside Discord’s custom_id.' },
+      { k: 'code', v: 'Where a channel has no buttons, four characters from randomBytes over a 32-symbol alphabet, stored on the approval row and printed on that card alone — never in an audit row, a log line, or a prompt. Replying ok or no with it spends it once. Five wrong codes close the route for that session, and a channel that has buttons is given no code.' },
       { k: 'binding', v: 'Validated against the channel principal, local session, ACP session, and tool-call record.' },
       { k: 'TTL', v: 'Expires after ten minutes.' },
       { k: 'replay', v: 'The database update succeeds once; later taps are rejected.' },
@@ -132,11 +133,11 @@ export const chapters: Chapter[] = [
       { k: 'sender allowlist', v: 'The gateway refuses to start empty, and a sender outside it is audited as denied wherever it wrote.' },
       { k: 'group pairing', v: 'A group or guild channel is confirmed in the operator’s DM, never in the room itself. Telegram privacy mode stays on, group admin is never requested, and Discord is never asked for the MESSAGE_CONTENT intent.' },
       { k: 'group disclosure', v: 'Putting a room on the allowlist chooses to show that work to everyone who can read it: every one of them sees the approval cards, paths, diffs, and command output. A Discord role changes none of it, and a role never approves anything.' },
-      { k: 'secret files', v: '~/.caraka/secrets uses mode 0700; token and approval key use 0600.' },
+      { k: 'secret files', v: '~/.caraka/secrets uses mode 0700; every token and the approval key use 0600, and the Baileys auth state is a 0700 directory inside it.' },
       { k: 'scrubber', v: 'Runs before every outbound message on every channel and before every audit detail. No CARAKA_ variable reaches an agent subprocess.' },
       { k: 'audit', v: 'SQLite triggers reject UPDATE and DELETE on audit rows.' },
-      { k: 'network', v: 'No channel listens and there is no webhook. caraka dashboard is the one listener, on 127.0.0.1, GET only, with the database opened read-only.' },
-      { k: 'output', v: 'Rich Message first on Telegram with a scrubbed plain-text fallback; plain markdown on Discord, and a .md attachment past three pieces.' },
+      { k: 'network', v: 'Nothing is opened to the internet. Two listeners exist and both bind 127.0.0.1: caraka dashboard, GET only with the database read-only, and the WhatsApp Cloud API webhook, which verifies X-Hub-Signature-256 in constant time even on loopback.' },
+      { k: 'output', v: 'Rich Message first on Telegram with a scrubbed plain-text fallback; plain markdown on Discord and WhatsApp, and a .md attachment past three pieces on both.' },
     ],
     note: 'The audit stores prompt length and hash, not the raw private prompt.',
   },
@@ -144,10 +145,10 @@ export const chapters: Chapter[] = [
     no: '06', id: 'config', href: '#config', label: 'Config', title: 'Configuration',
     intro: 'One validated YAML file names the workspaces, the configured channels, their allowlists, the interface language, the memory provider, and the agent. Secrets are separate.',
     // comp:272-290 shows a multi-workspace file with memory and mode keys. The
-    // workspaces list and the memory block arrived in v0.3 and v0.4, and the
-    // discord block in v0.5. There is still no mode key: no policy-mode gate
-    // exists on the run path. Every block is additive and version stays 1, so a
-    // file written for an older release still loads unchanged.
+    // workspaces list and the memory block arrived in v0.3 and v0.4, the discord
+    // block in v0.5, and the whatsapp block in v0.6. There is still no mode key:
+    // no policy-mode gate exists on the run path. Every block is additive and
+    // version stays 1, so a file written for an older release still loads.
     term: [
       { t: 'version: 1', tone: '#FF7A5E' },
       { t: 'language: en', tone: g },
@@ -163,11 +164,15 @@ export const chapters: Chapter[] = [
       { t: '  appId: "140000000000000000"', tone: '#B2BCC6' },
       { t: '  allowFrom: ["230000000000000000"]', tone: g },
       { t: '  allowChats: ["990000000000000000"]', tone: g },
+      { t: 'whatsapp:             # optional', tone: '#FF7A5E' },
+      { t: '  provider: cloud-api', tone: '#B2BCC6' },
+      { t: '  phoneNumberId: "1500000000"', tone: g },
+      { t: '  allowFrom: ["628123456789"]', tone: g },
       { t: 'agent:', tone: '#FF7A5E' },
       { t: '  adapter: claude-agent-acp', tone: g },
       { t: '  adapterVersion: 0.63.0', tone: g },
     ],
-    note: 'CARAKA_HOME changes the local data directory. CARAKA_TELEGRAM_TOKEN and CARAKA_DISCORD_TOKEN are available for controlled automation, but the interactive wizard is the safer default, and neither variable is passed down to an agent subprocess. The interface language, English or Indonesian, is asked once during init and never guessed from an incoming message.',
+    note: 'CARAKA_HOME changes the local data directory. CARAKA_TELEGRAM_TOKEN, CARAKA_DISCORD_TOKEN, and the three CARAKA_WHATSAPP_ variables are available for controlled automation, but a 0600 file under ~/.caraka/secrets is the safer default, and no CARAKA_ variable is passed down to an agent subprocess. Choosing the baileys provider needs acknowledgeRisk: true written by hand, and start refuses without it. The interface language, English or Indonesian, is asked once during init and never guessed from an incoming message.',
   },
   {
     no: '07', id: 'cli', href: '#cli', label: 'CLI', title: 'CLI reference',

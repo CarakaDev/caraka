@@ -1,4 +1,4 @@
-// Security-page copy follows docs/security.md and the shipped v0.5 runtime.
+// Security-page copy follows docs/security.md and the shipped v0.6 runtime.
 // Where a line below no longer matches design/mockups/Caraka Security.dc.html,
 // the comment above it names the comp line and what shipped instead. The comp
 // still decides how this page looks; it stopped deciding what is true of the
@@ -88,17 +88,18 @@ export const threats = [
   {
     id: 'T7',
     name: 'Gateway exposed to the internet',
-    control: 'Both channels are outbound only, so the gateway opens nothing. Since v0.5 one listener exists and it is not a channel: caraka dashboard binds 127.0.0.1, answers GET only, and holds the database read-only. Binding it anywhere else needs --bind, which prints a warning and writes an audit row first.',
+    control: 'Telegram is polled, Discord and the Baileys provider hold outbound sockets, so those open nothing. Two listeners exist and both bind 127.0.0.1: caraka dashboard, GET only and read-only, and since v0.6 the Cloud API webhook, which verifies X-Hub-Signature-256 in constant time even on loopback. Binding either anywhere else needs an explicit flag, which prints a warning and writes an audit row first.',
   },
   {
     id: 'T8',
     name: 'Plugin supply chain',
-    control: 'No marketplace or dynamic loading. Runtime dependencies are pinned in package-lock.json.',
+    control: 'No marketplace or dynamic loading. Four direct runtime dependencies, pinned in package-lock.json. Baileys is an exact-version optional peer, so an install that does not choose it never downloads it — and CI never installs it either, which means npm audit does not see it.',
   },
   {
     id: 'T9',
     name: 'WhatsApp account ban',
-    control: 'Not applicable: there is no WhatsApp channel code in the package.',
+    control:
+      'Real, unpredictable, and only partly ours to reduce. Four mitigations are code that can fail: allowFrom is mandatory, one outbound function caps sends at 12 per rolling minute, spaces them 1,200\u20133,500 ms apart, and refuses to write to any number that has not written first. Choosing the unofficial provider stops start until acknowledgeRisk: true is written, and the message links the risk page. The fifth signal, datacenter traffic, is not ours to answer at all. Cloud API is the way out and carries none of this.',
   },
   {
     id: 'T10',
@@ -150,11 +151,11 @@ export const mandatory = [
   // Claude", which v0.2 makes false; the comp line it ported (336) asked for
   // groups behind an explicit opt-in, and the two allowlists are that opt-in.
   'A message reaches Claude only when its chat is on the chat allowlist and its sender is on the sender allowlist.',
-  'Approval only through a signed, single-use callback with a TTL. Chat text is never a fallback.',
+  'Approval only through a single-use bearer secret with a TTL, bound to the principal, the session, and the request. Where a channel has buttons that is a signed callback; where it has none it is the code on the card, generated server-side and printed nowhere else. A plain word is never a decision on any channel.',
   'Token and approval key files use mode 0600 inside a mode-0700 secrets directory.',
   'The outbound scrubber runs before every message on every channel, and before every audit detail.',
   'SQLite triggers keep audit rows append-only.',
-  'No channel opens a listener; where threads are unavailable, sessions fall back to linear mode with a header.',
+  'Only the Cloud API webhook listens, on loopback by default and only with an unforgeable signature; every other channel is outbound. Where threads are unavailable, sessions fall back to linear mode with a header.',
   // Comp line 333 already asked for a trust window that expires under a
   // database constraint. v0.2 has it (src/store/db.ts:100), so the card states
   // what the window does not suspend (gateway.ts:546-570).
@@ -167,11 +168,13 @@ export const notClaimed = [
   'We have not had a third-party security audit. This will be stated openly until it changes.',
   'The local dashboard has no authentication. While caraka dashboard runs, anyone on that machine who can reach 127.0.0.1 can read it, including a local user with no read permission on the database file. Loopback is not an authentication boundary; what the page does refuse is a browser arriving under someone else\u2019s hostname.',
   'Nothing on the Discord path has ever run against a real Discord. The evidence is a mocked gateway socket and a mocked REST surface, so the real payload shapes, the real 429 behaviour, and the real permissions are unproven.',
+  'We cannot stop WhatsApp from blocking your number if you pick the unofficial provider. That risk is documented and accepted, not treated as a product defect, and docs/whatsapp-risiko.md says what is known about how often it happens.',
+  'No WhatsApp number has ever been linked here and no live Cloud API webhook has ever been received. Every WhatsApp check answers a fake transport or a listener on port 0, so the real pairing flow, the real payload shapes, and the real ban behaviour are unproven.',
   // The second tier, which has no line in the comp because the comp has no
   // trust window. Terminal-only by AC-6.13/6.14; the audit records the window
   // and says so (src/cli.ts:366-397, gateway.ts:969-977).
   'The bypassPermissions mode belongs to Claude and is opened from the terminal alone. Inside that window Caraka is never asked for permission, so its audit records that the window was open and not what ran inside it.',
-  'Caraka v0.5 is a closed beta. Treat it as software that has not yet been attacked in the wild.',
+  'Caraka v0.6 is a closed beta. Treat it as software that has not yet been attacked in the wild.',
   'Vulnerabilities in your coding agent, in Telegram, or in Discord are theirs to fix. We will help route the report.',
 ]
 

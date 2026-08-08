@@ -188,7 +188,7 @@ Index: `(container_id, thread_ref)` UNIQUE · `(workspace_id, state)` · `(state
 | `nonce` | TEXT UNIQUE | sekali pakai, terikat `(principal, session, request)` |
 | `hmac` | TEXT | tanda tangan payload callback (`callback_data` maks 64 byte → hanya id yang dikirim) |
 | `ephemeral_msg_id` | TEXT NULL | tidak terpakai — kartu approval tidak pernah dikirim ephemeral, lihat `security.md` §4 |
-| `short_code` | TEXT | mis. `A7F3`, untuk channel tanpa tombol |
+| `short_code` | TEXT NULL | mis. `A7F3`, hanya untuk channel tanpa tombol. Terbangun v0.6 lewat `ALTER TABLE` berpenjaga `PRAGMA`, jadi basis data v0.5 tetap terbaca. NULL pada baris yang ditulis channel bertombol dan pada baris sebelum v0.6. Index unik parsial `(session_id, short_code) WHERE decision IS NULL` yang membuat "dua approval menunggu di satu sesi tidak boleh berbagi kode" menjadi janji basis data, bukan janji pembangkitnya — SQLite menghitung NULL sebagai berbeda, jadi baris lama tidak pernah bentrok |
 | `expires_at` | INTEGER | |
 | `decision` | TEXT NULL | `allow`\|`deny`\|`expired` |
 | `decided_by` | TEXT NULL | FK → principal |

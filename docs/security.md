@@ -39,9 +39,9 @@ Caraka menghubungkan **input tak tepercaya** (chat) ke **eksekusi kode di mesin 
 | T5 | Aksi destruktif | Daftar aksi berisiko tinggi (force push, `rm -rf`, migrasi, deploy) selalu butuh approval | Timeout run + `/stop` |
 | T6 | Persetujuan tak berwenang di grup | Callback approval terikat principal; penekan di luar allowlist tidak menyetujui apa pun | Allowlist chat dan allowlist pengirim dievaluasi terpisah |
 | T6b | Pengungkapan di grup | Dinyatakan saat pairing, bukan dikontrol — §4 butir 6. Berlaku sama untuk guild channel Discord: kartu approval, path, diff, dan keluaran perintah terbaca setiap anggota yang bisa melihat channel itu | Grup default `read-only` (belum terbangun, lihat §5); kalau terlalu sensitif untuk dilihat anggota, tempatnya bukan di grup |
-| T7 | Gateway terekspos internet | Bind `127.0.0.1` saja; membuka butuh flag eksplisit + peringatan. Tidak ada channel yang mendengarkan: Telegram menarik lewat long-poll, Discord memegang koneksi WebSocket keluar | Akses jauh hanya lewat Tailscale/WireGuard/SSH |
-| T8 | Supply chain plugin | **Tidak ada marketplace, tidak ada dynamic loading** | Dependensi ≤ 25, audit di CI |
-| T9 | Ban akun WhatsApp | Dua provider; `allowFrom` wajib; rate limit + jitter; tanpa first-contact | Cloud API sebagai jalan keluar |
+| T7 | Gateway terekspos internet | Bind `127.0.0.1` saja; membuka butuh flag eksplisit + peringatan. Telegram menarik lewat long-poll dan Discord memegang koneksi WebSocket keluar; sejak v0.6 provider `cloud-api` WhatsApp punya penerima webhook, dan ia bind loopback dengan aturan `--bind` yang sama | Akses jauh hanya lewat Tailscale/WireGuard/SSH |
+| T8 | Supply chain plugin | **Tidak ada marketplace, tidak ada dynamic loading** | Dependensi ≤ 25 **runtime langsung**, audit di CI |
+| T9 | Ban akun WhatsApp | Dua provider; `allowFrom` wajib; rate limit + jitter; tanpa first-contact — keempatnya kode sejak v0.6, lewat satu fungsi kirim | Cloud API sebagai jalan keluar: config yang sama, `provider` yang berbeda, dan tidak ada kelas risiko ini sama sekali |
 | T10 | Biaya lepas kendali | Concurrency 1 run/workspace; timeout 30 mnt; heartbeat mati default | Batas harian opsional + notifikasi |
 | T11 | Tidak bisa diaudit | Audit append-only sejak hari pertama | `caraka audit` + retensi |
 | T12 | Memory poisoning | Memori berlabel data; injection limit 6 item/800 token; `source` tercatat | `/lupakan`, `supersede` Titen, trace ke bukti, export & review |
@@ -50,6 +50,16 @@ Caraka menghubungkan **input tak tepercaya** (chat) ke **eksekusi kode di mesin 
 Satu sel di tabel ini menyebut kontrol yang belum ada di build: `caraka audit`
 (T11). Statusnya di §11.
 
+Plafon T8 menghitung **dependensi runtime langsung**, dan itu perlu dikatakan
+karena bacaan transitif sudah jebol jauh sebelum baris ini ditulis ulang. Terukur
+pada `6eb5f67`: 4 dependensi langsung di `package.json`, yang menghasilkan 104
+paket unik di pohon produksi (`npm ls --omit=dev --all --parseable`). Angka empat
+itu tidak berubah di v0.6: `@whiskeysockets/baileys` masuk sebagai **peer
+dependency opsional berversi eksak**, sehingga `npm i caraka` tidak memasangnya
+dan pemasangan yang tidak memilih provider `baileys` tidak pernah menarik pohon
+transitifnya. Konsekuensinya jujur juga: CI di repo ini tidak pernah memasang
+Baileys, jadi `npm audit` tidak melihatnya.
+
 ---
 
 ## 4. Kontrol wajib (tidak bisa dimatikan)
@@ -57,7 +67,7 @@ Satu sel di tabel ini menyebut kontrol yang belum ada di build: `caraka audit`
 Ini adalah kontrol yang **tidak** punya opsi konfigurasi untuk dinonaktifkan:
 
 1. **Allowlist tidak boleh kosong** — gateway berhenti dengan pesan cara memperbaiki.
-2. **Approval hanya lewat callback bertanda tangan** dengan nonce sekali pakai + TTL. Fallback teks (`ok A7F3`) juga terikat nonce.
+2. **Approval hanya lewat bearer secret sekali pakai ber-TTL** yang terikat `(principal, sesi, permintaan)`. Di channel bertombol itu callback bertanda tangan. Di channel tanpa tombol, sejak v0.6, itu kode pendek di kartu: dibangkitkan `randomBytes`, hanya tampil di kartu yang Caraka tulis, tidak pernah masuk konteks agent, dan dipakai lewat `UPDATE … WHERE decision IS NULL` yang sama. Kata biasa tidak pernah menjadi keputusan di channel mana pun.
 3. **Jendela `trusted` wajib kedaluwarsa** (CHECK constraint level database) dan tidak pernah dibuka oleh teks chat. Rinciannya di §5.
 4. **Outbound scrubber** selalu aktif.
 5. **Audit log** selalu aktif untuk keputusan otorisasi.
@@ -199,7 +209,9 @@ penjaga itu, opsi tersebut akan menjadi tombol satu ketukan di chat pribadi.
 
 **Yang tidak pernah kami sentuh:** API key model. Itu milik coding agent. Caraka tidak punya, tidak meminta, tidak menyimpan.
 
-**Yang kami simpan:** kredensial channel (bot token Telegram dan, sejak v0.5, bot token Discord; nanti session Baileys / access token Cloud API) → keychain OS bila tersedia; fallback file `chmod 600` di `~/.caraka/secrets/`. Tidak pernah masuk repo, tidak pernah ke log, tidak pernah ke chat, **tidak pernah ditulis ke `config.yaml`**.
+**Yang kami simpan:** kredensial channel (bot token Telegram; sejak v0.5 bot token Discord; sejak v0.6 auth state Baileys, access token Cloud API, verify token, dan app secret) → keychain OS bila tersedia; fallback file `chmod 600` di `~/.caraka/secrets/`. Tidak pernah masuk repo, tidak pernah ke log, tidak pernah ke chat, **tidak pernah ditulis ke `config.yaml`**.
+
+Auth state Baileys tinggal di `~/.caraka/secrets/whatsapp/` pada mode direktori 0700, bukan di `sessions/`. Ia memuat noise key dan identity key yang ditandatangani: siapa pun yang memegang direktori itu memegang sesi WhatsApp nomor tersebut, jadi ia kredensial dan bukan state sesi agent. `caraka doctor` memeriksa mode direktori dan mode berkasnya sebagai baris tersendiri.
 
 Setiap token yang dimuat proses di-seed ke scrubber sebagai rahasia exact, dan tidak satu pun variabel berawalan `CARAKA_` diwariskan ke proses agent yang di-spawn. Sampai v0.4 penghapusan itu menyebut satu nama, `CARAKA_TELEGRAM_TOKEN`, yang berarti token channel berikutnya akan bocor lewat lubang yang sama; sejak v0.5 yang dihapus adalah awalannya.
 
@@ -232,9 +244,9 @@ Prinsip: **warisi, jangan bangun ulang.**
 
 ## 8. Jaringan
 
-- Default bind `127.0.0.1`. Flag `--bind 0.0.0.0` mencetak peringatan besar dan mencatat audit event. Sejak v0.5 satu-satunya listener yang diatur baris ini adalah dasbor read-only (`caraka dashboard`); peringatan dan baris audit `dashboard.start` ditulis sebelum listener menerima koneksi pertama.
-- Webhook (WhatsApp Cloud API): verifikasi `X-Hub-Signature-256` wajib; tolak request tanpa signature valid; reverse proxy dengan TLS.
-- Telegram: long-polling sebagai default (tidak butuh port terbuka sama sekali) — inilah alasan tambahan menjadikan Telegram channel pertama. **Di v1.0 tidak ada webhook sama sekali**, sehingga seluruh kelas risiko "port terbuka ke internet" tidak berlaku. Klaim itu tetap berlaku untuk webhook, dan sejak v0.5 ia berdampingan dengan satu socket: dasbor read-only mendengarkan di loopback, tidak menerima apa pun dari internet, dan tidak menjadi jalan masuk bagi channel mana pun.
+- Default bind `127.0.0.1`. Flag `--bind 0.0.0.0` mencetak peringatan besar dan mencatat audit event. Sejak v0.6 ada dua listener yang diatur baris ini, dan keduanya memakai `resolveBind` dan daftar loopback yang sama: dasbor read-only (`caraka dashboard`) dan penerima webhook Cloud API. Peringatan dan baris auditnya ditulis sebelum listener menerima koneksi pertama.
+- Webhook (WhatsApp Cloud API), terbangun v0.6: verifikasi `X-Hub-Signature-256` wajib dengan perbandingan waktu-tetap, dan **berlaku juga saat bind loopback** — proses lain di mesin yang sama juga bisa mengetuk. POST tanpa signature sah dijawab 403 tanpa badan dan tidak pernah diproses; badan yang melewati batas ukuran diputus sebelum habis dibaca; path dan metode lain dijawab 404. TLS, eksposur publik, dan IP allowlist adalah pekerjaan reverse proxy milik operator, dan Caraka tidak mengklaim menyediakannya.
+- Telegram: long-polling sebagai default (tidak butuh port terbuka sama sekali) — inilah alasan tambahan menjadikan Telegram channel pertama. Baris ini dulu berbunyi **"di v1.0 tidak ada webhook sama sekali"**, dan sejak v0.6 itu tidak lagi benar: provider `cloud-api` tidak bisa menerima apa pun tanpa endpoint yang bisa dihubungi Meta. Yang benar sekarang adalah klaim yang lebih sempit dan bisa diperiksa: **Caraka tidak membuka apa pun ke internet atas inisiatifnya sendiri.** Kedua listener bind loopback secara default, provider `baileys` tidak membuka listener sama sekali, dan keluar dari loopback butuh keputusan eksplisit operator yang tercetak dan teraudit.
 - Titen dijalankan lokal (`127.0.0.1:7717`); bila user memilih instans remote, onboarding menyatakan secara eksplisit bahwa data memori akan meninggalkan mesin.
 - Tidak ada telemetri keluar. Tanpa pengecualian.
 
@@ -248,7 +260,8 @@ Prinsip: **warisi, jangan bangun ulang.**
 | Run bersamaan | 1 per workspace |
 | Durasi run | 30 menit |
 | Approval pending | 5 per sesi |
-| Outbound per channel | mengikuti batas channel + jitter |
+| Outbound WhatsApp | 12 pesan / 60 detik bergulir, + jeda acak 1.200–3.500 md |
+| Outbound Telegram & Discord | reaktif: tunggu `retry_after` pada 429, lalu ulangi |
 | Ukuran lampiran masuk | 25 MB |
 
 Melebihi batas → pesan jelas + antrean, bukan diam-diam dibuang.
@@ -261,16 +274,37 @@ membangun baris run bersamaan: satu run aktif per workspace, ditegakkan di level
 aplikasi oleh gateway (proses tunggal, satu slot per workspace — tabel `run`
 ber-index unik di `erd.md` belum dibangun), dengan antrean FIFO per workspace,
 ack bernomor "diantrekan (#n)", dan `/stop` yang membatalkan run milik workspace
-pengirimnya saja. Tiga baris sisanya (approval pending, outbound per channel,
-ukuran lampiran) **dispesifikasikan, belum dibangun**.
+pengirimnya saja. v0.5 tidak menggerakkan satu baris pun di sini.
 
-Baris "outbound per channel" tidak berubah statusnya di v0.5, dan ini perlu
-dinyatakan karena channel kedua mudah dibaca sebagai kedatangannya. Tidak ada
-limiter proaktif di sisi kita untuk channel mana pun. Yang ada adalah reaksi:
-Telegram dan Discord sama-sama menjawab 429 dengan menunggu `retry_after` yang
-disebut respons lalu mengulang panggilan yang sama. Angka batas Discord tidak
+v0.6 membangun dua baris lagi. **Approval pending**: `createApproval` menolak
+menulis baris keenam selama satu sesi masih punya lima approval belum diputuskan
+dan belum kedaluwarsa; permintaan izin itu dibatalkan tanpa kartu dan
+penolakannya masuk audit. Angka lima bukan sekadar higiene tampilan — argumen
+entropi kode approval bersandar padanya, karena ia yang membuat ruang sasaran
+tebakan menjadi lima kode hidup dari 2^20 (`spec/whatsapp-v06.md` §1).
+
+**Outbound per channel** terbelah menjadi dua baris karena jawabannya memang dua.
+Untuk WhatsApp ada limiter proaktif: plafon 12 pesan per jendela bergulir 60 detik
+per channel, ditambah jeda acak seragam 1.200–3.500 md antar-pesan, keduanya
+ditegakkan di satu fungsi kirim yang tidak bisa dilewati pemanggil mana pun.
+Kelebihannya diantrekan, bukan dijatuhkan. Kedua angka itu **spec-set** — tidak
+ada dokumen di repo ini yang mengukurnya — dan alasannya ditulis di
+`spec/whatsapp-v06.md` §7: dua belas memberi ruang tiga kali lipat di atas
+pemakaian nyata satu operator dan tetap jauh di bawah apa pun yang terbaca sebagai
+penyiaran, sedangkan jeda seragam mematahkan sinyal *timing robotik* yang riset
+sebut, yang artinya konstan.
+
+Untuk Telegram dan Discord tidak ada limiter proaktif, dan itu tidak berubah di
+v0.6. Yang ada adalah reaksi: keduanya menjawab 429 dengan menunggu `retry_after`
+yang disebut respons lalu mengulang panggilan yang sama. Angka batas Discord tidak
 ditulis di dokumen ini karena tidak ada satu pun yang terukur di repo ini
-(`standards/ears.md:120`); yang diuji adalah mekanismenya, bukan angkanya.
+(`standards/ears.md:120`); yang diuji adalah mekanismenya, bukan angkanya. Yang
+membedakan WhatsApp bukan trafiknya melainkan hukumannya: di dua channel lain
+melewati batas berarti 429, di sini ia salah satu sinyal yang dilaporkan memicu
+ban (`docs/whatsapp-risiko.md`).
+
+Satu baris tersisa, ukuran lampiran masuk, tetap **dispesifikasikan, belum
+dibangun**.
 
 ---
 
@@ -291,7 +325,7 @@ ditulis di dokumen ini karena tidak ada satu pun yang terukur di repo ini
 2. `/lock` dari chat menutup jendela trust yang terbuka seketika.
 3. `caraka pair revoke --all` mencabut seluruh identitas (**dispesifikasikan, belum di v0.2**).
 4. Audit log memberi jejak lengkap: siapa, kapan, aksi apa, disetujui siapa. Membacanya lewat `caraka audit` **dispesifikasikan, belum di v0.2**; sampai ada, tabel `audit` dibaca langsung dari `~/.caraka/caraka.db`.
-5. Rotasi kredensial channel didokumentasikan sebagai runbook.
+5. Rotasi kredensial channel didokumentasikan sebagai runbook — `docs/troubleshooting.md` §WhatsApp untuk auth state Baileys dan token Cloud API; Telegram dan Discord memakai jalur yang sama, yaitu menerbitkan ulang token di sisi platform lalu menulis ulang berkas 0600 di `~/.caraka/secrets/`.
 6. `SECURITY.md` di repo dengan jalur pelaporan privat + target respons 72 jam.
 
 Sampai v0.1, `src/cli.ts` melayani `init`, `doctor`, dan `start` saja, dan saklar
@@ -307,7 +341,7 @@ Kejujuran adalah bagian dari postur keamanan:
 
 - Kami **tidak** menjamin agent tidak akan melakukan hal bodoh setelah kamu menyetujuinya.
 - Kami **tidak** bisa mencegah prompt injection sepenuhnya — kami hanya memastikan konsekuensinya membutuhkan ketukan manusia.
-- Kami **tidak** bisa mencegah WhatsApp memblokir nomormu bila memakai provider tidak resmi.
+- Kami **tidak** bisa mencegah WhatsApp memblokir nomormu bila memakai provider tidak resmi. Apa yang diketahui, dan seberapa jauh angkanya bisa dipercaya, ada di `docs/whatsapp-risiko.md`.
 - Kami **tidak** melihat satu pun keputusan izin selama jendela `--bypass` terbuka, jadi kami tidak mengaudit isinya. Yang tercatat hanya jendelanya.
 - Kami **tidak** bisa menyembunyikan pekerjaan dari anggota grup yang kamu masukkan ke allowlist.
 - Kami **tidak** memasang autentikasi pada dasbor lokal. Selama `caraka dashboard` berjalan, siapa pun di mesin itu yang dapat mencapai `127.0.0.1` dapat membacanya, termasuk pengguna lokal lain yang tidak punya izin baca atas `~/.caraka/caraka.db`. Batas yang sebenarnya adalah izin berkas database itu, dan dasbor melebarkannya selama ia hidup. Yang **tidak** termasuk dalam batas itu adalah peramban: dasbor hanya menjawab request yang datang dengan literal alamat atau `localhost` di header `Host`, sehingga halaman web yang mengarahkan namanya sendiri ke 127.0.0.1 tidak bisa membaca panel mana pun sebagai origin-nya sendiri.
@@ -327,5 +361,5 @@ Kejujuran adalah bagian dari postur keamanan:
 - [ ] Uji: callback approval dari principal di luar allowlist ditolak, baik dari DM maupun dari grup
 - [ ] Uji: `callback_data` yang dipalsukan/di-replay ditolak
 - [ ] `npm audit` bersih + dependensi dikunci
-- [ ] `SECURITY.md`, kebijakan disclosure, dan halaman risiko WhatsApp tersedia
+- [x] `SECURITY.md`, kebijakan disclosure, dan halaman risiko WhatsApp tersedia — halaman risikonya mendarat di v0.6 sebagai `docs/whatsapp-risiko.md` dan `docs/whatsapp-risiko.en.md`, dan pesan galat yang menolak `provider: baileys` tanpa `acknowledgeRisk: true` menautkannya (8 Agustus 2026)
 - [ ] Default config yang dikirim = konfigurasi teraman, bukan yang paling nyaman

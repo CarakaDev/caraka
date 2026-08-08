@@ -4,7 +4,7 @@ Instructions for coding agents working on this repository. Human contributors sh
 
 ## What this project is
 
-Caraka is a bridge from a chat app to the coding agent already installed on the user's machine. Telegram came first and Discord landed in v0.5; both speak the same `Channel` contract. It has no reasoning loop, no execution tools, no model provider, and no plugin marketplace, on purpose.
+Caraka is a bridge from a chat app to the coding agent already installed on the user's machine. Telegram came first, Discord landed in v0.5, and WhatsApp in v0.6; all three speak the same `Channel` contract. It has no reasoning loop, no execution tools, no model provider, and no plugin marketplace, on purpose.
 
 Before writing code, read `docs/blueprint.md` and the phase you are working in from `docs/roadmap.md`.
 
@@ -23,7 +23,8 @@ Two more constraints shape every review:
 
 ```
 src/core/        channel.ts (the contract) gateway.ts security.ts status.ts driver.ts
-src/channels/    one flat file per channel: telegram.ts discord.ts (whatsapp, signal later)
+src/channels/    one flat file per channel: telegram.ts discord.ts whatsapp.ts (signal later)
+                 plus whatsapp-baileys.ts, the only file that names the optional peer
 src/drivers/     acp/ cli/ mcp/
 src/memory/      titen/ local/ mcp/
 src/store/       db.ts migrations/
@@ -53,7 +54,7 @@ Nothing is "done" because it looks done. The gate is `npm run lint`, `npm run ty
 ## Hard rules
 
 1. **Core never branches on `channel.id`.** Read `channel.caps` and degrade. Adding an `if (channel.id === "telegram")` to core is a design error, not a shortcut. Using the id as identity — a map key, a stored route prefix — stays fine; a test greps for the comparison and fails on it. Until v0.5 there was one channel and the rule passed inside a vacuum, so the grep proved nothing.
-2. **Approval can never arrive as chat text.** Signed, single-use callback with a TTL, bound to `(principal, session, request)`. This single rule is what stops a prompt injection approving itself.
+2. **Approval can never arrive as unauthenticated text.** A signed, single-use callback with a TTL, bound to `(principal, session, request)`. Since v0.6 a channel with no buttons decides through the card's short code, which is the same class of thing: generated from `randomBytes` server-side, printed on the card Caraka wrote and nowhere else, never in the agent's context, single-use against the same `UPDATE … WHERE decision IS NULL`. What is refused is the word — no `yes`, no `approve`, nothing an injected prompt could produce. A channel that has buttons carries the decision in the callback and is given no code at all.
 3. **`trusted` mode is terminal-only and must expire.** Enforced by a database constraint, not by convention.
 4. **Secrets are scrubbed before they touch disk or a chat.** The outbound scrubber runs on every message and every log line.
 5. **Adding a coding agent on the CLI route is one YAML file** in `presets/agents/`. If it needs core code, the abstraction is wrong.

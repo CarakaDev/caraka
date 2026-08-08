@@ -138,7 +138,7 @@ Caraka connects untrusted input (chat) to code execution on your machine. It is 
 
 - Private chats and an explicit allowlist are **mandatory** — the gateway refuses to start without one
 - Writes and commands require approval; approvals are **signed, single-use callbacks with a TTL**, so chat text can never approve anything
-- No channel listens. Telegram is long-polled and Discord is an outbound WebSocket, so nothing has to be opened to the internet. Since v0.5 one socket exists on the machine and it is not a channel: `caraka dashboard` serves a read-only page on `127.0.0.1` and answers GET only
+- Nothing is opened to the internet on its own. Telegram is long-polled, Discord and the WhatsApp `baileys` provider hold outbound sockets, and both listeners bind `127.0.0.1` unless you say otherwise: `caraka dashboard` serves a read-only page and answers GET only, and since v0.6 the WhatsApp Cloud API webhook checks `X-Hub-Signature-256` in constant time even on loopback
 - The bot token and the approval key are separate mode-`0600` files under `~/.caraka/secrets/`
 - Every outbound message and every audit entry passes through the secret scrubber
 - The SQLite audit table rejects updates and deletes

@@ -38,7 +38,7 @@
       Coding agent milik user: model, tools, sandbox, repo context
 ```
 
-Semua state lokal: `~/.caraka/` (config.yaml, caraka.db, logs/, sessions/).
+Semua state lokal: `~/.caraka/` (config.yaml, caraka.db, logs/, sessions/). `sessions/` adalah state sesi agent, bukan tempat kredensial: setiap rahasia channel — token bot, dan sejak v0.6 auth state Baileys di `secrets/whatsapp/` — tinggal di `~/.caraka/secrets/` pada mode 0700 (`security.md` §6).
 
 ---
 
@@ -249,7 +249,7 @@ Alur: driver → `policy.evaluate()` → auto-allow / auto-deny / tanya user →
 Aturan keras:
 - Nonce sekali pakai, terikat pada `(principal, sessionId, requestId)`
 - Hanya pemilik sesi yang bisa memutuskan
-- Teks chat biasa tidak pernah menjadi keputusan (kecuali fallback kode `ok A7F3`, yang juga terikat nonce)
+- Teks chat biasa tidak pernah menjadi keputusan. Di channel tanpa tombol yang memutuskan adalah kode pendek di kartu (`ok A7F3`), terikat `(principal, sesi, permintaan)` dan sekali pakai lewat `UPDATE` yang sama seperti jalur tombol — bukan kata `ok` itu sendiri
 - Daftar aksi berisiko tinggi selalu minta konfirmasi, meski mode `trusted`
 
 ---
@@ -269,7 +269,7 @@ Aturan keras:
 caraka/
 ├── src/
 │   ├── core/        identity  router  policy  approval  runner  memory  render  audit
-│   ├── channels/    telegram/  whatsapp/{baileys,cloud}/  discord/  signal/
+│   ├── channels/    telegram.ts  discord.ts  whatsapp.ts (baileys + cloud-api)  signal nanti
 │   ├── drivers/     acp/  cli/  mcp/
 │   ├── memory/      titen/  local/  mcp/
 │   ├── store/       db.ts  migrations/

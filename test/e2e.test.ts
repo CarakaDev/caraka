@@ -102,7 +102,7 @@ test("private allowlisted Telegram message reaches Claude and signed approval re
     answerCallback: async () => true,
     clearKeyboard: async () => ({ message_id: 12, chat: { id: 42, type: "private" } }),
     id: "telegram",
-    caps: { threads: true, buttons: true, maxChars: 4096 },
+    caps: { threads: true, buttons: true, edit: true, maxChars: 4096 },
   } as unknown as Channel;
 
   let receivedPrompt = "";
@@ -150,6 +150,15 @@ test("private allowlisted Telegram message reaches Claude and signed approval re
   assert.match(result?.text ?? "", /^\[[^\]]+\]/);
   assert.equal(result?.text.includes("synthetic-secret-value"), false);
   assert.equal(store.db.prepare("SELECT decision FROM approvals").get()?.decision, "allow");
+  // AC-3.2: the decision travels in the signed callback here, so no code is
+  // generated and none is printed. A code on this card would be a second
+  // bearer secret sitting in the transcript, deciding nothing.
+  assert.equal(store.db.prepare("SELECT short_code AS code FROM approvals").get()?.code, null);
+  assert.equal(
+    /code [A-HJ-NP-Z2-9]{4}/.test(sent.find((item) => item.markup)?.text ?? ""),
+    false,
+    "a card with buttons carries no code",
+  );
   const audits = store.db.prepare("SELECT action, details FROM audit").all();
   assert.equal(
     audits.some((audit) => audit.action === "msg.out"),
@@ -235,7 +244,10 @@ after(async () => {
 async function harness(
   options: {
     allowChats?: string[];
+    allowFrom?: string[];
     topics?: boolean;
+    buttons?: boolean;
+    edit?: boolean;
     editTopicFails?: boolean;
     onPrompt?: (prompt: string, route: DriverRoute) => Promise<{ stopReason: string }>;
     driver?: AgentDriver;
@@ -247,16 +259,22 @@ async function harness(
     memoryTimeoutMs?: number;
     workspaces?: Workspace[];
     agents?: string[];
+    /** A second channel, so a failure on one can be watched from the other. */
+    alsoChannel?: Channel;
   } = {},
 ) {
   const root = options.root ?? (await mkdtemp(join(tmpdir(), "caraka-e2e-")));
   const config = defaultConfig(root, "caraka_test_bot", "42", options.topics ?? false);
+  if (options.alsoChannel)
+    config.discord = { appId: "app-1", allowFrom: ["42"], allowChats: [], threads: false };
   if (options.allowChats && config.telegram) config.telegram.allowChats = options.allowChats;
+  if (options.allowFrom && config.telegram) config.telegram.allowFrom = options.allowFrom;
   if (options.workspaces) config.workspaces = options.workspaces;
   const scrub = createScrubber();
   const store = options.store ?? new Store(join(root, "test.db"), scrub);
   const feed = new Feed();
   const sent: Sent[] = [];
+  const edits: string[] = [];
   const calls: string[] = [];
   let messageId = 100;
 
@@ -281,7 +299,10 @@ async function harness(
       sent.push({ chatId, text });
       return [];
     },
-    editText: async () => ({ message_id: 11, chat: { id: 42, type: "private" } }),
+    editText: async (_chatId: string, _messageId: number, text: string) => {
+      edits.push(text);
+      return { message_id: 11, chat: { id: 42, type: "private" } };
+    },
     deleteMessage: async () => true,
     createTopic: async () => {
       calls.push("createForumTopic");
@@ -303,7 +324,12 @@ async function harness(
     },
     getMe: async () => ({ id: 7, is_bot: true, first_name: "Caraka", username: "carakadevbot" }),
     id: "telegram",
-    caps: { threads: options.topics ?? false, buttons: true, maxChars: 4096 },
+    caps: {
+      threads: options.topics ?? false,
+      buttons: options.buttons ?? true,
+      edit: options.edit ?? true,
+      maxChars: 4096,
+    },
     // The two disclosure strings come off the channel, not out of core
     // (AC-7.7). The fake reads the same catalog keys the real adapter does, so
     // the wording under test is the wording that ships.
@@ -337,7 +363,7 @@ async function harness(
   const gateway = new Gateway(
     config,
     Buffer.alloc(32, 4),
-    [telegram],
+    [telegram, ...(options.alsoChannel ? [options.alsoChannel] : [])],
     options.driverFor ?? (async () => claude),
     store,
     scrub,
@@ -366,6 +392,7 @@ async function harness(
     store,
     feed,
     sent,
+    edits,
     calls,
     prompts,
     buttons,
@@ -2080,12 +2107,14 @@ test("a guild channel outside the allowlist is paired in the operator's DM, not 
   await h.finish();
 });
 
-test("the Discord channel declares three caps and honours the ones core reads", async () => {
+test("the Discord channel declares four caps and honours the ones core reads", async () => {
   // AC-2.1 and AC-2.7: a cap without a reader is a promise nothing checks.
+  // `edit` joined the three in v0.6, and its reader is the progress path.
   const h = await discordHarness();
-  assert.deepEqual(Object.keys(h.discord.caps).sort(), ["buttons", "maxChars", "threads"]);
+  assert.deepEqual(Object.keys(h.discord.caps).sort(), ["buttons", "edit", "maxChars", "threads"]);
   assert.equal(h.discord.caps.maxChars, 2000);
   assert.equal(h.discord.caps.buttons, true);
+  assert.equal(h.discord.caps.edit, true);
   await h.finish();
 });
 
@@ -2147,4 +2176,564 @@ test("with the gateway stopped, the dashboard still serves every panel", async (
   } finally {
     await new Promise<void>((done) => server.close(() => done()));
   }
+});
+
+// ─── approval by code (spec/whatsapp-v06.md §1) ─────────────────────────────
+
+const CODE_IN_CARD = /code ([A-HJ-NP-Z2-9]{4})/;
+
+/**
+ * A gateway on a channel that has no buttons, holding one permission request
+ * open. The permission promise is what the codes below decide, so every
+ * assertion reads the answer the agent actually received.
+ */
+type CodeHarnessOptions = Parameters<typeof harness>[0] & {
+  /** Messages replayed to completion before the card is asked for. */
+  warmup?: Array<ReturnType<typeof message>>;
+  /** What goes in front of the task, so it can be routed with an `@slug`. */
+  prefix?: string;
+};
+
+async function codeHarness({ warmup, prefix, ...extra }: CodeHarnessOptions = {}) {
+  let answered: PermissionResponse | undefined;
+  const h = await harness({
+    buttons: false,
+    ...extra,
+    // Only the task below opens a permission; any other prompt runs to the end,
+    // so a test can warm a second container up without holding a second card.
+    onPrompt: async (prompt, route) => {
+      if (!prompt.includes("write the file")) return { stopReason: "end_turn" as const };
+      const request: PermissionRequest = {
+        sessionId: "agent-session-1",
+        toolCall: { toolCallId: "tool-1", title: "Write file", kind: "edit" },
+        options: [
+          { optionId: "allow-once", name: "Allow", kind: "allow_once" },
+          { optionId: "reject-once", name: "Reject", kind: "reject_once" },
+        ],
+      };
+      answered = await route.permission(request);
+      return { stopReason: "end_turn" as const };
+    },
+  });
+  for (const warm of warmup ?? []) {
+    h.feed.push(warm);
+    await h.settle(150);
+  }
+  h.feed.push(message(42, 42, `${prefix ?? ""}write the file`));
+  await h.settle(150);
+  const card = h.sent.filter((item) => CODE_IN_CARD.test(item.text)).at(-1);
+  const code = CODE_IN_CARD.exec(card?.text ?? "")?.[1] ?? "";
+  return { ...h, card, code, answer: () => answered };
+}
+
+test("a card with no buttons carries a code, and the code is the only way in", async () => {
+  // AC-3.1, AC-3.5, AC-3.10, AC-3.12, AC-3.13.
+  const h = await codeHarness();
+  assert.ok(h.code, "the card carries a code");
+  assert.equal(h.card?.markup, undefined, "and no buttons, because there are none");
+  assert.match(h.card?.text ?? "", new RegExp(`ok ${h.code}`));
+  assert.match(h.card?.text ?? "", new RegExp(`no ${h.code}`));
+  assert.match(h.card?.text ?? "", /10 minutes/);
+
+  // AC-3.10: a code-shaped message that matches nothing is answered and stops
+  // there. It never becomes a prompt, so a mistyped code cannot leak the shape
+  // of a real one into the agent's context.
+  h.feed.push(message(42, 42, "ok ZZZZ"));
+  await h.settle(80);
+  assert.equal(h.prompts.length, 1);
+  assert.match(h.sent.at(-1)?.text ?? "", /matches nothing/);
+
+  // AC-3.5: the right code decides the request the card was written for.
+  h.feed.push(message(42, 42, `ok ${h.code}`));
+  await h.settle(200);
+  assert.deepEqual(h.answer(), { outcome: { outcome: "selected", optionId: "allow-once" } });
+  assert.equal(h.prompts.length, 1, "no code-shaped message ever reached the agent");
+  // AC-1.3: the answer to a code carries the same header every other reply in
+  // a threadless container does.
+  assert.ok(h.sent.some((item) => item.text.endsWith(translator()("callback.allowed"))));
+  assert.match(h.sent.at(-1)?.text ?? "", /^\[[^\]]+ · #[0-9a-f]{4}\]\n/);
+
+  // AC-3.8: the second use is refused, and refused as spent rather than wrong.
+  h.feed.push(message(42, 42, `ok ${h.code}`));
+  await h.settle(80);
+  assert.match(h.sent.at(-1)?.text ?? "", /already used/);
+
+  // AC-3.12: the code is in the card and nowhere else — not in an audit row,
+  // not in a prompt.
+  const audit = JSON.stringify(
+    h.store.db.prepare("SELECT action, result, details FROM audit").all(),
+  );
+  assert.equal(audit.includes(h.code), false, "no audit line carries the code");
+  assert.equal(h.prompts.join("\n").includes(h.code), false);
+  assert.equal(
+    (
+      h.store.db
+        .prepare("SELECT COUNT(*) AS n FROM audit WHERE action = 'approval.decide'")
+        .get() as {
+        n: number;
+      }
+    ).n >= 1,
+    true,
+  );
+  await h.finish();
+});
+
+test("five wrong codes close the session to codes, and say so once", async () => {
+  // AC-4.1, AC-4.2, AC-4.4, AC-4.5.
+  const h = await codeHarness();
+  const expiry = () =>
+    (h.store.db.prepare("SELECT expires_at AS at FROM approvals LIMIT 1").get() as { at: number })
+      .at;
+  const before = expiry();
+  for (const wrong of ["ZZZ2", "ZZZ3", "ZZZ4", "ZZZ5", "ZZZ6"])
+    h.feed.push(message(42, 42, `ok ${wrong}`));
+  await h.settle(250);
+  assert.equal(
+    h.sent.filter((item) => item.text.includes("Five wrong codes")).length,
+    1,
+    "the limit is announced once, not on every message after it",
+  );
+  // AC-4.2: one audit line per wrong code, each naming its principal and session.
+  const misses = h.store.db
+    .prepare("SELECT principal, session_id AS session FROM audit WHERE result = 'badcode'")
+    .all() as Array<{ principal: string; session: string }>;
+  assert.equal(misses.length, 5);
+  for (const miss of misses) {
+    assert.equal(miss.principal, "42");
+    assert.ok(miss.session);
+  }
+  // AC-4.4: a wrong code buys the sender no extra time.
+  assert.equal(expiry(), before);
+
+  // AC-4.1 and AC-4.5: past the limit even the right code is refused, and
+  // nothing more goes out.
+  const quiet = h.sent.length;
+  h.feed.push(message(42, 42, "ok QQQQ"));
+  h.feed.push(message(42, 42, `ok ${h.code}`));
+  await h.settle(200);
+  assert.equal(h.sent.length, quiet, "a locked session answers nothing at all");
+  assert.equal(h.answer(), undefined, "and the request is still waiting");
+  await h.finish();
+});
+
+test("the attempt limit is one sender's, and it only runs while a question waits", async () => {
+  // AC-4.1 reads `(principal, session)`, and the counter covers a waiting
+  // question. Two failures live here: a second allowlisted sender who could
+  // lock the owner out of their own card, and ordinary chat that fits the code
+  // shape spending the attempts when nothing is waiting at all.
+  const h = await codeHarness({ allowFrom: ["42", "43"] });
+  for (const wrong of ["ZZZ2", "ZZZ3", "ZZZ4", "ZZZ5", "ZZZ6"])
+    h.feed.push(message(42, 43, `ok ${wrong}`));
+  await h.settle(250);
+  assert.equal(h.sent.filter((item) => item.text.includes("Five wrong codes")).length, 1);
+  h.feed.push(message(42, 42, `ok ${h.code}`));
+  await h.settle(200);
+  assert.deepEqual(
+    h.answer(),
+    { outcome: { outcome: "selected", optionId: "allow-once" } },
+    "the owner's own code still decides the owner's own card",
+  );
+  await h.finish();
+
+  // With the card decided, nothing is waiting. `ok next` fits the code shape —
+  // four letters of the alphabet after `ok` — so it is answered and never
+  // forwarded, but it cannot spend an attempt: five of them used to leave the
+  // session unable to answer the next real card at all.
+  const quiet = await codeHarness();
+  quiet.feed.push(message(42, 42, `ok ${quiet.code}`));
+  await quiet.settle(200);
+  const prompts = quiet.prompts.length;
+  for (const chat of ["ok next", "ok sure", "ok that", "ok then", "ok just", "no test"])
+    quiet.feed.push(message(42, 42, chat));
+  await quiet.settle(300);
+  assert.equal(quiet.prompts.length, prompts, "AC-3.5: a code-shaped line is never a prompt");
+  assert.equal(
+    quiet.sent.filter((item) => item.text.includes("Five wrong codes")).length,
+    0,
+    "and none of them counted against a question that was not being asked",
+  );
+  await quiet.finish();
+});
+
+test("a code decides for its own principal in its own container, and nowhere else", async () => {
+  // AC-3.6 and AC-3.7 at the gateway, where the store's binding to
+  // `(principal, session)` becomes a refusal an operator can read. Two
+  // workspaces so the second container's warm-up does not queue behind the
+  // held card in the first.
+  const root = await mkdtemp(join(tmpdir(), "caraka-code-bind-"));
+  const h = await codeHarness({
+    root,
+    allowFrom: ["42", "43"],
+    allowChats: ["42", "77"],
+    workspaces: [
+      { slug: "alpha", path: join(root, "alpha") },
+      { slug: "beta", path: join(root, "beta") },
+    ],
+    // The card is asked for in chat 42 on alpha; chat 77 runs on beta first, so
+    // it has a session of its own for the stolen code to be refused against.
+    warmup: [message(77, 42, "@beta warm up")],
+    prefix: "@alpha ",
+  });
+  assert.ok(h.code, "the card carries a code");
+
+  // AC-3.7: the right code, the right principal, the wrong container.
+  h.feed.push(message(77, 42, `ok ${h.code}`));
+  await h.settle(120);
+  assert.match(h.sent.at(-1)?.text ?? "", /matches nothing/);
+  assert.equal(h.answer(), undefined, "the request is still waiting");
+
+  // AC-3.6: the right code, the right container, the wrong principal — and
+  // principal 43 is on the sender allowlist, so it is the binding that refuses
+  // this and not the front gate.
+  h.feed.push(message(42, 43, `ok ${h.code}`));
+  await h.settle(120);
+  assert.match(h.sent.at(-1)?.text ?? "", /matches nothing/);
+  assert.equal(h.answer(), undefined, "still waiting");
+  const misses = h.store.db
+    .prepare("SELECT principal FROM audit WHERE result = 'badcode' ORDER BY id")
+    .all() as Array<{ principal: string }>;
+  assert.deepEqual(
+    misses.map((row) => row.principal),
+    ["42", "43"],
+    "each refusal is one audit line naming who typed it",
+  );
+
+  // And the owner, in the container the card was written to, is answered.
+  h.feed.push(message(42, 42, `ok ${h.code}`));
+  await h.settle(200);
+  assert.deepEqual(h.answer(), { outcome: { outcome: "selected", optionId: "allow-once" } });
+  await h.finish();
+});
+
+test("a code dies at the same ten minutes the button does", async () => {
+  // AC-3.9. The TTL is core's, not the code path's: the row a code card writes
+  // carries the same `expires_at` as the row behind a button, and past it the
+  // code decides nothing and the approval is left undecided for the timer.
+  const h = await codeHarness();
+  const written = Date.now();
+  const row = h.store.db.prepare("SELECT id, expires_at AS at FROM approvals").get() as {
+    id: string;
+    at: number;
+  };
+  const ttl = row.at - written;
+  assert.ok(ttl > 9 * 60_000 && ttl <= 10 * 60_000, `ten minutes, measured ${ttl}ms`);
+
+  h.store.db.prepare("UPDATE approvals SET expires_at = ? WHERE id = ?").run(written - 1, row.id);
+  h.feed.push(message(42, 42, `ok ${h.code}`));
+  await h.settle(150);
+  // The owner's own code, so the answer names what happened to it rather than
+  // pretending it never existed, and it costs no attempt.
+  assert.match(h.sent.at(-1)?.text ?? "", /already used or has expired/);
+  assert.equal(h.answer(), undefined, "an expired code answers no one");
+  assert.deepEqual(
+    audits(h.store, "approval.decide").filter((row) => row.result === "badcode"),
+    [],
+  );
+  assert.equal(
+    (
+      h.store.db.prepare("SELECT decision FROM approvals WHERE id = ?").get(row.id) as {
+        decision: string | null;
+      }
+    ).decision,
+    null,
+    "and it is the TTL that ends the approval, not the late code",
+  );
+  await h.finish();
+});
+
+test("only the code decides; a bare yes is a task, and a code on a button channel is text", async () => {
+  // AC-3.5's other half and AC-3.14. The amended hard rule 2 turns on the code
+  // being unguessable, so a word an injected prompt could produce must stay
+  // exactly as worthless as it was before this wave.
+  const h = await codeHarness();
+  for (const affirmative of ["ok", "yes", "ok please", "ok do it", "no"])
+    h.feed.push(message(42, 42, affirmative));
+  await h.settle(200);
+  assert.equal(h.answer(), undefined, "no word decided anything");
+  assert.equal(
+    h.sent.some((item) => item.text.includes("matches nothing")),
+    false,
+    "and none of them was even read as a code",
+  );
+  await h.finish();
+
+  // AC-3.14: on a channel that has buttons, a code-shaped line is a prompt, the
+  // way it was in v0.5.
+  const telegram = await harness({});
+  telegram.feed.push(message(42, 42, "ok A7F3"));
+  await telegram.settle(200);
+  assert.deepEqual(telegram.prompts, ["ok A7F3"]);
+  assert.equal(
+    (telegram.store.db.prepare("SELECT COUNT(*) AS n FROM approvals").get() as { n: number }).n,
+    0,
+    "and it decided nothing, because there was nothing to decide",
+  );
+  await telegram.finish();
+});
+
+test("a session already holding five questions is refused the sixth, in the audit and not in chat", async () => {
+  // AC-4.3. The refusal is the one place a permission request still ends
+  // without a card, and it must not become chat text: an operator who cannot
+  // see the question must not be able to answer it either.
+  const request = (id: string): PermissionRequest => ({
+    sessionId: "agent-session-1",
+    toolCall: { toolCallId: id, title: "Write file", kind: "edit" },
+    options: [
+      { optionId: "allow-once", name: "Allow", kind: "allow_once" },
+      { optionId: "reject-once", name: "Reject", kind: "reject_once" },
+    ],
+  });
+  let sixth: PermissionResponse | undefined;
+  const h = await harness({
+    buttons: false,
+    onPrompt: async (_prompt, route) => {
+      for (let n = 0; n < 5; n += 1) void route.permission(request(`tool-${n}`)).catch(() => {});
+      await delay(200);
+      sixth = await route.permission(request("tool-6"));
+      return { stopReason: "end_turn" as const };
+    },
+  });
+  h.feed.push(message(42, 42, "write five files"));
+  await h.settle(400);
+
+  const cards = h.sent.filter((item) => CODE_IN_CARD.test(item.text));
+  assert.equal(cards.length, 5, "five cards, and the sixth question drew none");
+  assert.equal(new Set(cards.map((card) => CODE_IN_CARD.exec(card.text)?.[1])).size, 5);
+  assert.deepEqual(sixth, { outcome: { outcome: "cancelled" } });
+  const refusals = audits(h.store, "approval.decide").filter((row) => row.result === "toomany");
+  assert.equal(refusals.length, 1);
+  assert.match(refusals[0]?.details ?? "", /"pending":5/);
+  assert.equal(
+    h.sent.some((item) => item.text.includes("tool-6")),
+    false,
+    "the refused question never reached the chat",
+  );
+  await h.finish();
+});
+
+test("with no threads the header core already wrote is the whole of linear mode", async () => {
+  // AC-1.3, and AC-1.4 as its pair. `caps.threads` false is read by
+  // `topicsAvailable()`; `header()` was not touched by this wave.
+  const h = await codeHarness();
+  const session = h.store.db.prepare("SELECT id, workspace FROM sessions").get() as {
+    id: string;
+    workspace: string;
+  };
+  const head = new RegExp(`^\\[[^\\]]+ · #${session.id.slice(0, 4)}\\]\\n`);
+  h.feed.push(message(42, 42, `ok ${h.code}`));
+  await h.settle(200);
+  h.feed.push(message(42, 42, "/status"));
+  await h.settle(120);
+
+  const headered = (needle: string) => {
+    const line = h.sent.find((item) => item.text.includes(needle));
+    assert.ok(line, `no reply containing ${needle}`);
+    assert.match(line.text, head);
+  };
+  // The ack, the approval card, the closing summary, and `/status`: four
+  // consecutive replies in one flat conversation, each naming its session.
+  headered(translator()("run.working"));
+  headered(translator()("permission.header"));
+  headered(translator()("run.noOutput"));
+  headered("Status: done");
+  assert.deepEqual(
+    h.sent.filter((item) => item.thread).map((item) => item.thread),
+    [],
+    "and nothing was addressed to a thread",
+  );
+  await h.finish();
+
+  // AC-1.4: the same gateway with threads keeps writing no header at all.
+  const threaded = await harness({ topics: true });
+  threaded.feed.push(message(42, 42, "in a topic"));
+  await threaded.settle(200);
+  assert.equal(
+    threaded.sent.some((item) => /^\[[^\]]+ · #[0-9a-f]{4}\]/.test(item.text)),
+    false,
+  );
+  await threaded.finish();
+});
+
+test("a channel without buttons is told where the two button flows went", async () => {
+  // Graceful degradation (`AGENTS.md`): the workspace chooser and the trust
+  // card are the two cards core still sends with a keyboard, and neither can be
+  // pressed on WhatsApp. Sending them anyway is a question with no answers.
+  const root = await mkdtemp(join(tmpdir(), "caraka-nobuttons-"));
+  const h = await harness({
+    root,
+    buttons: false,
+    workspaces: [
+      { slug: "alpha", path: join(root, "alpha") },
+      { slug: "beta", path: join(root, "beta") },
+    ],
+  });
+  h.feed.push(message(42, 42, "which one takes this"));
+  await h.settle(150);
+  assert.match(h.sent.at(-1)?.text ?? "", /@alpha[\s\S]*@beta/, "the slugs are the answer here");
+  assert.equal(h.sent.at(-1)?.markup, undefined, "and no keyboard nobody can press");
+
+  h.feed.push(message(42, 42, "/yolo 30m"));
+  await h.settle(150);
+  assert.match(h.sent.at(-1)?.text ?? "", /caraka trust/);
+  assert.equal(h.sent.at(-1)?.markup, undefined);
+  await h.finish();
+});
+
+test("one channel giving up leaves the others answering, and says so on one of them", async () => {
+  // AC-9.2. A WhatsApp link that runs out of reconnects raises out of
+  // `updates()`; before this it took the whole process with it, healthy
+  // Telegram included.
+  const dead = {
+    id: "discord",
+    caps: { threads: false, buttons: true, edit: true, maxChars: 2000 },
+    // eslint-disable-next-line require-yield
+    updates: async function* () {
+      await delay(30);
+      throw new Error("WhatsApp did not come back after 6 attempts");
+    },
+    setMyCommands: async () => undefined,
+    sendText: async () => ({ message_id: 1 }),
+    sendResult: async () => [],
+    editText: async () => undefined,
+    deleteMessage: async () => undefined,
+    createTopic: async () => ({ message_thread_id: 1 }),
+    editTopic: async () => undefined,
+    answerCallback: async () => undefined,
+    clearKeyboard: async () => undefined,
+    getMe: async () => ({ username: "dead" }),
+    pairingText: () => "",
+    readiness: async () => "",
+  } as unknown as Channel;
+
+  const h = await harness({ alsoChannel: dead });
+  await h.settle(200);
+  assert.ok(
+    h.sent.some((item) => item.text.includes("did not come back after 6 attempts")),
+    "the operator hears about it on a channel that still works",
+  );
+  // And the survivor is still being polled.
+  h.feed.push(message(42, 42, "still here"));
+  await h.settle(200);
+  assert.deepEqual(h.prompts, ["still here"]);
+  assert.equal(
+    audits(h.store, "channel.stopped").filter((row) => row.result === "raised").length,
+    1,
+  );
+  await h.finish();
+});
+
+test("without threads /status names every session the conversation is holding", async () => {
+  // AC-1.8. A container without threads runs every session on the same route,
+  // so an answer that reports the newest one reports the wrong one as soon as
+  // there are two, and the older run becomes invisible.
+  const root = await mkdtemp(join(tmpdir(), "caraka-status-linear-"));
+  const h = await harness({
+    root,
+    workspaces: [
+      { slug: "alpha", path: join(root, "alpha") },
+      { slug: "beta", path: join(root, "beta") },
+    ],
+  });
+  h.feed.push(message(42, 42, "@alpha first thing"));
+  await h.settle(200);
+  h.feed.push(message(42, 42, "@beta second thing"));
+  await h.settle(200);
+  h.feed.push(message(42, 42, "/status"));
+  await h.settle(150);
+
+  const answer = h.sent.at(-1)?.text ?? "";
+  assert.equal(answer.match(/Status:/g)?.length, 2, `two sessions, two entries:\n${answer}`);
+  for (const slug of ["alpha", "beta"]) assert.match(answer, new RegExp(`\\[${slug} · #`));
+  await h.finish();
+});
+
+test("a channel that cannot rewrite a message gets the ack and then silence", async () => {
+  // AC-2.4. `caps.edit` false is the whole difference between the two WhatsApp
+  // providers, and its one reader is the progress path.
+  const chunks = Array.from({ length: 10 }, (_, n) => `step ${n}\n`);
+  const run = async (_prompt: string, route: DriverRoute) => {
+    for (const text of chunks) {
+      await route.update({
+        sessionId: "agent-session-1",
+        update: { sessionUpdate: "agent_message_chunk", content: { type: "text", text } },
+      });
+      await delay(20);
+    }
+    return { stopReason: "end_turn" as const };
+  };
+
+  const mute = await harness({ edit: false, onPrompt: run });
+  mute.feed.push(message(42, 42, "do ten things"));
+  await mute.settle(500);
+  assert.deepEqual(mute.edits, [], "not one editText");
+  assert.equal(
+    mute.sent.filter((item) => item.text.includes(translator()("run.working"))).length,
+    1,
+    "one ack",
+  );
+  assert.equal(mute.sent.filter((item) => item.text.includes("step 9")).length, 1, "one result");
+  await mute.finish();
+
+  // The contrast, on the same ten notifications: a channel that can rewrite one
+  // still does, and still sends exactly one ack and one result.
+  const live = await harness({ onPrompt: run });
+  live.feed.push(message(42, 42, "do ten things"));
+  await live.settle(500);
+  assert.ok(live.edits.length > 0, "the progress path is alive where edit is true");
+  assert.equal(
+    live.sent.filter((item) => item.text.includes(translator()("run.working"))).length,
+    1,
+  );
+  await live.finish();
+});
+
+test("nothing reaches a channel that the scrubber has not read first", async () => {
+  // AC-7.4 and `spec/whatsapp-v06.md` §5: the WhatsApp channel's first-contact
+  // guard sits after this funnel, never instead of it, so the funnel is what
+  // has to hold. Every outbound body core writes goes through `scrub()`.
+  // Shaped like the assignment the scrubber's last pattern catches, and made of
+  // words on purpose: this repository is public, so a fixture must not look
+  // like a credential to anything that scans it.
+  const value = "butter-cat-nine-not-a-credential";
+  const secret = `EXAMPLE_TOKEN=${value}`;
+  const h = await harness({
+    buttons: false,
+    onPrompt: async (_prompt, route) => {
+      await route.update({
+        sessionId: "agent-session-1",
+        update: {
+          sessionUpdate: "agent_message_chunk",
+          content: { type: "text", text: `writing with ${secret}\n` },
+        },
+      });
+      await delay(30);
+      await route.permission({
+        sessionId: "agent-session-1",
+        toolCall: {
+          toolCallId: "tool-1",
+          title: "Write file",
+          kind: "edit",
+          rawInput: { command: `curl -H "auth: ${secret}"` },
+        },
+        options: [
+          { optionId: "allow-once", name: "Allow", kind: "allow_once" },
+          { optionId: "reject-once", name: "Reject", kind: "reject_once" },
+        ],
+      });
+      return { stopReason: "end_turn" as const };
+    },
+  });
+  h.feed.push(message(42, 42, "ship it"));
+  await h.settle(300);
+
+  // The ack, the progress rewrite, the approval card and its target, and the
+  // closing summary: four different call sites, one scrubber.
+  const outbound = JSON.stringify([h.sent, h.edits]);
+  assert.equal(outbound.includes(value), false, "the token never reached the channel");
+  assert.ok(outbound.includes("[REDACTED]"), "and it was replaced rather than dropped silently");
+  assert.ok(h.sent.some((item) => item.text.includes(translator()("permission.header"))));
+  // The audit log is written through the same scrubber before it touches disk.
+  const rows = JSON.stringify(h.store.db.prepare("SELECT details FROM audit").all());
+  assert.equal(rows.includes(value), false);
+  await h.finish();
 });

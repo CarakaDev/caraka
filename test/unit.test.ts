@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
 import { existsSync } from "node:fs";
 import { chmod, mkdir, mkdtemp, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { request as httpRequest } from "node:http";
@@ -11,6 +12,19 @@ import { fileURLToPath } from "node:url";
 import { stringify } from "yaml";
 import { Telegram } from "../src/channels/telegram.js";
 import { Discord, type Socket } from "../src/channels/discord.js";
+import { BAILEYS_VERSION, connectBaileys } from "../src/channels/whatsapp-baileys.js";
+import {
+  JITTER_MAX_MS,
+  JITTER_MIN_MS,
+  MESSAGE_LIMIT,
+  OUTBOUND_LIMIT,
+  OUTBOUND_WINDOW_MS,
+  RECONNECT_ATTEMPTS,
+  RECONNECT_CEILING_MS,
+  RECONNECT_STABLE_MS,
+  WhatsApp,
+  type WhatsAppOptions,
+} from "../src/channels/whatsapp.js";
 import { gatewayCommands, splitMarkdown } from "../src/core/channel.js";
 import {
   agentChecks,
@@ -39,12 +53,14 @@ import { channelBlocks, defaultConfig, loadConfig, saveConfig, workspaces } from
 import type { AgentUpdate } from "../src/core/driver.js";
 import { discoverAgents, type Discovery } from "../src/discovery.js";
 import {
+  APPROVAL_CODE_LENGTH,
   approvalCallbacks,
   callbackPurpose,
   createScrubber,
   guardPermission,
   isHighRisk,
   parseDuration,
+  shortCode,
   trustLimitMinutes,
   verifyApprovalCallback,
 } from "../src/core/security.js";
@@ -1679,6 +1695,43 @@ test("Discord costs no dependency and is loaded only when it is configured", asy
   assert.match(cli, /await import\("\.\/channels\/discord\.js"\)/);
 });
 
+test("whatsapp costs no dependency either, and baileys is one import deeper", async () => {
+  // AC-1.6, AC-1.7, AC-5.1 to AC-5.4. Two lazy hops: the channel behind the
+  // config block, and the Baileys module behind the provider branch, so a
+  // Cloud API install never parses a line of it and a Telegram-only install
+  // never parses either.
+  const manifest = JSON.parse(
+    await readFile(new URL("../package.json", import.meta.url), "utf8"),
+  ) as {
+    dependencies: Record<string, string>;
+    peerDependencies: Record<string, string>;
+    peerDependenciesMeta: Record<string, { optional?: boolean }>;
+    optionalDependencies?: Record<string, string>;
+  };
+  assert.equal(Object.keys(manifest.dependencies).length, 4);
+  assert.equal(manifest.dependencies["@whiskeysockets/baileys"], undefined);
+  assert.equal(manifest.optionalDependencies, undefined, "npm installs those by default");
+  // Exact, because CI never installs it: a range would let an API change land
+  // on an operator's machine with nothing here to catch it.
+  assert.match(manifest.peerDependencies["@whiskeysockets/baileys"] ?? "", /^\d+\.\d+\.\d+$/);
+  assert.equal(manifest.peerDependenciesMeta["@whiskeysockets/baileys"]?.optional, true);
+  assert.equal(manifest.peerDependencies["@whiskeysockets/baileys"], BAILEYS_VERSION);
+
+  const cli = await readFile(new URL("../src/cli.ts", import.meta.url), "utf8");
+  assert.equal(cli.includes('from "./channels/whatsapp.js"'), false);
+  assert.match(cli, /await import\("\.\/channels\/whatsapp\.js"\)/);
+  // The Cloud API path is `fetch` and `node:` modules, and nothing else.
+  const channel = await readFile(new URL("../src/channels/whatsapp.ts", import.meta.url), "utf8");
+  assert.equal(
+    channel.includes("@whiskeysockets/"),
+    false,
+    "the package name lives one file deeper",
+  );
+  for (const specifier of channel.matchAll(/from "([^"]+)"/g))
+    assert.match(specifier[1] ?? "", /^(node:|\.\.?\/)/);
+  assert.match(channel, /await import\("\.\/whatsapp-baileys\.js"\)/);
+});
+
 test("config takes an optional discord block and refuses a gateway with no channel", async () => {
   // AC-10.1, AC-10.2, AC-10.3 (FR-SETUP-05).
   const oldHome = process.env.CARAKA_HOME;
@@ -1690,7 +1743,9 @@ test("config takes an optional discord block and refuses a gateway with no chann
       ...base,
       discord: { appId: "app-1", allowFrom: ["7"], allowChats: ["9"], threads: true },
     };
-    await saveConfig(withDiscord, "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi", "dtok");
+    await saveConfig(withDiscord, "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi", {
+      discordToken: "dtok",
+    });
     const loaded = await loadConfig();
     assert.equal(loaded.config.version, 1, "the block is additive; version does not move");
     assert.equal(loaded.config.discord?.appId, "app-1");
@@ -1778,11 +1833,16 @@ test("core reads capabilities and never the name of the channel that answered", 
   for (const file of files) {
     const source = await readFile(file, "utf8");
     assert.equal(source.includes('from "../channels/'), false, `${file} imports an adapter`);
-    for (const forbidden of ["channel.id ===", 'case "telegram"', 'case "discord"'])
+    for (const forbidden of [
+      "channel.id ===",
+      'case "telegram"',
+      'case "discord"',
+      'case "whatsapp"',
+    ])
       assert.equal(source.includes(forbidden), false, `${file} branches on ${forbidden}`);
     // The names may appear in prose; a string literal compared against one is
     // what the rule forbids.
-    for (const literal of ['"telegram"', '"discord"'])
+    for (const literal of ['"telegram"', '"discord"', '"whatsapp"'])
       assert.equal(source.includes(literal), false, `${file} carries the literal ${literal}`);
   }
   // AC-6.6: a Discord role maps to a policy mode and never to approval
@@ -2460,4 +2520,753 @@ test("every string the dashboard shows comes from both catalogs", () => {
   }
   assert.match(catalogs.id["cli.dashboardExposed"], /127\.0\.0\.1/);
   assert.match(catalogs.en["cli.dashboardExposed"], /127\.0\.0\.1/);
+});
+
+// ─── whatsapp and the approval code (spec/whatsapp-v06.md) ──────────────────
+
+test("the approval code is 2^20 of uniform random material, and never ambiguous", () => {
+  // AC-3.3. The alphabet leaves out the four characters a person reading a code
+  // off one screen and typing it into another confuses.
+  const seen = new Map<string, number>();
+  for (let n = 0; n < 10_000; n += 1) {
+    const code = shortCode();
+    assert.equal(code.length, APPROVAL_CODE_LENGTH);
+    assert.match(code, /^[A-HJ-NP-Z2-9]{4}$/);
+    for (const character of code) seen.set(character, (seen.get(character) ?? 0) + 1);
+  }
+  assert.equal(seen.size, 32, "every symbol in the alphabet is reachable");
+  // 40.000 draws over 32 symbols is 1.250 each; a generator that favoured any
+  // symbol by more than half again would show here.
+  for (const [symbol, count] of seen) assert.ok(count > 600 && count < 2500, `${symbol}: ${count}`);
+  for (const forbidden of ["I", "O", "0", "1"]) assert.equal(seen.has(forbidden), false);
+});
+
+test("a code decides its own approval once, and nothing else ever", async () => {
+  // AC-3.4, AC-3.6 to AC-3.9, AC-3.11, AC-4.3. Everything past the lookup is
+  // the button path, so this is the button path's guarantees over a code.
+  const root = await mkdtemp(join(tmpdir(), "caraka-code-"));
+  const store = new Store(join(root, "test.db"), createScrubber());
+  const session = store.createSession({
+    principal: "42",
+    chatId: "whatsapp:628",
+    threadId: "",
+    title: "code work",
+    workspace: "alpha",
+    agent: "",
+  });
+  const other = store.createSession({
+    principal: "42",
+    chatId: "whatsapp:629",
+    threadId: "",
+    title: "elsewhere",
+    workspace: "alpha",
+    agent: "",
+  });
+  const row = (
+    id: string,
+    code: string,
+    sessionId = session.id,
+    expiresAt = Date.now() + 60_000,
+  ) => ({
+    id,
+    principal: "42",
+    sessionId,
+    agentSessionId: "agent-1",
+    toolCallId: `tool-${id}`,
+    allowOptionId: "allow-once",
+    rejectOptionId: "reject-once",
+    expiresAt,
+    shortCode: code,
+  });
+
+  assert.equal(store.createApproval(row("a1", "A7F3")), true);
+  assert.equal(store.createApproval(row("a2", "B4K9")), true);
+  // AC-3.4: the partial unique index, not the generator, is what promises this.
+  assert.throws(() => store.createApproval(row("a3", "A7F3")));
+  // AC-3.6 and AC-3.7: a principal who is not the owner, and the right code in
+  // the wrong container, both decide nothing.
+  assert.equal(store.resolveApprovalByCode("A7F3", "99", session.id, "allow"), null);
+  assert.equal(store.resolveApprovalByCode("A7F3", "42", other.id, "allow"), null);
+  // AC-3.11: one code decides one approval.
+  assert.equal(store.resolveApprovalByCode("A7F3", "42", session.id, "allow")?.id, "a1");
+  assert.equal(
+    (
+      store.db.prepare("SELECT decision FROM approvals WHERE id = 'a2'").get() as {
+        decision: string | null;
+      }
+    ).decision,
+    null,
+  );
+  // AC-3.8: the same single-use UPDATE the button goes through.
+  assert.equal(store.resolveApprovalByCode("A7F3", "42", session.id, "allow"), null);
+  assert.equal(store.usedCode("A7F3", "42", session.id), true);
+  assert.equal(store.usedCode("A7F3", "99", session.id), false);
+  // AC-3.9: past the TTL the code is worth nothing.
+  assert.equal(store.createApproval(row("a4", "C2M5", session.id, Date.now() - 1)), true);
+  assert.equal(store.resolveApprovalByCode("C2M5", "42", session.id, "allow"), null);
+
+  // AC-4.3: five undecided rows and the sixth is refused before it is written.
+  const fresh = store.createSession({
+    principal: "42",
+    chatId: "whatsapp:630",
+    threadId: "",
+    title: "full",
+    workspace: "alpha",
+    agent: "",
+  });
+  for (let n = 0; n < 5; n += 1)
+    assert.equal(store.createApproval(row(`f${n}`, `D${n}K7`, fresh.id)), true);
+  assert.equal(store.pendingApprovals(fresh.id), 5);
+  assert.equal(store.createApproval(row("f5", "E1K7", fresh.id)), false);
+  store.close();
+});
+
+test("a database from before v0.6 gains the code column and keeps its approvals", async () => {
+  // The PRAGMA guard, and the partial index over rows whose code is NULL.
+  const root = await mkdtemp(join(tmpdir(), "caraka-olddb-code-"));
+  const path = join(root, "test.db");
+  const store = new Store(path, createScrubber());
+  const session = store.createSession({
+    principal: "42",
+    chatId: "42",
+    threadId: "",
+    title: "v0.5 work",
+    workspace: "",
+    agent: "",
+  });
+  store.close();
+  const raw = new DatabaseSync(path);
+  raw.exec("DROP INDEX approvals_code; ALTER TABLE approvals DROP COLUMN short_code;");
+  // Two pending approvals with no code at all, which is every v0.5 row.
+  for (const id of ["old-1", "old-2"])
+    raw
+      .prepare(
+        `INSERT INTO approvals(id, principal, session_id, agent_session_id, tool_call_id,
+          allow_option_id, reject_option_id, expires_at) VALUES (?, '42', ?, 'a', 't', 'allow', NULL, ?)`,
+      )
+      .run(id, session.id, Date.now() + 60_000);
+  raw.close();
+  const reopened = new Store(path, createScrubber());
+  assert.equal(reopened.pendingApprovals(session.id), 2, "NULL codes do not collide");
+  assert.equal(reopened.resolveApproval("old-1", "42", session.id, "allow")?.id, "old-1");
+  reopened.close();
+});
+
+test("the whatsapp config block is additive, and refuses both half-set providers", async () => {
+  // AC-8.1, AC-8.2, AC-10.1 to AC-10.4.
+  const oldHome = process.env.CARAKA_HOME;
+  const root = await mkdtemp(join(tmpdir(), "caraka-wa-config-"));
+  process.env.CARAKA_HOME = root;
+  try {
+    const base = defaultConfig(root, "caraka_test_bot", "42", true);
+    await saveConfig(base, "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi");
+    const write = async (block: Record<string, unknown>) =>
+      writeFile(join(root, "config.yaml"), stringify({ ...base, whatsapp: block }));
+
+    await write({ provider: "baileys", allowFrom: ["628"], acknowledgeRisk: true });
+    const loaded = await loadConfig();
+    assert.equal(loaded.config.version, 1, "the block is additive; version does not move");
+    assert.equal(loaded.config.whatsapp?.webhook.port, 7719);
+    assert.deepEqual(Object.keys(channelBlocks(loaded.config)), ["telegram", "whatsapp"]);
+    assert.equal(channelBlocks(loaded.config).whatsapp?.threads, false);
+    // No room list, because no room reaches this channel: a group message
+    // names the group as its sender, so `receive()` drops it.
+    assert.deepEqual(channelBlocks(loaded.config).whatsapp?.allowChats, []);
+
+    // AC-8.2: the risk is acknowledged in the file or the gateway does not run.
+    await write({ provider: "baileys", allowFrom: ["628"] });
+    await assert.rejects(loadConfig(), /whatsapp-risiko\.md/);
+    await write({ provider: "baileys", allowFrom: ["628"], acknowledgeRisk: false });
+    await assert.rejects(loadConfig(), /acknowledgeRisk/);
+    // AC-8.1: an empty sender list is refused at the schema, as on every
+    // channel, and the refusal names which block it came from.
+    await write({ provider: "baileys", allowFrom: [], acknowledgeRisk: true });
+    await assert.rejects(loadConfig(), /"whatsapp"[\s\S]*"allowFrom"/);
+    // AC-10.3 and AC-10.4.
+    await write({ provider: "cloud", allowFrom: ["628"] });
+    await assert.rejects(loadConfig(), /cloud-api/);
+    await write({ provider: "cloud-api", allowFrom: ["628"] });
+    await assert.rejects(loadConfig(), /phoneNumberId/);
+    // The Cloud API needs its three secrets, and says which ones.
+    await write({ provider: "cloud-api", allowFrom: ["628"], phoneNumberId: "pn-1" });
+    await assert.rejects(loadConfig(), /CARAKA_WHATSAPP_APP_SECRET/);
+  } finally {
+    if (oldHome === undefined) delete process.env.CARAKA_HOME;
+    else process.env.CARAKA_HOME = oldHome;
+  }
+});
+
+/** A transport that records, so the queue in front of it can be read off a list. */
+function recordingWhatsApp(options: Partial<WhatsAppOptions> = {}) {
+  const wrote: Array<{ to: string; text: string; at: number }> = [];
+  const slept: number[] = [];
+  let clock = 1_000_000;
+  const channel = new WhatsApp({
+    provider: "cloud-api",
+    allowFrom: ["628111"],
+    phoneNumberId: "pn-1",
+    transport: {
+      send: async (to, text) => {
+        wrote.push({ to, text, at: clock });
+        return { id: `m${wrote.length}` };
+      },
+      sendFile: async (to, name) => {
+        wrote.push({ to, text: `file:${name}`, at: clock });
+        return { id: `f${wrote.length}` };
+      },
+      // Present on both providers here so the 30-second guard can be read off
+      // the same list; what core is allowed to ask for is `caps.edit`, and that
+      // still follows the provider.
+      edit: async (to, messageId, text) => {
+        wrote.push({ to, text: `edit:${messageId}:${text}`, at: clock });
+        return undefined;
+      },
+    },
+    now: () => clock,
+    random: () => 0,
+    sleep: async (ms: number) => {
+      slept.push(ms);
+      clock += ms;
+    },
+    ...options,
+  });
+  return { channel, wrote, slept, tick: (ms: number) => (clock += ms) };
+}
+
+test("whatsapp declares four caps, and only the edit differs between providers", async () => {
+  // AC-1.5, AC-2.1 to AC-2.3, AC-2.6, AC-2.7.
+  const cloud = recordingWhatsApp().channel;
+  assert.deepEqual(Object.keys(cloud.caps).sort(), ["buttons", "edit", "maxChars", "threads"]);
+  assert.equal(cloud.caps.threads, false);
+  assert.equal(cloud.caps.buttons, false);
+  assert.equal(cloud.caps.edit, false);
+  assert.equal(cloud.caps.maxChars, MESSAGE_LIMIT);
+  const linked = recordingWhatsApp({ provider: "baileys" }).channel;
+  assert.equal(linked.caps.edit, true);
+  assert.equal(linked.caps.threads, false);
+  await assert.rejects(cloud.createTopic("whatsapp:628111", "x"), /thread/i);
+});
+
+test("every outbound waits out the ceiling and a random gap, and speaks to nobody first", async () => {
+  // AC-8.4 to AC-8.9. One funnel, three refusals, and none of them skippable
+  // from the outside: this is the whole of `docs/security.md` T9 in code.
+  const { channel, wrote, slept } = recordingWhatsApp();
+  // AC-8.7: a number on the allowlist is written to before it has ever written,
+  // which is what keeps the startup notice working.
+  await channel.sendText("whatsapp:628111", "up");
+  assert.equal(wrote.length, 1);
+  // AC-8.5: the gap is uniform between the two spec-set bounds.
+  assert.deepEqual(slept, [JITTER_MIN_MS]);
+  const wide = recordingWhatsApp({ random: () => 1 });
+  await wide.channel.sendText("whatsapp:628111", "up");
+  assert.deepEqual(wide.slept, [JITTER_MAX_MS]);
+
+  // AC-8.6 and AC-8.9: a stranger, and a number WhatsApp knows but this process
+  // has never heard from, are the same thing here.
+  await assert.rejects(channel.sendText("whatsapp:628999", "hello"), /written to it first/);
+  assert.equal(wrote.length, 1, "nothing reached the transport");
+  // Once that number has written, the reply goes out.
+  channel.receive("628999", "m-in", "hi");
+  await channel.sendText("whatsapp:628999", "hello");
+  assert.equal(wrote.length, 2);
+
+  // AC-8.4: twelve in the window, the rest queued rather than dropped.
+  const burst = recordingWhatsApp();
+  await Promise.all(
+    Array.from({ length: 20 }, (_, n) => burst.channel.sendText("whatsapp:628111", `n${n}`)),
+  );
+  assert.equal(burst.wrote.length, 20, "nothing was dropped");
+  const first = burst.wrote[0]?.at ?? 0;
+  const inWindow = burst.wrote.filter((call) => call.at - first < OUTBOUND_WINDOW_MS).length;
+  assert.equal(inWindow, OUTBOUND_LIMIT);
+});
+
+test("a long answer travels as one file, and the pieces never split a fence", async () => {
+  // AC-2.8 and AC-2.9.
+  const { channel, wrote } = recordingWhatsApp();
+  const long = `${"x".repeat(20_000)}\n\`\`\`ts\n${"y".repeat(9_000)}\n\`\`\`\n`;
+  const sent = await channel.sendResult("whatsapp:628111", long);
+  assert.equal(sent.length, 1);
+  assert.deepEqual(
+    wrote.map((call) => call.text),
+    ["file:caraka-output.md"],
+  );
+  const short = await channel.sendResult("whatsapp:628111", "```ts\nconst a = 1;\n```");
+  assert.equal(short.length, 1);
+  for (const chunk of splitMarkdown(long, MESSAGE_LIMIT))
+    assert.equal((chunk.match(/```/g) ?? []).length % 2, 0);
+});
+
+test("the webhook answers only a signed POST, and only on its own path", async () => {
+  // AC-6.2 and AC-6.4 to AC-6.9. The listener is real and bound to port 0.
+  const events: string[] = [];
+  const audits: string[] = [];
+  const channel = new WhatsApp({
+    provider: "cloud-api",
+    allowFrom: ["628111"],
+    phoneNumberId: "pn-1",
+    verifyToken: "verify-me",
+    appSecret: "app-secret-value",
+    webhook: { host: "127.0.0.1", port: 0, path: "/whatsapp", exposed: false },
+    transport: { send: async () => ({ id: "m1" }) },
+    log: (action, result) => void audits.push(`${action}/${result}`),
+  });
+  const abort = new AbortController();
+  await channel.start(abort.signal);
+  const drain = (async () => {
+    for await (const update of channel.updates(abort.signal))
+      events.push(update.message?.text ?? "");
+  })();
+  const bound = channel.listener?.address() as { port: number; address: string };
+  const port = bound.port;
+  // AC-6.2: the default bind is the literal 127.0.0.1, never a resolved name.
+  assert.equal(bound.address, "127.0.0.1");
+  assert.ok(audits.includes("webhook.start/loopback"));
+
+  const at = (path: string) => `http://127.0.0.1:${port}${path}`;
+  const body = JSON.stringify({
+    entry: [
+      { changes: [{ value: { messages: [{ from: "628111", id: "w1", text: { body: "hi" } }] } }] },
+    ],
+  });
+  const sign = (raw: string, secret = "app-secret-value") =>
+    `sha256=${createHmac("sha256", secret).update(raw).digest("hex")}`;
+  const post = (raw: string, signature?: string) =>
+    fetch(at("/whatsapp"), {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(signature ? { "x-hub-signature-256": signature } : {}),
+      },
+      body: raw,
+    });
+
+  // AC-6.4 and AC-6.6: no signature, a wrong one, and one that belongs to a
+  // different body. Loopback is not a trust boundary.
+  assert.equal((await post(body)).status, 403);
+  assert.equal((await post(body, "sha256=deadbeef")).status, 403);
+  assert.equal((await post(body, sign(body, "another-secret"))).status, 403);
+  assert.equal((await post(body, sign('{"entry":[]}'))).status, 403);
+  await delay(30);
+  assert.deepEqual(events, [], "nothing unsigned reached the inbox");
+
+  assert.equal((await post(body, sign(body))).status, 200);
+  await delay(30);
+  assert.deepEqual(events, ["hi"]);
+
+  // AC-6.7: the handshake, both ways.
+  const handshake = await fetch(
+    at("/whatsapp?hub.mode=subscribe&hub.verify_token=verify-me&hub.challenge=1234"),
+  );
+  assert.equal(handshake.status, 200);
+  assert.equal(await handshake.text(), "1234");
+  assert.equal(
+    (await fetch(at("/whatsapp?hub.mode=subscribe&hub.verify_token=wrong&hub.challenge=1234")))
+      .status,
+    403,
+  );
+  // AC-6.8: no other path, no other method, and no file server behind either.
+  assert.equal((await fetch(at("/"))).status, 404);
+  assert.equal((await fetch(at("/whatsapp"), { method: "PUT" })).status, 404);
+  assert.equal((await post("{}", sign("{}"))).status, 200);
+  // AC-6.9: a body past the ceiling is refused before it is read to the end,
+  // so the answer is either the refusal or a socket that stopped listening.
+  const huge = await post("x".repeat(2 * 1024 * 1024)).then(
+    (response) => response.status,
+    () => 413,
+  );
+  assert.notEqual(huge, 200);
+  await delay(30);
+  assert.deepEqual(events, ["hi"], "nothing oversized reached the inbox");
+
+  abort.abort();
+  await drain.catch(() => undefined);
+});
+
+test("a missing baileys module is one sentence with the install command in it", async () => {
+  // AC-5.5. The optional peer dependency is never installed in CI, so this is
+  // the message every Telegram-only machine would see if it chose the provider.
+  const channel = new WhatsApp({
+    provider: "baileys",
+    allowFrom: ["628111"],
+    sessionDir: join(await mkdtemp(join(tmpdir(), "caraka-wa-session-")), "whatsapp"),
+    importer: () => Promise.reject(new Error("ERR_MODULE_NOT_FOUND")),
+  });
+  await assert.rejects(channel.start(), (error: Error) => {
+    assert.match(error.message, /npm i @whiskeysockets\/baileys@\d+\.\d+\.\d+/);
+    assert.equal(error.stack?.includes("at Object"), false);
+    return true;
+  });
+  assert.equal(
+    JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8")).dependencies[
+      "@whiskeysockets/baileys"
+    ],
+    undefined,
+    "it is a peer dependency, never a dependency",
+  );
+});
+
+test("the baileys session directory is a credential directory, at 0700", async () => {
+  // AC-7.1 and AC-5.4: the stand-in module is what the import point returns, so
+  // no line of the real Baileys is needed to prove where the state lands.
+  const root = await mkdtemp(join(tmpdir(), "caraka-wa-auth-"));
+  const sessionDir = join(root, "secrets", "whatsapp");
+  let asked = 0;
+  const channel = new WhatsApp({
+    provider: "baileys",
+    allowFrom: ["628111"],
+    sessionDir,
+    importer: async (specifier: string) => {
+      asked += 1;
+      assert.equal(specifier, "@whiskeysockets/baileys");
+      return {
+        useMultiFileAuthState: async (folder: string) => {
+          // The real one writes `creds.json` and the key files with a plain
+          // `writeFile`, so they land at the umask — group-readable on an
+          // ordinary machine. That is the half of AC-7.1 this stands in for.
+          await writeFile(join(folder, "creds.json"), "{}");
+          await chmod(join(folder, "creds.json"), 0o644);
+          return { state: { folder }, saveCreds: async () => undefined };
+        },
+        makeWASocket: () => ({ ev: { on: () => undefined }, sendMessage: async () => undefined }),
+      };
+    },
+  });
+  await channel.start();
+  assert.equal(asked, 1);
+  assert.equal((await stat(sessionDir)).mode & 0o077, 0);
+  // AC-7.1's other half: the credential itself, not only the directory holding
+  // it.
+  assert.equal((await stat(join(sessionDir, "creds.json"))).mode & 0o077, 0);
+  // AC-6.1: the linked device opens no listener at all.
+  assert.equal(channel.listener, undefined);
+});
+
+test("with real randomness every gap is inside the band and no two runs are the same", async () => {
+  // AC-8.5's other half. The reported detection signal is constant timing, so
+  // the property that matters is spread, not the two endpoints on their own.
+  // The clock is walked past the window before each send, leaving exactly one
+  // sleep per send and nothing to confuse a jitter with a ceiling wait.
+  const h = recordingWhatsApp({ random: Math.random });
+  for (let n = 0; n < 200; n += 1) {
+    h.tick(OUTBOUND_WINDOW_MS);
+    await h.channel.sendText("whatsapp:628111", `n${n}`);
+  }
+  assert.equal(h.slept.length, 200, "one gap per send, and no ceiling wait among them");
+  for (const gap of h.slept) assert.ok(gap >= JITTER_MIN_MS && gap <= JITTER_MAX_MS, `${gap}`);
+  assert.ok(new Set(h.slept).size > 100, "a constant gap is the pattern this exists to break");
+  const mean = h.slept.reduce((sum, gap) => sum + gap, 0) / h.slept.length;
+  const middle = (JITTER_MIN_MS + JITTER_MAX_MS) / 2;
+  assert.ok(Math.abs(mean - middle) < 300, `uniform over the band, mean ${Math.round(mean)}`);
+});
+
+test("a rewrite is ignored inside thirty seconds of the last one on that message", async () => {
+  // AC-2.5. The guard is the channel's, not core's: core asks as often as the
+  // agent talks, and on a channel with an outbound ceiling most of those asks
+  // have to cost nothing.
+  const h = recordingWhatsApp({ provider: "baileys" });
+  assert.equal(h.channel.caps.edit, true);
+  await h.channel.sendText("whatsapp:628111", "working");
+  const sends = h.wrote.length;
+
+  await h.channel.editText("whatsapp:628111", "m1", "first");
+  assert.equal(h.wrote.length, sends + 1, "the first rewrite goes out");
+  h.tick(5_000);
+  await h.channel.editText("whatsapp:628111", "m1", "second");
+  assert.equal(h.wrote.length, sends + 1, "five seconds later, nothing on the wire");
+  h.tick(31_000);
+  await h.channel.editText("whatsapp:628111", "m1", "third");
+  assert.equal(h.wrote.length, sends + 2, "past thirty seconds it goes out again");
+  // The guard is per message, so a different message is not held back by it.
+  await h.channel.editText("whatsapp:628111", "m2", "other");
+  assert.equal(h.wrote.length, sends + 3);
+
+  // A provider with no edit at all resolves without touching the transport.
+  const cloud = recordingWhatsApp({ transport: { send: async () => ({ id: "m1" }) } });
+  assert.equal(cloud.channel.caps.edit, false);
+  assert.equal(await cloud.channel.editText("whatsapp:628111", "m1", "x"), undefined);
+});
+
+test("no message leaves this channel except through the one function that paces it", async () => {
+  // AC-8.8. Read as behaviour rather than as a grep: if any send reached the
+  // transport around `emit`, it would also reach a number that has never
+  // written here, and the first-contact refusal is what proves it did not.
+  const h = recordingWhatsApp({ provider: "baileys" });
+  const stranger = "whatsapp:628999";
+  await assert.rejects(h.channel.sendText(stranger, "hello"), /written to it first/);
+  await assert.rejects(h.channel.sendResult(stranger, "# hello"), /written to it first/);
+  await assert.rejects(h.channel.sendResult(stranger, "x".repeat(20_000)), /written to it first/);
+  await assert.rejects(h.channel.editText(stranger, "m1", "hello"), /written to it first/);
+  assert.deepEqual(h.wrote, [], "four call sites, one funnel, nothing on the wire");
+  // The methods that answer a card or a keyboard have no wire call to make, so
+  // they are the honest kind of empty rather than a second way out.
+  assert.equal(await h.channel.answerCallback("1", "ok"), undefined);
+  assert.equal(await h.channel.clearKeyboard(stranger, 1), undefined);
+  assert.equal(await h.channel.deleteMessage(stranger, 1), undefined);
+  assert.equal(await h.channel.setMyCommands([], "628999"), undefined);
+  assert.deepEqual(h.wrote, []);
+
+  // And the funnel counted, which is what a future method calling the
+  // transport directly would break: every write is preceded by exactly one
+  // paced gap, because `emit` is the only thing that writes and it always
+  // waits first.
+  const paced = recordingWhatsApp({ provider: "baileys" });
+  await paced.channel.sendText("whatsapp:628111", "one");
+  await paced.channel.sendResult("whatsapp:628111", "two");
+  await paced.channel.editText("whatsapp:628111", "m1", "three");
+  assert.equal(paced.wrote.length, 3);
+  assert.equal(paced.slept.length, paced.wrote.length, "a write with no gap behind it skipped it");
+});
+
+test("a group is not a person, so nothing from one ever reaches core", async () => {
+  // A group message names the group as its sender on the linked-device
+  // protocol, so every member would arrive as one principal and read the
+  // approval code off the card. There is no room allowlist here to catch that,
+  // and this is why there does not need to be one.
+  const h = recordingWhatsApp();
+  const abort = new AbortController();
+  const seen: Array<{ chat: string; from: string }> = [];
+  const drain = (async () => {
+    for await (const update of h.channel.updates(abort.signal))
+      seen.push({
+        chat: String(update.message?.chat.id),
+        from: String(update.message?.from?.id),
+      });
+  })();
+  for (const from of ["628222@g.us", "status@broadcast", "12345@newsletter", "628111"])
+    h.channel.receive(from, "m1", "hi");
+  await delay(60);
+  assert.deepEqual(seen, [{ chat: "whatsapp:628111", from: "628111" }]);
+  abort.abort();
+  await drain.catch(() => undefined);
+});
+
+/**
+ * A stand-in for `@whiskeysockets/baileys`: enough of a socket to hold the
+ * three event handlers `connectBaileys` registers, and a list of every socket
+ * it has opened so a test can close them one at a time.
+ */
+function fakeBaileys() {
+  type Fake = {
+    handlers: Map<string, (payload: unknown) => void>;
+    sent: unknown[];
+    ended: boolean;
+    pairedWith?: string;
+  };
+  const sockets: Fake[] = [];
+  const module = {
+    useMultiFileAuthState: async (folder: string) => ({
+      state: { folder },
+      saveCreds: async () => undefined,
+    }),
+    makeWASocket: () => {
+      const handlers = new Map<string, (payload: unknown) => void>();
+      const socket: Fake = { handlers, sent: [], ended: false };
+      sockets.push(socket);
+      return {
+        ...socket,
+        ev: {
+          on: (event: string, handler: (payload: unknown) => void) => handlers.set(event, handler),
+        },
+        sendMessage: async (jid: string, content: Record<string, unknown>) => {
+          socket.sent.push({ jid, content });
+          return { key: { id: `k${socket.sent.length}` } };
+        },
+        requestPairingCode: async (number: string) => {
+          socket.pairedWith = number;
+          return "ABCD1234";
+        },
+        end: () => {
+          socket.ended = true;
+        },
+      };
+    },
+  };
+  // Closing the newest socket is what a dropped connection looks like from here.
+  const drop = async (statusCode?: number) => {
+    sockets.at(-1)?.handlers.get("connection.update")?.({
+      connection: "close",
+      lastDisconnect: { error: { output: { statusCode } } },
+    });
+    await delay(5);
+  };
+  // And reaching `open` is what a link that authenticated looks like.
+  const opened = () => sockets.at(-1)?.handlers.get("connection.update")?.({ connection: "open" });
+  // A `qr` is what an unlinked device looks like from here.
+  const qr = (payload: string) =>
+    sockets.at(-1)?.handlers.get("connection.update")?.({ qr: payload });
+  return { module, sockets, drop, opened, qr };
+}
+
+async function linkedDevice(
+  options: { random?: () => number; now?: () => number; number?: string } = {},
+) {
+  const audits: Array<{ action: string; result: string; details: Record<string, unknown> }> = [];
+  const slept: number[] = [];
+  const fake = fakeBaileys();
+  let gaveUp: Error | undefined;
+  const transport = await connectBaileys({
+    sessionDir: join(await mkdtemp(join(tmpdir(), "caraka-wa-reconnect-")), "whatsapp"),
+    t: translator(),
+    receive: () => undefined,
+    giveUp: (error) => {
+      gaveUp = error;
+    },
+    random: options.random ?? (() => 1),
+    ...(options.now ? { now: options.now } : {}),
+    ...(options.number ? { number: options.number } : {}),
+    sleep: async (ms: number) => void slept.push(ms),
+    log: (action, result, details) => void audits.push({ action, result, details }),
+    importer: async () => fake.module,
+  });
+  await transport.start();
+  return { transport, audits, slept, ...fake, gaveUp: () => gaveUp };
+}
+
+test("a dropped link backs off under its ceiling and then stops, with a sentence for the operator", async () => {
+  // AC-9.1, AC-9.2, AC-9.5, AC-9.6. Reconnect is itself a reported ban trigger,
+  // so the ceiling is ten times Discord's and the attempts are finite: the
+  // failure mode this rules out is a bridge that keeps knocking forever.
+  const h = await linkedDevice();
+  for (let n = 0; n < RECONNECT_ATTEMPTS; n += 1) await h.drop();
+
+  // Full jitter at the top of its range, so the schedule is readable: 5, 10,
+  // 20, 40, 80, 160 seconds, and nothing past the 300-second ceiling.
+  assert.deepEqual(h.slept, [5_000, 10_000, 20_000, 40_000, 80_000, 160_000]);
+  for (const wait of h.slept) assert.ok(wait <= RECONNECT_CEILING_MS);
+  assert.equal(h.sockets.length, RECONNECT_ATTEMPTS + 1, "one socket per attempt, and the first");
+  // AC-9.5: one audit line per attempt, each carrying its number.
+  assert.deepEqual(
+    h.audits.filter((row) => row.action === "channel.reconnect").map((row) => row.details.attempt),
+    [1, 2, 3, 4, 5, 6],
+  );
+  assert.equal(h.gaveUp(), undefined, "still trying at six");
+
+  // The seventh close is where it stops.
+  await h.drop();
+  assert.equal(h.slept.length, RECONNECT_ATTEMPTS, "no seventh wait");
+  assert.equal(h.sockets.length, RECONNECT_ATTEMPTS + 1, "and no seventh socket");
+  const stopped = h.audits.filter((row) => row.action === "channel.stopped");
+  assert.equal(stopped.length, 1);
+  assert.equal(stopped[0]?.result, "gaveup");
+  assert.equal(stopped[0]?.details.attempts, RECONNECT_ATTEMPTS);
+  // AC-9.2: what the operator is handed is a sentence that names the next step.
+  assert.match(h.gaveUp()?.message ?? "", /did not come back after 6 attempts/);
+  assert.match(h.gaveUp()?.message ?? "", /troubleshooting\.md/);
+  // AC-9.6: through the whole cycle the transport was never written to.
+  assert.deepEqual(
+    h.sockets.map((socket) => socket.sent.length),
+    Array.from({ length: RECONNECT_ATTEMPTS + 1 }, () => 0),
+  );
+
+  // A later close opens nothing and waits for nothing: the loop is over, not
+  // paused. It does write the giving-up line again, because the close event is
+  // what writes it, and a socket that is never reopened cannot close twice.
+  await h.drop();
+  assert.equal(h.slept.length, RECONNECT_ATTEMPTS, "no wait");
+  assert.equal(h.sockets.length, RECONNECT_ATTEMPTS + 1, "no socket");
+});
+
+test("an unlinked device is offered a code it can type, never the raw payload", async () => {
+  // AC-7.5 and AC-10.7. Baileys' `qr` field is the material a QR image is drawn
+  // from, and there is no renderer here: printing it hands the operator an
+  // unscannable blob and puts a live pairing credential into the log.
+  const lines: string[] = [];
+  const real = console.log;
+  console.log = (...parts: unknown[]) => void lines.push(parts.join(" "));
+  try {
+    const blank = await linkedDevice();
+    blank.qr("2@rawpayload/never/printed");
+    await delay(10);
+    assert.equal(lines.join("\n").includes("rawpayload"), false, "the payload is never printed");
+    assert.match(lines.join("\n"), /config\.yaml/, "it says which key is missing");
+    assert.equal(blank.sockets.at(-1)?.pairedWith, undefined);
+
+    lines.length = 0;
+    const numbered = await linkedDevice({ number: "628111222333" });
+    numbered.qr("2@rawpayload/never/printed");
+    await delay(10);
+    assert.equal(numbered.sockets.at(-1)?.pairedWith, "628111222333");
+    assert.match(lines.join("\n"), /ABCD1234/);
+    assert.equal(lines.join("\n").includes("rawpayload"), false);
+  } finally {
+    console.log = real;
+  }
+});
+
+test("a link that keeps flapping still runs out of attempts", async () => {
+  // The counter goes back to zero only once the connection has held. Reset it
+  // on every `open` instead and a link that connects, authenticates, and drops
+  // again never leaves the base delay: a reconnect every few seconds, forever,
+  // which is the churn the six-attempt bound exists to stop.
+  const h = await linkedDevice();
+  for (let n = 0; n < RECONNECT_ATTEMPTS; n += 1) {
+    h.opened();
+    await h.drop();
+  }
+  assert.deepEqual(h.slept, [5_000, 10_000, 20_000, 40_000, 80_000, 160_000]);
+  h.opened();
+  await h.drop();
+  assert.equal(h.slept.length, RECONNECT_ATTEMPTS, "no seventh wait");
+  assert.match(h.gaveUp()?.message ?? "", /did not come back after 6 attempts/);
+
+  // A connection that held past the stable window is a recovery, and the drop
+  // after it starts the schedule again from five seconds.
+  let clock = 1_000_000;
+  const held = await linkedDevice({ now: () => clock });
+  await held.drop();
+  held.opened();
+  clock += RECONNECT_STABLE_MS + 1;
+  await held.drop();
+  assert.deepEqual(held.slept, [5_000, 5_000]);
+  assert.equal(held.gaveUp(), undefined);
+});
+
+test("a logged-out link is not retried once, and says how to link it again", async () => {
+  // AC-9.4. Issue #23093's reported pattern is repeated reconnects after
+  // exactly this close, so this is the branch where trying again is the harm.
+  for (const status of [401, 403, 428]) {
+    const h = await linkedDevice();
+    await h.drop(status);
+    assert.deepEqual(h.slept, [], "not one wait, because there is no attempt to wait for");
+    assert.equal(h.sockets.length, 1, "and no second socket");
+    assert.deepEqual(
+      h.audits.map((row) => `${row.action}/${row.result}`),
+      ["channel.stopped/loggedout"],
+    );
+    // AC-9.4's sentence names the recovery that exists today. There is no
+    // `caraka init whatsapp` yet (plan step 8), and pointing at it would run
+    // the Telegram wizard over the operator's config.
+    assert.match(h.gaveUp()?.message ?? "", /secrets\/whatsapp/);
+  }
+
+  // A recoverable close still reconnects, so the fatal list is a list and not
+  // every close in disguise.
+  const recoverable = await linkedDevice();
+  await recoverable.drop(500);
+  assert.deepEqual(recoverable.slept, [5_000]);
+  assert.equal(recoverable.gaveUp(), undefined);
+});
+
+test("giving up raises the operator's sentence out of updates() instead of looping in silence", async () => {
+  // AC-9.2 and AC-9.3 at the channel's edge: `updates()` is where core learns a
+  // channel is finished, the way Discord's fatal close is raised, so the
+  // process ends with the message rather than with a poll that never yields.
+  const fake = fakeBaileys();
+  const channel = new WhatsApp({
+    provider: "baileys",
+    allowFrom: ["628111"],
+    sessionDir: join(await mkdtemp(join(tmpdir(), "caraka-wa-fatal-")), "whatsapp"),
+    importer: async () => fake.module,
+    random: () => 1,
+    sleep: async () => undefined,
+  });
+  await channel.start();
+  const abort = new AbortController();
+  const drained = (async () => {
+    for await (const _update of channel.updates(abort.signal)) break;
+  })();
+  for (let n = 0; n <= RECONNECT_ATTEMPTS; n += 1) await fake.drop();
+  await assert.rejects(drained, /did not come back after 6 attempts/);
+  abort.abort();
 });

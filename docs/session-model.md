@@ -128,23 +128,23 @@ Ringkasan penutup dikirim **sebelum** topic ditutup, sehingga baris terakhir top
 
 ## 7. Pemetaan lintas channel
 
-Kolom Discord adalah yang terpasang sejak v0.5; kolom WhatsApp masih rencana.
+Kolom Discord terpasang sejak v0.5, kolom WhatsApp sejak v0.6.
 
 | Konsep | Telegram (private) | Telegram (supergroup) | Discord | WhatsApp |
 |---|---|---|---|---|
-| Ruang kerja | chat privat dengan bot | supergroup forum | channel teks | chat |
+| Ruang kerja | chat privat dengan bot | supergroup forum | channel teks | chat satu lawan satu; grup ditolak di `receive()` |
 | Sesi | forum topic | forum topic | public thread | — (linear) |
 | Kontrol | topic General | topic General | channel induk | chat yang sama |
-| Membuat | `createForumTopic` (tanpa admin) | butuh `can_manage_topics` | `CREATE_PUBLIC_THREADS` | — |
-| Menandai selesai | `editForumTopic` (tidak ada `closeForumTopic` di DM) | `closeForumTopic`, butuh `can_manage_topics` | `archived: true`, sesudah ringkasan penutup | — |
-| Batas | belum terdokumentasi | — | ±50 aktif/channel, 1.000/guild — tiba sebagai error, bukan disapu | — |
+| Membuat | `createForumTopic` (tanpa admin) | butuh `can_manage_topics` | `CREATE_PUBLIC_THREADS` | — `createTopic` melempar error bernama |
+| Menandai selesai | `editForumTopic` (tidak ada `closeForumTopic` di DM) | `closeForumTopic`, butuh `can_manage_topics` | `archived: true`, sesudah ringkasan penutup | — glif state ikut di header setiap balasan |
+| Batas | belum terdokumentasi | — | ±50 aktif/channel, 1.000/guild — tiba sebagai error, bukan disapu | — tidak ada wadah yang bisa habis |
 | Auto-arsip | manual (kita) | manual | dipaksa Discord (60/1440/4320/10080 mnt); dipakai 10080 | — |
 
 Channel forum Discord tidak didukung: ia mewajibkan judul dan tag per post dan tidak menyisakan channel induk sebagai tempat perintah global dijawab.
 
 Mengarsipkan sebuah thread tidak membebaskan kuota — Discord tetap menghitung thread terarsip terhadap batas aktifnya. Karena itu tidak ada sapuan yang menutup sesi lama demi ruang: sesi yang selesai diarsipkan saat itu juga, dan ketika batasnya benar-benar tercapai, pembuatan thread berikutnya melempar error dan container itu jatuh ke mode linear (§9).
 
-**WhatsApp tidak punya konsep sesi ber-tab.** Degradasi anggun: setiap balasan diawali baris header `[toko-api · #a91]`, dan `/status` menampilkan daftar sesi aktif sebagai teks. Ini konsisten dengan prinsip "capability opsional, bukan cabang kode per channel".
+**WhatsApp tidak punya konsep sesi ber-tab.** Degradasi anggun, dan sejak v0.6 ia terbangun tanpa satu baris pun kode mode linear yang baru di core: channel mendeklarasikan `caps.threads: false`, dan `header()` yang sudah dipanggil di sembilan titik keluaran menulis `[toko-api · #a91]` di depan setiap balasan. `/status` di wadah tanpa thread mendaftar sesi yang sedang dipegang percakapan itu sebagai teks, dibatasi lima sesi terbaru supaya jawabannya tidak tumbuh bersama transkrip. Ini konsisten dengan prinsip "capability opsional, bukan cabang kode per channel".
 
 ---
 

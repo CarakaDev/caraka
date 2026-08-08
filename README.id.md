@@ -142,7 +142,7 @@ Caraka menghubungkan input tak tepercaya (chat) ke eksekusi kode di mesinmu. Kar
 
 - Chat pribadi dan allowlist eksplisit bersifat **wajib** — gateway menolak jalan tanpa itu
 - Tulis berkas dan jalankan perintah butuh persetujuan; persetujuan datang dari **callback bertanda tangan, sekali pakai, ber-TTL**, sehingga teks chat tidak pernah bisa menyetujui apa pun
-- Tidak ada channel yang mendengarkan. Telegram ditarik lewat long-poll dan Discord memegang WebSocket keluar, jadi tidak ada yang perlu dibuka ke internet. Sejak v0.5 ada satu socket di mesin dan ia bukan channel: `caraka dashboard` menyajikan halaman read-only di `127.0.0.1` dan hanya menjawab GET
+- Tidak ada yang dibuka ke internet atas inisiatif Caraka. Telegram ditarik lewat long-poll, Discord dan provider `baileys` WhatsApp memegang socket keluar, dan kedua listener bind `127.0.0.1` kecuali kamu menyuruh lain: `caraka dashboard` menyajikan halaman read-only dan hanya menjawab GET, dan sejak v0.6 penerima webhook WhatsApp Cloud API memeriksa `X-Hub-Signature-256` dengan perbandingan waktu-tetap, juga saat bind loopback
 - Token bot dan key approval disimpan terpisah di `~/.caraka/secrets/` dengan mode `0600`
 - Setiap pesan keluar dan entri audit melewati scrubber rahasia
 - Tabel audit SQLite menolak update dan delete

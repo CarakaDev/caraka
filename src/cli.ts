@@ -30,7 +30,7 @@ import { TitenMemory } from "./memory/titen.js";
 import { isServiceKind, serviceUnit } from "./service.js";
 import { Store } from "./store/db.js";
 
-const VERSION = "0.5.0";
+const VERSION = "0.6.0";
 // The preset a session runs until `/switch` names another.
 const DEFAULT_AGENT = "claude-code";
 
@@ -128,11 +128,19 @@ export function driverRegistry(
 export function startupSecrets(loaded: {
   token: string;
   discordToken?: string;
+  whatsappToken?: string;
+  whatsappVerify?: string;
+  whatsappAppSecret?: string;
   approvalKey: Buffer;
 }) {
-  return [loaded.token, loaded.discordToken ?? "", loaded.approvalKey.toString("base64url")].filter(
-    (secret) => secret.length > 0,
-  );
+  return [
+    loaded.token,
+    loaded.discordToken ?? "",
+    loaded.whatsappToken ?? "",
+    loaded.whatsappVerify ?? "",
+    loaded.whatsappAppSecret ?? "",
+    loaded.approvalKey.toString("base64url"),
+  ].filter((secret) => secret.length > 0);
 }
 
 /**
@@ -145,9 +153,12 @@ export async function buildChannels(
   loaded: Awaited<ReturnType<typeof loadConfig>>,
   language: Translate,
   store: Store,
+  // Where a webhook would bind, resolved from the arguments by `resolveBind` so
+  // that `src/channels/` never imports `src/dashboard/` (`AGENTS.md`).
+  bind: { host: string; exposed: boolean } = { host: "127.0.0.1", exposed: false },
 ): Promise<[Channel, ...Channel[]]> {
   const built: Channel[] = [];
-  const { telegram, discord } = loaded.config;
+  const { telegram, discord, whatsapp } = loaded.config;
   if (telegram) built.push(new Telegram(loaded.token, fetch, undefined, language, telegram.topics));
   if (discord) {
     const { Discord } = await import("./channels/discord.js");
@@ -156,6 +167,29 @@ export async function buildChannels(
         token: loaded.discordToken,
         appId: discord.appId,
         threads: discord.threads,
+        t: language,
+        log: (action, result, details) => store.audit(action, result, details),
+      }),
+    );
+  }
+  if (whatsapp) {
+    const { WhatsApp } = await import("./channels/whatsapp.js");
+    built.push(
+      new WhatsApp({
+        provider: whatsapp.provider,
+        allowFrom: whatsapp.allowFrom,
+        ...(whatsapp.number ? { number: whatsapp.number } : {}),
+        ...(whatsapp.phoneNumberId ? { phoneNumberId: whatsapp.phoneNumberId } : {}),
+        token: loaded.whatsappToken,
+        verifyToken: loaded.whatsappVerify,
+        appSecret: loaded.whatsappAppSecret,
+        sessionDir: loaded.paths.whatsappSession,
+        webhook: {
+          host: bind.host,
+          port: whatsapp.webhook.port,
+          path: whatsapp.webhook.path,
+          exposed: bind.exposed,
+        },
         t: language,
         log: (action, result, details) => store.audit(action, result, details),
       }),
@@ -433,6 +467,24 @@ async function doctor() {
       await privateFile(loaded.paths.discordToken),
       "must be 0600",
     ]);
+  // The Baileys auth state is the WhatsApp session itself, so its directory is
+  // checked the way a key file is; the Cloud API has three secrets and no
+  // directory. A missing path reads as a failing row, not as a thrown doctor.
+  // A secret held in the environment instead has no file to check, so the row
+  // appears for what is on disk and stays silent about what is not.
+  if (loaded.config.whatsapp)
+    for (const [name, path, mode] of [
+      ["session", loaded.paths.whatsappSession, "0700"],
+      ["token", loaded.paths.whatsappToken, "0600"],
+      ["verify token", loaded.paths.whatsappVerify, "0600"],
+      ["app secret", loaded.paths.whatsappAppSecret, "0600"],
+    ] as const)
+      if (existsSync(path))
+        checks.push([
+          `WhatsApp ${name} mode`,
+          await privateFile(path),
+          `must be ${mode} (${path})`,
+        ]);
   checks.push(["Approval key mode", await privateFile(loaded.paths.approvalKey), "must be 0600"]);
   for (const [id, block] of Object.entries(channelBlocks(loaded.config)))
     checks.push([`Allowlist (${id})`, block.allowFrom.length > 0, "run init again"]);
@@ -503,10 +555,14 @@ function printChecks(checks: Array<[string, boolean, string]>) {
   console.log("");
 }
 
-async function start() {
+async function start(args: string[] = []) {
   const loaded = await loadConfig();
   t = translator(loaded.config.language ?? "en");
   const blocks = channelBlocks(loaded.config);
+  // Printed every run, not once at setup: a linked device can be banned on any
+  // of them, and the document behind the link is what says how often that
+  // happens (`docs/whatsapp-risiko.md`).
+  if (loaded.config.whatsapp?.provider === "baileys") console.log(t("whatsapp.riskNotice"));
   // FR-SETUP-05: a configured channel with an empty sender list is a channel
   // that would serve nobody, and it says which one before anything starts.
   for (const [id, block] of Object.entries(blocks))
@@ -539,7 +595,7 @@ async function start() {
   const gateway = new Gateway(
     loaded.config,
     loaded.approvalKey,
-    await buildChannels(loaded, language, store),
+    await buildChannels(loaded, language, store, resolveBind(args, t)),
     driverRegistry(presetsFound.presets, DEFAULT_AGENT, language, scrub),
     store,
     scrub,
@@ -724,7 +780,7 @@ export async function main(args: string[]) {
     const [subcommand] = args;
     if (subcommand === "init") await init(args.slice(1));
     else if (subcommand === "doctor") await doctor();
-    else if (subcommand === "start") await start();
+    else if (subcommand === "start") await start(args.slice(1));
     else if (subcommand === "stop") await stopCommand();
     else if (subcommand === "status") await statusCommand();
     else if (subcommand === "dashboard") await dashboardCommand(args.slice(1));

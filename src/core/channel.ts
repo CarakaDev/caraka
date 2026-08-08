@@ -14,15 +14,21 @@
 export type ChannelId = string;
 
 /**
- * What a channel can do. Three fields, because three are all core has anything
- * to ask about. Their readers are wired in the caps step of
- * `plan/discord-v05.md`; declaring more would be a promise nothing checks.
+ * What a channel can do. Four fields, because four are all core has anything to
+ * ask about, and each one has a reader in `src/core/`; declaring more would be a
+ * promise nothing checks (`docs/api.md` §5).
  */
 export type ChannelCaps = {
   /** A session can have a thread of its own. */
   threads: boolean;
   /** A card can carry a callback button. */
   buttons: boolean;
+  /**
+   * A message already sent can be rewritten. False turns the progress path off
+   * altogether: the first ack still goes out, and nothing follows it until the
+   * result (`spec/whatsapp-v06.md` §6).
+   */
+  edit: boolean;
   /** Longest body the channel accepts in one message. */
   maxChars: number;
 };

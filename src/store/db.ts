@@ -39,7 +39,20 @@ export type Approval = {
   allowOptionId: string;
   rejectOptionId: string | null;
   expiresAt: number;
+  /** The card's short code, `null` on a row written before v0.6. */
+  shortCode?: string | null;
 };
+
+// `docs/security.md` §9, specified since v0.1 and built here: past five
+// undecided approvals a session stops drawing cards. It is also what the short
+// code's entropy argument rests on — five live codes out of 2^20 at a time
+// (`spec/whatsapp-v06.md` §1).
+export const PENDING_APPROVAL_LIMIT = 5;
+
+// How many sessions `/status` reports on a route that holds more than one
+// (AC-1.8). A conversation without threads collects a session per task, so the
+// answer is bounded here rather than left to grow with the transcript.
+export const STATUS_SESSIONS = 5;
 
 type Scrubber = ReturnType<typeof createScrubber>;
 
@@ -133,6 +146,21 @@ export class Store {
       this.db.exec("ALTER TABLE sessions ADD COLUMN workspace TEXT NOT NULL DEFAULT ''");
     if (!sessionColumns.has("agent"))
       this.db.exec("ALTER TABLE sessions ADD COLUMN agent TEXT NOT NULL DEFAULT ''");
+    // A file from before v0.6 has approvals without the card's short code. The
+    // partial unique index is what makes AC-3.4 the database's promise rather
+    // than the generator's: two undecided rows in one session cannot share a
+    // code. SQLite counts NULLs as distinct, so the pre-v0.6 rows never collide.
+    const approvalColumns = new Set(
+      (this.db.prepare("PRAGMA table_info(approvals)").all() as Array<{ name: string }>).map(
+        (column) => column.name,
+      ),
+    );
+    if (!approvalColumns.has("short_code"))
+      this.db.exec("ALTER TABLE approvals ADD COLUMN short_code TEXT");
+    this.db.exec(
+      `CREATE UNIQUE INDEX IF NOT EXISTS approvals_code ON approvals(session_id, short_code)
+       WHERE decision IS NULL`,
+    );
     // FTS5 is present in the Node builds this repo targets (measured on Node
     // v24.18.0; a unit test repeats the probe). A build without it keeps the
     // Store usable and drops `memorySearch` to LIKE matching.
@@ -302,6 +330,23 @@ export class Store {
       .get(chatId, threadId) as Session | undefined;
   }
 
+  /**
+   * Every session at one route, newest first. A channel without threads runs
+   * all of a conversation's sessions on the same route, so this is what
+   * `/status` reports there (AC-1.8); `sessionFor` above is the first row of
+   * the same query.
+   */
+  sessionsFor(chatId: string, threadId = "", limit = STATUS_SESSIONS) {
+    return this.db
+      .prepare(
+        `SELECT id, principal, chat_id AS chatId, thread_id AS threadId,
+                agent_session_id AS agentSessionId, title, state, workspace, agent
+         FROM sessions WHERE chat_id = ? AND thread_id = ?
+         ORDER BY updated_at DESC LIMIT ?`,
+      )
+      .all(chatId, threadId, limit) as Session[];
+  }
+
   sessionById(id: string) {
     return this.db
       .prepare(
@@ -334,11 +379,25 @@ export class Store {
       .run(state, Date.now(), id);
   }
 
+  /** How many approvals this session is still waiting on. */
+  pendingApprovals(sessionId: string, now = Date.now()) {
+    return (
+      this.db
+        .prepare(
+          "SELECT COUNT(*) AS n FROM approvals WHERE session_id = ? AND decision IS NULL AND expires_at > ?",
+        )
+        .get(sessionId, now) as { n: number }
+    ).n;
+  }
+
+  /** False when the session is already at the pending ceiling; no row is written. */
   createApproval(approval: Approval) {
+    if (this.pendingApprovals(approval.sessionId) >= PENDING_APPROVAL_LIMIT) return false;
     this.db
       .prepare(
         `INSERT INTO approvals(id, principal, session_id, agent_session_id, tool_call_id,
-          allow_option_id, reject_option_id, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          allow_option_id, reject_option_id, expires_at, short_code)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         approval.id,
@@ -349,25 +408,72 @@ export class Store {
         approval.allowOptionId,
         approval.rejectOptionId,
         approval.expiresAt,
+        approval.shortCode ?? null,
       );
+    return true;
   }
 
-  resolveApproval(id: string, principal: string, sessionId: string, decision: "allow" | "reject") {
-    const now = Date.now();
-    const row = this.db
+  private approvalWhere(where: string, ...values: Array<string | number>) {
+    return this.db
       .prepare(
         `SELECT id, principal, session_id AS sessionId, agent_session_id AS agentSessionId,
                 tool_call_id AS toolCallId, allow_option_id AS allowOptionId,
-                reject_option_id AS rejectOptionId, expires_at AS expiresAt
-         FROM approvals WHERE id = ?`,
+                reject_option_id AS rejectOptionId, expires_at AS expiresAt,
+                short_code AS shortCode
+         FROM approvals WHERE ${where}`,
       )
-      .get(id) as Approval | undefined;
+      .get(...values) as Approval | undefined;
+  }
+
+  // The single-use write, and the only one there is. Both routes to a decision
+  // land here, so neither can be replayed and neither can outlive the TTL.
+  private decide(
+    row: Approval | undefined,
+    principal: string,
+    sessionId: string,
+    decision: "allow" | "reject",
+  ) {
+    const now = Date.now();
     if (!row || row.principal !== principal || row.sessionId !== sessionId || row.expiresAt < now)
       return null;
     const changed = this.db
       .prepare("UPDATE approvals SET decision = ?, used_at = ? WHERE id = ? AND decision IS NULL")
-      .run(decision, now, id).changes;
+      .run(decision, now, row.id).changes;
     return changed === 1 ? row : null;
+  }
+
+  resolveApproval(id: string, principal: string, sessionId: string, decision: "allow" | "reject") {
+    return this.decide(this.approvalWhere("id = ?", id), principal, sessionId, decision);
+  }
+
+  /**
+   * The card's short code instead of the signed callback id. Everything past the
+   * lookup is the button path: the same binding to `(principal, session)`, the
+   * same TTL, the same single-use `UPDATE`.
+   */
+  resolveApprovalByCode(
+    code: string,
+    principal: string,
+    sessionId: string,
+    decision: "allow" | "reject",
+  ) {
+    return this.decide(
+      this.approvalWhere("session_id = ? AND short_code = ? AND decision IS NULL", sessionId, code),
+      principal,
+      sessionId,
+      decision,
+    );
+  }
+
+  /**
+   * Whether this principal was ever shown this code in this session, decided or
+   * not. A second `ok A7F3` is a double tap, not a guess, so the attempt counter
+   * must not eat it. The principal is part of the question: a stranger who
+   * happened to type a spent code learns nothing.
+   */
+  usedCode(code: string, principal: string, sessionId: string) {
+    const row = this.approvalWhere("session_id = ? AND short_code = ?", sessionId, code);
+    return row !== undefined && row.principal === principal;
   }
 
   expireApprovals() {

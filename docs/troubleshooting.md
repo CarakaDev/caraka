@@ -88,6 +88,68 @@ channels:
 
 ---
 
+## WhatsApp
+
+Baca `docs/whatsapp-risiko.md` lebih dulu bila kamu memakai provider `baileys`. Bagian ini soal memperbaiki, bukan soal memutuskan.
+
+**Menautkan ulang perangkat**
+Caraka tidak menggambar QR. Payload `qr` Baileys adalah bahan gambar dan tidak ada renderer di dalam paket ini, jadi yang dicetak adalah kode pairing delapan karakter. Saat perangkat belum tertaut, `caraka start` mencetak kode itu ke terminal:
+
+```
+This device is not linked yet. On the phone, open WhatsApp →
+Linked devices → Link with phone number, and type:
+<delapan karakter>
+```
+
+Kodenya berumur pendek. Kalau kadaluwarsa sebelum sempat diketik, hentikan Caraka dan jalankan lagi untuk mendapat kode baru. Kalau yang tercetak justru permintaan `number`, blok `whatsapp:` belum punya kunci itu:
+
+```yaml
+whatsapp:
+  provider: baileys
+  number: "628…"        # nomor yang ditautkan, terpisah dari nomor pribadi
+  acknowledgeRisk: true
+  allowFrom: ["628…"]
+```
+
+Menautkan ulang dari nol berarti membuang sesi lamanya:
+
+```bash
+caraka stop
+rm -rf ~/.caraka/secrets/whatsapp/
+caraka start
+```
+
+**`WhatsApp logged this device out`**
+Caraka berhenti dan **tidak** menyambung ulang, dan itu disengaja: menyambung ulang berkali-kali sesudah logout adalah pola yang dilaporkan menghabiskan akun. Jangan otomatiskan percobaan ulang. Tautkan ulang lewat langkah di atas, dan bila logout terjadi berulang dalam hitungan hari, itu temuan — pindah ke `cloud-api`.
+
+**Putus terus, atau `WhatsApp did not come back after 6 attempts`**
+Backoff-nya 5 detik dikali dua dengan jitter, berplafon 300 detik, dan berhenti di percobaan keenam; sekitar lima menit. Sesudah itu Caraka menulis satu baris audit dan memberi tahu lewat channel lain yang terkonfigurasi. Berurutan:
+
+1. Cek jaringan mesin ini dulu — putus di sisi kita terbaca sama dengan putus di sisi WhatsApp.
+2. Cek ponselnya masih online dan perangkat tertaut masih terdaftar di WhatsApp → Linked devices.
+3. Kalau perangkatnya sudah hilang dari daftar itu, ini logout, bukan gangguan jaringan. Ikuti butir di atasnya.
+4. Jangan menjalankan Caraka berulang-ulang di loop shell. Yang tersisa dari percobaan keenam adalah keputusan, bukan percobaan ketujuh.
+
+**Balasan tidak terkirim, log menyebut first contact**
+Caraka tidak pernah menulis lebih dulu ke nomor yang belum pernah menulis kepadanya. Kirim satu pesan dari nomor itu, atau masukkan ke `allowFrom`. Ini bukan bug yang dilonggarkan: ia salah satu dari empat mitigasi ban yang berupa kode.
+
+**Pesan dari grup tidak sampai**
+Memang tidak akan sampai. Pesan grup menyebut grup itu sendiri sebagai pengirim, jadi setiap anggota akan tiba sebagai satu principal dan setiap anggota membaca kode approval di kartu yang sama. Hanya percakapan satu lawan satu yang jalan.
+
+**Kartu approval muncul tanpa tombol**
+Betul, WhatsApp tidak punya tombol callback. Balas `ok <kode>` atau `no <kode>` dengan kode yang ada di kartu. Lima kode salah dari satu pengirim menutup jalur kode untuk sesi itu sampai pertanyaannya diputuskan atau kedaluwarsa.
+
+**Webhook Cloud API tidak pernah dipanggil Meta**
+Penerimanya bind `127.0.0.1` secara default, jadi Meta tidak bisa menjangkaunya tanpa reverse proxy milikmu di depannya. Yang perlu dicocokkan: path di blok `whatsapp.webhook` sama dengan yang didaftarkan di app Meta, verify token sama persis, dan app secret yang dipakai Meta menandatangani `X-Hub-Signature-256` ada di `~/.caraka/secrets/whatsapp.appsecret`. Signature yang tidak sah dijawab 403 tanpa badan, termasuk saat bind loopback.
+
+**Nomornya kena ban**
+Hentikan gateway, jangan menyambung ulang, dan hapus `~/.caraka/secrets/whatsapp/`. Kami tidak punya jalur banding untuk direkomendasikan dan tidak akan mengarangnya. Keputusan berikutnya cuma dua: nomor lain yang kamu sanggup kehilangan, atau `cloud-api`, yang bekerja pada config yang sama dengan mengganti `provider` dan mengisi `phoneNumberId`.
+
+**Rotasi kredensial**
+Auth state Baileys: hentikan Caraka, hapus `~/.caraka/secrets/whatsapp/`, tautkan ulang. Access token, verify token, dan app secret Cloud API: terbitkan ulang di app Meta, lalu tulis ulang berkasnya di `~/.caraka/secrets/` — `whatsapp.token`, `whatsapp.verify`, `whatsapp.appsecret`, semuanya mode 0600 — atau berikan lewat `CARAKA_WHATSAPP_TOKEN`, `CARAKA_WHATSAPP_VERIFY_TOKEN`, dan `CARAKA_WHATSAPP_APP_SECRET`. Tidak satu pun boleh masuk `config.yaml`. `caraka doctor` memeriksa modenya.
+
+---
+
 ## Approval
 
 **Tombol ditekan tapi tidak terjadi apa-apa**
