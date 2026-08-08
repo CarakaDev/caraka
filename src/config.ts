@@ -144,38 +144,24 @@ export type ChannelBlock = { allowFrom: string[]; allowChats: string[]; threads:
  */
 export function channelBlocks(config: CarakaConfig): Record<string, ChannelBlock> {
   const { telegram, discord, whatsapp } = config;
-  return {
-    ...(telegram
-      ? {
-          telegram: {
-            allowFrom: telegram.allowFrom,
-            allowChats: telegram.allowChats,
-            threads: telegram.topics,
-          },
-        }
-      : {}),
-    ...(discord
-      ? {
-          discord: {
-            allowFrom: discord.allowFrom,
-            allowChats: discord.allowChats,
-            threads: discord.threads,
-          },
-        }
-      : {}),
-    // WhatsApp holds no threads on either provider, so every session there runs
-    // linear behind the header core already writes. The room list is empty
-    // because no room reaches this channel at all.
-    ...(whatsapp
-      ? {
-          whatsapp: {
-            allowFrom: whatsapp.allowFrom,
-            allowChats: [],
-            threads: false,
-          },
-        }
-      : {}),
-  };
+  const blocks: Record<string, ChannelBlock> = {};
+  if (telegram)
+    blocks.telegram = {
+      allowFrom: telegram.allowFrom,
+      allowChats: telegram.allowChats,
+      threads: telegram.topics,
+    };
+  if (discord)
+    blocks.discord = {
+      allowFrom: discord.allowFrom,
+      allowChats: discord.allowChats,
+      threads: discord.threads,
+    };
+  // WhatsApp holds no threads on either provider, so every session there runs
+  // linear behind the header core already writes. The room list is empty
+  // because no room reaches this channel at all.
+  if (whatsapp) blocks.whatsapp = { allowFrom: whatsapp.allowFrom, allowChats: [], threads: false };
+  return blocks;
 }
 
 // The one reading of the two workspace fields: `workspaces[]` when the operator

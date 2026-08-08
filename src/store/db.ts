@@ -56,6 +56,11 @@ export const STATUS_SESSIONS = 5;
 
 type Scrubber = ReturnType<typeof createScrubber>;
 
+// The columns a `Session` is built from, aliased to its field names. Written
+// once so the three reads below cannot drift into returning different shapes.
+const SESSION_COLUMNS = `id, principal, chat_id AS chatId, thread_id AS threadId,
+          agent_session_id AS agentSessionId, title, state, workspace, agent`;
+
 export class Store {
   readonly db: DatabaseSync;
   private fts = true;
@@ -257,16 +262,14 @@ export class Store {
       .get(workspace, now) as PolicyGrant | undefined;
   }
 
+  /** Every open window, or only one workspace's when it is named. */
   closeGrants(workspace?: string) {
-    const now = Date.now();
-    return workspace === undefined
-      ? this.db.prepare("UPDATE policy_grant SET closed_at = ? WHERE closed_at IS NULL").run(now)
-          .changes
-      : this.db
-          .prepare(
-            "UPDATE policy_grant SET closed_at = ? WHERE closed_at IS NULL AND workspace = ?",
-          )
-          .run(now, workspace).changes;
+    return this.db
+      .prepare(
+        `UPDATE policy_grant SET closed_at = ?
+         WHERE closed_at IS NULL AND (?2 IS NULL OR workspace = ?2)`,
+      )
+      .run(Date.now(), workspace ?? null).changes;
   }
 
   meta(key: string) {
@@ -320,41 +323,29 @@ export class Store {
     return session;
   }
 
-  sessionFor(chatId: string, threadId = "") {
-    return this.db
-      .prepare(
-        `SELECT id, principal, chat_id AS chatId, thread_id AS threadId,
-                agent_session_id AS agentSessionId, title, state, workspace, agent
-         FROM sessions WHERE chat_id = ? AND thread_id = ? ORDER BY updated_at DESC LIMIT 1`,
-      )
-      .get(chatId, threadId) as Session | undefined;
-  }
-
   /**
    * Every session at one route, newest first. A channel without threads runs
    * all of a conversation's sessions on the same route, so this is what
-   * `/status` reports there (AC-1.8); `sessionFor` above is the first row of
-   * the same query.
+   * `/status` reports there (AC-1.8).
    */
   sessionsFor(chatId: string, threadId = "", limit = STATUS_SESSIONS) {
     return this.db
       .prepare(
-        `SELECT id, principal, chat_id AS chatId, thread_id AS threadId,
-                agent_session_id AS agentSessionId, title, state, workspace, agent
-         FROM sessions WHERE chat_id = ? AND thread_id = ?
+        `SELECT ${SESSION_COLUMNS} FROM sessions WHERE chat_id = ? AND thread_id = ?
          ORDER BY updated_at DESC LIMIT ?`,
       )
       .all(chatId, threadId, limit) as Session[];
   }
 
+  /** The newest session at one route: the first row of the query above. */
+  sessionFor(chatId: string, threadId = "") {
+    return this.sessionsFor(chatId, threadId, 1)[0];
+  }
+
   sessionById(id: string) {
-    return this.db
-      .prepare(
-        `SELECT id, principal, chat_id AS chatId, thread_id AS threadId,
-                agent_session_id AS agentSessionId, title, state, workspace, agent
-         FROM sessions WHERE id = ?`,
-      )
-      .get(id) as Session | undefined;
+    return this.db.prepare(`SELECT ${SESSION_COLUMNS} FROM sessions WHERE id = ?`).get(id) as
+      | Session
+      | undefined;
   }
 
   // `/switch`: the next run starts a fresh agent-side session on the new

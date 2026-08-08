@@ -16,6 +16,7 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { setTimeout as delay } from "node:timers/promises";
 import {
+  drainInbox,
   splitMarkdown,
   type Channel,
   type ChannelCaps,
@@ -60,8 +61,6 @@ const FILE_AFTER_CHUNKS = 3;
 // Nothing Meta sends is anywhere near this large, and reading a body without a
 // bound is the point of sending a large one.
 const WEBHOOK_BODY_LIMIT = 1 << 20;
-// How long `updates()` sleeps between looks at the inbox, as in `discord.ts`.
-const POLL_MS = 20;
 
 export class WhatsAppError extends Error {}
 
@@ -323,18 +322,10 @@ export class WhatsApp implements Channel {
     return this.t("whatsapp.ready");
   }
 
-  async *updates(signal: AbortSignal) {
-    while (!signal.aborted) {
-      // A logged-out session and a reconnect that gave up are both raised
-      // rather than retried, the way `discord.ts` raises a fatal close.
-      if (this.fatal) throw this.fatal;
-      const next = this.inbox.shift();
-      if (next) {
-        yield next;
-        continue;
-      }
-      await delay(POLL_MS, undefined, { signal }).catch(() => undefined);
-    }
+  // A logged-out session and a reconnect that gave up both reach the operator
+  // as the error `drainInbox` raises out of here.
+  updates(signal: AbortSignal) {
+    return drainInbox(this.inbox, signal, () => this.fatal);
   }
 
   // ---- lifecycle --------------------------------------------------------

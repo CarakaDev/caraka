@@ -9,6 +9,7 @@
  * `src/core/` and every adapter under `src/channels/` imports it. Core never
  * imports an adapter, and never branches on which one answered.
  */
+import { setTimeout as delay } from "node:timers/promises";
 
 /** Identity for map keys and stored routes. Never a branch (hard rule 1). */
 export type ChannelId = string;
@@ -92,6 +93,30 @@ export type ThreadRef = { message_thread_id: number | string };
 
 /** One entry of the command list core asks a channel to publish. */
 export type ChannelCommand = { command: string; description: string };
+
+// ponytail: a poll, because the alternative is a condition variable and a
+// wake-up to leak; swap it if 20 ms of latency ever shows up in a run.
+const POLL_MS = 20;
+
+/**
+ * The generator a push channel exposes as `updates()`: Discord and WhatsApp
+ * both receive on a socket and fill an array, and this drains it in order.
+ * `fatal` is read on every pass, so an error the channel decided not to retry
+ * is raised here the way `telegram.ts` rethrows a 401.
+ */
+export async function* drainInbox(
+  inbox: InboundEvent[],
+  signal: AbortSignal,
+  fatal: () => Error | undefined,
+) {
+  while (!signal.aborted) {
+    const stop = fatal();
+    if (stop) throw stop;
+    const next = inbox.shift();
+    if (next) yield next;
+    else await delay(POLL_MS, undefined, { signal }).catch(() => undefined);
+  }
+}
 
 function toggledFence(line: string, openFence: string | null) {
   const match = /^\s*(```[^\r\n]*)/.exec(line);

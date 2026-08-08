@@ -275,14 +275,22 @@ export class Gateway {
       const message = error instanceof Error ? error.message : String(error);
       this.store.audit("channel.stopped", "raised", { channel: channel.id, message });
       if (this.channels.length < 2) throw error;
-      for (const other of this.channels) {
-        if (other.id === channel.id) continue;
-        const operator = this.operators.get(other.id);
-        if (!operator) continue;
-        await this.directTo(other, operator)
-          .then((chatId) => this.sendText(chatId, message, "", undefined, operator))
-          .catch(() => undefined);
-      }
+      await this.tellOperators(message, channel.id);
+    }
+  }
+
+  /**
+   * One line into every channel's operator DM, best effort. A channel that
+   * cannot deliver it is skipped rather than allowed to stop the others, and
+   * `except` leaves out the channel the line is about.
+   */
+  private async tellOperators(text: string, except?: ChannelId) {
+    for (const other of this.channels) {
+      const operator = this.operators.get(other.id);
+      if (!operator || other.id === except) continue;
+      await this.directTo(other, operator)
+        .then((chatId) => this.sendText(chatId, text, "", undefined, operator))
+        .catch(() => undefined);
     }
   }
 
@@ -309,18 +317,13 @@ export class Gateway {
     const last = Number(this.store.meta("startup.notice") ?? 0);
     if (Date.now() - last < STARTUP_NOTICE_MS) return;
     this.store.setMeta("startup.notice", String(Date.now()));
-    const notice = this.t("start.notice", {
-      host: hostname(),
-      workspace: this.workspaces.map((workspace) => workspace.slug).join(", "),
-      version: this.version,
-    });
-    for (const channel of this.channels) {
-      const operator = this.operators.get(channel.id);
-      if (!operator) continue;
-      await this.directTo(channel, operator)
-        .then((chatId) => this.sendText(chatId, notice, "", undefined, operator))
-        .catch(() => undefined);
-    }
+    await this.tellOperators(
+      this.t("start.notice", {
+        host: hostname(),
+        workspace: this.workspaces.map((workspace) => workspace.slug).join(", "),
+        version: this.version,
+      }),
+    );
   }
 
   // Where a private message to this principal lands. Telegram keys a DM by the
@@ -394,7 +397,6 @@ export class Gateway {
   // buttons, never a guess.
   private routeTask(message: InboundMessage, text: string, create = false) {
     const { chatId, threadId } = this.route(message);
-    const principal = String(message.from?.id);
     const session = this.store.sessionFor(chatId, threadId);
     if (threadId && session) {
       this.queueRun(message, text, this.workspaceOf(session), create);
@@ -405,31 +407,14 @@ export class Gateway {
       const slug = at[1] ?? "";
       const chosen = this.workspaceBySlug(slug);
       if (!chosen) {
-        this.respond(
-          message,
-          this.sendText(
-            chatId,
-            this.t("ws.unknown", { slug, list: this.workspaceLines() }),
-            threadId,
-            undefined,
-            principal,
-          ),
-        );
+        const list = this.workspaceLines();
+        this.respond(message, this.reply(message, this.t("ws.unknown", { slug, list })));
         return;
       }
       this.store.setMeta(`ws.last.${chatId}`, chosen.slug);
       const rest = text.slice(at[0].length).trim();
       if (!rest && !create) {
-        this.respond(
-          message,
-          this.sendText(
-            chatId,
-            this.t("ws.sticky", { slug: chosen.slug }),
-            threadId,
-            undefined,
-            principal,
-          ),
-        );
+        this.respond(message, this.reply(message, this.t("ws.sticky", { slug: chosen.slug })));
         return;
       }
       this.queueRun(message, rest || text, chosen, create);
@@ -450,10 +435,9 @@ export class Gateway {
   }
 
   private askWorkspace(message: InboundMessage, text: string) {
-    const { chatId, threadId } = this.route(message);
-    const principal = String(message.from?.id);
+    const { chatId } = this.route(message);
     this.pendingChoice.set(chatId, {
-      principal,
+      principal: String(message.from?.id),
       message,
       text,
       expiresAt: Date.now() + 10 * 60_000,
@@ -465,10 +449,9 @@ export class Gateway {
     const buttons = this.channelOf(chatId).caps.buttons;
     this.respond(
       message,
-      this.sendText(
-        chatId,
+      this.reply(
+        message,
         buttons ? this.t("ws.choose") : `${this.t("ws.choose")}\n${slugs.join("\n")}`,
-        threadId,
         buttons
           ? {
               inline_keyboard: this.workspaces.map((workspace) => [
@@ -476,7 +459,6 @@ export class Gateway {
               ]),
             }
           : undefined,
-        principal,
       ),
     );
   }
@@ -508,41 +490,21 @@ export class Gateway {
 
   // Global commands answer in General from any topic (`docs/session-model.md` §5).
   private listWorkspaces(message: InboundMessage) {
-    return this.sendText(
-      String(message.chat.id),
-      this.t("ws.list", { list: this.workspaceLines() }),
-      "",
-      undefined,
-      String(message.from?.id),
-    );
+    return this.sendGeneral(message, this.t("ws.list", { list: this.workspaceLines() }));
   }
 
   // `/switch` writes the preset id and drops the agent-side session id; no
   // agent mode name is known here, let alone hardened (`docs/ui-ux.md`).
   private async switchAgent(message: InboundMessage, argument: string) {
     const { chatId, threadId } = this.route(message);
-    const principal = String(message.from?.id);
     if (!argument || !this.agents.includes(argument))
-      return this.sendText(
-        chatId,
-        this.t("switch.unknown", { list: this.agents.join(", ") || "—" }),
-        threadId,
-        undefined,
-        principal,
-      );
+      return this.reply(message, this.t("switch.unknown", { list: this.agents.join(", ") || "—" }));
     const session = this.store.sessionFor(chatId, threadId);
-    if (!session)
-      return this.sendText(chatId, this.t("status.none"), threadId, undefined, principal);
+    if (!session) return this.reply(message, this.t("status.none"));
     this.store.setAgent(session.id, argument);
+    const principal = String(message.from?.id);
     this.store.audit("session.switch", "switched", { agent: argument }, principal, session.id);
-    return this.sendText(
-      chatId,
-      this.t("switch.done", { agent: argument }),
-      threadId,
-      undefined,
-      principal,
-      session.id,
-    );
+    return this.reply(message, this.t("switch.done", { agent: argument }), undefined, session.id);
   }
 
   // A slash command is forwarded only while Caraka has no list to check it
@@ -556,14 +518,7 @@ export class Gateway {
   }
 
   private rejectCommand(message: InboundMessage, name: string) {
-    const { chatId, threadId } = this.route(message);
-    return this.sendText(
-      chatId,
-      this.t("help.unknownCommand", { name }),
-      threadId,
-      undefined,
-      String(message.from?.id),
-    );
+    return this.reply(message, this.t("help.unknownCommand", { name }));
   }
 
   private listCommands(message: InboundMessage) {
@@ -575,7 +530,7 @@ export class Gateway {
           list: commands.map((entry) => `/${entry.name} — ${entry.description}`).join("\n"),
         })
       : this.t("help.commandsEmpty");
-    return this.sendText(chatId, body, threadId, undefined, String(message.from?.id), session?.id);
+    return this.reply(message, body, undefined, session?.id);
   }
 
   private reportUsage(message: InboundMessage) {
@@ -583,13 +538,9 @@ export class Gateway {
     const session = this.store.sessionFor(chatId, threadId);
     const usage = session ? this.facts.get(session.id)?.usage : undefined;
     const body = usage
-      ? this.t("usage.report", {
-          used: usage.used,
-          size: usage.size,
-          cost: usage.cost ?? "—",
-        })
+      ? this.t("usage.report", { used: usage.used, size: usage.size, cost: usage.cost ?? "—" })
       : this.t("usage.none");
-    return this.sendText(chatId, body, threadId, undefined, String(message.from?.id), session?.id);
+    return this.reply(message, body, undefined, session?.id);
   }
 
   // The queue is serial already; the limit adds a wait and one line saying why.
@@ -672,6 +623,32 @@ export class Gateway {
       sessionId,
     );
     return sent;
+  }
+
+  /**
+   * An answer to where a message came from: the same conversation, the same
+   * thread, and the sender as the principal on the audit line. Everything core
+   * says back to a person goes out this way; `sendText` stays for the sends
+   * that answer a session or a chat id rather than a message.
+   */
+  private reply(
+    message: InboundMessage,
+    text: string,
+    replyMarkup?: Record<string, unknown>,
+    sessionId?: string,
+  ) {
+    const { chatId, threadId } = this.route(message);
+    return this.sendText(chatId, text, threadId, replyMarkup, String(message.from?.id), sessionId);
+  }
+
+  /**
+   * The same answer, deliberately outside the thread the message came from: an
+   * empty thread id is General in a forum and the conversation itself
+   * everywhere else. `/ws` and the three memory commands are global, so they
+   * answer where the whole conversation can read them (`docs/session-model.md`).
+   */
+  private sendGeneral(message: InboundMessage, text: string) {
+    return this.sendText(String(message.chat.id), text, "", undefined, String(message.from?.id));
   }
 
   private async sendResult(session: Session, text: string) {
@@ -1078,45 +1055,39 @@ export class Gateway {
     }
   }
 
-  // The three memory commands are accepted from any topic and answered with an
-  // empty thread id — General in a forum, the conversation itself everywhere
-  // else (`docs/session-model.md`). Provider errors answer as text, never as an
-  // error report: memory stays a degradation, not a failure.
-  private sendMemoryReply(message: InboundMessage, text: string) {
-    return this.sendText(String(message.chat.id), text, "", undefined, String(message.from?.id));
-  }
-
+  // A provider that failed answers as text, never as an error report: memory
+  // stays a degradation, not a failure. All three commands below do it.
   private async rememberMemory(message: InboundMessage, argument: string) {
-    if (!this.memory) return this.sendMemoryReply(message, this.t("memory.off"));
-    if (!argument) return this.sendMemoryReply(message, this.t("memory.rememberUsage"));
+    if (!this.memory) return this.sendGeneral(message, this.t("memory.off"));
+    if (!argument) return this.sendGeneral(message, this.t("memory.rememberUsage"));
     try {
       const id = await this.memory.observe({
         scope: this.memoryScopeFor(message),
         kind: "note",
         text: argument,
       });
-      return this.sendMemoryReply(message, this.t("memory.remembered", { id }));
+      return this.sendGeneral(message, this.t("memory.remembered", { id }));
     } catch {
-      return this.sendMemoryReply(message, this.t("memory.failed"));
+      return this.sendGeneral(message, this.t("memory.failed"));
     }
   }
 
   private async forgetMemory(message: InboundMessage, argument: string) {
-    if (!this.memory) return this.sendMemoryReply(message, this.t("memory.off"));
-    if (!argument) return this.sendMemoryReply(message, this.t("memory.forgetUsage"));
+    if (!this.memory) return this.sendGeneral(message, this.t("memory.off"));
+    if (!argument) return this.sendGeneral(message, this.t("memory.forgetUsage"));
     try {
       const count = await this.memory.forget(argument);
-      return this.sendMemoryReply(
+      return this.sendGeneral(
         message,
         this.t(count > 0 ? "memory.forgotten" : "memory.notFound", { id: argument }),
       );
     } catch {
-      return this.sendMemoryReply(message, this.t("memory.failed"));
+      return this.sendGeneral(message, this.t("memory.failed"));
     }
   }
 
   private async listMemory(message: InboundMessage) {
-    if (!this.memory) return this.sendMemoryReply(message, this.t("memory.off"));
+    if (!this.memory) return this.sendGeneral(message, this.t("memory.off"));
     try {
       const context = await withTimeout(
         this.memory.compile({
@@ -1130,9 +1101,9 @@ export class Gateway {
       const body = lines.length
         ? this.t("memory.list", { list: lines.join("\n") })
         : this.t("memory.empty");
-      return this.sendMemoryReply(message, body);
+      return this.sendGeneral(message, body);
     } catch {
-      return this.sendMemoryReply(message, this.t("memory.failed"));
+      return this.sendGeneral(message, this.t("memory.failed"));
     }
   }
 
@@ -1306,16 +1277,14 @@ export class Gateway {
     const decision = match?.[1]?.toLowerCase() === "ok" ? "allow" : "reject";
     const code = (match?.[2] ?? "").toUpperCase();
     const session = this.store.sessionFor(chatId, threadId);
-    const reply = (key: "approval.codeInvalid" | "approval.codeLocked" | "callback.used") =>
-      this.sendText(
-        chatId,
+    const refuse = (key: "approval.codeInvalid" | "approval.codeLocked" | "callback.used") =>
+      this.reply(
+        message,
         `${session ? this.header(session) : ""}${this.t(key)}`,
-        threadId,
         undefined,
-        principal,
         session?.id,
       );
-    if (!session) return reply("approval.codeInvalid");
+    if (!session) return refuse("approval.codeInvalid");
 
     const tally = this.codeMisses.get(session.id);
     const seen = tally?.get(principal) ?? 0;
@@ -1327,7 +1296,7 @@ export class Gateway {
     const pending = approval ? this.pending.get(approval.id) : undefined;
     if (!approval || !pending) {
       // A code this principal was already shown is a double tap, not a guess.
-      if (this.store.usedCode(code, principal, session.id)) return reply("callback.used");
+      if (this.store.usedCode(code, principal, session.id)) return refuse("callback.used");
       // The counter covers a waiting question (AC-4.1). With nothing waiting
       // there is nothing to guess at, and ordinary chat that happens to fit the
       // shape — `ok next`, `no test` — would otherwise spend the attempts and
@@ -1338,7 +1307,7 @@ export class Gateway {
       if (waiting) this.codeMisses.set(session.id, (tally ?? new Map()).set(principal, misses));
       // The line names who and where, never what was typed (AC-3.12).
       this.store.audit("approval.decide", "badcode", { misses }, principal, session.id);
-      return reply(
+      return refuse(
         misses >= APPROVAL_CODE_ATTEMPTS ? "approval.codeLocked" : "approval.codeInvalid",
       );
     }
@@ -1356,12 +1325,10 @@ export class Gateway {
       principal,
       session.id,
     );
-    return this.sendText(
-      chatId,
+    return this.reply(
+      message,
       `${this.header(session)}${this.t(decision === "allow" ? "callback.allowed" : "callback.rejected")}`,
-      threadId,
       undefined,
-      principal,
       session.id,
     );
   }
@@ -1446,18 +1413,15 @@ export class Gateway {
   // and still writes an audit line per action. Claude's own bypass mode has one
   // caller, `caraka trust --bypass`, and it is not reachable from chat.
   private async offerTrust(message: InboundMessage, argument: string) {
-    const { chatId, threadId } = this.route(message);
-    const principal = String(message.from?.id);
+    const { chatId } = this.route(message);
     // The trust card is confirmed by a signed button and by nothing else, so a
     // channel without one is told that rather than handed a card it cannot
     // answer. `caraka trust` from the terminal is the route that still works.
     if (!this.channelOf(chatId).caps.buttons)
-      return this.sendText(chatId, this.t("trust.needButtons"), threadId, undefined, principal);
+      return this.reply(message, this.t("trust.needButtons"));
     const minutes = parseDuration(argument);
-    if (!minutes)
-      return this.sendText(chatId, this.t("trust.needDuration"), threadId, undefined, principal);
-    if (minutes > trustLimitMinutes)
-      return this.sendText(chatId, this.t("trust.tooLong"), threadId, undefined, principal);
+    if (!minutes) return this.reply(message, this.t("trust.needDuration"));
+    if (minutes > trustLimitMinutes) return this.reply(message, this.t("trust.tooLong"));
     // A window is a promise about one workspace, so an ambiguous chat picks
     // one first — the same buttons a task would get.
     const workspace = this.workspaceForMessage(message);
@@ -1466,28 +1430,19 @@ export class Gateway {
       return;
     }
     if (this.store.activeGrant(workspace.path))
-      return this.sendText(chatId, this.t("trust.alreadyOpen"), threadId, undefined, principal);
+      return this.reply(message, this.t("trust.alreadyOpen"));
     const callback = approvalCallbacks(this.approvalKey, "t");
     this.pendingTrust.set(callback.id, {
-      principal,
+      principal: String(message.from?.id),
       minutes,
       path: workspace.path,
       slug: workspace.slug,
       expiresAt: Date.now() + 10 * 60_000,
     });
-    return this.sendText(
-      chatId,
+    return this.reply(
+      message,
       this.t("trust.card", { minutes, workspace: workspace.slug }),
-      threadId,
-      {
-        inline_keyboard: [
-          [
-            { text: this.t("button.confirm"), callback_data: callback.allow },
-            { text: this.t("button.reject"), callback_data: callback.reject },
-          ],
-        ],
-      },
-      principal,
+      this.confirmCard(callback),
     );
   }
 
@@ -1540,19 +1495,11 @@ export class Gateway {
   }
 
   private async closeTrust(message: InboundMessage) {
-    const { chatId, threadId } = this.route(message);
-    const principal = String(message.from?.id);
     // No resolvable workspace means no window this chat could call its own.
     const workspace = this.workspaceForMessage(message);
     const closed = workspace ? this.store.closeGrants(workspace.path) : 0;
-    if (closed > 0) this.store.audit("trust.close", "locked", { closed }, principal);
-    return this.sendText(
-      chatId,
-      this.t(closed > 0 ? "trust.closed" : "trust.notOpen"),
-      threadId,
-      undefined,
-      principal,
-    );
+    if (closed > 0) this.store.audit("trust.close", "locked", { closed }, String(message.from?.id));
+    return this.reply(message, this.t(closed > 0 ? "trust.closed" : "trust.notOpen"));
   }
 
   // Pairing a group is confirmed in the operator's DM, never in the group, so
@@ -1590,16 +1537,22 @@ export class Gateway {
       // read is not what a Telegram group member can read (AC-7.7).
       channel.pairingText(title, this.container(chatId)),
       "",
-      {
-        inline_keyboard: [
-          [
-            { text: this.t("button.confirm"), callback_data: callback.allow },
-            { text: this.t("button.reject"), callback_data: callback.reject },
-          ],
-        ],
-      },
+      this.confirmCard(callback),
       operator,
     );
+  }
+
+  // The card a signed yes/no is asked on: two buttons, both signed for the same
+  // id and opposite decisions, and nothing a channel without buttons can read.
+  private confirmCard(callback: { allow: string; reject: string }) {
+    return {
+      inline_keyboard: [
+        [
+          { text: this.t("button.confirm"), callback_data: callback.allow },
+          { text: this.t("button.reject"), callback_data: callback.reject },
+        ],
+      ],
+    };
   }
 
   private async confirmGroup(channel: Channel, queryId: string, data: string, principal: string) {
@@ -1654,17 +1607,10 @@ export class Gateway {
   // `/stop` cancels the run of the sender's own workspace — the session topic
   // it came from, or the chat's resolved workspace — and only that one.
   private async stopActive(message: InboundMessage) {
-    const { chatId, threadId } = this.route(message);
     const workspace = this.workspaceForMessage(message);
     const run = workspace ? this.active.get(workspace.slug) : undefined;
     if (!run) {
-      await this.sendText(
-        chatId,
-        this.t("stop.none"),
-        threadId,
-        undefined,
-        String(message.from?.id),
-      );
+      await this.reply(message, this.t("stop.none"));
       return;
     }
     await run.driver.cancel(run.agentId);
@@ -1706,31 +1652,17 @@ export class Gateway {
     // channel will and will not hand us, so `/status` repeats the pairing report.
     const body =
       message.chat.type === "private" ? base : `${base}\n\n${await this.readiness(chatId)}`;
-    await this.sendText(chatId, body, threadId, undefined, String(message.from?.id), session?.id);
+    await this.reply(message, body, undefined, session?.id);
   }
 
   private help(message: InboundMessage) {
-    const { chatId, threadId } = this.route(message);
-    return this.sendText(
-      chatId,
-      this.t("help.body"),
-      threadId,
-      undefined,
-      String(message.from?.id),
-    );
+    return this.reply(message, this.t("help.body"));
   }
 
   private async reportError(message: InboundMessage, error: unknown) {
     const details = this.scrub(error instanceof Error ? error.message : error);
-    const { chatId, threadId } = this.route(message);
     this.store.audit("error", "failed", { message: details }, String(message.from?.id));
-    await this.sendText(
-      chatId,
-      this.t("error.report", { details }),
-      threadId,
-      undefined,
-      String(message.from?.id),
-    ).catch(() => undefined);
+    await this.reply(message, this.t("error.report", { details })).catch(() => undefined);
   }
 
   stop() {

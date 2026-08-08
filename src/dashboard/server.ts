@@ -98,6 +98,18 @@ export type DashboardOptions = {
 type Panel = (context: { db: DatabaseSync; url: URL; now: number }, o: DashboardOptions) => string;
 
 /**
+ * The column names, read off the catalog rather than listed again here: every
+ * `dash.col.` key is a column and nothing else is, so a heading that has no
+ * string fails `tsc` the way the long form did.
+ */
+type ColumnOf<Key> = Key extends `dash.col.${infer Name}` ? Name : never;
+
+/** The header row of a table, with the `dash.col.` prefix written once. */
+function heads(o: DashboardOptions, ...names: Array<ColumnOf<MessageKey>>) {
+  return names.map((name) => o.t(`dash.col.${name}`));
+}
+
+/**
  * Both files ship inside the package, so the page works with no network at all
  * and never contacts an origin the operator did not start. They are the one
  * response the scrubber does not touch: they carry no database content, and a
@@ -126,14 +138,7 @@ function assetBody(name: string) {
 const panels: Record<string, Panel> = {
   "/": ({ db }, o) =>
     table(
-      [
-        "dash.col.state",
-        "dash.col.title",
-        "dash.col.workspace",
-        "dash.col.agent",
-        "dash.col.principal",
-        "dash.col.updated",
-      ].map((key) => o.t(key as MessageKey)),
+      heads(o, "state", "title", "workspace", "agent", "principal", "updated"),
       sessions(db).map((row) => [
         statusCell(row.state),
         cell(row.title),
@@ -147,13 +152,7 @@ const panels: Record<string, Panel> = {
 
   "/runs": ({ db }, o) =>
     table(
-      [
-        "dash.col.status",
-        "dash.col.session",
-        "dash.col.agent",
-        "dash.col.started",
-        "dash.col.duration",
-      ].map((key) => o.t(key as MessageKey)),
+      heads(o, "status", "session", "agent", "started", "duration"),
       runs(db).map((row) => [
         row.finishTs === null
           ? statusCell("running")
@@ -168,14 +167,7 @@ const panels: Record<string, Panel> = {
 
   "/approvals": ({ db, now }, o) =>
     table(
-      [
-        "dash.col.status",
-        "dash.col.id",
-        "dash.col.principal",
-        "dash.col.session",
-        "dash.col.tool",
-        "dash.col.expires",
-      ].map((key) => o.t(key as MessageKey)),
+      heads(o, "status", "id", "principal", "session", "tool", "expires"),
       approvals(db).map((row) => {
         const status = approvalStatus(row, now);
         return [
@@ -196,14 +188,7 @@ const panels: Record<string, Panel> = {
     return (
       `<p class="note">${escapeHtml(o.t("dash.auditWindow", { window }))}</p>` +
       table(
-        [
-          "dash.col.time",
-          "dash.col.action",
-          "dash.col.result",
-          "dash.col.principal",
-          "dash.col.session",
-          "dash.col.details",
-        ].map((key) => o.t(key as MessageKey)),
+        heads(o, "time", "action", "result", "principal", "session", "details"),
         rows.map((row) => [
           cell(stamp(row.ts)),
           cell(row.action),
@@ -219,14 +204,7 @@ const panels: Record<string, Panel> = {
 
   "/policy": ({ db, now }, o) =>
     table(
-      [
-        "dash.col.status",
-        "dash.col.workspace",
-        "dash.col.mode",
-        "dash.col.grantedBy",
-        "dash.col.created",
-        "dash.col.expires",
-      ].map((key) => o.t(key as MessageKey)),
+      heads(o, "status", "workspace", "mode", "grantedBy", "created", "expires"),
       grants(db).map((row) => [
         `<td class="state">${escapeHtml(o.t(grantOpen(row, now) ? "dash.status.open" : "dash.status.closed"))}</td>`,
         cell(row.workspace),
@@ -241,13 +219,7 @@ const panels: Record<string, Panel> = {
   "/memory": ({ db }, o) =>
     o.memoryProvider === "local"
       ? table(
-          [
-            "dash.col.scope",
-            "dash.col.kind",
-            "dash.col.text",
-            "dash.col.id",
-            "dash.col.created",
-          ].map((key) => o.t(key as MessageKey)),
+          heads(o, "scope", "kind", "text", "id", "created"),
           memories(db).map((row) => [
             cell(row.scope),
             cell(row.kind),

@@ -10,6 +10,7 @@
  */
 import { setTimeout as delay } from "node:timers/promises";
 import {
+  drainInbox,
   splitMarkdown,
   type Channel,
   type ChannelCaps,
@@ -47,10 +48,6 @@ const FATAL_CLOSE = new Set([4004, 4010, 4011, 4012, 4013, 4014]);
 // dropped. A message older than this many sends is past editing, an interaction
 // token expires in fifteen minutes, and a second pairing offer costs one card.
 const REMEMBERED = 500;
-// How long `updates()` sleeps between looks at the inbox.
-// ponytail: a poll, because the alternative is a condition variable and a
-// wake-up to leak; swap it if 20 ms of latency ever shows up in a run.
-const POLL_MS = 20;
 
 export class DiscordError extends Error {
   constructor(
@@ -739,19 +736,9 @@ export class Discord implements Channel {
     ).catch(() => undefined);
   }
 
-  // The push side above fills the inbox; core drains it as a generator, which
-  // is what keeps `Gateway.run()` a single `for await` for both channels.
-  async *updates(signal: AbortSignal) {
-    while (!signal.aborted) {
-      // A close Discord will repeat is raised rather than retried, the way
-      // `telegram.ts` raises a 401. Core stops and names the channel.
-      if (this.fatal) throw this.fatal;
-      const next = this.inbox.shift();
-      if (next) {
-        yield next;
-        continue;
-      }
-      await delay(POLL_MS, undefined, { signal }).catch(() => undefined);
-    }
+  // The push side above fills the inbox; the seam drains it as a generator,
+  // which is what keeps `Gateway.run()` a single `for await` for every channel.
+  updates(signal: AbortSignal) {
+    return drainInbox(this.inbox, signal, () => this.fatal);
   }
 }
