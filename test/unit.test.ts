@@ -104,7 +104,10 @@ const shape = (prefix: string, body: string) => `${prefix}${body}`;
 const secretCorpus: Array<[string, string]> = [
   ["an AWS access key id", shape("AKIA", "NOTAREALKEYVALUE")],
   ["a GitHub classic token", shape("ghp_", "notarealtokenwrittenoutofwords00")],
-  ["a GitHub fine-grained token", shape("github_pat_", "notarealfinegrainedtokenwrittenoutofwords")],
+  [
+    "a GitHub fine-grained token",
+    shape("github_pat_", "notarealfinegrainedtokenwrittenoutofwords"),
+  ],
   ["an OpenAI project key", shape("sk-proj-", "not-a-real-openai-project-key")],
   ["an Anthropic key", shape("sk-ant-api03-", "not-a-real-anthropic-key")],
   ["a Slack bot token", shape("xoxb-", "not-a-real-slack-bot-token")],
