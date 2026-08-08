@@ -109,14 +109,11 @@ jobs:
       # here, so a bump moves this step with it. A failure is a real advisory
       # in the version this package pins, not a flaky step.
       #
-      # It is also a failure nobody's pull request can fix today: the row in
-      # `docs/security.md` §13 records that `@whiskeysockets/baileys@6.7.18` is
-      # itself under GHSA-qvv5-jq5g-4cgg and that this step exited 1 on 8
-      # August 2026. Gating every push on it would teach people to ignore a red
-      # check, so the step reports and does not block until the pin can move
-      # past the advisory — at which point this line comes off with the §13 row.
+      # This step blocked nothing while the pin sat at 6.7.18, which the
+      # maintainer had deprecated over GHSA-qvv5-jq5g-4cgg. The pin moved to
+      # 6.7.22 on 8 August 2026 and the tree answers zero, so the step gates
+      # again — which is the only state in which a green check means anything.
       - name: audit the production tree with the optional Baileys peer
-        continue-on-error: true
         run: |
           version=$(node -p "require('./package.json').peerDependencies['@whiskeysockets/baileys']")
           npm pkg delete peerDependencies peerDependenciesMeta
