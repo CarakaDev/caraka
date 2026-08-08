@@ -39,10 +39,10 @@ export const products = [
     us: true,
     range: r(2, 4, 26),
     body: 'A bridge with no runtime of its own. It carries your task to the coding agent you already installed and already pay for.',
-    // Comp line 300 lists "Memory across sessions"; v0.2 ships no memory
-    // provider (roadmap Fase 3 → v0.3), so the card names the audit log that
-    // did ship.
-    does: ['Works on your repository', 'Sessions as topics, threads, or a header', 'Approval before every write', 'An append-only audit log', 'Nothing else, on purpose'],
+    // Comp line 300 lists "Memory across sessions". The port dropped it while
+    // no memory provider existed and put it back at v0.3, when
+    // src/memory/ shipped titen, local, and none.
+    does: ['Works on your repository', 'Sessions as topics, threads, or a header', 'Approval before every write', 'Memory across sessions', 'An append-only audit log', 'Nothing else, on purpose'],
   },
 ]
 
@@ -53,16 +53,20 @@ export const rows = [
   { k: 'Execution tools', a: '20+', b: 'Yes', c: 'Zero', tone: '#FF7A5E', weight: '600', range: r(3, 2.2, 22) },
   { k: 'Plugin marketplace', a: 'Large', b: 'Yes', c: 'None', tone: '#FF7A5E', weight: '600', range: r(4, 2.2, 22) },
   // Comp line 309 reads "1 in v1.0". Telegram shipped at v0.2, Discord at v0.5,
-  // and WhatsApp at v0.6, all three on the same Channel contract, so v1.0 is not
-  // the one-channel release either. Signal is unscheduled.
-  { k: 'Channels', a: '22', b: 'via gateway', c: '3 in v0.6', tone: '#95A0AB', weight: '400', range: r(5, 2.2, 22) },
+  // and WhatsApp at v0.6, all three on the same Channel contract, so v1.0 is
+  // the three-channel release rather than the one-channel one the comp drew.
+  // Signal is unscheduled.
+  { k: 'Channels', a: '22', b: 'via gateway', c: '3 in v1.0', tone: '#95A0AB', weight: '400', range: r(5, 2.2, 22) },
   { k: 'Tokens outside your agent', a: 'Yes, own loop', b: 'Yes', c: 'None', tone: '#8EEE98', weight: '600', range: r(6, 2.2, 22) },
   { k: 'Sandboxing', a: 'Configure it', b: 'Configure it', c: 'Inherited', tone: '#FF7A5E', weight: '600', range: r(7, 2.2, 22) },
   // Comp line 312 presents "Under 3 min" as a report; no setup session has
   // been recorded yet (status.ts keeps that gate open), and prd.md G1 sets
   // < 3 menit as a target, so the cell names it one.
   { k: 'Reported setup time', a: 'Hours', b: 'pip + venv', c: 'Target: under 3 min', tone: '#FF7A5E', weight: '600', range: r(8, 2.2, 22) },
-  { k: 'Maturity', a: 'Very high', b: 'High', c: 'v0.6 closed beta', tone: '#FF93B2', weight: '600', range: r(9, 2.2, 22) },
+  // The maturity cell carries the same word as the RELEASE STATE stat in
+  // src/data/status.ts and the closing line of src/data/security.ts. One
+  // question, one answer, in all three places.
+  { k: 'Maturity', a: 'Very high', b: 'High', c: 'v1.0, unproven', tone: '#FF93B2', weight: '600', range: r(9, 2.2, 22) },
 ]
 
 export const complaints = [
@@ -80,8 +84,9 @@ export const complaints = [
     tag: 'PLUGINS',
     quote: 'The Skills and Plugin ecosystem is vast, but the experience is horrible.',
     src: 'Composio, May 2026',
-    // Comp line 318 promised YAML presets and MCP; v0.2 ships neither
-    // (src/drivers/ holds claude-acp.ts alone, presets/ does not exist yet).
+    // Comp line 318 promised YAML presets and MCP. The presets arrived at v0.4
+    // in presets/agents/, driven by src/drivers/cli.ts; the MCP route has no
+    // code in the package and the answer below does not offer it.
     answer: 'No marketplace at all. Nothing loads dynamically, and runtime dependencies are pinned in package-lock.json. Trust sits with you, not with a registry.',
     range: r(1, 4, 28),
   },
@@ -155,7 +160,7 @@ export const picks = [
 ]
 
 export const honest = [
-  'OpenClaw is far more mature. Hundreds of thousands of stars, tens of thousands of commits, a real community. Caraka v0.6 is an early preview and you should treat it that way.',
+  'OpenClaw is far more mature. Hundreds of thousands of stars, tens of thousands of commits, a real community. Caraka v1.0 means every phase carries shipped code, and it is unproven: no field gate has been answered by anyone, the author included, and you should treat it that way.',
   'OpenClaw does work Caraka will never do. Calendar, inbox, browser, home automation. If that is what you need, this is not the answer.',
   // Comp line 355 says "early 2026"; the Vellum quote on this page is dated
   // August 2026.

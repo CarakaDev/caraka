@@ -22,7 +22,7 @@ export const toc = [
 
 export const chain = [
   { n: '1', title: 'Node.js 22 or newer', body: 'The runtime for Caraka and npx. Check it with node --version before starting.', range: r(0, 5, 28) },
-  { n: '2', title: 'Git', body: 'Claude works inside the repository you choose. Caraka checks that Git is available before pairing.', range: r(1, 5, 28) },
+  { n: '2', title: 'Git', body: 'Your coding agent works inside the repository you choose. Caraka checks that Git is available before pairing.', range: r(1, 5, 28) },
   { n: '3', title: 'A coding agent, signed in', body: 'Claude Code over the official ACP adapter is the route verified here; init accepts any of the seven presets it finds on PATH. Run claude auth status to confirm access.', range: r(2, 5, 28) },
 ]
 
@@ -46,7 +46,11 @@ export const agents = [
 export const prices = [
   { plan: 'Node', a: 'node --version', aTone: '#B2BCC6', b: 'v22+', bTone: ok, c: 'nodejs.org', cTone: '#FF7A5E', bg: '#0C1116', range: r(0, 2, 24) },
   { plan: 'Git', a: 'git --version', aTone: '#B2BCC6', b: 'found', bTone: ok, c: 'install Git', cTone: '#FF7A5E', bg: '#0C1116', range: r(1, 2, 24) },
-  { plan: 'Claude', a: 'claude --version', aTone: '#B2BCC6', b: 'found', bTone: ok, c: 'npm install -g …', cTone: '#FF7A5E', bg: '#0C1116', range: r(2, 2, 24) },
+  // Init took its Claude-only check off at v0.4: discovery scans PATH for the
+  // seven known binaries and any one of them is enough (src/cli.ts, `agents.none`
+  // is the only stop). The auth row is Claude's own, and it is the agent this
+  // page walks you through.
+  { plan: 'Agent', a: 'PATH scan', aTone: '#B2BCC6', b: 'one found', bTone: ok, c: 'npm install -g …', cTone: '#FF7A5E', bg: '#0C1116', range: r(2, 2, 24) },
   { plan: 'Auth', a: 'claude auth status', aTone: '#B2BCC6', b: 'logged in', bTone: ok, c: 'claude auth login', cTone: '#FF7A5E', bg: '#0C1116', range: r(3, 2, 24) },
   { plan: 'Telegram', a: 'getMe', aTone: '#B2BCC6', b: 'valid bot', bTone: ok, c: 'copy a new token', cTone: '#FF7A5E', bg: '#0C1116', range: r(4, 2, 24) },
   { plan: 'Identity', a: 'one-time deep link', aTone: '#B2BCC6', b: 'terminal approval', bTone: ok, c: 'run init again', cTone: '#FF7A5E', bg: '#12100F', range: r(5, 2, 24) },

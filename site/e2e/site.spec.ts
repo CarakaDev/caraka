@@ -265,7 +265,7 @@ test.describe('the comps still decide the layout', () => {
     // rounding at a different device scale factor, not a regression.
     //
     // Six of these no longer track a comp. `/`, `/docs`, `/compare`,
-    // `/install`, `/security` and `/status` carry v0.2 copy, and the comps
+    // `/install`, `/security` and `/status` carry release copy, and the comps
     // behind them describe v0.1 — groups rejected, three CLI commands, no
     // trust window, no service file, a Gemini free path that never shipped. A
     // comp still decides how those six pages look; it stopped deciding what
@@ -299,14 +299,26 @@ test.describe('the comps still decide the layout', () => {
     // /compare held: the channel count and the maturity chip changed inside
     // cells that already existed, and 'topics, threads, or a header' is shorter
     // than the line it replaced.
+    //
+    // v1.0 moved five, all re-measured 8 August 2026, Chromium, same viewport:
+    // /status +1476 to 10136 (the 1.0.0 card with its own ADDED and LIMITED
+    // groups, a ninth open gate, and a longer gate sentence on five of the eight
+    // phase rows), /security +495 (a fourteenth threat control, the CLI route's
+    // missing permission hook added to what we do not claim, and four rewritten
+    // entries), /docs +284 (the release banner grew a line, and the doctor,
+    // start and dashboard rows now wrap), /install +67 and / +65 (a rewritten
+    // hero and one rewritten section on each). /compare held again: the memory
+    // line the port had dropped came back inside a list that already existed,
+    // and the longer honesty sentence stayed within its paragraph. /brand/readme
+    // held: the rewritten blockquote wraps to the same line count at this width.
     const EXPECTED: Record<string, number> = {
-      // v0.2 copy — measured from the site (see above)
-      '/': 6515,
-      '/docs': 6499,
+      // v1.0 copy — measured from the site (see above)
+      '/': 6580,
+      '/docs': 6783,
       '/compare': 5873,
-      '/install': 5210,
-      '/security': 5095,
-      '/status': 8660,
+      '/install': 5277,
+      '/security': 5590,
+      '/status': 10136,
       '/brand/readme': 5549,
       // still measured against the comp
       '/story': 5734,

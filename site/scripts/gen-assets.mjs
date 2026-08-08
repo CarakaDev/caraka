@@ -482,27 +482,28 @@ const motifTerminal = () =>
 
 /**
  * 07 — the eight phases. Comp §00 rule 3 says the motif repeats what the page
- * says, so the marks here follow `phases` in src/data/status.ts rather than the
- * comp: 0 done, 1 and 2 in progress, and the half ring on the one that carries
- * `live: true`. The comp drew phase 0 in flight, which stopped being true when
- * v0.1 shipped and is five phases stale after v0.5.
+ * says, so these rows are `phases` in src/data/status.ts and not the comp,
+ * which drew phase 0 in flight and is seven phases stale at v1.0. The two lists
+ * are separate files and neither generates the other, so a row changed there
+ * has to be changed here or og-status.png stops matching /status.
  *
- * The fifth column is how far the bar is drawn; the sixth marks the live row.
- * The comp's 62% and 48% were a drawing, not a measurement, and there is no
- * source in the docs for a fraction of a phase. The bar is binary now: full
- * where the release shipped, empty where the work has not started. Kesumba
- * rather than green on 1 to 5 is what src/data/status.ts already says — each of
- * those keeps a field gate open in roadmap.md that only other people can close.
+ * The fifth column is how far the bar is drawn; the sixth marks the live row,
+ * which is phase 7 because the release is the work in flight. The comp's 62%
+ * and 48% were a drawing, not a measurement, and there is no source in the docs
+ * for a fraction of a phase. The bar is binary: full where the release shipped,
+ * empty where the work has not started. Every row is kesumba rather than green
+ * for the reason status.ts gives — each of the eight keeps a field gate open in
+ * roadmap.md that only other people can close, phase 7's being the launch.
  */
 const PHASES = [
-  ['0', 'Spike', OK, WHITE, '100%', false],
+  ['0', 'Spike', KESUMBA_500, WHITE, '100%', false],
   ['1', 'Dogfood', KESUMBA_500, WHITE, '100%', false],
   ['2', 'Install', KESUMBA_500, WHITE, '100%', false],
   ['3', 'Memory', KESUMBA_500, WHITE, '100%', false],
   ['4', 'Abstraction', KESUMBA_500, WHITE, '100%', false],
   ['5', 'Closed beta', KESUMBA_500, WHITE, '100%', false],
-  ['6', 'WhatsApp', KESUMBA_500, WHITE, '100%', true],
-  ['7', 'Public 1.0', N_300, N_400, '0%', false],
+  ['6', 'WhatsApp', KESUMBA_500, WHITE, '100%', false],
+  ['7', 'Public 1.0', KESUMBA_500, WHITE, '100%', true],
 ]
 
 const motifPhases = () =>
@@ -548,7 +549,7 @@ const neutralCard = () =>
 // --- per-card data the comp holds and site.ts does not ----------------------
 // Percentages are read off the comp card by card; they encode the page's place
 // in the site order and are not interpolated. Body and facts follow src/data/
-// and docs/, so nothing here claims scope the v0.2 preview does not have.
+// and docs/, so nothing here claims scope the release does not have.
 const CARDS = {
   landing: {
     percent: 12.5,
@@ -600,7 +601,7 @@ const CARDS = {
   status: {
     percent: 87.5,
     body: 'What shipped, what is being verified, and what has not started yet — including the parts that might fail.',
-    items: ['8 PHASES', 'OPEN CHANGELOG', 'PREVIEW'],
+    items: ['8 PHASES', 'OPEN CHANGELOG', 'UNPROVEN'],
     motif: motifPhases,
   },
 }

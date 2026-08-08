@@ -7,7 +7,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8EEE98?style=flat-square&labelColor=05080C" alt="MIT"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%E2%89%A522-E2452C?style=flat-square&labelColor=05080C" alt="node >= 22"></a>
   <a href="https://agentclientprotocol.com"><img src="https://img.shields.io/badge/protocol-ACP-FF7A5E?style=flat-square&labelColor=05080C" alt="ACP"></a>
-  <a href="docs/roadmap.md"><img src="https://img.shields.io/badge/status-v0.2-FFD67E?style=flat-square&labelColor=05080C" alt="v0.2"></a>
+  <a href="docs/roadmap.md"><img src="https://img.shields.io/badge/status-v1.0-FFD67E?style=flat-square&labelColor=05080C" alt="v1.0"></a>
 </p>
 
 <p align="center">
@@ -19,7 +19,7 @@
   <a href="README.id.md">🇮🇩 Bahasa Indonesia</a>
 </p>
 
-> **v0.2.** Usable in a private chat and in allowlisted groups, with Claude Code over ACP. English and Indonesian. `caraka service` prints a unit file you install yourself. Memory, attachments, and coding agents other than Claude Code are not in this release.
+> **v1.0.** Telegram, Discord, and WhatsApp reach the coding agent on your machine over one contract, with seven agent presets, memory, more than one workspace, and a read-only dashboard on loopback. Claude Code is the only agent ever run here against a live binary, no Discord credential and no WhatsApp number has ever been used here, and not one field gate has been answered by anyone, the author included. Attachments are still absent. The npm registry holds 0.2.1 until the owner publishes.
 
 ---
 
@@ -56,7 +56,7 @@ It has **no agent loop, no tools, no model provider, and no plugin marketplace.*
 
 ## Install
 
-Node.js 22+, Git, and an authenticated Claude Code installation.
+Node.js 22+, Git, and one of the seven coding agents Caraka has a preset for, signed in. Claude Code is the route verified here.
 
 ```bash
 claude auth status
@@ -105,24 +105,29 @@ Some coding-agent clients can hold an interactive terminal open for the wizard. 
 
 ## Using it
 
-Send ordinary text to give Claude a task. Eight commands cover the rest:
+Send ordinary text to give the agent a task. Thirteen commands cover the rest:
 
 | | |
 |---|---|
-| `/new` | start a fresh session |
+| `/new` | start a fresh session in this conversation |
 | `/status` | report the state of this conversation's session |
 | `/stop` | cancel the running task |
+| `/ws` | list the workspaces and their paths |
+| `/switch <preset>` | run this session on another agent preset |
 | `/commands` | list the commands the agent reported |
 | `/usage` | report the context and cost the agent reported |
+| `/ingat <note>` | save a note to memory |
+| `/lupakan <id>` | delete a memory item by its id |
+| `/memori` | list what memory holds for this workspace |
 | `/yolo <duration>` | open a Caraka trust window for a stated duration |
 | `/lock` | close the trust window now |
 | `/help` | explain how to send a task |
 
-Permission requests arrive as **Allow once** and **Reject** buttons. Each callback is signed, bound to the Telegram principal and the session, expires after ten minutes, and works once. Chat text is never read as approval.
+Permission requests arrive as **Allow once** and **Reject** buttons. Each callback is signed, bound to the chat principal and the session, expires after ten minutes, and works once. Where a channel has no buttons at all — WhatsApp — the card carries a four-character code Caraka generated and printed nowhere else, spent once against the same database update. A plain word is never a decision on any channel.
 
 ## Why it's small
 
-One protocol does the heavy lifting. [ACP](https://agentclientprotocol.com) is the LSP-equivalent for coding agents: JSON-RPC 2.0 over stdio, created by Zed, co-led by JetBrains, with 28+ agents in its registry. Writing **one** ACP client is what keeps the door open to the rest of them — v0.2 drives Claude Code, and the others are a preset away rather than a rewrite.
+One protocol does the heavy lifting. [ACP](https://agentclientprotocol.com) is the LSP-equivalent for coding agents: JSON-RPC 2.0 over stdio, created by Zed, co-led by JetBrains, with 28+ agents in its registry. Writing **one** ACP client is what keeps the door open to the rest of them, and adding an agent on the CLI route is one YAML file in `presets/agents/` rather than a change to the core. Seven presets ship; six of them are transcribed from research and have never been run here.
 
 ACP also ships `session/request_permission`, so the approval system is not something Caraka invents. It renders the protocol's own permission requests as buttons in your chat.
 
@@ -130,14 +135,16 @@ ACP also ships `session/request_permission`, so the approval system is not somet
 
 Since 2026, Telegram bots can create forum topics **in a private chat, with no admin rights at all.** That turns a DM with your bot into a tabbed workspace at zero setup cost.
 
-One session = one topic. Caraka names it, marks its state with a glyph in the name (▸ running · ⏸ needs you · ✓ done · ✗ failed), and posts a closing summary. The icon colour is chosen when the topic is created — Telegram's `editForumTopic` can change a topic's name and emoji afterwards, but not its colour. The topic list becomes a status board you can read at a glance without opening anything.
+One session = one topic. Caraka names it, marks its state with a glyph in the name (▸ running · ⏸ needs you · ✓ done · ✗ failed · ⊘ cancelled), and posts a closing summary. The icon colour is chosen when the topic is created — Telegram's `editForumTopic` can change a topic's name and emoji afterwards, but not its colour. The topic list becomes a status board you can read at a glance without opening anything.
+
+Discord maps the same session to one public thread. WhatsApp has neither, so the same task runs in linear mode behind a `[workspace · #id]` header, and `/status` there names the five most recent sessions the conversation is holding.
 
 ## Safe by default
 
 Caraka connects untrusted input (chat) to code execution on your machine. It is deliberately boring out of the box:
 
 - Private chats and an explicit allowlist are **mandatory** — the gateway refuses to start without one
-- Writes and commands require approval; approvals are **signed, single-use callbacks with a TTL**, so chat text can never approve anything
+- Writes and commands require approval; an approval is a **single-use secret with a TTL**, bound to the principal, the session, and the request — a signed callback where the channel has buttons, a code on the card where it has none — so chat text can never approve anything
 - Nothing is opened to the internet on its own. Telegram is long-polled, Discord and the WhatsApp `baileys` provider hold outbound sockets, and both listeners bind `127.0.0.1` unless you say otherwise: `caraka dashboard` serves a read-only page and answers GET only, and since v0.6 the WhatsApp Cloud API webhook checks `X-Hub-Signature-256` in constant time even on loopback
 - The bot token and the approval key are separate mode-`0600` files under `~/.caraka/secrets/`
 - Every outbound message and every audit entry passes through the secret scrubber
@@ -159,17 +166,23 @@ Both obeyed perfectly. Both were right according to the instructions they held. 
 
 That is why this project has approvals and an audit trail. See [docs/brand.md](docs/brand.md).
 
-## What is not in v0.2
+## What v1.0 does not give you
 
-Memory is specified and not shipped. When it arrives it will use [Titen](https://titen.dev) — agent memory that never flattens a conclusion into its evidence, with deterministic claim extraction and no model in the loop. Titen and Caraka are written by the same author: one remembers, one is sent.
+**Proof that it works for anyone else.** Every phase of [roadmap.md](docs/roadmap.md) carries shipped code, and every phase still holds a gate that no repository can answer: a week of daily use, five recorded setup sessions, an A/B across twenty tasks, twenty beta developers, fourteen days on a real WhatsApp number. Each one was moved past its release by the owner's decision, with the date written down, rather than ticked. Reaching 1.0 says the code landed; it says nothing about use.
 
-Attachments and coding agents other than Claude Code are also specified and not shipped. [roadmap.md](docs/roadmap.md) has the order and the gate that can cancel each next phase.
+**Live verification of most of the surface.** Claude Code is the only agent ever started against a live binary here, and only through its ACP route. No live Discord credential and no WhatsApp number has ever been used: every check on both answers a fake transport. Six of the seven presets are transcribed rather than run. Five of them say `belum diverifikasi` inside their own files; the codex flags are copied from the documented block with no marker on them.
 
-Two things that did ship carry a condition worth knowing.
+**Attachments**, and an MCP inbox for IDE agents. Both are still specified and not built.
+
+**Memory** did ship, at v0.3, through [Titen](https://titen.dev) — agent memory that never flattens a conclusion into its evidence, with deterministic claim extraction and no model in the loop — or through a local SQLite provider, or not at all. Titen and Caraka are written by the same author: one remembers, one is sent. The Titen adapter here has only ever answered a mocked fetch.
+
+Three things that did ship carry a condition worth knowing.
 
 **Groups.** Adding a group to the allowlist means choosing to show that work to its members: approval cards, file paths, diffs, and command output are readable by every member. Telegram's ephemeral replies cannot hide them — they only work for 15 seconds after a qualifying action, or if the bot is a chat admin, and Caraka never asks to be one. What stays closed is the decision: an approval button is only valid from an account on the sender allowlist, so other members can read a card without being able to answer it.
 
 Privacy mode stays on, which is why an ordinary message in a group never reaches the bot. Address it — `/new@yourbot …` — or reply to one of its own messages. Turning that off, or granting the admin rights that group topics require, makes the bot receive every message in the group. Caraka never asks for either; `/status` in a group reports which of them is in force.
+
+**WhatsApp.** The unofficial `baileys` provider links a real account as a device, and WhatsApp bans accounts for behaving like automation. Caraka answers four of the five known signals in code — a mandatory `allowFrom`, a ceiling of twelve messages a rolling minute, a random gap between sends, and a refusal to write first to any number — and the fifth is not ours to answer. Choosing it stops `start` until you write `acknowledgeRisk: true`. Read [docs/whatsapp-risiko.md](docs/whatsapp-risiko.md) first; if the number matters to you, the answer there is Cloud API.
 
 **Background services.** `caraka service --print` writes a systemd, launchd, or schtasks unit to stdout for you to install yourself. Caraka never installs one, has no `postinstall` hook, and never prints the word `sudo`.
 
@@ -191,10 +204,12 @@ npm run smoke   # requires authenticated Claude Code
 | [install-guide.md](docs/install-guide.md) | Setup, step by step |
 | [install-with-ai.md](docs/install-with-ai.md) | The prompt above, and why it is shaped that way |
 | [blueprint.md](docs/blueprint.md) | One-page overview and locked decisions |
-| [session-model.md](docs/session-model.md) | Sessions as topics: lifecycle, routing, housekeeping |
+| [session-model.md](docs/session-model.md) | Sessions as topics or threads: lifecycle, routing, housekeeping |
 | [design.md](docs/design.md) | Architecture, interfaces, protocols |
-| [security.md](docs/security.md) | Threat model and controls |
-| [roadmap.md](docs/roadmap.md) | Phases and decision gates |
+| [security.md](docs/security.md) | Threat model, controls, and the pre-release checklist |
+| [whatsapp-risiko.md](docs/whatsapp-risiko.md) | Ban risk, where each figure comes from, and when to pick Cloud API |
+| [openclaw-vs-caraka.md](docs/openclaw-vs-caraka.md) | When to use OpenClaw instead |
+| [roadmap.md](docs/roadmap.md) | Phases, decision gates, and the field gates moved past the release |
 | [research/](docs/research/) | Thirteen sourced research documents |
 
 ## Contributing

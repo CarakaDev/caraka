@@ -7,7 +7,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/lisensi-MIT-8EEE98?style=flat-square&labelColor=05080C" alt="MIT"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%E2%89%A522-E2452C?style=flat-square&labelColor=05080C" alt="node >= 22"></a>
   <a href="https://agentclientprotocol.com"><img src="https://img.shields.io/badge/protokol-ACP-FF7A5E?style=flat-square&labelColor=05080C" alt="ACP"></a>
-  <a href="docs/roadmap.md"><img src="https://img.shields.io/badge/status-v0.2-FFD67E?style=flat-square&labelColor=05080C" alt="v0.2"></a>
+  <a href="docs/roadmap.md"><img src="https://img.shields.io/badge/status-v1.0-FFD67E?style=flat-square&labelColor=05080C" alt="v1.0"></a>
 </p>
 
 <p align="center">
@@ -19,7 +19,7 @@
   <a href="README.md">🇬🇧 English</a>
 </p>
 
-> **v0.2.** Bisa dipakai di chat pribadi dan di grup yang masuk allowlist, dengan Claude Code lewat ACP. Bahasa Inggris dan Indonesia. `caraka service` mencetak berkas unit yang kamu pasang sendiri. Memori, lampiran, dan coding agent selain Claude Code belum ada di rilis ini.
+> **v1.0.** Telegram, Discord, dan WhatsApp sampai ke coding agent di mesinmu lewat satu kontrak yang sama, dengan tujuh preset agent, memori, lebih dari satu workspace, dan dasbor read-only di loopback. Cuma Claude Code yang pernah dijalankan di sini terhadap biner hidup, tidak ada kredensial Discord maupun nomor WhatsApp yang pernah dipakai di sini, dan tidak satu pun gerbang lapangan pernah dijawab siapa pun, penulisnya termasuk. Lampiran masih belum ada. Registry npm masih memegang 0.2.1 sampai pemilik menerbitkan.
 
 ---
 
@@ -56,7 +56,7 @@ Ia **tidak punya agent loop, tidak punya tool, tidak punya model provider, dan t
 
 ## Instalasi
 
-Butuh Node.js 22+, Git, dan Claude Code yang sudah login.
+Butuh Node.js 22+, Git, dan satu dari tujuh coding agent yang punya preset di sini, sudah login. Claude Code adalah jalur yang terverifikasi.
 
 ```bash
 claude auth status
@@ -107,24 +107,29 @@ Beberapa klien coding agent bisa mempertahankan terminal interaktif untuk wizard
 
 ## Memakainya
 
-Kirim teks biasa untuk memberi Claude tugas. Sisanya cukup delapan perintah:
+Kirim teks biasa untuk memberi agent tugas. Sisanya tiga belas perintah:
 
 | | |
 |---|---|
-| `/new` | memulai sesi baru |
+| `/new` | memulai sesi baru di percakapan ini |
 | `/status` | menampilkan keadaan sesi percakapan ini |
 | `/stop` | membatalkan tugas yang berjalan |
+| `/ws` | mendaftar workspace beserta path-nya |
+| `/switch <preset>` | menjalankan sesi ini di preset agent lain |
 | `/commands` | mendaftar perintah yang dilaporkan agent |
 | `/usage` | melaporkan konteks dan biaya yang dilaporkan agent |
+| `/ingat <catatan>` | menyimpan catatan ke memori |
+| `/lupakan <id>` | menghapus satu item memori lewat id-nya |
+| `/memori` | menampilkan isi memori untuk workspace ini |
 | `/yolo <durasi>` | membuka jendela trust Caraka selama durasi yang disebut |
 | `/lock` | menutup jendela trust sekarang |
 | `/help` | menjelaskan cara mengirim tugas |
 
-Permintaan izin tampil sebagai tombol **Setujui sekali** dan **Tolak**. Setiap callback ditandatangani, terikat ke principal Telegram dan sesi, kedaluwarsa setelah sepuluh menit, serta hanya bisa dipakai sekali. Teks chat tidak pernah dibaca sebagai persetujuan.
+Permintaan izin tampil sebagai tombol **Setujui sekali** dan **Tolak**. Setiap callback ditandatangani, terikat ke principal chat dan sesi, kedaluwarsa setelah sepuluh menit, serta hanya bisa dipakai sekali. Di channel yang sama sekali tidak punya tombol — WhatsApp — kartunya membawa kode empat karakter yang Caraka bangkitkan dan tidak dicetak di tempat lain, dipakai sekali lewat update database yang sama. Kata biasa tidak pernah menjadi keputusan di channel mana pun.
 
 ## Kenapa bisa sekecil ini
 
-Satu protokol mengerjakan bagian tersulitnya. [ACP](https://agentclientprotocol.com) adalah padanan LSP untuk coding agent: JSON-RPC 2.0 lewat stdio, dibuat Zed, di-co-lead JetBrains, dengan 28+ agent di registry-nya. Menulis **satu** klien ACP itulah yang menjaga pintu ke agent lain tetap terbuka — v0.2 menjalankan Claude Code, dan sisanya tinggal preset, bukan tulis ulang.
+Satu protokol mengerjakan bagian tersulitnya. [ACP](https://agentclientprotocol.com) adalah padanan LSP untuk coding agent: JSON-RPC 2.0 lewat stdio, dibuat Zed, di-co-lead JetBrains, dengan 28+ agent di registry-nya. Menulis **satu** klien ACP itulah yang menjaga pintu ke agent lain tetap terbuka, dan menambah agent di jalur CLI cukup satu berkas YAML di `presets/agents/`, bukan perubahan di inti. Tujuh preset dikirim; enam di antaranya disalin dari riset dan belum pernah dijalankan di sini.
 
 ACP juga sudah menyediakan `session/request_permission`, jadi sistem approval bukan sesuatu yang Caraka karang sendiri. Ia hanya merender permintaan izin milik protokol itu menjadi tombol di chat-mu.
 
@@ -132,16 +137,16 @@ ACP juga sudah menyediakan `session/request_permission`, jadi sistem approval bu
 
 Sejak 2026, bot Telegram bisa membuat forum topic **di chat pribadi, tanpa hak admin sama sekali.** Itu mengubah DM dengan bot-mu menjadi ruang kerja ber-tab, tanpa setup apa pun.
 
-Satu sesi = satu topic. Caraka menamainya, menandai keadaannya lewat glif di nama (▸ jalan · ⏸ butuh kamu · ✓ selesai · ✗ gagal), lalu mengirim ringkasan penutup. Warna ikon dipilih saat topic dibuat — `editForumTopic` Telegram bisa mengubah nama dan emoji topic, tetapi tidak warnanya. Daftar topic menjadi papan status yang bisa dibaca sekilas tanpa membuka apa pun.
+Satu sesi = satu topic. Caraka menamainya, menandai keadaannya lewat glif di nama (▸ jalan · ⏸ butuh kamu · ✓ selesai · ✗ gagal · ⊘ dibatalkan), lalu mengirim ringkasan penutup. Warna ikon dipilih saat topic dibuat — `editForumTopic` Telegram bisa mengubah nama dan emoji topic, tetapi tidak warnanya. Daftar topic menjadi papan status yang bisa dibaca sekilas tanpa membuka apa pun.
 
-Bila topic tidak tersedia, Caraka jatuh ke mode linear dengan header sesi. Tidak ada yang gagal keras.
+Discord memetakan sesi yang sama ke satu thread publik. WhatsApp tidak punya keduanya, jadi tugas yang sama berjalan di mode linear di belakang header `[workspace · #id]`, dan `/status` di sana menyebut lima sesi terbaru yang percakapan itu pegang. Bila topic tidak tersedia, Caraka jatuh ke mode linear dengan header sesi. Tidak ada yang gagal keras.
 
 ## Aman secara default
 
 Caraka menghubungkan input tak tepercaya (chat) ke eksekusi kode di mesinmu. Karena itu ia sengaja dibuat membosankan sejak awal:
 
 - Chat pribadi dan allowlist eksplisit bersifat **wajib** — gateway menolak jalan tanpa itu
-- Tulis berkas dan jalankan perintah butuh persetujuan; persetujuan datang dari **callback bertanda tangan, sekali pakai, ber-TTL**, sehingga teks chat tidak pernah bisa menyetujui apa pun
+- Tulis berkas dan jalankan perintah butuh persetujuan; persetujuan adalah **rahasia sekali pakai ber-TTL** yang terikat ke principal, sesi, dan permintaan — callback bertanda tangan di channel yang punya tombol, kode di kartu bila tidak punya — sehingga teks chat tidak pernah bisa menyetujui apa pun
 - Tidak ada yang dibuka ke internet atas inisiatif Caraka. Telegram ditarik lewat long-poll, Discord dan provider `baileys` WhatsApp memegang socket keluar, dan kedua listener bind `127.0.0.1` kecuali kamu menyuruh lain: `caraka dashboard` menyajikan halaman read-only dan hanya menjawab GET, dan sejak v0.6 penerima webhook WhatsApp Cloud API memeriksa `X-Hub-Signature-256` dengan perbandingan waktu-tetap, juga saat bind loopback
 - Token bot dan key approval disimpan terpisah di `~/.caraka/secrets/` dengan mode `0600`
 - Setiap pesan keluar dan entri audit melewati scrubber rahasia
@@ -163,17 +168,23 @@ Keduanya patuh dengan sempurna. Keduanya benar menurut instruksi yang mereka peg
 
 Itulah sebabnya proyek ini punya approval dan jejak audit. Selengkapnya di [docs/brand.md](docs/brand.md).
 
-## Yang belum ada di v0.2
+## Yang tidak diberikan v1.0
 
-Memori sudah dispesifikasikan dan belum dikirim. Saat tiba nanti ia memakai [Titen](https://titen.dev) — memori agent yang tidak pernah meratakan kesimpulan dengan buktinya, dengan ekstraksi claim yang deterministik dan tanpa model di dalam loop. Titen dan Caraka ditulis oleh orang yang sama: satu mengingat, satu diutus.
+**Bukti bahwa ini bekerja untuk orang lain.** Setiap fase di [roadmap.md](docs/roadmap.md) membawa kode yang sudah dikirim, dan setiap fase masih memegang satu gerbang yang tidak bisa dijawab dari repositori: seminggu pemakaian harian, lima rekaman setup, uji A/B atas dua puluh tugas, dua puluh developer beta, empat belas hari di nomor WhatsApp sungguhan. Semuanya dipindah melewati rilisnya atas keputusan pemilik, dengan tanggalnya dicatat, bukan dicentang. Sampai di 1.0 berarti kodenya mendarat; ia tidak mengatakan apa pun soal pemakaian.
 
-Lampiran dan coding agent selain Claude Code juga sudah dispesifikasikan dan belum dikirim. [roadmap.md](docs/roadmap.md) memuat urutannya dan gerbang yang bisa membatalkan fase berikutnya.
+**Verifikasi hidup untuk sebagian besar permukaannya.** Cuma Claude Code yang pernah dijalankan di sini terhadap biner hidup, dan cuma lewat jalur ACP-nya. Tidak ada kredensial Discord hidup dan tidak ada nomor WhatsApp yang pernah dipakai: setiap pemeriksaan pada keduanya dijawab transport palsu. Enam dari tujuh preset disalin, bukan dijalankan. Lima di antaranya menulis `belum diverifikasi` di dalam berkasnya sendiri; bendera codex disalin dari blok yang terdokumentasi tanpa penanda apa pun.
 
-Dua hal yang sudah dikirim membawa syarat yang layak diketahui.
+**Lampiran**, dan MCP inbox untuk agent IDE. Keduanya masih dispesifikasikan dan belum dibangun.
+
+**Memori** sudah dikirim, di v0.3, lewat [Titen](https://titen.dev) — memori agent yang tidak pernah meratakan kesimpulan dengan buktinya, dengan ekstraksi claim yang deterministik dan tanpa model di dalam loop — atau lewat provider SQLite lokal, atau tidak sama sekali. Titen dan Caraka ditulis oleh orang yang sama: satu mengingat, satu diutus. Adapter Titen di sini baru pernah menjawab fetch yang dimock.
+
+Tiga hal yang sudah dikirim membawa syarat yang layak diketahui.
 
 **Grup.** Memasukkan grup ke allowlist berarti memilih untuk memperlihatkan pekerjaan itu kepada anggotanya: kartu approval, path berkas, diff, dan keluaran perintah akan terbaca setiap anggota grup. Balasan ephemeral Telegram tidak bisa menyembunyikannya — ia hanya berlaku 15 detik setelah aksi yang memenuhi syarat, atau bila bot adalah admin chat, dan Caraka tidak pernah meminta hak itu. Yang tetap tertutup adalah keputusannya: tombol approval hanya sah dari akun yang ada di allowlist pengirim, jadi anggota lain bisa membaca kartunya tanpa bisa menjawabnya.
 
 Privacy mode tetap menyala, dan itu sebabnya pesan biasa di grup tidak pernah sampai ke bot. Sapa ia langsung — `/new@botmu …` — atau balas salah satu pesannya. Mematikannya, atau memberi hak admin yang dibutuhkan topic grup, membuat bot menerima setiap pesan di grup. Caraka tidak pernah meminta keduanya; `/status` di grup melaporkan mana yang sedang berlaku.
+
+**WhatsApp.** Provider tidak resmi `baileys` menautkan akun sungguhan sebagai perangkat, dan WhatsApp memblokir akun yang berperilaku seperti otomasi. Caraka menjawab empat dari lima sinyal yang diketahui di level kode — `allowFrom` wajib, plafon dua belas pesan per menit bergulir, jeda acak antar-kirim, dan penolakan menulis lebih dulu ke nomor mana pun — dan yang kelima bukan miliknya untuk dijawab. Memilihnya menghentikan `start` sampai kamu menulis `acknowledgeRisk: true`. Baca [docs/whatsapp-risiko.md](docs/whatsapp-risiko.md) lebih dulu; kalau nomor itu penting bagimu, jawabannya di sana adalah Cloud API.
 
 **Service latar.** `caraka service --print` mencetak unit systemd, launchd, atau schtasks ke stdout untuk kamu pasang sendiri. Caraka tidak pernah memasangnya, tidak punya hook `postinstall`, dan tidak pernah mencetak kata `sudo`.
 
@@ -195,10 +206,12 @@ npm run smoke   # butuh Claude Code yang sudah login
 | [install-guide.md](docs/install-guide.md) | Pemasangan, langkah demi langkah |
 | [install-with-ai.md](docs/install-with-ai.md) | Prompt di atas, dan kenapa bentuknya begitu |
 | [blueprint.md](docs/blueprint.md) | Ikhtisar satu halaman dan keputusan yang terkunci |
-| [session-model.md](docs/session-model.md) | Sesi sebagai topic: siklus hidup, routing, kebersihan |
+| [session-model.md](docs/session-model.md) | Sesi sebagai topic atau thread: siklus hidup, routing, kebersihan |
 | [design.md](docs/design.md) | Arsitektur, interface, protokol |
-| [security.md](docs/security.md) | Model ancaman dan kontrol |
-| [roadmap.md](docs/roadmap.md) | Fase dan gerbang keputusan |
+| [security.md](docs/security.md) | Model ancaman, kontrol, dan checklist sebelum rilis |
+| [whatsapp-risiko.md](docs/whatsapp-risiko.md) | Risiko ban, asal setiap angkanya, dan kapan Cloud API yang benar |
+| [openclaw-vs-caraka.md](docs/openclaw-vs-caraka.md) | Kapan sebaiknya memakai OpenClaw |
+| [roadmap.md](docs/roadmap.md) | Fase, gerbang keputusan, dan gerbang lapangan yang dipindah pasca-rilis |
 | [research/](docs/research/) | Tiga belas dokumen riset bersumber |
 
 ## Kontribusi

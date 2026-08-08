@@ -11,16 +11,17 @@ export const badges = [
   // Comp line 256 reads v0.0.0. This chip is the npm registry badge, so it
   // tracks what is published, not package.json. 0.2.1 is the last version the
   // owner pushed to the registry; 0.3.0 through 0.6.0 are tagged in the
-  // repository and unpublished, and publishing waits on the owner each time.
-  // Bump this only after an npm publish.
+  // repository and unpublished, and 1.0.0 is tagged by the commit that carries
+  // it, so the chip lags the release on purpose and
+  // will keep lagging until `npm publish` runs, which is the owner's command
+  // and nobody else's. Bump this only after that has happened.
   { k: 'npm', v: 'v0.2.1', tone: '#E2452C', ink: '#FFEDE7' },
   { k: 'license', v: 'MIT', tone: '#8EEE98', ink: '#05300C' },
   { k: 'node', v: '≥22', tone: '#E2452C', ink: '#FFEDE7' },
   { k: 'protocol', v: 'ACP', tone: '#FF7A5E', ink: '#2B0D06' },
   // Comp line 260 reads pre-alpha. This mirrors the README's own status badge,
-  // and the README body is still written to the v0.2 surface, so the badge is
-  // v0.2 until that copy is swept. The release the code is at is 0.6.0.
-  { k: 'status', v: 'v0.2', tone: '#FFD67E', ink: '#3A2A00' },
+  // which reads the release the code is at rather than the one on the registry.
+  { k: 'status', v: 'v1.0', tone: '#FFD67E', ink: '#3A2A00' },
 ]
 
 export const legend = [
@@ -34,9 +35,9 @@ export const projects = [
   {
     name: 'caraka',
     desc: 'The envoy. A thin bridge from Telegram, Discord, or WhatsApp to the coding agent already on your machine — sessions as topics, threads, or a header, approval before every write, nothing executed without a human in between.',
-    // Comp line 271 says pre-alpha. 0.6.0 is the release in the CHANGELOG;
+    // Comp line 271 says pre-alpha. 1.0.0 is the release in the CHANGELOG;
     // 0.2.1 is the last one on npm, which is what the chip above shows.
-    status: 'v0.6 closed beta',
+    status: 'v1.0, unproven',
     tone: '#FFD67E',
   },
   {

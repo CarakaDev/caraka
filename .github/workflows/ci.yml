@@ -1,10 +1,12 @@
 # The verification gate from `standards/ears.md`, run on every push and pull
-# request. No coding agent is installed on these runners: a live smoke against
-# claude/codex/gemini needs the binary and its credentials, which CI does not
-# have — so smoke stays a per-machine command (`npm run smoke`) instead of a
-# green light this workflow could fake. What CI can honestly verify is here:
-# the four gate commands, the schema over every shipped preset, and the parser
-# fixtures recorded in `test/fixtures/`.
+# request. That gate covers `site/` as well as the root package, so both are
+# here. Two commands are not: a live smoke against claude/codex/gemini needs
+# the binary and its credentials, and the site's Playwright suite needs
+# Chromium, Firefox, and WebKit. Both stay per-machine commands (`npm run
+# smoke`, `npm run e2e` inside `site/`) rather than a green light this
+# workflow could fake. What CI verifies is the rest: the root gate commands,
+# the site's lint, typecheck, and unit run, the schema over every shipped
+# preset, and the parser fixtures recorded in `test/fixtures/`.
 
 name: ci
 
@@ -28,6 +30,25 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run e2e
+
+  site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci
+      # lint, astro check, and vitest. `pretest` regenerates the favicons and
+      # the OG images first, so the glyph test reads what a build would draw
+      # rather than whatever was committed.
+      - run: npm run check
 
   presets:
     runs-on: ubuntu-latest

@@ -61,7 +61,7 @@ import { showGrid, showGuides, matrix, legend, toc, threats, term, phases, meta 
             <h2 style="margin: 0 0 22px; font-size: 58px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.04; color: #F6F9FC;">Send the task.<br /><span style="color: #FF7A5E;">Caraka runs it.</span></h2>
             <p style="margin: 0 0 34px; max-width: 520px; font-size: 19px; line-height: 1.6; color: #95A0AB; text-wrap: pretty;">A thin bridge from Telegram to the coding agent already installed on your machine.</p>
             <div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.14em; color: #7A848F;">
-              {/* Comp line 73 counts the ACP registry; v0.2 drives one agent (scripts/gen-assets.mjs:552). */}
+              {/* Comp line 73 counts the ACP registry; seven presets ship and Claude Code is the one route ever run here, so the chip names that one. */}
               <span>MIT</span><span style="color: #292E35;">·</span><span>NODE ≥ 22</span><span style="color: #292E35;">·</span><span>CLAUDE CODE</span>
             </div>
           </div>
@@ -122,7 +122,7 @@ import { showGrid, showGuides, matrix, legend, toc, threats, term, phases, meta 
               <span style="width: 22px; height: 1px; background: #E2452C;"></span>
               <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.22em; color: #E2452C;">COMPARE</span>
             </div>
-            {/* Comp line 133 claims a hub for agents; nothing at v0.2 is one, so the card carries the compare ogHeadline (src/lib/site.ts:105). */}
+            {/* Comp line 133 claims a hub for agents; Caraka is a bridge and never a hub, so the card carries the compare ogHeadline (src/lib/site.ts). */}
             <h2 style="margin: 0 0 22px; font-size: 58px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.04; color: #F6F9FC;">Where the two shapes<br /><span style="color: #FF7A5E;">actually differ.</span></h2>
             <p style="margin: 0 0 34px; max-width: 470px; font-size: 19px; line-height: 1.6; color: #95A0AB; text-wrap: pretty;">Where Caraka overlaps with OpenClaw and Hermes — and where it deliberately does not.</p>
             <div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.14em; color: #7A848F;">
@@ -353,9 +353,10 @@ import { showGrid, showGuides, matrix, legend, toc, threats, term, phases, meta 
               <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.22em; color: #E2452C;">INSTALL</span>
             </div>
             {/* Comp lines 362-365 sell a five-minute free path; no doc carries five
-                minutes (the documented gate is under three, docs/roadmap.md:70) and
-                v0.2 drives Claude Code alone, so the card follows the install
-                ogHeadline (src/lib/site.ts:96) and scripts/gen-assets.mjs:589-590. */}
+                minutes (the documented gate is under three, docs/roadmap.md) and
+                Claude Code is the one route ever run here, so the card follows the
+                install ogHeadline (src/lib/site.ts) and the generator's copy of it
+                in scripts/gen-assets.mjs. */}
             <h2 style="margin: 0 0 22px; font-size: 58px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.04; color: #F6F9FC;">Three checks.<br /><span style="color: #FF7A5E;">Then one command.</span></h2>
             <p style="margin: 0 0 34px; max-width: 470px; font-size: 19px; line-height: 1.6; color: #95A0AB; text-wrap: pretty;">From nothing to a running envoy — Node, Git, and a Claude Code login you already have.</p>
             <div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.14em; color: #7A848F;">
@@ -417,12 +418,18 @@ import { showGrid, showGuides, matrix, legend, toc, threats, term, phases, meta 
               <span style="width: 22px; height: 1px; background: #E2452C;"></span>
               <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.22em; color: #E2452C;">STATUS</span>
             </div>
-            {/* Comp line 423 draws a pre-launch phase 0; v0.2 shipped, so the card carries the status ogHeadline (src/lib/site.ts:125-128). */}
-            <h2 style="margin: 0 0 22px; font-size: 58px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.04; color: #F6F9FC;">v0.2 is usable.<br /><span style="color: #FF7A5E;">The gate is still open.</span></h2>
+            {/* Comp line 423 draws a pre-launch phase 0. Every phase carries shipped
+                code at v1.0 and every field gate is still unanswered, which is what
+                the two lines say. This board is a preview of a drawn card: the same
+                sentence has to live in `status.ogHeadline` (src/lib/site.ts) for the
+                PNG to match, and neither file is generated from the other. */}
+            <h2 style="margin: 0 0 22px; font-size: 58px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.04; color: #F6F9FC;">Every phase shipped.<br /><span style="color: #FF7A5E;">No gate answered.</span></h2>
             <p style="margin: 0 0 34px; max-width: 470px; font-size: 19px; line-height: 1.6; color: #95A0AB; text-wrap: pretty;">What shipped, what is being verified, and what has not started yet — including the parts that might fail.</p>
             <div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.14em; color: #7A848F;">
-              {/* Comp line 426 says PRE-LAUNCH; the release state is Preview (src/data/status.ts:17, scripts/gen-assets.mjs:598). */}
-              <span>8 PHASES</span><span style="color: #292E35;">·</span><span>OPEN CHANGELOG</span><span style="color: #292E35;">·</span><span>PREVIEW</span>
+              {/* Comp line 426 says PRE-LAUNCH; the release state is the word the
+                  RELEASE STATE stat carries (src/data/status.ts), and the generator's
+                  own copy of these three facts is in scripts/gen-assets.mjs. */}
+              <span>8 PHASES</span><span style="color: #292E35;">·</span><span>OPEN CHANGELOG</span><span style="color: #292E35;">·</span><span>UNPROVEN</span>
             </div>
           </div>
 

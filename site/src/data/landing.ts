@@ -153,8 +153,8 @@ export const safety = [
 export const term = [
   { t: '$ npx caraka init', tone: '#5D666F', range: r(0, 2.4, 22) },
   { t: '', tone: '#5D666F', range: r(1, 2.4, 22) },
-  // comp:535 reads `caraka · v0.1.0`; `VERSION` in src/cli.ts is 0.6.0.
-  { t: 'caraka · v0.6.0', tone: '#F6F9FC', mark: 'ꦕꦫꦏ', markTone: '#E2452C', range: r(2, 2.4, 22) },
+  // comp:535 reads `caraka · v0.1.0`; `VERSION` in src/cli.ts is 1.0.0.
+  { t: 'caraka · v1.0.0', tone: '#F6F9FC', mark: 'ꦕꦫꦏ', markTone: '#E2452C', range: r(2, 2.4, 22) },
   { t: '', tone: '#5D666F', range: r(3, 2.4, 22) },
   { t: 'claude login · ready', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(4, 2.4, 22) },
   { t: 'telegram · paired', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(5, 2.4, 22) },

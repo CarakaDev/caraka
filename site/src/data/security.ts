@@ -1,4 +1,4 @@
-// Security-page copy follows docs/security.md and the shipped v0.6 runtime.
+// Security-page copy follows docs/security.md and the shipped v1.0 runtime.
 // Where a line below no longer matches design/mockups/Caraka Security.dc.html,
 // the comment above it names the comp line and what shipped instead. The comp
 // still decides how this page looks; it stopped deciding what is true of the
@@ -19,18 +19,21 @@ export const toc = [
   { no: '06', id: 'report', href: '#report', title: 'Reporting' },
 ]
 
+// Comp line 297 reads "no webhook anywhere", which v0.6 made false: the
+// WhatsApp Cloud API provider opens one. The tag keeps its promise by naming
+// where that listener binds instead of pretending it is absent.
 export const headline = [
-  { tag: 'NO PORT', t: 'No channel listens: Telegram is polled, Discord is an outbound socket, and there is no webhook anywhere.' },
+  { tag: 'NO OPEN PORT', t: 'Telegram is polled, Discord and Baileys hold outbound sockets, and the one webhook binds 127.0.0.1 until you say otherwise.' },
   { tag: 'NO KEYS', t: 'Model API keys are never requested, stored, or transmitted. Those belong to your agent.' },
-  { tag: 'NO TOOLS', t: "Caraka ships no execution tools. Claude owns the tool policy and sandbox." },
+  { tag: 'NO TOOLS', t: 'Caraka ships no execution tools. Your coding agent owns the tool policy and the sandbox.' },
   { tag: 'NO MARKETPLACE', t: 'No plugin registry, no dynamic loading, no third-party skill supply chain.' },
 ]
 
 export const untrusted = [
-  'Telegram messages, Discord events, and callback payloads',
+  'Telegram messages, Discord events, WhatsApp messages, and callback payloads',
   'Text streamed back by the coding agent',
   'Tool titles, targets, and raw input from ACP',
-  'Unknown fields in an update from either channel',
+  'Unknown fields in an update from any channel',
 ]
 
 export const trusted = [
@@ -55,13 +58,14 @@ export const threats = [
   {
     id: 'T2',
     name: 'Direct prompt injection',
-    control: 'Approval arrives only as a signed callback with a nonce. Text cannot approve itself.',
+    control:
+      'Approval arrives as a single-use secret and never as a word. Where a channel has buttons that is a signed callback; where it has none it is a code Caraka generated and printed on that card alone, which nothing in the agent’s context has ever seen. Typing yes is a task, not a decision.',
   },
   {
     id: 'T3',
     name: 'Indirect injection via README or issue',
     control:
-      'Claude owns content handling and tool policy. Caraka never turns agent output or ordinary chat text into approval.',
+      'The coding agent owns content handling and tool policy. Caraka never turns agent output or ordinary chat text into approval.',
   },
   {
     id: 'T4',
@@ -73,7 +77,7 @@ export const threats = [
     id: 'T5',
     name: 'Destructive action',
     control:
-      'Caraka relays every ACP permission request and /stop sends session/cancel. Claude decides which tools require permission.',
+      'Caraka relays every ACP permission request and /stop sends session/cancel. The agent decides which tools require permission. On the CLI route there is no permission hook to relay, and what stops a write there is the agent’s own sandbox.',
   },
   {
     id: 'T6',
@@ -163,7 +167,8 @@ export const mandatory = [
 ].map((t, i) => ({ t, range: r(i, 3, 24) }))
 
 export const notClaimed = [
-  'Caraka cannot guarantee that Claude asks before every operation. The coding agent owns its tool policy and sandbox.',
+  'Caraka cannot guarantee that your agent asks before every operation. The coding agent owns its tool policy and sandbox.',
+  'The CLI route carries no permission hook. An agent driven from a preset in presets/agents/ answers to its own brakes, and Caraka has nothing to put a button on until ACP hands it a request.',
   'A signed button proves who approved one request; it does not make the approved operation safe.',
   'We have not had a third-party security audit. This will be stated openly until it changes.',
   'The local dashboard has no authentication. While caraka dashboard runs, anyone on that machine who can reach 127.0.0.1 can read it, including a local user with no read permission on the database file. Loopback is not an authentication boundary; what the page does refuse is a browser arriving under someone else\u2019s hostname.',
@@ -174,8 +179,11 @@ export const notClaimed = [
   // trust window. Terminal-only by AC-6.13/6.14; the audit records the window
   // and says so (src/cli.ts:366-397, gateway.ts:969-977).
   'The bypassPermissions mode belongs to Claude and is opened from the terminal alone. Inside that window Caraka is never asked for permission, so its audit records that the window was open and not what ran inside it.',
-  'Caraka v0.6 is a closed beta. Treat it as software that has not yet been attacked in the wild.',
-  'Vulnerabilities in your coding agent, in Telegram, or in Discord are theirs to fix. We will help route the report.',
+  // The same word the RELEASE STATE stat in src/data/status.ts and the maturity
+  // row in src/data/compare.ts use. Reaching 1.0 means every phase carries
+  // shipped code; it does not mean anyone outside this repository has run it.
+  'Caraka v1.0 is unproven. Every phase has shipped code and not one field gate has been answered by a person, so treat it as software that has not yet been attacked in the wild.',
+  'Vulnerabilities in your coding agent, in Telegram, in Discord, or in WhatsApp are theirs to fix. We will help route the report.',
 ]
 
 export const commitments = [
@@ -198,7 +206,7 @@ export const inScope = [
 export const outScope = [
   'Anything the operator explicitly approved',
   'Vulnerabilities in the coding agent itself',
-  'Vulnerabilities in Telegram or in Discord',
+  'Vulnerabilities in Telegram, Discord, or WhatsApp',
   'Tool access enabled directly in the coding agent configuration',
   'Policy modes, which are specified and have no gate on the run path in any channel',
 ]

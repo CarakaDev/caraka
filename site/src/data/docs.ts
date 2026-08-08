@@ -1,8 +1,9 @@
-// Documentation-page copy follows the shipped v0.6 implementation and docs/.
+// Documentation-page copy follows the shipped v1.0 implementation and docs/.
 // design/mockups/Caraka Docs.dc.html decides the layout and stopped deciding
-// the content at v0.1: its chapter 05 is Memory, which does not ship, and its
-// row lists name commands that were never built. Where a line here contradicts
-// the comp, the note above it says which comp line and why.
+// the content at v0.1: its chapter 05 is Memory, which arrived at v0.3 as a
+// provider rather than a chapter, and its row lists name commands that were
+// never built. Where a line here contradicts the comp, the note above it says
+// which comp line and why.
 
 import { r } from '../lib/anim'
 
@@ -71,9 +72,9 @@ export const chapters: Chapter[] = [
     // Discord. A slash command outside that list is refused once the agent has
     // reported its own, and forwarded before then.
     rows: [
-      { k: '(ordinary message)', v: 'Creates or resumes the session for this Telegram thread and sends the text to Claude unchanged.' },
+      { k: '(ordinary message)', v: 'Creates or resumes the session for this thread or conversation and sends the text to the agent unchanged.' },
       { k: '/new', v: 'Create a fresh local session and, where topics are available, a new topic for it.' },
-      { k: '/stop', v: 'Send session/cancel for the active Claude prompt.' },
+      { k: '/stop', v: 'Cancel the running task in the sender’s workspace.' },
       { k: '/status', v: 'Show idle, running, awaiting_approval, done, failed, or cancelled.' },
       { k: '/ws', v: 'List the configured workspaces and their paths, answering in General.' },
       { k: '/switch <preset>', v: 'Rebind this session to another loaded agent preset from its next task on.' },
@@ -94,7 +95,7 @@ export const chapters: Chapter[] = [
   },
   {
     no: '03', id: 'agent', href: '#agent', label: 'Agent', title: 'Claude over ACP',
-    intro: 'Caraka starts the official Claude ACP adapter as a subprocess. Claude owns the model, tools, sandbox, authentication, and repository context.',
+    intro: 'Caraka starts the official Claude ACP adapter as a subprocess. The agent owns the model, tools, sandbox, authentication, and repository context.',
     cards: [
       { tag: 'SHIPPED · ACP v1', tone: '#FF7A5E', title: 'Official adapter', body: '@agentclientprotocol/sdk 1.3.0 and claude-agent-acp 0.63.0 are pinned runtime dependencies.', bg: '#12100F', border: '#2B1612', range: r(0, 4, 26) },
       { tag: 'SESSION', tone: '#8EEE98', title: 'New and load', body: 'Each chat route stores the ACP session id. A missing old session is replaced without breaking the route.', bg: '#0C1116', border: '#171C22', range: r(1, 4, 26) },
@@ -181,11 +182,11 @@ export const chapters: Chapter[] = [
     // The router in src/cli.ts answers the verbs below and nothing else.
     rows: [
       { k: 'npx caraka init [--workspace PATH]', v: 'Check prerequisites, choose the interface language, validate the bot, pair one Telegram principal, and write private config.' },
-      { k: 'npx caraka doctor', v: 'Read-only checks for runtime, config, permissions, workspace, Claude, allowlist, Telegram, and topic capability.' },
-      { k: 'npx caraka start', v: 'Run the long-polling Telegram-to-Claude gateway in the foreground.' },
+      { k: 'npx caraka doctor', v: 'Read-only checks for runtime, config, the workspace, the agents found on PATH, secret file modes, the allowlist of each configured channel, memory, and topic capability.' },
+      { k: 'npx caraka start', v: 'Run the gateway in the foreground for every channel the config names.' },
       { k: 'npx caraka stop', v: 'Send SIGTERM to the PID the running gateway wrote to ~/.caraka/caraka.pid.' },
-      { k: 'npx caraka status', v: 'Report whether the gateway runs, with its PID, workspace, and bot username. No token, and nothing anyone wrote in chat.' },
-      { k: 'npx caraka dashboard [--port n]', v: 'Serve a read-only page on 127.0.0.1:7718 that reads the same database the gateway writes: sessions, runs, approvals, audit, policy, memory. It answers GET only, and it works while the gateway is stopped.' },
+      { k: 'npx caraka status', v: 'Report whether the gateway runs, with its PID, workspace, and configured channels. No token, and nothing anyone wrote in chat.' },
+      { k: 'npx caraka dashboard [--port n]', v: 'Serve a read-only page on 127.0.0.1:7718 that reads the same database the gateway writes: seven panels covering sessions, runs, approvals, audit, policy, memory, and the two beta numbers. It answers GET only, and it works while the gateway is stopped.' },
       { k: 'npx caraka trust <ws> --for 30m', v: 'Open a trust window from the terminal, sixty minutes at most. Adding --bypass hands the permission decisions to Claude itself, where Caraka cannot see them.' },
       { k: 'npx caraka service --print systemd|launchd|schtasks', v: 'Print one unit file to stdout.' },
       { k: 'npx caraka --version', v: 'Print the package version.' },

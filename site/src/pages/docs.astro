@@ -48,9 +48,10 @@ import MobileToc from '../components/MobileToc.astro'
           <div style="display: flex; align-items: center; gap: 10px; margin-top: 22px; padding: 13px 18px; background: #12100F; border: 1px solid #2B1612; border-radius: 10px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #E0B4A8; max-width: 640px;">
             <span style="color: #FFD67E;">⏸</span>
             {/* The comp banner (line 118) named groups and services as roadmap work.
-                v0.2 serves an allowlisted group (src/core/gateway.ts:161-165) and
-                prints a unit file (src/service.ts), so both moved out of that list. */}
-            <span><strong style="color: #F6F9FC; font-weight: 600;">v0.2 preview.</strong> A private Telegram DM to Claude Code is usable now, and so is a group on the chat allowlist. caraka service prints a unit rather than installing one. Memory, attachments, and other agents remain roadmap work.</span>
+                v0.2 serves an allowlisted group (src/core/gateway.ts) and prints a
+                unit file (src/service.ts); memory and the other agents left the
+                list at v0.3 and v0.4. What is left in it is what is left. */}
+            <span><strong style="color: #F6F9FC; font-weight: 600;">v1.0, unproven.</strong> Telegram, Discord, and WhatsApp all reach the agent, and seven presets load — Claude Code is the only one ever run here against a live binary. Attachments and an MCP inbox remain roadmap work, and no field gate has been answered by anyone but the author.</span>
           </div>
         </div>
 
@@ -128,7 +129,7 @@ import MobileToc from '../components/MobileToc.astro'
 
     <footer style="padding: clamp(44px, 7vh, 70px) clamp(20px, 5vw, 60px); border-top: 1px solid #0C1116;">
       <div style="width: min(1240px, 100%); margin: 0 auto; display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between;">
-        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #414950;">ꦕ caraka · MIT · v0.2 preview</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #414950;">ꦕ caraka · MIT · v1.0, unproven</span>
         <div style="display: flex; flex-wrap: wrap; gap: clamp(14px, 2.6vw, 28px); font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
           <a href="/" class="hv-ink" style="color: #7A848F;">Home</a>
           <a href="/story" class="hv-ink" style="color: #7A848F;">Story</a>

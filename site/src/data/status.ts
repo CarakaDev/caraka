@@ -12,21 +12,31 @@ import { r } from '../lib/anim'
 // Leaves the comp at Caraka Status.dc.html:238-242, which reads 0.0.0 beside
 // three specification-era stats. The version is package.json's; the other three
 // were already replaced when v0.1 shipped.
+//
+// RELEASE STATE reads `Unproven`, and that one word is the answer this project
+// gives everywhere the question is asked: src/data/compare.ts uses it in the
+// maturity row and src/data/security.ts in what we do not claim. It is picked
+// to carry both halves of the truth at once — every phase in docs/roadmap.md
+// carries shipped code, and not one of the field gates has been run by a
+// person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '0.6.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
-  { n: 'Closed beta', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
+  { n: '1.0.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Seven presets load; Claude Code is the one route ever run against a live
   // agent here. Three channels since v0.6 — Telegram, Discord, WhatsApp — and
   // WhatsApp counts as shipped code, not as a linked number: none has ever been
-  // linked, which the 0.6.0 card below states in as many words.
+  // linked, which the cards below state in as many words.
   { n: '3', label: 'CHANNELS', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
   { n: '1', label: 'PRIVATE OPERATOR', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
 ]
 
-/** The three phase palettes the mockup spreads into each row. */
-export const done = { ring: '#8EEE98', bg: '#0C1116', border: '#171C22', chipBg: '#0E1F14', chipInk: '#8EEE98', state: 'done' }
-const now = { ring: '#E2452C', bg: '#12100F', border: '#2B1612', chipBg: '#2B1612', chipInk: '#FF7A5E', state: 'in progress' }
-const next = { ring: '#5D666F', bg: '#0C1116', border: '#171C22', chipBg: '#171C22', chipInk: '#7A848F', state: 'planned' }
+/**
+ * The comp spreads three palettes across the rows — done, in progress, planned.
+ * One is left. Every phase 0 to 7 carries shipped code and every phase still
+ * holds a gate that only a person outside this repository can close, so eight
+ * identical rows is the honest drawing and a green row would be a false one.
+ */
+const shipped = { ring: '#E2452C', bg: '#12100F', border: '#2B1612', chipBg: '#2B1612', chipInk: '#FF7A5E', state: 'shipped · gate open' }
 
 interface Phase {
   n: string
@@ -45,45 +55,46 @@ interface Phase {
 }
 
 // Leaves the comp at Caraka Status.dc.html:245,249,253, which pulses phase 0 and
-// plans phases 1 and 2. v0.6 is published, so the pulse marks phase 6; only one
-// phase pulses because the comp draws one. Phases 1-6 keep "in progress" rather
-// than "done" because roadmap.md still holds a field gate open on each: the
-// dogfood week, the three-minute install, phase 3's A/B, phase 4's watch of
-// someone adding an agent without asking, phase 5's twenty beta developers, and
-// phase 6's fourteen days on a real number. The last four moved past their
-// releases by owner decision on 8 August 2026.
+// plans phases 1 and 2. v1.0 is published, so the pulse marks phase 7; only one
+// phase pulses because the comp draws one. No row reads "done", because
+// roadmap.md holds a gate open on every one of them: phase 0's live topic and
+// Rich Message checks, the dogfood week, the three-minute install, phase 3's
+// A/B, phase 4's watch of someone adding an agent without asking, phase 5's
+// twenty beta developers, phase 6's fourteen days on a real number, and phase
+// 7's launch. Phases 1 to 7 moved their gate past the release by owner decision
+// on 8 August 2026.
 export const phases: Phase[] = [
-  { n: '0', title: 'Technical spike', dur: '1 week', ...done,
+  { n: '0', title: 'Technical spike', dur: '1 week', ...shipped,
     q: 'Do the three foundations behave the way the documentation says?',
-    gate: 'ACP permission requests fire for writes on Claude Code, createForumTopic works in a private chat with no admin rights, and sendRichMessage renders as specified. If the permission hook is unreliable, the approval architecture is redesigned before anything else is written.',
+    gate: 'ACP permission requests fire for writes on Claude Code, createForumTopic works in a private chat with no admin rights, and sendRichMessage renders as specified. The permission hook was answered by a live smoke run; the other two still wait on a bot someone is typing to.',
     range: r(0, 3, 26) },
-  { n: '1', title: 'MVP dogfood · v0.1', dur: '3 weeks', ...now,
+  { n: '1', title: 'MVP dogfood · v0.1', dur: '3 weeks', ...shipped,
     q: 'Is this actually useful in daily work?',
     gate: 'The author uses it for a full week and finishes five real tasks without opening a laptop, and the topic list feels tidier than one flat chat. If it is annoying, fix it before adding anything.',
     range: r(1, 3, 26) },
-  { n: '2', title: 'Smooth install · v0.2', dur: '1 week', ...now,
+  { n: '2', title: 'Smooth install · v0.2', dur: '1 week', ...shipped,
     q: 'Can someone else install it without help?',
-    gate: 'Median time from npx to first delivered message stays under three minutes, with no questions asked of the author.',
+    gate: 'Median time from npx to first delivered message stays under three minutes, with no questions asked of the author. No setup session has been recorded, so there is no sample to take a median from.',
     range: r(2, 3, 26) },
-  { n: '3', title: 'Memory with Titen · v0.3', dur: '2 weeks', ...now,
+  { n: '3', title: 'Memory with Titen · v0.3', dur: '2 weeks', ...shipped,
     q: 'Does memory improve the answer, or just add noise?',
     gate: 'A personal A/B across twenty tasks, with and without memory. If it does not feel better, reduce memory rather than add more.',
     range: r(3, 3, 26) },
-  { n: '4', title: 'Proving the abstraction · v0.4', dur: '2 weeks', ...now,
+  { n: '4', title: 'Proving the abstraction · v0.4', dur: '2 weeks', ...shipped,
     q: 'Is the driver layer genuinely generic, or only generic-looking?',
-    gate: 'Adding a new agent is one YAML file with no core code touched. If it needs code, the abstraction is wrong and gets fixed now.',
+    gate: 'Adding a new agent is one YAML file with no core code touched. A test drives a full turn from a dummy preset, which is the machine half; the half that is open is watching another person do it without asking a question.',
     range: r(4, 3, 26) },
-  { n: '5', title: 'Closed beta · v0.5', dur: '3 weeks', ...now,
+  { n: '5', title: 'Closed beta · v0.5', dur: '3 weeks', ...shipped,
     q: "Does it survive in other people's hands?",
-    gate: 'At least 60% of participants send a first message within 24 hours without asking anything, and there are zero incidents of execution without approval.',
+    gate: 'At least 60% of participants send a first message within 24 hours without asking anything, and there are zero incidents of execution without approval. Nobody has been recruited, so neither number has anyone to come from.',
     range: r(5, 3, 26) },
-  { n: '6', title: 'WhatsApp · v0.6', dur: '2 weeks', live: true, ...now,
+  { n: '6', title: 'WhatsApp · v0.6', dur: '2 weeks', ...shipped,
     q: "Can we ship WhatsApp without burning anyone's number?",
     gate: 'Fourteen days of real use with no ban and no manual relink, or an honest finding that makes Cloud API the recommended default. No number has been linked, so the answer is open.',
     range: r(6, 3, 26) },
-  { n: '7', title: 'Public release · v1.0', dur: '2 weeks', ...next,
+  { n: '7', title: 'Public release · v1.0', dur: '2 weeks', live: true, ...shipped,
     q: 'Is it ready to be trusted by strangers?',
-    gate: 'The security checklist is complete, documentation exists in both languages, 15+ agents are covered, and the honest comparison article is published.',
+    gate: 'Every goal in prd.md is met and measured. Fifteen agents are not covered: seven presets ship, and Claude Code is the only one ever run against a live binary here. Taking the release to the Indonesian developer community and to the ACP ecosystem is the step nothing in a repository can perform.',
     range: r(7, 3, 26) },
 ]
 
@@ -91,7 +102,7 @@ export const phases: Phase[] = [
 // titles the open one "phase 0". Each shipped version adds a card in the shape
 // the comp drew; the gates below are the ones roadmap.md still leaves unticked.
 export const releases = [
-  { v: 'Unreleased', state: 'dogfood', date: 'in progress', tone: '#FF7A5E', chipBg: '#2B1612', chipInk: '#FF7A5E', headBg: '#12100F', border: '#2B1612', range: r(0, 4, 28),
+  { v: 'Open gates', state: 'nobody has run these', date: 'after 1.0', tone: '#FF7A5E', chipBg: '#2B1612', chipInk: '#FF7A5E', headBg: '#12100F', border: '#2B1612', range: r(0, 4, 28),
     groups: [
       { label: 'OPEN GATES', tone: '#FFD67E', items: [
         'Complete live topic and Rich Message checks with the release bot',
@@ -102,6 +113,22 @@ export const releases = [
         'Recruit twenty beta developers and answer both v0.5 gate numbers with their runs, not the author\u2019s',
         'Watch the dashboard swap a panel in a real browser with the CSP live',
         'Run fourteen days on a real WhatsApp number with no ban and no manual relink, or publish the honest finding that makes Cloud API the default',
+        'Take the release to the Indonesian developer community and to the ACP ecosystem',
+      ] },
+    ] },
+  { v: '1.0.0', state: 'unproven', date: '8 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'ADDED', tone: '#8EEE98', items: [
+        'The version number, and not one capability that was not already running under it. Every phase in docs/roadmap.md now carries shipped code at once: three channels on one Channel contract, seven agent presets behind one YAML file each, memory through Titen or a local SQLite provider or none, more than one workspace, a read-only dashboard on loopback, and an approval that is a single-use secret bound to the principal, the session, and the request on every channel',
+        'The comparison the roadmap asked for, written so that choosing OpenClaw is a conclusion it offers: docs/openclaw-vs-caraka.md, with an English copy beside it',
+        'Notes back to the two projects Caraka sits on, ACP and Titen \u2014 what the client needed, what it could not say in the protocol\u2019s own vocabulary, and which half of them comes from an author who also writes Titen: docs/integrasi-ekosistem.md, with an English copy beside it',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'Nothing here was proven by anyone but the author. No dogfood week, no recorded setup session, no A/B across twenty tasks, no beta group, no fourteen days on a real WhatsApp number. A version number says the code landed; it says nothing about use',
+        'The npm registry still holds 0.2.1. Every release since is tagged here and unpublished, and the publish command belongs to the owner',
+        'Six of the seven presets are transcribed rather than run. Claude Code is the only agent ever started against a live binary on this machine, and only through its ACP route, so the fifteen-agent goal in prd.md is not met',
+        'No live Discord credential and no live WhatsApp number has ever been used here. Every check on both answers a fake transport, so the real payload shapes and the real rate-limit behaviour stay unproven',
+        'There has been no third-party security audit, and this line stays until there is one',
       ] },
     ] },
   { v: '0.6.0', state: 'closed beta', date: '8 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),

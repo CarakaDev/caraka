@@ -1,8 +1,10 @@
 # Caraka
 
-> A thin bridge from Telegram to the coding agent already installed on your machine. Every task lives in its own topic, like tabs in a terminal, with approvals and streaming progress. Caraka has no agent loop, no execution tools, and no plugin marketplace: the coding agent already has all of those.
+> A thin bridge from Telegram, Discord, or WhatsApp to the coding agent already installed on your machine. A task lives in its own topic or thread, like tabs in a terminal, and in a header where the chat app has neither. Caraka has no agent loop, no execution tools, and no plugin marketplace: the coding agent already has all of those.
 
-Caraka speaks [ACP](https://agentclientprotocol.com), the LSP-equivalent for coding agents; v0.2 drives Claude Code, and the 28+ agents in the ACP registry are a preset away rather than a rewrite. Memory is specified and not shipped; when it arrives it will use [Titen](https://titen.dev), which separates observation, claim, and context so a conclusion is never confused with the evidence behind it. Status: v0.2, MIT, Node ≥ 22.
+Caraka speaks [ACP](https://agentclientprotocol.com), the LSP-equivalent for coding agents. Seven agent presets ship, one YAML file each, and Claude Code is the only one ever run here against a live binary. Memory ships since v0.3 through [Titen](https://titen.dev), through a local SQLite provider, or not at all; Titen separates observation, claim, and context so a conclusion is never confused with the evidence behind it.
+
+Status: v1.0, MIT, Node ≥ 22. Every phase of the roadmap carries shipped code and not one field gate has been answered by a person: no dogfood week, no recorded setup session, no beta group, no live Discord credential, and no WhatsApp number ever linked. The npm registry still holds 0.2.1, because publishing is the owner's command.
 
 ## Start here
 
@@ -18,11 +20,12 @@ Caraka speaks [ACP](https://agentclientprotocol.com), the LSP-equivalent for cod
 - [BRD](https://github.com/CarakaDev/caraka/blob/main/docs/brd.md): market, positioning, business requirements
 - [Design](https://github.com/CarakaDev/caraka/blob/main/docs/design.md): architecture, interfaces, ACP and CLI driver contracts
 - [ERD](https://github.com/CarakaDev/caraka/blob/main/docs/erd.md): data model, integrity rules, retention
-- [Session model](https://github.com/CarakaDev/caraka/blob/main/docs/session-model.md): sessions as Telegram topics, lifecycle, routing, housekeeping
+- [Session model](https://github.com/CarakaDev/caraka/blob/main/docs/session-model.md): sessions as topics or threads, lifecycle, routing, housekeeping
 - [Telegram integration](https://github.com/CarakaDev/caraka/blob/main/docs/telegram-integration.md): Bot API 10.2 mapping
-- [Security](https://github.com/CarakaDev/caraka/blob/main/docs/security.md): threat model, mandatory controls, policy modes
+- [Security](https://github.com/CarakaDev/caraka/blob/main/docs/security.md): threat model, mandatory controls, policy modes, and the pre-release checklist with a reason on every row that is not met
+- [WhatsApp risk](https://github.com/CarakaDev/caraka/blob/main/docs/whatsapp-risiko.md): what is known about bans, where each figure comes from, and when Cloud API is the right answer instead
 - [Tech stack](https://github.com/CarakaDev/caraka/blob/main/docs/techstack.md): choices with the alternatives that were rejected
-- [Roadmap](https://github.com/CarakaDev/caraka/blob/main/docs/roadmap.md): phases and decision gates
+- [Roadmap](https://github.com/CarakaDev/caraka/blob/main/docs/roadmap.md): phases, decision gates, and the field gates moved past the release
 
 ## Research
 
@@ -45,6 +48,11 @@ Every claim in the specification traces to one of these.
 - [AGENTS.md](https://github.com/CarakaDev/caraka/blob/main/AGENTS.md): rules for coding agents working on this repository
 - [SECURITY](https://github.com/CarakaDev/caraka/blob/main/SECURITY.md): report to security@caraka.dev
 - [Architecture decisions](https://github.com/CarakaDev/caraka/blob/main/docs/adr/): one file per decision, with the alternatives rejected
+
+## Choosing, and giving back
+
+- [When to use OpenClaw, when to use Caraka](https://github.com/CarakaDev/caraka/blob/main/docs/openclaw-vs-caraka.md): the honest comparison, written so that picking OpenClaw is a conclusion it offers
+- [Integration notes for ACP and Titen](https://github.com/CarakaDev/caraka/blob/main/docs/integrasi-ekosistem.md): what this client needed from each, and which half comes from an author who is not neutral
 
 ## Optional
 
