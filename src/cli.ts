@@ -1,14 +1,23 @@
 import { randomBytes } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { realpathSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { chmod, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 import { Telegram, TelegramError } from "./channels/telegram.js";
-import { carakaPaths, defaultConfig, loadConfig, privateFile, saveConfig } from "./config.js";
+import {
+  carakaPaths,
+  channelBlocks,
+  defaultConfig,
+  loadConfig,
+  privateFile,
+  saveConfig,
+} from "./config.js";
+import type { Channel } from "./core/channel.js";
 import type { AgentDriver, DriverFor } from "./core/driver.js";
+import { createDashboard, LOOPBACK_HOSTS, resolveBind } from "./dashboard/server.js";
 import { Gateway } from "./core/gateway.js";
 import { createScrubber, parseDuration, trustLimitMinutes } from "./core/security.js";
 import { ClaudeAcp } from "./drivers/claude-acp.js";
@@ -21,7 +30,7 @@ import { TitenMemory } from "./memory/titen.js";
 import { isServiceKind, serviceUnit } from "./service.js";
 import { Store } from "./store/db.js";
 
-const VERSION = "0.4.0";
+const VERSION = "0.5.0";
 // The preset a session runs until `/switch` names another.
 const DEFAULT_AGENT = "claude-code";
 
@@ -109,6 +118,54 @@ export function driverRegistry(
     }
     return ready;
   };
+}
+
+/**
+ * Every secret this process loaded, handed to the scrubber as exact strings so
+ * redaction never depends on a pattern recognising the shape. A channel token
+ * added later is added here, and both commands that build a scrubber get it.
+ */
+export function startupSecrets(loaded: {
+  token: string;
+  discordToken?: string;
+  approvalKey: Buffer;
+}) {
+  return [loaded.token, loaded.discordToken ?? "", loaded.approvalKey.toString("base64url")].filter(
+    (secret) => secret.length > 0,
+  );
+}
+
+/**
+ * The channel list this config asks for, in the order core reads it: Telegram
+ * first, so a route stored before there was a second channel still resolves to
+ * the channel that wrote it. The Discord module is behind an `await import`, so
+ * a config without a `discord:` block never loads a line of it.
+ */
+export async function buildChannels(
+  loaded: Awaited<ReturnType<typeof loadConfig>>,
+  language: Translate,
+  store: Store,
+): Promise<[Channel, ...Channel[]]> {
+  const built: Channel[] = [];
+  const { telegram, discord } = loaded.config;
+  if (telegram) built.push(new Telegram(loaded.token, fetch, undefined, language, telegram.topics));
+  if (discord) {
+    const { Discord } = await import("./channels/discord.js");
+    built.push(
+      new Discord({
+        token: loaded.discordToken,
+        appId: discord.appId,
+        threads: discord.threads,
+        t: language,
+        log: (action, result, details) => store.audit(action, result, details),
+      }),
+    );
+  }
+  const [first, ...rest] = built;
+  // The schema refuses a config with no channel, so this cannot be empty; the
+  // check is what makes that promise readable to the type system.
+  if (!first) throw new Error(language("cli.allowlistEmpty", { channel: "—" }));
+  return [first, ...rest];
 }
 
 function command(command: string, args: string[]) {
@@ -368,9 +425,17 @@ async function doctor() {
     (await stat(loaded.config.workspace.path).catch(() => null))?.isDirectory() === true,
     loaded.config.workspace.path,
   ]);
-  checks.push(["Token mode", await privateFile(loaded.paths.token), "must be 0600"]);
+  if (loaded.config.telegram)
+    checks.push(["Telegram token mode", await privateFile(loaded.paths.token), "must be 0600"]);
+  if (loaded.config.discord)
+    checks.push([
+      "Discord token mode",
+      await privateFile(loaded.paths.discordToken),
+      "must be 0600",
+    ]);
   checks.push(["Approval key mode", await privateFile(loaded.paths.approvalKey), "must be 0600"]);
-  checks.push(["Allowlist", loaded.config.telegram.allowFrom.length > 0, "run init again"]);
+  for (const [id, block] of Object.entries(channelBlocks(loaded.config)))
+    checks.push([`Allowlist (${id})`, block.allowFrom.length > 0, "run init again"]);
   // A Titen that is configured gets a health probe; any other provider is a
   // choice, not a fault, so its row can never turn the exit code red.
   const memory = loaded.config.memory;
@@ -383,9 +448,7 @@ async function doctor() {
     checks.push(["Titen memory", healthy, "run `titen serve`"]);
     let loopback = false;
     try {
-      loopback = ["127.0.0.1", "localhost", "[::1]", "::1"].includes(
-        new URL(memory.endpoint).hostname,
-      );
+      loopback = LOOPBACK_HOSTS.includes(new URL(memory.endpoint).hostname);
     } catch {
       loopback = false;
     }
@@ -396,26 +459,39 @@ async function doctor() {
   } else {
     checks.push([`Memory (${memory.provider})`, true, ""]);
   }
-  try {
-    const me = await new Telegram(loaded.token, fetch, undefined, t).getMe();
-    checks.push([
-      "Telegram",
-      me.username === loaded.config.telegram.botUsername,
-      `@${me.username ?? "unknown"}`,
-    ]);
-    checks.push([
-      "Topics",
-      me.has_topics_enabled === true,
-      "turn on Threaded Mode for this bot in @BotFather",
-    ]);
-    checks.push([
-      "User-created topics",
-      me.allows_users_to_create_topics === true,
-      "controlled by “Disallow users to create new threads” in @BotFather",
-    ]);
-  } catch {
-    checks.push(["Telegram", false, "token or connection problem"]);
+  const telegram = loaded.config.telegram;
+  if (telegram) {
+    try {
+      const me = await new Telegram(loaded.token, fetch, undefined, t).getMe();
+      checks.push([
+        "Telegram",
+        me.username === telegram.botUsername,
+        `@${me.username ?? "unknown"}`,
+      ]);
+      checks.push([
+        "Topics",
+        me.has_topics_enabled === true,
+        "turn on Threaded Mode for this bot in @BotFather",
+      ]);
+      checks.push([
+        "User-created topics",
+        me.allows_users_to_create_topics === true,
+        "controlled by “Disallow users to create new threads” in @BotFather",
+      ]);
+    } catch {
+      checks.push(["Telegram", false, "token or connection problem"]);
+    }
   }
+  // Doctor is where a container that once refused a thread gets another
+  // chance: the marker goes, and the next session detects again.
+  const store = new Store(loaded.paths.database, createScrubber(startupSecrets(loaded)));
+  const cleared = store.clearMeta("threads.");
+  store.close();
+  checks.push([
+    "Thread detection",
+    true,
+    cleared > 0 ? `${cleared} container(s) will be tried again` : "",
+  ]);
   printChecks(checks);
   if (checks.some(([, ok]) => !ok)) process.exitCode = 1;
 }
@@ -430,7 +506,11 @@ function printChecks(checks: Array<[string, boolean, string]>) {
 async function start() {
   const loaded = await loadConfig();
   t = translator(loaded.config.language ?? "en");
-  if (loaded.config.telegram.allowFrom.length === 0) throw new Error(t("cli.allowlistEmpty"));
+  const blocks = channelBlocks(loaded.config);
+  // FR-SETUP-05: a configured channel with an empty sender list is a channel
+  // that would serve nobody, and it says which one before anything starts.
+  for (const [id, block] of Object.entries(blocks))
+    if (block.allowFrom.length === 0) throw new Error(t("cli.allowlistEmpty", { channel: id }));
   const running = await livePid(loaded.paths.pid);
   if (running !== null) {
     // 78 is EX_CONFIG. The printed systemd unit names it in
@@ -443,7 +523,7 @@ async function start() {
   await writeFile(loaded.paths.pid, `${process.pid}\n`, { mode: 0o600 });
   await chmod(loaded.paths.pid, 0o600);
 
-  const scrub = createScrubber([loaded.token, loaded.approvalKey.toString("base64url")]);
+  const scrub = createScrubber(startupSecrets(loaded));
   const store = new Store(loaded.paths.database, scrub);
   const language = translator(loaded.config.language ?? "en");
   // `none` builds no provider at all; the gateway treats its absence as the
@@ -459,7 +539,7 @@ async function start() {
   const gateway = new Gateway(
     loaded.config,
     loaded.approvalKey,
-    new Telegram(loaded.token, fetch, undefined, language),
+    await buildChannels(loaded, language, store),
     driverRegistry(presetsFound.presets, DEFAULT_AGENT, language, scrub),
     store,
     scrub,
@@ -471,7 +551,7 @@ async function start() {
   );
   console.log(
     t("cli.running", {
-      bot: loaded.config.telegram.botUsername,
+      channels: Object.keys(blocks).join(", "),
       workspace: loaded.config.workspace.path,
     }),
   );
@@ -512,17 +592,11 @@ async function statusCommand() {
   t = translator(loaded.config.language ?? "en");
   const pid = await livePid(loaded.paths.pid);
   // Process, PID, workspace, bot. No token, and nothing anyone said in chat.
+  const channels = Object.keys(channelBlocks(loaded.config)).join(", ");
   console.log(
     pid === null
-      ? t("cli.statusStopped", {
-          workspace: loaded.config.workspace.path,
-          bot: loaded.config.telegram.botUsername,
-        })
-      : t("cli.statusRunning", {
-          pid,
-          workspace: loaded.config.workspace.path,
-          bot: loaded.config.telegram.botUsername,
-        }),
+      ? t("cli.statusStopped", { workspace: loaded.config.workspace.path, channels })
+      : t("cli.statusRunning", { pid, workspace: loaded.config.workspace.path, channels }),
   );
 }
 
@@ -541,7 +615,7 @@ async function trustCommand(args: string[]) {
   if (!minutes) throw new Error(t("cli.trustUsage"));
   if (minutes > trustLimitMinutes) throw new Error(t("cli.trustTooLong"));
   const bypass = args.includes("--bypass");
-  const scrub = createScrubber([loaded.token, loaded.approvalKey.toString("base64url")]);
+  const scrub = createScrubber(startupSecrets(loaded));
   const store = new Store(loaded.paths.database, scrub);
   const expiresAt = Date.now() + minutes * 60_000;
   const id = store.openGrant({
@@ -564,6 +638,49 @@ async function trustCommand(args: string[]) {
   store.close();
   const until = new Date(expiresAt).toISOString();
   console.log(t(bypass ? "cli.bypassOpened" : "cli.trustOpened", { workspace, until }));
+}
+
+/**
+ * The dashboard runs as its own process against the same database, which is the
+ * point: the run people most want to read is the one that already crashed, and a
+ * flag on `start` cannot serve a gateway that is not running. SQLite in WAL mode
+ * serves readers across processes, so `caraka start` needs no change at all.
+ *
+ * The order matters. The one audit line is written through an ordinary handle
+ * and that handle is closed again before the read-only one opens, so the
+ * dashboard itself never holds anything that could write. The warning for a
+ * non-loopback bind is printed before `listen`, so no reader can arrive ahead
+ * of it.
+ */
+export async function dashboardCommand(args: string[]) {
+  const loaded = await loadConfig();
+  t = translator(loaded.config.language ?? "en");
+  const { host, port, exposed } = resolveBind(args, t);
+  if (!existsSync(loaded.paths.database))
+    throw new Error(t("cli.dashboardNoDatabase", { path: loaded.paths.database }));
+  const scrub = createScrubber(startupSecrets(loaded));
+  const store = new Store(loaded.paths.database, scrub);
+  store.audit("dashboard.start", exposed ? "exposed" : "loopback", { host, port });
+  store.close();
+  if (exposed) console.log(t("cli.dashboardExposed", { host, port }));
+  const server = createDashboard({
+    dbPath: loaded.paths.database,
+    scrub,
+    t,
+    version: VERSION,
+    memoryProvider: loaded.config.memory.provider,
+    exposed,
+  });
+  await new Promise<void>((listening, failed) => {
+    server.once("error", (error: NodeJS.ErrnoException) =>
+      failed(error.code === "EADDRINUSE" ? new Error(t("cli.dashboardPortBusy", { port })) : error),
+    );
+    server.listen(port, host, listening);
+  });
+  const address = server.address();
+  const bound = typeof address === "object" && address !== null ? address.port : port;
+  console.log(t("cli.dashboardReady", { url: `http://${host}:${bound}/` }));
+  return server;
 }
 
 async function serviceCommand(args: string[]) {
@@ -594,6 +711,7 @@ function help() {
   caraka start                           Run the long-polling gateway
   caraka stop                            Send SIGTERM to the running gateway
   caraka status                          Report whether the gateway is running
+  caraka dashboard [--port n]            Read-only dashboard on 127.0.0.1:7718
   caraka trust <workspace> --for 30m     Open a trust window from this terminal
   caraka service --print systemd         Print a unit file; installs nothing
   caraka --version                       Show the version`,
@@ -609,6 +727,7 @@ export async function main(args: string[]) {
     else if (subcommand === "start") await start();
     else if (subcommand === "stop") await stopCommand();
     else if (subcommand === "status") await statusCommand();
+    else if (subcommand === "dashboard") await dashboardCommand(args.slice(1));
     else if (subcommand === "trust") await trustCommand(args.slice(1));
     else if (subcommand === "service") await serviceCommand(args.slice(1));
     else if (subcommand === "--version" || subcommand === "-v") console.log(VERSION);

@@ -20,7 +20,17 @@ const workspaceEntry = z.object({
   agent: z.string().min(1).optional(),
 });
 
-const configSchema = z.object({
+// Two lists per channel, two decisions: a message is served only when its
+// container is on one and its sender on the other. The ids inside are the
+// channel's own, so they are never compared across channels.
+const allowlists = {
+  allowFrom: z.array(z.string()).min(1),
+  // A v0.1 file has neither the key nor a group, and its DM chat id is the
+  // operator's own id.
+  allowChats: z.array(z.string()).default([]),
+};
+
+const configShape = {
   version: z.literal(1),
   // Absent in every v0.1 file on disk. English is the answer when nobody chose.
   language: z.enum(["en", "id"]).optional(),
@@ -34,15 +44,26 @@ const configSchema = z.object({
   // Absent in every file the wizard wrote: the singular `workspace` above is
   // then the whole list. Written only by hand, and additive — `version` stays 1.
   workspaces: z.array(workspaceEntry).optional(),
-  telegram: z.object({
-    botUsername: z.string().min(1),
-    allowFrom: z.array(z.string()).min(1),
-    // Two lists, two decisions: a message is served only when its chat is here
-    // and its sender is in `allowFrom`. A v0.1 file has neither the key nor a
-    // group, and its DM chat id is the operator's own id.
-    allowChats: z.array(z.string()).default([]),
-    topics: z.boolean(),
-  }),
+  // Optional since v0.5, when it stopped being the only channel. Every file the
+  // wizard ever wrote has it, and the refinement below still refuses a file
+  // with no channel at all.
+  telegram: z
+    .object({
+      botUsername: z.string().min(1),
+      ...allowlists,
+      topics: z.boolean(),
+    })
+    .optional(),
+  // Additive, `version` stays 1 (the `workspaces[]` precedent below). `threads`
+  // is the same switch `telegram.topics` is: whether this channel may open a
+  // thread per session at all.
+  discord: z
+    .object({
+      appId: z.string().min(1),
+      ...allowlists,
+      threads: z.boolean().default(true),
+    })
+    .optional(),
   agent: z.object({
     adapter: z.literal("claude-agent-acp"),
     adapterVersion: z.literal("0.63.0"),
@@ -55,10 +76,51 @@ const configSchema = z.object({
       endpoint: z.string().default(TITEN_ENDPOINT),
     })
     .default({ provider: "local", endpoint: TITEN_ENDPOINT }),
-});
+};
+
+// FR-SETUP-05 at the schema: a gateway with no channel has nothing to answer
+// on, and finding that out on the first task is finding it out too late.
+const configSchema = z
+  .object(configShape)
+  .refine((config) => Boolean(config.telegram ?? config.discord), {
+    message: "No channel is configured. Add a telegram: or discord: block to config.yaml.",
+    path: ["telegram"],
+  });
 
 export type CarakaConfig = z.infer<typeof configSchema>;
 export type Workspace = z.infer<typeof workspaceEntry>;
+
+/** What core needs from a channel's config block, keyed by the channel's id. */
+export type ChannelBlock = { allowFrom: string[]; allowChats: string[]; threads: boolean };
+
+/**
+ * The one place the channel names are written down. Core reads this map and
+ * keys everything by the id it finds, so no comparison against a channel name
+ * survives past `src/config.ts` (hard rule 1).
+ */
+export function channelBlocks(config: CarakaConfig): Record<string, ChannelBlock> {
+  const { telegram, discord } = config;
+  return {
+    ...(telegram
+      ? {
+          telegram: {
+            allowFrom: telegram.allowFrom,
+            allowChats: telegram.allowChats,
+            threads: telegram.topics,
+          },
+        }
+      : {}),
+    ...(discord
+      ? {
+          discord: {
+            allowFrom: discord.allowFrom,
+            allowChats: discord.allowChats,
+            threads: discord.threads,
+          },
+        }
+      : {}),
+  };
+}
 
 // The one reading of the two workspace fields: `workspaces[]` when the operator
 // wrote it, otherwise the singular `workspace` lifted into a one-element list —
@@ -75,26 +137,30 @@ export function carakaPaths(root = process.env.CARAKA_HOME ?? join(homedir(), ".
   return {
     root: base,
     config: join(base, "config.yaml"),
+    // `token` keeps its name: renaming it to `telegramToken` touches four call
+    // sites and changes nothing.
     token: join(base, "secrets", "telegram.token"),
+    discordToken: join(base, "secrets", "discord.token"),
     approvalKey: join(base, "secrets", "approval.key"),
     database: join(base, "caraka.db"),
     pid: join(base, "caraka.pid"),
   };
 }
 
-async function atomicSecret(path: string, value: string) {
+export async function atomicSecret(path: string, value: string) {
   const temporary = `${path}.${process.pid}.tmp`;
   await writeFile(temporary, value, { mode: 0o600 });
   await chmod(temporary, 0o600);
   await rename(temporary, path);
 }
 
-export async function saveConfig(config: CarakaConfig, token: string) {
+export async function saveConfig(config: CarakaConfig, token: string, discordToken?: string) {
   const paths = carakaPaths();
   await mkdir(join(paths.root, "secrets"), { recursive: true, mode: 0o700 });
   await chmod(paths.root, 0o700);
   await chmod(join(paths.root, "secrets"), 0o700);
-  await atomicSecret(paths.token, `${token.trim()}\n`);
+  if (token) await atomicSecret(paths.token, `${token.trim()}\n`);
+  if (discordToken) await atomicSecret(paths.discordToken, `${discordToken.trim()}\n`);
   try {
     await stat(paths.approvalKey);
   } catch {
@@ -107,14 +173,23 @@ export async function saveConfig(config: CarakaConfig, token: string) {
   return paths;
 }
 
+async function channelToken(variable: string, path: string) {
+  const fromEnv = process.env[variable];
+  return (fromEnv ?? (await readFile(path, "utf8"))).trim();
+}
+
 export async function loadConfig() {
   const paths = carakaPaths();
   const config = configSchema.parse(parse(await readFile(paths.config, "utf8")));
-  const token = (process.env.CARAKA_TELEGRAM_TOKEN ?? (await readFile(paths.token, "utf8"))).trim();
+  // One token per configured channel, and none for a channel that is not.
+  const token = config.telegram ? await channelToken("CARAKA_TELEGRAM_TOKEN", paths.token) : "";
+  const discordToken = config.discord
+    ? await channelToken("CARAKA_DISCORD_TOKEN", paths.discordToken)
+    : "";
   const approvalKey = Buffer.from((await readFile(paths.approvalKey, "utf8")).trim(), "base64url");
-  if (!token || approvalKey.length < 32)
+  if ((config.telegram && !token) || (config.discord && !discordToken) || approvalKey.length < 32)
     throw new Error("Caraka secrets are incomplete. Run `caraka init` again.");
-  return { config, token, approvalKey, paths };
+  return { config, token, discordToken, approvalKey, paths };
 }
 
 export async function privateFile(path: string) {
@@ -141,11 +216,12 @@ export function defaultConfig(
   };
 }
 
-export async function addAllowedChat(config: CarakaConfig, chatId: string) {
-  if (config.telegram.allowChats.includes(chatId)) return config;
+export async function addAllowedChat(config: CarakaConfig, channel: string, chatId: string) {
+  const block = channel === "discord" ? config.discord : config.telegram;
+  if (!block || block.allowChats.includes(chatId)) return config;
   const next: CarakaConfig = {
     ...config,
-    telegram: { ...config.telegram, allowChats: [...config.telegram.allowChats, chatId] },
+    [channel]: { ...block, allowChats: [...block.allowChats, chatId] },
   };
   const paths = carakaPaths();
   const temporary = `${paths.config}.${process.pid}.tmp`;

@@ -1,4 +1,11 @@
 import { setTimeout as delay } from "node:timers/promises";
+import {
+  splitMarkdown,
+  type Channel,
+  type ChannelCaps,
+  type ChannelCommand,
+  type ThreadRef,
+} from "../core/channel.js";
 import { translator, type Translate } from "../i18n.js";
 
 export type TelegramUser = {
@@ -48,26 +55,6 @@ export type TelegramUpdate = {
   };
 };
 
-export type BotCommand = { command: string; description: string };
-
-// A name is 1–32 characters of lowercase a-z, digits, and underscores; a
-// description is 1–256 characters. Telegram rejects the whole call otherwise.
-export const gatewayCommands: BotCommand[] = [
-  { command: "new", description: "Start a fresh session in this conversation" },
-  { command: "status", description: "Report the state of this conversation's session" },
-  { command: "stop", description: "Cancel the running task" },
-  { command: "ws", description: "List the workspaces and their paths" },
-  { command: "switch", description: "Run this session on another agent preset" },
-  { command: "commands", description: "List the commands the agent reported" },
-  { command: "usage", description: "Report the context and cost the agent reported" },
-  { command: "ingat", description: "Save a note to memory" },
-  { command: "lupakan", description: "Delete a memory item by its id" },
-  { command: "memori", description: "List what memory holds for this workspace" },
-  { command: "yolo", description: "Open a Caraka trust window for a stated duration" },
-  { command: "lock", description: "Close the trust window now" },
-  { command: "help", description: "Explain how to send a task" },
-];
-
 type ApiResponse<T> = {
   ok: boolean;
   result?: T;
@@ -85,52 +72,30 @@ export class TelegramError extends Error {
   }
 }
 
-function toggledFence(line: string, openFence: string | null) {
-  const match = /^\s*(```[^\r\n]*)/.exec(line);
-  if (!match) return openFence;
-  return openFence ? null : (match[1] ?? "```");
-}
-
-export function splitTelegramText(input: string, limit = 3900, empty = "(Claude sent no text.)") {
-  const text = input.trim() || empty;
-  const lines: string[] = [];
-  for (let line of text.match(/[^\n]*\n|[^\n]+$/g) ?? [text]) {
-    while (line.length > limit - 16) {
-      lines.push(line.slice(0, limit - 16));
-      line = line.slice(limit - 16);
-    }
-    if (line) lines.push(line);
-  }
-  const chunks: string[] = [];
-  let current = "";
-  let fence: string | null = null;
-
-  for (const line of lines) {
-    const closing = fence ? "\n```" : "";
-    if (current && current.length + line.length + closing.length > limit) {
-      chunks.push(`${current.trimEnd()}${closing}`);
-      current = fence ? `${fence}\n` : "";
-    }
-    current += line;
-    fence = toggledFence(line, fence);
-  }
-  if (current) chunks.push(`${current.trimEnd()}${fence ? "\n```" : ""}`);
-  return chunks;
-}
-
 function topicName(name: string, fallback: string) {
   return name.replace(/\s+/g, " ").trim().slice(0, 128) || fallback;
 }
 
-export class Telegram {
+export class Telegram implements Channel {
   private offset = 0;
+  private botName = "";
+
+  readonly id = "telegram";
+  // Whether a given chat has threads is a per-chat matter Telegram answers with
+  // `is_forum`; this says the channel is able to hold them at all, which for
+  // Telegram is the bot-wide Threaded Mode the wizard wrote down. 4096 is the
+  // cap `sendText` already slices to.
+  readonly caps: ChannelCaps;
 
   constructor(
     private readonly token: string,
     private readonly fetcher: typeof fetch = fetch,
     private readonly base = "https://api.telegram.org",
     private readonly t: Translate = translator(),
-  ) {}
+    topics = true,
+  ) {
+    this.caps = { threads: topics, buttons: true, maxChars: 4096 };
+  }
 
   async call<T>(
     method: string,
@@ -148,7 +113,7 @@ export class Telegram {
         });
       } catch (error) {
         if (signal?.aborted) throw error;
-        throw new TelegramError(this.t("telegram.unreachable", { method }));
+        throw new TelegramError(this.t("channel.unreachable", { channel: "Telegram", method }));
       }
       const body = (await response.json()) as ApiResponse<T>;
       if (body.ok && body.result !== undefined) return body.result;
@@ -157,10 +122,17 @@ export class Telegram {
         continue;
       }
       throw new TelegramError(
-        body.description ?? this.t("telegram.refused", { method }),
+        body.description ?? this.t("channel.refused", { channel: "Telegram", method }),
         body.error_code,
       );
     }
+  }
+
+  // Dropping a leftover webhook is what long polling needs before it starts,
+  // and it means nothing to any other channel, so it belongs here rather than
+  // in the contract.
+  async start(signal?: AbortSignal) {
+    await this.deleteWebhook(false, signal);
   }
 
   getMe(signal?: AbortSignal) {
@@ -189,7 +161,7 @@ export class Telegram {
     );
   }
 
-  setMyCommands(commands: BotCommand[], chatId: string) {
+  setMyCommands(commands: ChannelCommand[], chatId: string) {
     return this.call<boolean>("setMyCommands", {
       commands,
       scope: { type: "chat", chat_id: chatId },
@@ -226,14 +198,14 @@ export class Telegram {
 
   async sendPlain(chatId: string, text: string, threadId = "") {
     const sent: TelegramMessage[] = [];
-    for (const chunk of splitTelegramText(text, 3900, this.t("telegram.empty")))
+    for (const chunk of splitMarkdown(text, 3900, this.t("channel.empty")))
       sent.push(await this.sendText(chatId, chunk, threadId));
     return sent;
   }
 
   async sendResult(chatId: string, markdown: string, threadId = "") {
     const sent: TelegramMessage[] = [];
-    for (const chunk of splitTelegramText(markdown, 30_000, this.t("telegram.empty"))) {
+    for (const chunk of splitMarkdown(markdown, 30_000, this.t("channel.empty"))) {
       try {
         sent.push(
           await this.call<TelegramMessage>("sendRichMessage", {
@@ -249,23 +221,25 @@ export class Telegram {
     return sent;
   }
 
-  editText(chatId: string, messageId: number, text: string) {
+  // A message id is a number here and a snowflake string elsewhere, so the
+  // contract carries both and this adapter narrows at the wire.
+  editText(chatId: string, messageId: number | string, text: string) {
     return this.call<TelegramMessage>("editMessageText", {
       chat_id: chatId,
-      message_id: messageId,
+      message_id: Number(messageId),
       text: text.slice(-3900),
     });
   }
 
-  deleteMessage(chatId: string, messageId: number) {
-    return this.call<boolean>("deleteMessage", { chat_id: chatId, message_id: messageId });
+  deleteMessage(chatId: string, messageId: number | string) {
+    return this.call<boolean>("deleteMessage", { chat_id: chatId, message_id: Number(messageId) });
   }
 
   // `icon_color` is settable once, at creation, and only from Telegram's six
   // documented values. `editForumTopic` cannot change it afterwards, so the
   // running blue is the colour a topic keeps for life; the state that moves
   // lives in the name.
-  createTopic(chatId: string, name: string, iconColor = 7322096) {
+  createTopic(chatId: string, name: string, iconColor = 7322096): Promise<ThreadRef> {
     return this.call<{ message_thread_id: number }>("createForumTopic", {
       chat_id: chatId,
       name: topicName(name, this.t("session.untitled")),
@@ -292,11 +266,29 @@ export class Telegram {
     });
   }
 
-  clearKeyboard(chatId: string, messageId: number) {
+  clearKeyboard(chatId: string, messageId: number | string) {
     return this.call<TelegramMessage>("editMessageReplyMarkup", {
       chat_id: chatId,
-      message_id: messageId,
+      message_id: Number(messageId),
       reply_markup: { inline_keyboard: [] },
+    });
+  }
+
+  pairingText(title: string, containerId: string) {
+    return this.t("group.pairing", { title, chatId: containerId });
+  }
+
+  // Pairing is the one moment the operator is watching, and privacy mode means
+  // an ordinary group message never reaches the bot at all. Saying so here is
+  // the difference between a documented boundary and a bot that looks broken.
+  async readiness(threads: boolean) {
+    if (!this.botName)
+      this.botName = await this.getMe()
+        .then((me) => me.username ?? "")
+        .catch(() => "");
+    return this.t("group.ready", {
+      bot: this.botName || "caraka",
+      topics: this.t(threads ? "group.topicsOn" : "group.topicsOff"),
     });
   }
 }

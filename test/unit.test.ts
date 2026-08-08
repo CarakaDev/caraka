@@ -1,26 +1,41 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { chmod, mkdir, mkdtemp, readdir, readFile, stat, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { request as httpRequest } from "node:http";
+import { hostname, tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { stringify } from "yaml";
-import { gatewayCommands, splitTelegramText, Telegram } from "../src/channels/telegram.js";
+import { Telegram } from "../src/channels/telegram.js";
+import { Discord, type Socket } from "../src/channels/discord.js";
+import { gatewayCommands, splitMarkdown } from "../src/core/channel.js";
 import {
   agentChecks,
   buildDriver,
+  dashboardCommand,
   driverRegistry,
   main,
   pairingConfirmed,
   processAlive,
   readPid,
+  startupSecrets,
   trustWorkspace,
   workspaceArg,
 } from "../src/cli.js";
-import { defaultConfig, loadConfig, saveConfig, workspaces } from "../src/config.js";
+import { STATE_COLOR, STATE_GLYPH } from "../src/core/status.js";
+import { beta, windowOf } from "../src/dashboard/queries.js";
+import {
+  createDashboard,
+  CSP,
+  DEFAULT_PORT,
+  LOOPBACK_HOSTS,
+  PANEL_PATHS,
+  resolveBind,
+} from "../src/dashboard/server.js";
+import { channelBlocks, defaultConfig, loadConfig, saveConfig, workspaces } from "../src/config.js";
 import type { AgentUpdate } from "../src/core/driver.js";
 import { discoverAgents, type Discovery } from "../src/discovery.js";
 import {
@@ -60,10 +75,48 @@ test("scrubber removes known secret shapes and exact runtime secrets", () => {
   assert.equal(scrub(undefined), "undefined");
 });
 
-test("Claude ACP subprocess does not inherit the Telegram token", () => {
-  const env = claudeEnvironment({ CARAKA_TELEGRAM_TOKEN: "secret", CLAUDE_CONFIG_DIR: "/tmp/c" });
-  assert.equal(env.CARAKA_TELEGRAM_TOKEN, undefined);
-  assert.equal(env.CLAUDE_CONFIG_DIR, "/tmp/c");
+test("a spawned agent inherits nothing Caraka named to itself", () => {
+  // AC-9.1: the filter is the `CARAKA_` prefix, not a list of one name, so the
+  // token of a channel added later cannot leak the way this one nearly did.
+  const env = claudeEnvironment({
+    CARAKA_TELEGRAM_TOKEN: "secret",
+    CARAKA_DISCORD_TOKEN: "secret",
+    CARAKA_HOME: "/home/rama/.caraka",
+    CLAUDE_CONFIG_DIR: "/tmp/c",
+    PATH: "/usr/bin",
+  });
+  assert.deepEqual(Object.keys(env).sort(), ["CLAUDE_CONFIG_DIR", "PATH"]);
+});
+
+test("the startup scrubber is seeded with the secrets this process loaded", () => {
+  // AC-9.4: exact seeding is the first line of redaction, and it is one list so
+  // both `caraka start` and `caraka trust` get the same one.
+  const secrets = startupSecrets({
+    token: "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi",
+    approvalKey: Buffer.alloc(32, 4),
+  });
+  const scrub = createScrubber(secrets);
+  assert.ok(secrets.includes("123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi"));
+  assert.equal(scrub(`token=${secrets[0]}`).includes(secrets[0] ?? ""), false);
+  assert.equal(scrub(`key=${secrets[1]}`).includes(secrets[1] ?? ""), false);
+});
+
+test("a Discord bot token is redacted by shape, and ordinary dotted text is not", () => {
+  // AC-9.2 and AC-9.3. The token below is invented, and it is scrubbed without
+  // being seeded — a token this process never loaded still cannot travel.
+  const scrub = createScrubber();
+  const invented = "MTIzNDU2Nzg5MDEyMzQ1Njc4.GhIjKl.fake-token-not-a-real-secret-value";
+  assert.equal(scrub(`Authorization: Bot ${invented}`).includes(invented), false);
+  assert.match(scrub(invented), /\[REDACTED\]/);
+
+  // The negative half: a pattern that eats these is worse than no pattern. The
+  // long dotted identifier is the one a coding agent emits without thinking,
+  // and it fits the three lengths a token has.
+  const ordinary =
+    "caraka.dev ships 1.2.3, file.test.ts still reads, " +
+    "django_rest_framework_ext.models.serializer_helper_functions is one import, " +
+    "and docs/adr/0004-approval-hanya-lewat-callback.md is untouched.";
+  assert.equal(scrub(ordinary), ordinary);
 });
 
 test("CLI requires a value after --workspace", () => {
@@ -130,8 +183,8 @@ test("approval is principal-bound, session-bound, expiring, and single-use", asy
   store.close();
 });
 
-test("Telegram splitter keeps every code fence-balanced chunk under the limit", () => {
-  const chunks = splitTelegramText(`before\n\`\`\`ts\n${"x".repeat(240)}\n\`\`\`\nafter`, 80);
+test("the shared splitter keeps every code fence-balanced chunk under the limit", () => {
+  const chunks = splitMarkdown(`before\n\`\`\`ts\n${"x".repeat(240)}\n\`\`\`\nafter`, 80);
   assert.ok(chunks.length > 2);
   for (const chunk of chunks) {
     assert.ok(chunk.length <= 80, `${chunk.length} > 80`);
@@ -825,8 +878,9 @@ test("the CLI driver spawns the preset command and resumes with the extracted id
     },
   });
   const driver = new CliDriver(preset);
-  const oldToken = process.env.CARAKA_TELEGRAM_TOKEN;
+  const before = { ...process.env };
   process.env.CARAKA_TELEGRAM_TOKEN = "must-not-leak";
+  process.env.CARAKA_DISCORD_TOKEN = "must-not-leak-either";
   try {
     const updates: string[] = [];
     const sid = await driver.session(null, root);
@@ -840,19 +894,23 @@ test("the CLI driver spawns the preset command and resumes with the extracted id
         JSON.parse(line) as {
           argv: string[];
           cwd: string;
+          caraka: string[];
           env: Record<string, string | null>;
           stdin: string;
         },
     );
     assert.deepEqual(turn1?.argv, ["--flag", "task one"]);
     assert.equal(turn1?.cwd, root);
-    assert.equal(turn1?.env.CARAKA_TELEGRAM_TOKEN, null);
+    // AC-9.1 on a process that really ran: no CARAKA_* name crossed at all.
+    assert.deepEqual(turn1?.caraka, []);
     assert.equal(turn1?.env.FAKE_EXTRA, "yes");
     assert.equal(turn1?.stdin, "");
     assert.deepEqual(turn2?.argv, ["resume", "t-1", "task two"]);
   } finally {
-    if (oldToken === undefined) delete process.env.CARAKA_TELEGRAM_TOKEN;
-    else process.env.CARAKA_TELEGRAM_TOKEN = oldToken;
+    for (const key of ["CARAKA_TELEGRAM_TOKEN", "CARAKA_DISCORD_TOKEN"]) {
+      if (before[key] === undefined) delete process.env[key];
+      else process.env[key] = before[key];
+    }
   }
   await driver.stop();
 });
@@ -1215,4 +1273,1191 @@ test("no Indonesian string survives outside the catalog", async () => {
     const found = words.exec(await readFile(file, "utf8"));
     assert.equal(found, null, `${file} still carries ${found?.[0]}`);
   }
+});
+
+// ---- Discord adapter (spec discord-v05) --------------------------------
+
+// The smallest gateway socket that can be scripted: the test delivers frames
+// and reads back whatever the adapter sent. No network, no credentials.
+class StubSocket implements Socket {
+  readonly sent: Array<Record<string, unknown>> = [];
+  closed = false;
+  closedWith: number | undefined;
+  private readonly handlers = new Map<
+    string,
+    Array<(event: { data?: unknown; code?: number }) => void>
+  >();
+
+  addEventListener(type: string, handler: (event: { data?: unknown; code?: number }) => void) {
+    this.handlers.set(type, [...(this.handlers.get(type) ?? []), handler]);
+  }
+
+  send(data: string) {
+    this.sent.push(JSON.parse(data) as Record<string, unknown>);
+  }
+
+  close(code?: number) {
+    if (this.closed) return;
+    this.closed = true;
+    this.closedWith = code;
+    this.fire("close", { code });
+  }
+
+  fire(type: string, event: { data?: unknown; code?: number } = {}) {
+    for (const handler of this.handlers.get(type) ?? []) handler(event);
+  }
+
+  deliver(frame: unknown) {
+    this.fire("message", { data: JSON.stringify(frame) });
+  }
+}
+
+type Call = { method: string; path: string; body: Record<string, unknown>; raw: BodyInit | null };
+
+function discordStub(
+  reply: (call: Call) => Response | undefined = () => undefined,
+  options: Partial<Parameters<typeof Discord.prototype.constructor>[0]> = {},
+) {
+  const calls: Call[] = [];
+  const sockets: StubSocket[] = [];
+  const fetcher: typeof fetch = async (input, init) => {
+    const raw = init?.body ?? null;
+    const call = {
+      method: init?.method ?? "GET",
+      path: String(input).replace("https://discord.test", ""),
+      body: typeof raw === "string" ? (JSON.parse(raw) as Record<string, unknown>) : {},
+      raw,
+    };
+    calls.push(call);
+    return (
+      reply(call) ??
+      new Response(JSON.stringify({ id: "1", username: "caraka" }), {
+        headers: { "content-type": "application/json" },
+      })
+    );
+  };
+  const discord = new Discord({
+    token: "MTIzNDU2Nzg5MDEyMzQ1Njc4.GhIjKl.fake-token-not-a-real-secret-value",
+    appId: "app-1",
+    fetcher,
+    base: "https://discord.test",
+    socketFor: () => {
+      const socket = new StubSocket();
+      sockets.push(socket);
+      queueMicrotask(() => socket.fire("open"));
+      return socket;
+    },
+    ...options,
+  });
+  return { discord, calls, sockets };
+}
+
+async function drain(discord: Discord, controller: AbortController, count: number, ms = 120) {
+  const seen: unknown[] = [];
+  const deadline = Date.now() + ms;
+  const iterator = discord.updates(controller.signal);
+  while (seen.length < count && Date.now() < deadline) {
+    const next = await Promise.race([iterator.next(), delay(ms, { done: true, value: undefined })]);
+    if (next.done) break;
+    seen.push(next.value);
+  }
+  controller.abort();
+  return seen as Array<Record<string, any>>;
+}
+
+test("Discord identifies without the privileged message-content intent", async () => {
+  // AC-7.1. 1 << 15 is MESSAGE_CONTENT; asking for it would mean asking to read
+  // every message in every guild, and `readiness()` says we did not.
+  const { discord, sockets } = discordStub();
+  const controller = new AbortController();
+  await discord.start(controller.signal);
+  sockets[0]?.deliver({ op: 10, d: { heartbeat_interval: 45_000 } });
+  const identify = sockets[0]?.sent.find((frame) => frame.op === 2);
+  assert.ok(identify, "an identify was sent after hello");
+  const intents = Number((identify.d as { intents: number }).intents);
+  assert.equal(intents & (1 << 15), 0, "MESSAGE_CONTENT is not requested");
+  assert.equal(intents, (1 << 0) | (1 << 9) | (1 << 12));
+  controller.abort();
+});
+
+test("a closed Discord socket reconnects, resumes, and leaves one audit line", async () => {
+  // AC-3.4. The process stays up; the reconnect is on the record.
+  const logged: Array<{ action: string; details: Record<string, unknown> }> = [];
+  const { discord, sockets } = discordStub(() => undefined, {
+    log: (action: string, _result: string, details: Record<string, unknown>) =>
+      logged.push({ action, details }),
+  });
+  const controller = new AbortController();
+  await discord.start(controller.signal);
+  sockets[0]?.deliver({ op: 10, d: { heartbeat_interval: 45_000 } });
+  sockets[0]?.deliver({
+    op: 0,
+    s: 7,
+    t: "READY",
+    d: { session_id: "s-1", resume_gateway_url: "wss://r" },
+  });
+  sockets[0]?.close();
+  await delay(1300);
+  assert.equal(logged.length, 1);
+  assert.equal(logged[0]?.action, "channel.reconnect");
+  assert.equal(logged[0]?.details.resume, true);
+  assert.equal(sockets.length, 2, "a second socket was opened");
+  sockets[1]?.deliver({ op: 10, d: { heartbeat_interval: 45_000 } });
+  const resume = sockets[1]?.sent.find((frame) => frame.op === 6);
+  assert.ok(resume, "the second connection resumed rather than identified");
+  assert.deepEqual(resume?.d, { token: expectedToken(), session_id: "s-1", seq: 7 });
+  controller.abort();
+  await delay(20);
+});
+
+function expectedToken() {
+  return "MTIzNDU2Nzg5MDEyMzQ1Njc4.GhIjKl.fake-token-not-a-real-secret-value";
+}
+
+test("a Discord heartbeat nobody acknowledges closes the socket rather than beating on", async () => {
+  // AC-3.8. A half-open socket delivers no FIN, so `close` never fires on its
+  // own and the reconnect of AC-3.4 would never be reached: the missing op 11
+  // is the only evidence there is.
+  const { discord, sockets } = discordStub();
+  const controller = new AbortController();
+  await discord.start(controller.signal);
+  sockets[0]?.deliver({ op: 10, d: { heartbeat_interval: 20 } });
+  await delay(140);
+  assert.equal(sockets[0]?.closedWith, 4009, "closed with a resumable code");
+  assert.ok(
+    (sockets[0]?.sent.filter((frame) => frame.op === 1).length ?? 0) <= 1,
+    "one unanswered beat, then no more",
+  );
+  controller.abort();
+  await delay(20);
+});
+
+test("a Discord close the platform will repeat stops the channel and names the code", async () => {
+  // AC-3.9. 4004 is authentication failed. Reconnecting asks Discord the same
+  // question again, so the loop ends and `Gateway.run()` reports the channel.
+  const logged: string[] = [];
+  const { discord, sockets } = discordStub(() => undefined, {
+    log: (action: string, _result: string, _details: Record<string, unknown>) =>
+      logged.push(action),
+  });
+  const controller = new AbortController();
+  await discord.start(controller.signal);
+  sockets[0]?.close(4004);
+  await delay(60);
+  assert.equal(sockets.length, 1, "no second socket was opened");
+  assert.deepEqual(logged, ["channel.stopped"]);
+  await assert.rejects(discord.updates(controller.signal).next(), /4004/);
+  controller.abort();
+});
+
+test("Discord waits out a 429 from the response and repeats the same call", async () => {
+  // AC-3.3. No rate-limit number is written down here: the response says how
+  // long to wait, and the mechanism is what the test binds.
+  let first = true;
+  const { discord, calls } = discordStub(() => {
+    if (!first) return undefined;
+    first = false;
+    return new Response("{}", { status: 429, headers: { "retry-after": "0.05" } });
+  });
+  const started = Date.now();
+  assert.equal((await discord.getMe()).username, "caraka");
+  assert.equal(calls.length, 2);
+  assert.deepEqual(
+    calls.map((call) => call.path),
+    ["/users/@me", "/users/@me"],
+  );
+  assert.ok(Date.now() - started >= 45);
+});
+
+test("a Discord application command becomes the command line core already parses", async () => {
+  // AC-7.2 and AC-7.3: no Discord branch is added to the command parser, and
+  // the registered list is `gatewayCommands` plus the one free-text command.
+  const { discord, calls, sockets } = discordStub();
+  const controller = new AbortController();
+  await discord.start(controller.signal);
+  await discord.setMyCommands(gatewayCommands, "42");
+  const registered = calls.find((call) => call.path === "/applications/app-1/commands");
+  assert.ok(registered, "the command list was published");
+  const names = (registered.body as unknown as Array<{ name: string }>).map((entry) => entry.name);
+  assert.deepEqual(
+    names.slice(0, -1),
+    gatewayCommands.map((entry) => entry.command),
+  );
+  assert.equal(names.at(-1), "caraka");
+  // A second call publishes nothing again.
+  await discord.setMyCommands(gatewayCommands, "42");
+  assert.equal(calls.filter((call) => call.path === "/applications/app-1/commands").length, 1);
+
+  sockets[0]?.deliver({
+    op: 0,
+    t: "INTERACTION_CREATE",
+    d: {
+      id: "i-1",
+      token: "tok",
+      type: 2,
+      guild_id: "g",
+      channel_id: "c",
+      channel: { id: "c" },
+      member: { user: { id: "42" } },
+      data: { name: "status", options: [] },
+    },
+  });
+  const events = await drain(discord, controller, 2);
+  const texts = events.map((event) => event.message?.text).filter(Boolean);
+  assert.deepEqual(texts, ["/status"]);
+  // The pairing announcement rides in front of it, so an unpaired channel is
+  // offered to the operator rather than answered in place.
+  assert.ok(events.some((event) => event.my_chat_member));
+  // The follow-up token is kept for a button press and for nothing else: an
+  // application command is answered by its own ack, so a member repeating one
+  // leaves nothing behind that grows.
+  const answered = calls.length;
+  await discord.answerCallback("i-1", "later");
+  assert.equal(calls.length, answered);
+});
+
+test("a Discord message whose content never arrived is ignored, not answered", async () => {
+  // AC-7.4 and AC-7.5, the two halves of the unprivileged intent.
+  const { discord, sockets } = discordStub();
+  const controller = new AbortController();
+  await discord.start(controller.signal);
+  sockets[0]?.deliver({
+    op: 0,
+    t: "MESSAGE_CREATE",
+    d: { id: "m-1", channel_id: "c", author: { id: "42" }, content: "" },
+  });
+  sockets[0]?.deliver({
+    op: 0,
+    t: "MESSAGE_CREATE",
+    d: { id: "m-2", channel_id: "c", author: { id: "42" }, content: "do the thing" },
+  });
+  const events = await drain(discord, controller, 1);
+  assert.equal(events.length, 1);
+  assert.equal(events[0]?.message?.text, "do the thing");
+});
+
+test("a Discord thread is named glyph first, cut at 100, and archived when it closes", async () => {
+  // AC-4.1, AC-4.2, AC-4.4.
+  const { discord, calls } = discordStub((call) =>
+    call.path.endsWith("/threads")
+      ? new Response(JSON.stringify({ id: "t-1" }), {
+          headers: { "content-type": "application/json" },
+        })
+      : undefined,
+  );
+  await discord.createTopic("discord:c-1", `▸ ${"x".repeat(300)}`);
+  const created = calls.at(-1);
+  assert.equal(created?.path, "/channels/c-1/threads");
+  assert.equal(created?.body.auto_archive_duration, 10080);
+  assert.equal(String(created?.body.name).length, 100);
+  assert.ok(String(created?.body.name).startsWith("▸ "));
+  await discord.editTopic("discord:c-1", "t-1", "✓ done");
+  assert.equal(calls.at(-1)?.body.name, "✓ done");
+  await discord.finishThread("discord:c-1", "t-1");
+  assert.deepEqual(calls.at(-1), {
+    method: "PATCH",
+    path: "/channels/t-1",
+    body: { archived: true },
+    raw: JSON.stringify({ archived: true }),
+  });
+});
+
+test("the thread limit arrives as the error Discord throws, and nothing is swept first", async () => {
+  // AC-4.6 and AC-4.7. Archiving buys no quota back, and a finished session's
+  // thread is already archived, so a sweep could only close a live session's
+  // thread. Fifty-one creations archive nothing; the limit is the refusal.
+  let made = 0;
+  const { discord, calls } = discordStub((call) => {
+    if (!call.path.endsWith("/threads")) return undefined;
+    made += 1;
+    return made > 50
+      ? new Response("max active threads reached", { status: 400 })
+      : new Response(JSON.stringify({ id: `t-${made}` }), {
+          headers: { "content-type": "application/json" },
+        });
+  });
+  for (let index = 0; index < 50; index += 1)
+    await discord.createTopic("discord:c-1", `task ${index}`);
+  await assert.rejects(discord.createTopic("discord:c-1", "one too many"), /Discord refused/);
+  assert.equal(calls.filter((call) => call.body.archived === true).length, 0);
+});
+
+test("one member's slash command does not spend the pairing offer of a Discord channel", async () => {
+  // AC-8.5. Core drops the membership event when the actor is not on the sender
+  // allowlist (AC-8.3), so a dedupe on the container alone would let any guild
+  // member silence the offer the operator needs.
+  const { discord, sockets } = discordStub();
+  const controller = new AbortController();
+  await discord.start(controller.signal);
+  const slash = (id: string, user: string) =>
+    sockets[0]?.deliver({
+      op: 0,
+      t: "INTERACTION_CREATE",
+      d: {
+        id,
+        token: `tok-${id}`,
+        type: 2,
+        guild_id: "g",
+        channel_id: "c",
+        channel: { id: "c" },
+        member: { user: { id: user } },
+        data: { name: "status", options: [] },
+      },
+    });
+  slash("i-1", "999");
+  slash("i-2", "42");
+  slash("i-3", "42");
+  const events = await drain(discord, controller, 5, 300);
+  assert.deepEqual(
+    events.filter((event) => event.my_chat_member).map((event) => event.my_chat_member.from.id),
+    ["999", "42"],
+    "each member is offered once, and the outsider does not spend the operator's",
+  );
+});
+
+test("a long Discord answer is split on the fence, and a very long one becomes a file", async () => {
+  // AC-3.7 and the file path: the same splitter both channels use, at the limit
+  // Discord carries, and no escape layer over the agent's markdown.
+  const { discord, calls } = discordStub();
+  await discord.sendResult("discord:c-1", `before\n\`\`\`ts\n${"x".repeat(3000)}\n\`\`\`\nafter`);
+  const posts = calls.filter((call) => call.path === "/channels/c-1/messages");
+  assert.ok(posts.length >= 2 && posts.length <= 3);
+  for (const post of posts) {
+    const content = String(post.body.content);
+    assert.ok(content.length <= 2000, `${content.length} > 2000`);
+    assert.equal((content.match(/```/g) ?? []).length % 2, 0, content);
+    assert.deepEqual(post.body.allowed_mentions, { parse: [] });
+  }
+
+  const long = await discordStub();
+  await long.discord.sendResult("discord:c-1", "line\n".repeat(4000));
+  const fileCall = long.calls.at(-1);
+  assert.equal(fileCall?.path, "/channels/c-1/messages");
+  assert.ok(fileCall?.raw instanceof FormData, "the long answer travelled as an attachment");
+  assert.equal(long.calls.length, 1, "one upload, not forty messages");
+});
+
+test("a Discord approval payload is the signed one, whole, inside custom_id", async () => {
+  // AC-6.1. The length is ours to keep; Discord's own `custom_id` ceiling is
+  // far above it, and nothing here truncates a signature.
+  const key = Buffer.alloc(32, 9);
+  const callback = approvalCallbacks(key);
+  assert.equal(callback.allow.length, 33);
+  const { discord, calls } = discordStub();
+  await discord.sendText("discord:c-1", "approve?", "", {
+    inline_keyboard: [
+      [
+        { text: "Allow", callback_data: callback.allow },
+        { text: "Reject", callback_data: callback.reject },
+      ],
+    ],
+  });
+  const rows = calls[0]?.body.components as Array<{
+    type: number;
+    components: Array<{ type: number; custom_id: string }>;
+  }>;
+  assert.equal(rows[0]?.type, 1);
+  assert.equal(rows[0]?.components[0]?.type, 2);
+  assert.equal(rows[0]?.components[0]?.custom_id, callback.allow);
+  assert.ok(verifyApprovalCallback(key, rows[0]?.components[0]?.custom_id ?? ""));
+});
+
+test("Discord costs no dependency and is loaded only when it is configured", async () => {
+  // AC-3.1, AC-3.2, AC-3.5, AC-3.6.
+  const manifest = JSON.parse(
+    await readFile(new URL("../package.json", import.meta.url), "utf8"),
+  ) as { dependencies: Record<string, string> };
+  assert.equal(Object.keys(manifest.dependencies).length, 4);
+  assert.equal(JSON.stringify(manifest).includes("discord.js"), false);
+  const adapter = await readFile(new URL("../src/channels/discord.ts", import.meta.url), "utf8");
+  // The name appears once, in the comment saying why it is not a dependency.
+  assert.equal(/from ["']discord\.js["']/.test(adapter), false);
+  const cli = await readFile(new URL("../src/cli.ts", import.meta.url), "utf8");
+  // The one reference is behind `await import`, so a Telegram-only config never
+  // parses a line of it.
+  assert.equal(cli.includes('from "./channels/discord.js"'), false);
+  assert.match(cli, /await import\("\.\/channels\/discord\.js"\)/);
+});
+
+test("config takes an optional discord block and refuses a gateway with no channel", async () => {
+  // AC-10.1, AC-10.2, AC-10.3 (FR-SETUP-05).
+  const oldHome = process.env.CARAKA_HOME;
+  const root = await mkdtemp(join(tmpdir(), "caraka-discord-config-"));
+  process.env.CARAKA_HOME = root;
+  try {
+    const base = defaultConfig(root, "caraka_test_bot", "42", true);
+    const withDiscord = {
+      ...base,
+      discord: { appId: "app-1", allowFrom: ["7"], allowChats: ["9"], threads: true },
+    };
+    await saveConfig(withDiscord, "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi", "dtok");
+    const loaded = await loadConfig();
+    assert.equal(loaded.config.version, 1, "the block is additive; version does not move");
+    assert.equal(loaded.config.discord?.appId, "app-1");
+    assert.equal(loaded.discordToken, "dtok");
+    assert.equal((await stat(loaded.paths.discordToken)).mode & 0o077, 0);
+    assert.equal(
+      (await readFile(loaded.paths.config, "utf8")).includes("dtok"),
+      false,
+      "no token reaches config.yaml",
+    );
+    // Two channels, two allowlists, keyed by the channel they belong to.
+    assert.deepEqual(Object.keys(channelBlocks(loaded.config)), ["telegram", "discord"]);
+
+    // A v0.4 file with no discord block still loads.
+    await saveConfig(base, "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi");
+    assert.equal((await loadConfig()).config.discord, undefined);
+
+    // No channel at all is refused, and so is a channel with nobody on it.
+    const empty = { ...base } as Record<string, unknown>;
+    delete empty.telegram;
+    await writeFile(join(root, "config.yaml"), stringify(empty));
+    await assert.rejects(loadConfig(), /No channel is configured/);
+    await writeFile(
+      join(root, "config.yaml"),
+      stringify({ ...empty, discord: { appId: "app-1", allowFrom: [], allowChats: [] } }),
+    );
+    await assert.rejects(loadConfig(), /allowFrom/);
+  } finally {
+    if (oldHome === undefined) delete process.env.CARAKA_HOME;
+    else process.env.CARAKA_HOME = oldHome;
+  }
+});
+
+test("the Discord token is seeded into the scrubber and never inherited by an agent", async () => {
+  // AC-9.1 and AC-9.4 for the second channel.
+  const secrets = startupSecrets({
+    token: "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi",
+    discordToken: "MTIzNDU2Nzg5MDEyMzQ1Njc4.GhIjKl.fake-token-not-a-real-secret-value",
+    approvalKey: Buffer.alloc(32, 4),
+  });
+  assert.equal(secrets.length, 3);
+  const scrub = createScrubber(secrets);
+  for (const secret of secrets) assert.equal(scrub(`x ${secret} y`).includes(secret), false);
+  assert.deepEqual(Object.keys(claudeEnvironment({ CARAKA_DISCORD_TOKEN: "x", PATH: "/bin" })), [
+    "PATH",
+  ]);
+});
+
+test("every Discord string is in both catalogs, and says what does not reach the bot", async () => {
+  // AC-7.6 and AC-8.2: the disclosure is a control, so it cannot go missing in
+  // one language.
+  for (const catalog of Object.values(catalogs))
+    for (const key of [
+      "discord.pairing",
+      "discord.ready",
+      "discord.threadsOn",
+      "discord.threadsOff",
+      "discord.asFile",
+      "discord.acknowledged",
+      "channel.startFailed",
+      "session.threadsOff",
+    ] as const)
+      assert.ok(catalog[key].length > 0, key);
+  assert.match(catalogs.en["discord.ready"], /never reaches me/);
+  assert.match(catalogs.id["discord.ready"], /tidak pernah sampai ke saya/);
+  assert.match(catalogs.en["discord.pairing"], /a role never approves anything/);
+  assert.match(catalogs.id["discord.pairing"], /role tidak pernah menyetujui apa pun/);
+  // Both catalogs name their channel where they used to assume there was one.
+  for (const catalog of Object.values(catalogs)) {
+    assert.match(catalog["channel.unreachable"], /\{channel\}/);
+    assert.match(catalog["cli.allowlistEmpty"], /\{channel\}/);
+    assert.match(catalog["cli.statusRunning"], /\{channels\}/);
+    assert.match(catalog["cli.tokenPrompt"], /Telegram/);
+  }
+});
+
+test("core reads capabilities and never the name of the channel that answered", async () => {
+  // AC-1.3 and AC-1.5, the mechanical gate. It passed in a vacuum before there
+  // was a second channel; from here on it means something.
+  const root = new URL("../src/core/", import.meta.url);
+  const files = (await readdir(root, { recursive: true, withFileTypes: true }))
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".ts"))
+    .map((entry) => join(entry.parentPath, entry.name));
+  assert.ok(files.length >= 4);
+  for (const file of files) {
+    const source = await readFile(file, "utf8");
+    assert.equal(source.includes('from "../channels/'), false, `${file} imports an adapter`);
+    for (const forbidden of ["channel.id ===", 'case "telegram"', 'case "discord"'])
+      assert.equal(source.includes(forbidden), false, `${file} branches on ${forbidden}`);
+    // The names may appear in prose; a string literal compared against one is
+    // what the rule forbids.
+    for (const literal of ['"telegram"', '"discord"'])
+      assert.equal(source.includes(literal), false, `${file} carries the literal ${literal}`);
+  }
+  // AC-6.6: a Discord role maps to a policy mode and never to approval
+  // authority, so no line of the approval path may read one. Prose is allowed
+  // to say the word; code is not.
+  const gateway = await readFile(new URL("../src/core/gateway.ts", import.meta.url), "utf8");
+  const code = gateway
+    .split("\n")
+    .filter((line) => !line.trimStart().startsWith("//") && !line.trimStart().startsWith("*"))
+    .join("\n");
+  assert.equal(/\brole\b/i.test(code), false, "the approval path reads no role");
+});
+
+// ─── dashboard (spec/dashboard-v05.md) ──────────────────────────────────────
+
+const FIXTURE_BASE = Date.UTC(2026, 7, 1, 9, 0, 0);
+const FIXTURE_STATES = ["idle", "running", "awaiting_approval", "done", "failed", "cancelled"];
+const FIXTURE_TOKEN = "1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij";
+const FIXTURE_SECRET = "fixture-exact-secret-value";
+const FIXTURE_PROMPT = "launch the rocket at dawn";
+
+/**
+ * One database with something in every table the dashboard reads, plus two rows
+ * that exist only to be caught: a session title carrying a `<script>` tag, and
+ * an audit row written straight through `store.db` so it never met the scrubber
+ * on the way in.
+ */
+function dashboardFixture(root: string, options: { gatewayStart?: boolean } = {}) {
+  const dbPath = join(root, "caraka.db");
+  const scrub = createScrubber([FIXTURE_SECRET]);
+  const store = new Store(dbPath, scrub);
+  const ids = FIXTURE_STATES.map((state, index) => {
+    const session = store.createSession({
+      principal: "42",
+      chatId: "telegram:42",
+      threadId: String(700 + index),
+      title: state === "idle" ? "<script>alert(1)</script>" : `task ${state}`,
+      workspace: "alpha",
+      agent: "claude-code",
+    });
+    store.setState(session.id, state);
+    return session.id;
+  });
+  const [idle, running, awaiting, done, failed] = ids as [
+    string,
+    string,
+    string,
+    string,
+    string,
+    string,
+  ];
+
+  const approval = (id: string, sessionId: string, expiresAt: number) =>
+    store.createApproval({
+      id,
+      principal: "42",
+      sessionId,
+      agentSessionId: "agent-1",
+      toolCallId: `call-${id}`,
+      allowOptionId: "allow-once",
+      rejectOptionId: "reject-once",
+      expiresAt,
+    });
+  approval("ap-wait", running, FIXTURE_BASE + 86_400_000 * 3650);
+  approval("ap-allow", done, FIXTURE_BASE + 86_400_000 * 3650);
+  approval("ap-reject", failed, FIXTURE_BASE + 86_400_000 * 3650);
+  approval("ap-expire", awaiting, FIXTURE_BASE);
+  const decide = store.db.prepare("UPDATE approvals SET decision = ?, used_at = ? WHERE id = ?");
+  decide.run("allow", FIXTURE_BASE, "ap-allow");
+  decide.run("reject", FIXTURE_BASE, "ap-reject");
+
+  const grant = store.db.prepare(
+    `INSERT INTO policy_grant(id, workspace, mode, granted_by, principal, agent_mode, created_at, expires_at, closed_at)
+     VALUES (?, ?, ?, ?, NULL, NULL, ?, ?, ?)`,
+  );
+  grant.run("g-open", "/srv/alpha", "assisted", "config", FIXTURE_BASE, null, null);
+  grant.run(
+    "g-closed",
+    "/srv/alpha",
+    "trusted",
+    "cli",
+    FIXTURE_BASE,
+    FIXTURE_BASE + 60_000,
+    FIXTURE_BASE + 30_000,
+  );
+  grant.run("g-expired", "/srv/beta", "trusted", "chat", FIXTURE_BASE, FIXTURE_BASE + 60_000, null);
+
+  store.memoryInsert("/srv/alpha", "note", "prefer pnpm in this repository");
+  store.memoryInsert("/srv/alpha", "note", "the deploy script needs the VPN");
+
+  const line = store.db.prepare(
+    "INSERT INTO audit(ts, action, principal, session_id, result, details) VALUES (?, ?, ?, ?, ?, ?)",
+  );
+  if (options.gatewayStart !== false)
+    line.run(FIXTURE_BASE, "gateway.start", null, null, "started", '{"version":"0.5.0"}');
+  line.run(
+    FIXTURE_BASE + 95_000,
+    "msg.in",
+    "42",
+    null,
+    "accepted",
+    JSON.stringify({ bytes: Buffer.byteLength(FIXTURE_PROMPT), sha256: "a".repeat(64) }),
+  );
+  line.run(FIXTURE_BASE + 100_000, "run.start", "42", done, "running", '{"agent":"claude-code"}');
+  line.run(FIXTURE_BASE + 130_000, "run.finish", "42", done, "end_turn", '{"outputBytes":12}');
+  line.run(FIXTURE_BASE + 200_000, "run.start", "42", failed, "running", '{"agent":"codex"}');
+  line.run(FIXTURE_BASE + 215_000, "run.finish", "42", failed, "cancelled", '{"outputBytes":0}');
+  line.run(
+    FIXTURE_BASE + 300_000,
+    "run.start",
+    "42",
+    running,
+    "running",
+    '{"agent":"claude-code"}',
+  );
+  // A second start on the same session, the shape a driver that threw between
+  // `run.start` and `run.finish` leaves behind. The row before it is over.
+  line.run(
+    FIXTURE_BASE + 400_000,
+    "run.start",
+    "42",
+    running,
+    "running",
+    '{"agent":"claude-code"}',
+  );
+  // Written straight through the handle, so it never met the scrubber. The
+  // outbound scrubber at render time is the only thing between it and a browser.
+  line.run(
+    Date.now(),
+    "raw.leak",
+    null,
+    null,
+    "ok",
+    JSON.stringify({ token: FIXTURE_TOKEN, exact: FIXTURE_SECRET }),
+  );
+  store.close();
+  return { dbPath, scrub, ids: { idle, running, awaiting, done, failed } };
+}
+
+function dashboardFor(dbPath: string, over: Partial<Parameters<typeof createDashboard>[0]> = {}) {
+  return createDashboard({
+    dbPath,
+    scrub: createScrubber([FIXTURE_SECRET]),
+    t: translator(),
+    version: "0.5.0",
+    memoryProvider: "local",
+    ...over,
+  });
+}
+
+/**
+ * `fetch` writes the `Host` header from the URL and ignores an override, so the
+ * rebinding case is asked the only way a browser could ask it.
+ */
+function getWithHost(port: number, path: string, host: string) {
+  return new Promise<{ status: number; body: string }>((done, failed) => {
+    const call = httpRequest({ host: "127.0.0.1", port, path, headers: { host } }, (response) => {
+      let body = "";
+      response.setEncoding("utf8");
+      response.on("data", (chunk: string) => (body += chunk));
+      response.on("end", () => done({ status: response.statusCode ?? 0, body }));
+    });
+    call.on("error", failed);
+    call.end();
+  });
+}
+
+async function serving(server: ReturnType<typeof createDashboard>) {
+  await new Promise<void>((done) => server.listen(0, "127.0.0.1", () => done()));
+  const address = server.address();
+  const port = typeof address === "object" && address !== null ? address.port : 0;
+  return {
+    port,
+    get: (path: string, init?: RequestInit) =>
+      fetch(`http://127.0.0.1:${port}${path}`, init as RequestInit),
+    stop: () => new Promise<void>((done) => server.close(() => done())),
+  };
+}
+
+test("the dashboard binds to loopback unless a flag says otherwise", async () => {
+  // AC-1.2, AC-1.3, AC-1.4. Without `--bind` no argument shape moves the host:
+  // `--host` is not a flag this command has, and a bare positional is not read.
+  assert.deepEqual(resolveBind([]), { host: "127.0.0.1", port: DEFAULT_PORT, exposed: false });
+  assert.deepEqual(resolveBind(["--port", "7719"]), {
+    host: "127.0.0.1",
+    port: 7719,
+    exposed: false,
+  });
+  assert.deepEqual(resolveBind(["--host", "0.0.0.0"]), {
+    host: "127.0.0.1",
+    port: DEFAULT_PORT,
+    exposed: false,
+  });
+  assert.deepEqual(resolveBind(["0.0.0.0"]), {
+    host: "127.0.0.1",
+    port: DEFAULT_PORT,
+    exposed: false,
+  });
+  for (const host of LOOPBACK_HOSTS)
+    assert.deepEqual(resolveBind(["--bind", host]), { host, port: DEFAULT_PORT, exposed: false });
+  assert.deepEqual(resolveBind(["--bind", "0.0.0.0", "--port", "0"]), {
+    host: "0.0.0.0",
+    port: 0,
+    exposed: true,
+  });
+  assert.throws(() => resolveBind(["--port", "not-a-port"]), /65535/);
+  assert.throws(() => resolveBind(["--port"]), /--port/);
+  assert.throws(() => resolveBind(["--bind"]), /--bind/);
+  // AC-1.1: the default port is the one the spec fixed, next to Titen's 7717.
+  assert.equal(DEFAULT_PORT, 7718);
+});
+
+test("the dashboard opens the database read-only, so a write fails at the engine", async () => {
+  // AC-2.1: read-only is enforced by SQLite, not by which routes were written.
+  const root = await mkdtemp(join(tmpdir(), "caraka-dash-ro-"));
+  const { dbPath } = dashboardFixture(root);
+  const db = new DatabaseSync(dbPath, { readOnly: true });
+  assert.throws(
+    () =>
+      db.prepare("INSERT INTO audit(ts, action, result, details) VALUES (1,'x','y','{}')").run(),
+    /readonly database/,
+  );
+  assert.throws(() => db.prepare("UPDATE sessions SET title = 'x'").run(), /readonly database/);
+  db.close();
+});
+
+test("no route mutates anything, and every method but GET and HEAD is refused", async () => {
+  // AC-2.2 and AC-2.3. Every panel path is walked with four writing methods,
+  // then every panel is fetched, and the whole database is compared either side.
+  const root = await mkdtemp(join(tmpdir(), "caraka-dash-write-"));
+  const { dbPath } = dashboardFixture(root);
+  const census = () => {
+    const db = new DatabaseSync(dbPath, { readOnly: true });
+    const counts = ["sessions", "approvals", "audit", "policy_grant", "memory_local"].map(
+      (name) => (db.prepare(`SELECT COUNT(*) AS n FROM ${name}`).get() as { n: number }).n,
+    );
+    const meta = db.prepare("SELECT key, value FROM meta ORDER BY key").all();
+    db.close();
+    return JSON.stringify({ counts, meta });
+  };
+  const before = census();
+  const live = await serving(dashboardFor(dbPath));
+  try {
+    for (const path of [...PANEL_PATHS, "/assets/htmx.min.js", "/assets/dashboard.css"])
+      for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
+        const response = await live.get(path, { method });
+        assert.equal(response.status, 405, `${method} ${path}`);
+        assert.equal(response.headers.get("allow"), "GET, HEAD");
+        await response.text();
+      }
+    for (const path of PANEL_PATHS) assert.equal((await live.get(path)).status, 200);
+    // AC-2.6: a name that resolves to 127.0.0.1 reaches the port, and a browser
+    // then reads the panels as that name's own origin. The name is refused, so
+    // only an address literal or `localhost` is answered.
+    for (const host of ["evil.example.com", "attacker.test:1234", "dashboard.invalid"]) {
+      const rebound = await getWithHost(live.port, "/audit", host);
+      assert.equal(rebound.status, 403, host);
+      assert.equal(rebound.body.includes("raw.leak"), false, host);
+    }
+    for (const host of [`127.0.0.1:${live.port}`, "localhost", "[::1]"])
+      assert.equal((await getWithHost(live.port, "/", host)).status, 200, host);
+  } finally {
+    await live.stop();
+  }
+  assert.equal(census(), before);
+});
+
+test("every SQL statement in the dashboard is a literal with bound parameters", async () => {
+  // AC-2.4, the mechanical half: nothing that came off a URL is concatenated in.
+  const root = new URL("../src/dashboard/", import.meta.url);
+  const files = (await readdir(root, { withFileTypes: true }))
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".ts"))
+    .map((entry) => join(entry.parentPath, entry.name));
+  assert.ok(files.length >= 3);
+  for (const file of files) {
+    const source = await readFile(file, "utf8");
+    for (const [statement] of source.matchAll(/\.prepare\(\s*([\s\S]*?)\)\s*\n?\s*\./g))
+      assert.equal(/\$\{/.test(statement), false, `${file} interpolates into SQL: ${statement}`);
+    // AC-7.6: no module under the dashboard reaches the network.
+    for (const call of ["fetch(", "http.request", "https.request", "net.connect", "WebSocket"])
+      assert.equal(source.includes(call), false, `${file} calls ${call}`);
+  }
+});
+
+test("an unrecognised ?since falls back to the day window and never reaches a query", async () => {
+  // AC-2.5.
+  assert.equal(windowOf("' OR 1=1--"), "24h");
+  assert.equal(windowOf(null), "24h");
+  assert.equal(windowOf("constructor"), "24h");
+  assert.equal(windowOf("7d"), "7d");
+  const root = await mkdtemp(join(tmpdir(), "caraka-dash-since-"));
+  const { dbPath } = dashboardFixture(root);
+  const live = await serving(dashboardFor(dbPath));
+  try {
+    const injected = await live.get(`/audit?since=${encodeURIComponent("' OR 1=1--")}`);
+    assert.equal(injected.status, 200);
+    const day = await (await live.get("/audit?since=24h")).text();
+    const rows = (html: string) => (html.match(/<tr>/g) ?? []).length;
+    assert.equal(rows(await injected.text()), rows(day));
+    // `all` reaches back past the fixture rows the day window cannot see.
+    assert.ok(rows(await (await live.get("/audit?since=all")).text()) > rows(day));
+  } finally {
+    await live.stop();
+  }
+});
+
+test("each panel shows the rows behind it, and a run is paired out of the audit log", async () => {
+  // AC-3.1 to AC-3.9, and AC-4.1, AC-4.2.
+  const root = await mkdtemp(join(tmpdir(), "caraka-dash-panels-"));
+  const { dbPath } = dashboardFixture(root);
+  const live = await serving(dashboardFor(dbPath));
+  try {
+    const sessionsHtml = await (await live.get("/")).text();
+    for (const state of FIXTURE_STATES) {
+      assert.ok(sessionsHtml.includes(`${STATE_GLYPH[state]} ${state}`), state);
+      assert.ok(sessionsHtml.includes(`state-${state}`), state);
+    }
+    assert.ok(sessionsHtml.includes("alpha"));
+    assert.ok(sessionsHtml.includes("claude-code"));
+    assert.match(sessionsHtml, /20\d\d-\d\d-\d\dT\d\d:\d\d:\d\d/);
+    // AC-4.2: idle has no row in the brand table; its glyph and tone are pinned.
+    assert.equal(STATE_GLYPH.idle, "◌");
+    assert.equal(STATE_COLOR.idle, "#7A848F");
+
+    const runsHtml = await (await live.get("/runs")).text();
+    assert.ok(runsHtml.includes("end_turn"));
+    assert.ok(runsHtml.includes("cancelled"));
+    assert.ok(runsHtml.includes(">30s<"));
+    assert.ok(runsHtml.includes(">15s<"));
+    // AC-3.3: the dangling start is running, and its duration cell is empty.
+    // Only the last start on a session can be: the one before it was displaced
+    // by a later start, which is proof enough that it ended.
+    assert.equal(
+      (runsHtml.match(new RegExp(`${STATE_GLYPH.running} running`, "g")) ?? []).length,
+      1,
+    );
+    assert.ok(runsHtml.includes("interrupted"));
+    assert.equal((runsHtml.match(/<tr>/g) ?? []).length, 5);
+    assert.ok(runsHtml.includes("<td></td>"));
+
+    const approvalsHtml = await (await live.get("/approvals")).text();
+    for (const status of ["waiting", "allowed", "rejected", "expired"])
+      assert.ok(approvalsHtml.includes(status), status);
+
+    const auditHtml = await (await live.get("/audit?since=all")).text();
+    assert.ok(auditHtml.indexOf("run.start") < auditHtml.indexOf("gateway.start"));
+    // AC-3.6: a msg.in row carries its size and digest and never its text.
+    assert.ok(auditHtml.includes(`&quot;bytes&quot;:${Buffer.byteLength(FIXTURE_PROMPT)}`));
+    assert.ok(auditHtml.includes("sha256"));
+    assert.equal(auditHtml.includes(FIXTURE_PROMPT), false);
+
+    const policyHtml = await (await live.get("/policy")).text();
+    assert.equal((policyHtml.match(/>open</g) ?? []).length, 1);
+    assert.equal((policyHtml.match(/>closed</g) ?? []).length, 2);
+
+    const memoryHtml = await (await live.get("/memory")).text();
+    assert.ok(memoryHtml.includes("prefer pnpm in this repository"));
+    assert.ok(memoryHtml.includes("the deploy script needs the VPN"));
+  } finally {
+    await live.stop();
+  }
+
+  // AC-3.9: any other provider names itself and the local table is not read.
+  const remote = await serving(dashboardFor(dbPath, { memoryProvider: "titen" }));
+  try {
+    const html = await (await remote.get("/memory")).text();
+    assert.ok(html.includes("titen"));
+    assert.equal(html.includes("prefer pnpm in this repository"), false);
+  } finally {
+    await remote.stop();
+  }
+});
+
+test("status is legible with the stylesheet thrown away, and the sixth colour is unused", async () => {
+  // AC-4.1, AC-4.3, AC-4.4, AC-4.5.
+  const css = await readFile(new URL("../assets/dashboard/dashboard.css", import.meta.url), "utf8");
+  for (const [state, hex] of Object.entries(STATE_COLOR)) {
+    assert.ok(
+      css.toLowerCase().includes(hex.toLowerCase()),
+      `${state} ${hex} missing from the CSS`,
+    );
+    assert.match(css, new RegExp(`\\.state-${state}\\s*\\{`));
+  }
+  assert.equal(/fb6f5f/i.test(css), false, "Telegram's sixth icon colour is deliberately unused");
+  // Nothing is drawn by CSS alone: no glyph hides in a pseudo-element, and no
+  // font or stylesheet is fetched from anywhere.
+  assert.equal(/::before[\s\S]*?content:\s*"[^"]+"/.test(css), false);
+  assert.equal(/@import|@font-face|url\(/.test(css), false);
+  const root = await mkdtemp(join(tmpdir(), "caraka-dash-glyph-"));
+  const { dbPath } = dashboardFixture(root);
+  const live = await serving(dashboardFor(dbPath));
+  try {
+    const html = await (await live.get("/")).text();
+    for (const state of FIXTURE_STATES) {
+      assert.ok(html.includes(STATE_GLYPH[state] ?? ""), `${state} glyph`);
+      assert.ok(html.includes(`>${STATE_GLYPH[state]} ${state}<`), `${state} name`);
+    }
+  } finally {
+    await live.stop();
+  }
+});
+
+test("htmx is served from the package, and the page degrades to plain links without it", async () => {
+  // AC-5.1 to AC-5.7.
+  const root = await mkdtemp(join(tmpdir(), "caraka-dash-htmx-"));
+  const { dbPath } = dashboardFixture(root);
+  const packaged = await readFile(new URL("../assets/dashboard/htmx.min.js", import.meta.url));
+  const live = await serving(dashboardFor(dbPath));
+  try {
+    const script = await live.get("/assets/htmx.min.js");
+    assert.equal(script.status, 200);
+    assert.deepEqual(Buffer.from(await script.arrayBuffer()), packaged);
+    assert.equal((await live.get("/assets/dashboard.css")).status, 200);
+
+    for (const path of PANEL_PATHS) {
+      const response = await live.get(path);
+      const html = await response.text();
+      assert.equal(
+        response.headers.get("content-security-policy"),
+        CSP,
+        `${path} content-security-policy`,
+      );
+      assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+      // AC-5.2: nothing is fetched from another origin, fonts included.
+      for (const [, value] of html.matchAll(/(?:src|href)="([^"]*)"/g))
+        assert.match(value, /^\/(?!\/)/, `${path} loads ${value}`);
+      assert.equal(/url\(/.test(html), false);
+      // AC-5.7: one clock, one script tag, and nothing that reloads the page.
+      assert.match(html, /Read at 20\d\d-\d\d-\d\dT/);
+      assert.equal((html.match(/<script/g) ?? []).length, 1);
+      assert.ok(html.includes('<script src="/assets/htmx.min.js" defer></script>'));
+      assert.equal(/http-equiv/i.test(html), false);
+      // AC-5.4, AC-5.5, AC-5.6.
+      assert.match(html, /hx-trigger="every 10s"/);
+      for (const target of PANEL_PATHS)
+        assert.ok(
+          html.includes(`<a href="${target}" hx-get="${target}" hx-target="#panel"`),
+          `${path} lacks a plain link to ${target}`,
+        );
+      assert.match(html, /<title>/);
+    }
+    // The htmx half of the same pair: a swap request answers with the panel
+    // alone, and it carries its own poll so the next one reaches the same path.
+    const fragment = await (await live.get("/runs", { headers: { "hx-request": "true" } })).text();
+    assert.equal(fragment.includes("<title>"), false);
+    assert.ok(fragment.startsWith('<section id="panel-body" hx-get="/runs"'));
+  } finally {
+    await live.stop();
+  }
+});
+
+test("nothing reaches the page unescaped, unscrubbed, or as a stack trace", async () => {
+  // AC-6.1 to AC-6.4.
+  const root = await mkdtemp(join(tmpdir(), "caraka-dash-clean-"));
+  const { dbPath } = dashboardFixture(root);
+  const live = await serving(dashboardFor(dbPath));
+  try {
+    const sessionsHtml = await (await live.get("/")).text();
+    assert.ok(sessionsHtml.includes("&lt;script&gt;alert(1)&lt;/script&gt;"));
+    assert.equal(sessionsHtml.includes("<script>alert(1)"), false);
+    // AC-6.2: the audit row that skipped the scrubber on the way in is caught
+    // on the way out, both by pattern and by the exact seeded secret.
+    const auditHtml = await (await live.get("/audit?since=all")).text();
+    assert.equal(auditHtml.includes(FIXTURE_TOKEN), false);
+    assert.equal(auditHtml.includes(FIXTURE_SECRET), false);
+    assert.ok(auditHtml.includes("[REDACTED]"));
+    const missing = await live.get("/nowhere");
+    assert.equal(missing.status, 404);
+    assert.equal(/\n\s+at /.test(await missing.text()), false);
+  } finally {
+    await live.stop();
+  }
+
+  // AC-6.4: a panel whose query throws answers 500 with a sentence. The
+  // database here has none of the tables the panels read, which is the failure
+  // shape a half-migrated file would have.
+  const broken = await mkdtemp(join(tmpdir(), "caraka-dash-broken-"));
+  const brokenPath = join(broken, "broken.db");
+  const seed = new DatabaseSync(brokenPath);
+  seed.exec("CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT) STRICT");
+  seed.close();
+  const failing = await serving(dashboardFor(brokenPath));
+  try {
+    const response = await failing.get("/");
+    assert.equal(response.status, 500);
+    const body = await response.text();
+    assert.equal(/\n\s+at /.test(body), false);
+    assert.equal(/no such table/i.test(body), false);
+    assert.ok(body.includes("could not be read"));
+  } finally {
+    await failing.stop();
+  }
+});
+
+test("the audit row store.audit writes is already scrubbed before it reaches disk", async () => {
+  // The dashboard's safety rests on this claim, so it is checked rather than
+  // assumed: the write path redacts, and the read path redacts again.
+  const root = await mkdtemp(join(tmpdir(), "caraka-dash-scrub-"));
+  const store = new Store(join(root, "caraka.db"), createScrubber([FIXTURE_SECRET]));
+  store.audit("test.write", FIXTURE_TOKEN, { token: FIXTURE_TOKEN, exact: FIXTURE_SECRET });
+  const session = store.createSession({
+    principal: "42",
+    chatId: "telegram:42",
+    threadId: "",
+    title: `title ${FIXTURE_SECRET}`,
+    workspace: "alpha",
+    agent: "claude-code",
+  });
+  const row = store.db
+    .prepare("SELECT result, details FROM audit WHERE action = 'test.write'")
+    .get() as { result: string; details: string };
+  assert.equal(row.details.includes(FIXTURE_TOKEN), false);
+  assert.equal(row.details.includes(FIXTURE_SECRET), false);
+  assert.equal(row.result, "[REDACTED]");
+  assert.equal(
+    (
+      store.db.prepare("SELECT title FROM sessions WHERE id = ?").get(session.id) as {
+        title: string;
+      }
+    ).title.includes(FIXTURE_SECRET),
+    false,
+  );
+  store.close();
+});
+
+test("the two beta numbers are derived from audit, and sharing them is the opt-in", async () => {
+  // AC-7.2 to AC-7.5 and AC-7.7 to AC-7.9.
+  const root = await mkdtemp(join(tmpdir(), "caraka-dash-beta-"));
+  const { dbPath } = dashboardFixture(root);
+  const live = await serving(dashboardFor(dbPath));
+  try {
+    const html = await (await live.get("/beta")).text();
+    assert.match(html, /95 seconds/);
+    const share = /<pre>([^<]*)<\/pre>/.exec(html)?.[1] ?? "";
+    assert.match(share, /^caraka \S+ setup=\d+s activation=(yes|no)$/);
+    assert.equal(share, "caraka 0.5.0 setup=95s activation=yes");
+    // AC-7.8: closed by default, and the numbers are outside it either way.
+    assert.match(html, /<details><summary>/);
+    assert.equal(/<details\s+open/.test(html), false);
+    assert.ok(html.indexOf("95 seconds") < html.indexOf("<details>"));
+    // AC-7.5: the panel names the proxy it used and the action it read.
+    assert.ok(html.includes("run.finish"));
+    assert.ok(html.includes("end_turn"));
+    // AC-7.9: the share line names nothing about this machine.
+    for (const leak of [hostname(), root, "42", "task done", "alpha"])
+      assert.equal(share.includes(leak), false, `share line carries ${leak}`);
+  } finally {
+    await live.stop();
+  }
+
+  // AC-7.3: a database from before v0.5 has no start row, so setup time is
+  // unknown and says why rather than guessing at one.
+  const old = await mkdtemp(join(tmpdir(), "caraka-dash-old-"));
+  const { dbPath: oldPath } = dashboardFixture(old, { gatewayStart: false });
+  const legacy = await serving(dashboardFor(oldPath));
+  try {
+    const html = await (await legacy.get("/beta")).text();
+    assert.match(html, /before v0\.5/);
+    assert.match(html, /setup=unknowns activation=no/);
+  } finally {
+    await legacy.stop();
+  }
+});
+
+test("activation counts one end_turn inside the first day and nothing else", async () => {
+  // AC-7.4: three fixtures, one boundary, one wrong result.
+  const cases: Array<[string, number, boolean]> = [
+    ["end_turn", 60 * 60_000, true],
+    ["end_turn", 25 * 60 * 60_000, false],
+    ["cancelled", 60 * 60_000, false],
+  ];
+  for (const [result, offset, expected] of cases) {
+    const root = await mkdtemp(join(tmpdir(), "caraka-dash-act-"));
+    const dbPath = join(root, "caraka.db");
+    const store = new Store(dbPath, createScrubber());
+    const line = store.db.prepare(
+      "INSERT INTO audit(ts, action, principal, session_id, result, details) VALUES (?, ?, NULL, NULL, ?, '{}')",
+    );
+    line.run(FIXTURE_BASE, "gateway.start", "started");
+    line.run(FIXTURE_BASE + offset, "run.finish", result);
+    store.close();
+    const read = new DatabaseSync(dbPath, { readOnly: true });
+    assert.equal(beta(read).activated, expected, `${result} at +${offset}ms`);
+    read.close();
+  }
+});
+
+test("caraka dashboard writes one audit line, warns when exposed, and names its failures", async () => {
+  // AC-1.1, AC-1.5 to AC-1.9.
+  const oldHome = process.env.CARAKA_HOME;
+  const root = await mkdtemp(join(tmpdir(), "caraka-dash-cli-"));
+  process.env.CARAKA_HOME = root;
+  const said: string[] = [];
+  const log = console.log;
+  console.log = (...parts: unknown[]) => void said.push(parts.map(String).join(" "));
+  try {
+    await saveConfig(
+      defaultConfig(root, "caraka_test_bot", "42", true),
+      "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi",
+    );
+    const dbPath = join(root, "caraka.db");
+
+    // AC-1.9: no database, no listener, and no file created by looking.
+    await assert.rejects(dashboardCommand([]), /caraka init/);
+    assert.equal(existsSync(dbPath), false);
+
+    dashboardFixture(root);
+    const rows = (result: string) => {
+      const db = new DatabaseSync(dbPath, { readOnly: true });
+      const all = db
+        .prepare("SELECT details FROM audit WHERE action = 'dashboard.start' AND result = ?")
+        .all(result) as Array<{ details: string }>;
+      db.close();
+      return all;
+    };
+
+    // AC-1.3 and AC-1.7: loopback by default, one audit line, no warning.
+    const loopback = await dashboardCommand(["--port", "0"]);
+    const address = loopback.address() as { address: string; port: number };
+    assert.equal(address.address, "127.0.0.1");
+    assert.equal(rows("loopback").length, 1);
+    assert.equal(rows("exposed").length, 0);
+    assert.ok(said.some((line) => line.includes(`http://127.0.0.1:${address.port}/`)));
+    assert.equal(
+      said.some((line) => line.includes("⚠")),
+      false,
+    );
+
+    // AC-1.8: the port it just took, asked for again, by number and by remedy.
+    await assert.rejects(
+      dashboardCommand(["--port", String(address.port)]),
+      (error: Error) =>
+        error.message.includes(String(address.port)) &&
+        error.message.includes("--port") &&
+        !/\n\s+at /.test(error.message),
+    );
+    await new Promise<void>((done) => loopback.close(() => done()));
+
+    // AC-1.5 and AC-1.6: the warning is printed before listen, and recorded.
+    said.length = 0;
+    const exposed = await dashboardCommand(["--bind", "0.0.0.0", "--port", "0"]);
+    assert.ok(said[0]?.includes("⚠"), "the warning comes before the ready line");
+    assert.ok(said[0]?.includes("0.0.0.0"));
+    assert.ok(said.at(-1)?.includes("http://0.0.0.0:"));
+    const written = rows("exposed");
+    assert.equal(written.length, 1);
+    assert.ok(written[0]?.details.includes("0.0.0.0"));
+    // AC-2.6's absent half: the remote route in `docs/security.md` T7 arrives
+    // through a Tailscale or WireGuard name, so an exposed dashboard answers a
+    // name. The operator asked for that with the flag and read the warning.
+    const exposedPort = (exposed.address() as { port: number }).port;
+    assert.equal((await getWithHost(exposedPort, "/", "caraka.tailnet.test")).status, 200);
+    await new Promise<void>((done) => exposed.close(() => done()));
+  } finally {
+    console.log = log;
+    if (oldHome === undefined) delete process.env.CARAKA_HOME;
+    else process.env.CARAKA_HOME = oldHome;
+  }
+});
+
+test("every string the dashboard shows comes from both catalogs", () => {
+  // AC-6.5. `id` is typed against `en`, so `tsc` already refuses a missing key;
+  // this catches the other half, a key present but left in English.
+  const keys = Object.keys(catalogs.en).filter(
+    (key) => key.startsWith("dash.") || key.startsWith("cli.dashboard"),
+  );
+  assert.ok(keys.length >= 40);
+  for (const key of keys) {
+    const term = key as keyof typeof catalogs.en;
+    assert.ok(catalogs.id[term].length > 0, `${key} is empty in id`);
+    // Column labels and status words are short enough to legitimately match;
+    // every sentence must have been translated.
+    if (catalogs.en[term].length > 40)
+      assert.notEqual(catalogs.id[term], catalogs.en[term], `${key} is untranslated`);
+  }
+  assert.match(catalogs.id["cli.dashboardExposed"], /127\.0\.0\.1/);
+  assert.match(catalogs.en["cli.dashboardExposed"], /127\.0\.0\.1/);
 });

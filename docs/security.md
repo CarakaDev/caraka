@@ -38,8 +38,8 @@ Caraka menghubungkan **input tak tepercaya** (chat) ke **eksekusi kode di mesin 
 | T4 | Eksfiltrasi rahasia lewat balasan | **Outbound scrubber** wajib sebelum kirim & sebelum tulis disk | Deny-list path (`~/.ssh`, `~/.aws`, `*.env`, keychain) |
 | T5 | Aksi destruktif | Daftar aksi berisiko tinggi (force push, `rm -rf`, migrasi, deploy) selalu butuh approval | Timeout run + `/stop` |
 | T6 | Persetujuan tak berwenang di grup | Callback approval terikat principal; penekan di luar allowlist tidak menyetujui apa pun | Allowlist chat dan allowlist pengirim dievaluasi terpisah |
-| T6b | Pengungkapan di grup | Dinyatakan saat pairing, bukan dikontrol — §4 butir 6 | Grup default `read-only`; kalau terlalu sensitif untuk dilihat anggota, tempatnya bukan di grup |
-| T7 | Gateway terekspos internet | Bind `127.0.0.1` saja; membuka butuh flag eksplisit + peringatan | Akses jauh hanya lewat Tailscale/WireGuard/SSH |
+| T6b | Pengungkapan di grup | Dinyatakan saat pairing, bukan dikontrol — §4 butir 6. Berlaku sama untuk guild channel Discord: kartu approval, path, diff, dan keluaran perintah terbaca setiap anggota yang bisa melihat channel itu | Grup default `read-only` (belum terbangun, lihat §5); kalau terlalu sensitif untuk dilihat anggota, tempatnya bukan di grup |
+| T7 | Gateway terekspos internet | Bind `127.0.0.1` saja; membuka butuh flag eksplisit + peringatan. Tidak ada channel yang mendengarkan: Telegram menarik lewat long-poll, Discord memegang koneksi WebSocket keluar | Akses jauh hanya lewat Tailscale/WireGuard/SSH |
 | T8 | Supply chain plugin | **Tidak ada marketplace, tidak ada dynamic loading** | Dependensi ≤ 25, audit di CI |
 | T9 | Ban akun WhatsApp | Dua provider; `allowFrom` wajib; rate limit + jitter; tanpa first-contact | Cloud API sebagai jalan keluar |
 | T10 | Biaya lepas kendali | Concurrency 1 run/workspace; timeout 30 mnt; heartbeat mati default | Batas harian opsional + notifikasi |
@@ -61,7 +61,7 @@ Ini adalah kontrol yang **tidak** punya opsi konfigurasi untuk dinonaktifkan:
 3. **Jendela `trusted` wajib kedaluwarsa** (CHECK constraint level database) dan tidak pernah dibuka oleh teks chat. Rinciannya di §5.
 4. **Outbound scrubber** selalu aktif.
 5. **Audit log** selalu aktif untuk keputusan otorisasi.
-6. **Grup tidak pernah mendapat izin tulis/eksekusi** tanpa opt-in eksplisit, dan pengungkapan di grup dinyatakan, bukan dikontrol. Pesan ephemeral **tidak** dipakai sebagai kontrol keamanan di mana pun.
+6. **Grup tidak pernah mendapat izin tulis/eksekusi** tanpa opt-in eksplisit, dan pengungkapan di grup dinyatakan, bukan dikontrol. Pesan ephemeral **tidak** dipakai sebagai kontrol keamanan di mana pun. Sejak v0.5 kalimat itu berlaku untuk dua platform: ephemeral Discord punya syarat yang berbeda dari Telegram dan sama tidak bisa diandalkannya, jadi kartu approval tidak pernah dikirim ephemeral di channel mana pun, dan tidak ada satu pun jalur yang berubah perilaku ketika ephemeral tidak tersedia.
 7. **Bind default `127.0.0.1`.**
 8. **Payload callback tidak pernah dipercaya apa adanya** — selalu id + HMAC + nonce yang tervalidasi di server.
 
@@ -123,6 +123,8 @@ dijanjikan.
 | `assisted` **(default DM)** | ✅ | ⚠️ approval | ⚠️ approval | ❌ | ❌ |
 | `trusted` (jendela berdurasi, lihat di bawah) | ✅ | ✅ | ✅ | ⚠️ approval | ⚠️ approval |
 | grup **(default)** | ✅ | ❌ | ❌ | ❌ | ❌ |
+
+Baris `grup (default)` adalah desain, bukan build. Sampai v0.5 tidak ada gerbang mode di jalur run untuk channel mana pun — grup Telegram maupun guild channel Discord — jadi sebuah pesan dari grup yang sudah di allowlist berjalan dengan aturan yang sama dengan DM. Yang benar-benar membatasi sebuah grup hari ini adalah dua allowlist ditambah pairing yang dikonfirmasi di DM operator, dan approval yang terikat principal pemilik sesi. Karena gerbangnya belum ada, pemetaan role Discord → mode kebijakan (FR-AUTH-06) juga belum dibangun: memetakan sebuah role ke `read-only` sekarang berarti menjanjikan penolakan tulis yang tidak terjadi. Sebuah role Discord tidak pernah, dalam keadaan apa pun, memberi otoritas approval (ADR-0008).
 
 **Daftar aksi berisiko tinggi** (selalu approval, apa pun modenya):
 `git push --force*` · `git reset --hard` · `rm -rf` · penghapusan direktori · migrasi database · `terraform apply` · `kubectl apply/delete` · perintah deploy · menulis ke `~/.ssh`, `~/.aws`, `~/.config`, `*.env`, `*.pem`, `id_*` · perintah dengan pipe ke `sh`/`bash` · `curl`/`wget` ke domain tidak dikenal.
@@ -197,7 +199,9 @@ penjaga itu, opsi tersebut akan menjadi tombol satu ketukan di chat pribadi.
 
 **Yang tidak pernah kami sentuh:** API key model. Itu milik coding agent. Caraka tidak punya, tidak meminta, tidak menyimpan.
 
-**Yang kami simpan:** kredensial channel (bot token Telegram; nanti session Baileys / access token Cloud API) → keychain OS bila tersedia; fallback file `chmod 600` di `~/.caraka/secrets/`. Tidak pernah masuk repo, tidak pernah ke log, tidak pernah ke chat, **tidak pernah ditulis ke `config.yaml`**.
+**Yang kami simpan:** kredensial channel (bot token Telegram dan, sejak v0.5, bot token Discord; nanti session Baileys / access token Cloud API) → keychain OS bila tersedia; fallback file `chmod 600` di `~/.caraka/secrets/`. Tidak pernah masuk repo, tidak pernah ke log, tidak pernah ke chat, **tidak pernah ditulis ke `config.yaml`**.
+
+Setiap token yang dimuat proses di-seed ke scrubber sebagai rahasia exact, dan tidak satu pun variabel berawalan `CARAKA_` diwariskan ke proses agent yang di-spawn. Sampai v0.4 penghapusan itu menyebut satu nama, `CARAKA_TELEGRAM_TOKEN`, yang berarti token channel berikutnya akan bocor lewat lubang yang sama; sejak v0.5 yang dihapus adalah awalannya.
 
 **Kenapa Managed Bots tidak dipakai sebagai jalur default:** Bot API 9.6 memungkinkan setup satu ketukan, tetapi token bot mengalir melalui *manager bot* — artinya pihak ketiga sempat memegang kredensial user. Itu bertentangan langsung dengan prinsip di atas. Ditawarkan hanya sebagai opsi eksplisit, dan hanya bila manager bot dijalankan sendiri oleh user.
 
@@ -208,6 +212,7 @@ AKIA[0-9A-Z]{16}             xox[baprs]-[A-Za-z0-9-]+  eyJ[A-Za-z0-9_-]+\.[...]\
 -----BEGIN [A-Z ]*PRIVATE KEY-----   .*
 baris dalam file .env / .env.*
 ```
+Sejak v0.5 daftar itu bertambah satu bentuk: tiga segmen base64url berpisah titik yang **tidak** diawali `eyJ`, yaitu bentuk bot token Discord. Pola JWT di atas mensyaratkan awalan itu, jadi sampai v0.4 token Discord lolos kedua pola dan yang menutupinya hanya seeding exact — dan seeding hanya menutup token yang proses ini kebetulan muat.
 Diganti menjadi `[redacted:<jenis>]`. **Ini kontrol paling murah dengan dampak terbesar** — pasang sejak commit pertama.
 
 ---
@@ -258,6 +263,14 @@ ber-index unik di `erd.md` belum dibangun), dengan antrean FIFO per workspace,
 ack bernomor "diantrekan (#n)", dan `/stop` yang membatalkan run milik workspace
 pengirimnya saja. Tiga baris sisanya (approval pending, outbound per channel,
 ukuran lampiran) **dispesifikasikan, belum dibangun**.
+
+Baris "outbound per channel" tidak berubah statusnya di v0.5, dan ini perlu
+dinyatakan karena channel kedua mudah dibaca sebagai kedatangannya. Tidak ada
+limiter proaktif di sisi kita untuk channel mana pun. Yang ada adalah reaksi:
+Telegram dan Discord sama-sama menjawab 429 dengan menunggu `retry_after` yang
+disebut respons lalu mengulang panggilan yang sama. Angka batas Discord tidak
+ditulis di dokumen ini karena tidak ada satu pun yang terukur di repo ini
+(`standards/ears.md:120`); yang diuji adalah mekanismenya, bukan angkanya.
 
 ---
 

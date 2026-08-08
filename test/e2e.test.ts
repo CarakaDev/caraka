@@ -7,6 +7,8 @@ import test, { after } from "node:test";
 import { fileURLToPath } from "node:url";
 import { stringify } from "yaml";
 import { Telegram, type TelegramMessage, type TelegramUpdate } from "../src/channels/telegram.js";
+import { Discord, type Socket } from "../src/channels/discord.js";
+import type { Channel } from "../src/core/channel.js";
 import { defaultConfig, type Workspace } from "../src/config.js";
 import { driverRegistry } from "../src/cli.js";
 import type {
@@ -18,6 +20,7 @@ import type {
 } from "../src/core/driver.js";
 import { Gateway } from "../src/core/gateway.js";
 import { createScrubber } from "../src/core/security.js";
+import { createDashboard, PANEL_PATHS } from "../src/dashboard/server.js";
 import { loadPresets } from "../src/drivers/preset.js";
 import { translator } from "../src/i18n.js";
 import type { Filter, MemoryProvider, Outcome, Scope } from "../src/memory/index.js";
@@ -98,7 +101,9 @@ test("private allowlisted Telegram message reaches Claude and signed approval re
     },
     answerCallback: async () => true,
     clearKeyboard: async () => ({ message_id: 12, chat: { id: 42, type: "private" } }),
-  } as unknown as Telegram;
+    id: "telegram",
+    caps: { threads: true, buttons: true, maxChars: 4096 },
+  } as unknown as Channel;
 
   let receivedPrompt = "";
   const claude: AgentDriver = {
@@ -132,7 +137,7 @@ test("private allowlisted Telegram message reaches Claude and signed approval re
     },
   };
 
-  const gateway = new Gateway(config, approvalKey, telegram, async () => claude, store, scrub);
+  const gateway = new Gateway(config, approvalKey, [telegram], async () => claude, store, scrub);
   await gateway.run();
   assert.equal(receivedPrompt, "write the file");
   assert.equal(topicAttempted, true);
@@ -246,7 +251,7 @@ async function harness(
 ) {
   const root = options.root ?? (await mkdtemp(join(tmpdir(), "caraka-e2e-")));
   const config = defaultConfig(root, "caraka_test_bot", "42", options.topics ?? false);
-  if (options.allowChats) config.telegram.allowChats = options.allowChats;
+  if (options.allowChats && config.telegram) config.telegram.allowChats = options.allowChats;
   if (options.workspaces) config.workspaces = options.workspaces;
   const scrub = createScrubber();
   const store = options.store ?? new Store(join(root, "test.db"), scrub);
@@ -297,7 +302,19 @@ async function harness(
       return { message_id: 12, chat: { id: 42, type: "private" } };
     },
     getMe: async () => ({ id: 7, is_bot: true, first_name: "Caraka", username: "carakadevbot" }),
-  } as unknown as Telegram;
+    id: "telegram",
+    caps: { threads: options.topics ?? false, buttons: true, maxChars: 4096 },
+    // The two disclosure strings come off the channel, not out of core
+    // (AC-7.7). The fake reads the same catalog keys the real adapter does, so
+    // the wording under test is the wording that ships.
+    pairingText: (title: string, containerId: string) =>
+      translator()("group.pairing", { title, chatId: containerId }),
+    readiness: async (threads: boolean) =>
+      translator()("group.ready", {
+        bot: "carakadevbot",
+        topics: translator()(threads ? "group.topicsOn" : "group.topicsOff"),
+      }),
+  } as unknown as Channel;
 
   const prompts: string[] = [];
   const claude: AgentDriver = options.driver ?? {
@@ -320,7 +337,7 @@ async function harness(
   const gateway = new Gateway(
     config,
     Buffer.alloc(32, 4),
-    telegram,
+    [telegram],
     options.driverFor ?? (async () => claude),
     store,
     scrub,
@@ -1657,4 +1674,477 @@ test("/switch rebinds the session to a loaded preset and /ws answers in General"
   assert.match(reply?.text ?? "", /Workspaces:/);
   assert.equal(reply?.thread, "", "global commands answer in General");
   await h.finish();
+});
+
+// ---- Discord (spec discord-v05) ----------------------------------------
+//
+// The mirror of the Telegram harness above: a scripted gateway socket the test
+// pushes frames into, a REST recorder that answers them, and the real
+// `src/channels/discord.ts` driving the real `Gateway`. No credentials, no call
+// leaves the machine, and every Discord assertion in this file rests on it.
+
+class FakeSocket implements Socket {
+  readonly sent: unknown[] = [];
+  closed = false;
+  private readonly handlers = new Map<string, Array<(event: { data?: unknown }) => void>>();
+
+  constructor(readonly url: string) {}
+
+  addEventListener(type: string, handler: (event: { data?: unknown }) => void) {
+    this.handlers.set(type, [...(this.handlers.get(type) ?? []), handler]);
+  }
+
+  send(data: string) {
+    this.sent.push(JSON.parse(data));
+  }
+
+  close() {
+    if (this.closed) return;
+    this.closed = true;
+    this.fire("close", {});
+  }
+
+  fire(type: string, event: { data?: unknown }) {
+    for (const handler of this.handlers.get(type) ?? []) handler(event);
+  }
+
+  deliver(frame: unknown) {
+    this.fire("message", { data: JSON.stringify(frame) });
+  }
+}
+
+type Rest = { method: string; path: string; body: Record<string, unknown>; at: number };
+
+const GUILD = "900000000000000001";
+const ROOM = "900000000000000002";
+const THREAD = "900000000000000003";
+
+function discordConfig(root: string, allowChats: string[] = [ROOM]) {
+  const config = defaultConfig(root, "caraka_test_bot", "42", false);
+  delete config.telegram;
+  return { ...config, discord: { appId: "app-1", allowFrom: ["42"], allowChats, threads: true } };
+}
+
+async function discordHarness(
+  options: {
+    allowChats?: string[];
+    threadFails?: boolean;
+    onPrompt?: (prompt: string, route: DriverRoute) => Promise<{ stopReason: string }>;
+  } = {},
+) {
+  const root = await mkdtemp(join(tmpdir(), "caraka-discord-"));
+  const scrub = createScrubber();
+  const store = new Store(join(root, "test.db"), scrub);
+  const rest: Rest[] = [];
+  const sockets: FakeSocket[] = [];
+  const sentIds: string[] = [];
+  let messageId = 5000;
+  let retryOnce = false;
+
+  const fetcher: typeof fetch = async (input, init) => {
+    const path = String(input).replace("https://discord.test", "");
+    const method = init?.method ?? "GET";
+    const raw = init?.body;
+    const body = typeof raw === "string" ? (JSON.parse(raw) as Record<string, unknown>) : {};
+    rest.push({ method, path, body, at: Date.now() });
+    const json = (value: unknown, status = 200) =>
+      new Response(status === 204 ? null : JSON.stringify(value), {
+        status,
+        headers: { "content-type": "application/json" },
+      });
+    if (retryOnce) {
+      retryOnce = false;
+      return new Response("{}", { status: 429, headers: { "retry-after": "0.02" } });
+    }
+    if (path === "/users/@me") return json({ id: "7", username: "caraka" });
+    if (path === "/users/@me/channels") return json({ id: "dm-1" });
+    if (path.endsWith("/threads") && method === "POST") {
+      if (options.threadFails) return new Response("no thread here", { status: 403 });
+      return json({ id: THREAD });
+    }
+    if (path.includes("/messages") && method === "POST") {
+      messageId += 1;
+      sentIds.push(String(messageId));
+      return json({ id: String(messageId) });
+    }
+    return json({ ok: true });
+  };
+
+  const discord = new Discord({
+    token: "MTIzNDU2Nzg5MDEyMzQ1Njc4.GhIjKl.fake-token-not-a-real-secret-value",
+    appId: "app-1",
+    fetcher,
+    base: "https://discord.test",
+    socketFor: (url) => {
+      const socket = new FakeSocket(url);
+      sockets.push(socket);
+      queueMicrotask(() => socket.fire("open", {}));
+      return socket;
+    },
+    log: (action, result, details) => store.audit(action, result, details),
+  });
+
+  const prompts: string[] = [];
+  const claude: AgentDriver = {
+    start: async () => undefined,
+    session: async () => "agent-session-1",
+    prompt: async (_session: string, prompt: string, route: DriverRoute) => {
+      prompts.push(prompt);
+      return options.onPrompt
+        ? await options.onPrompt(prompt, route)
+        : { stopReason: "end_turn" as const };
+    },
+    setMode: async () => undefined,
+    cancel: async () => undefined,
+    stop: async () => undefined,
+  };
+
+  const gateway = new Gateway(
+    discordConfig(root, options.allowChats),
+    Buffer.alloc(32, 4),
+    [discord],
+    async () => claude,
+    store,
+    scrub,
+    "0.5.0",
+  );
+  const running = gateway.run();
+  // The gateway hands its own abort signal to `start()`, so the socket only
+  // exists once `run()` has got that far.
+  while (sockets.length === 0) await delay(2);
+  const socket = () => sockets.at(-1) as FakeSocket;
+  socket().deliver({ op: 10, d: { heartbeat_interval: 45_000 } });
+  socket().deliver({
+    op: 0,
+    s: 1,
+    t: "READY",
+    d: { session_id: "sess-1", resume_gateway_url: "wss://resume" },
+  });
+  socket().deliver({ op: 0, s: 2, t: "GUILD_CREATE", d: { id: GUILD, channels: [{ id: ROOM }] } });
+  // `run()` registers its commands and posts the startup notice before it
+  // starts polling; waiting for the notice is waiting for a live gateway.
+  while (!rest.some((call) => call.path === "/channels/dm-1/messages")) await delay(2);
+
+  const command = (name: string, argument: string, threadId?: string) =>
+    socket().deliver({
+      op: 0,
+      s: 3,
+      t: "INTERACTION_CREATE",
+      d: {
+        id: `i-${rest.length}-${name}`,
+        token: `tok-${name}`,
+        type: 2,
+        guild_id: GUILD,
+        channel_id: threadId ?? ROOM,
+        channel: { id: threadId ?? ROOM, name: "ops", ...(threadId ? { parent_id: ROOM } : {}) },
+        member: { user: { id: "42", username: "rama" } },
+        data: { name, options: argument ? [{ name: "task", value: argument }] : [] },
+      },
+    });
+
+  const press = (customId: string, from = "42", messageIdPressed = "0") =>
+    socket().deliver({
+      op: 0,
+      s: 4,
+      t: "INTERACTION_CREATE",
+      d: {
+        id: `p-${rest.length}-${from}`,
+        token: `tok-press-${from}`,
+        type: 3,
+        guild_id: GUILD,
+        channel_id: THREAD,
+        channel: { id: THREAD, parent_id: ROOM },
+        member: { user: { id: from } },
+        message: { id: messageIdPressed, channel_id: THREAD },
+        data: { custom_id: customId },
+      },
+    });
+
+  const posted = () =>
+    rest.filter((call) => call.method === "POST" && call.path.endsWith("/messages"));
+  const buttons = () => {
+    const withComponents = posted().filter((call) => call.body.components);
+    const rows = withComponents.at(-1)?.body.components as
+      | Array<{ components: Array<{ label: string; custom_id: string }> }>
+      | undefined;
+    return rows?.[0]?.components ?? [];
+  };
+
+  const finish = async () => {
+    await gateway.stop();
+    await running;
+  };
+  finishers.push(finish);
+  return {
+    root,
+    store,
+    discord,
+    rest,
+    prompts,
+    posted,
+    buttons,
+    sentIds,
+    socket,
+    command,
+    press,
+    force429: () => {
+      retryOnce = true;
+    },
+    async settle(ms = 80) {
+      await delay(ms);
+    },
+    finish,
+  };
+}
+
+test("a Discord slash command opens a thread, is approved by button, and the thread is archived", async () => {
+  let decision: PermissionResponse | undefined;
+  const h = await discordHarness({
+    onPrompt: async (_prompt, route) => {
+      decision = await route.permission({
+        sessionId: "agent-session-1",
+        toolCall: { toolCallId: "tool-1", title: "Write file", kind: "edit" },
+        options: [
+          { optionId: "allow-once", name: "Allow", kind: "allow_once" },
+          { optionId: "reject-once", name: "Reject", kind: "reject_once" },
+        ],
+      });
+      return { stopReason: "end_turn" as const };
+    },
+  });
+  h.command("caraka", "write the file");
+  await h.settle(200);
+  assert.deepEqual(h.prompts, ["write the file"]);
+
+  // AC-4.1 and AC-4.2: a public thread with the longest auto-archive window,
+  // and the session lives in it rather than in the parent channel.
+  const created = h.rest.find((call) => call.path === `/channels/${ROOM}/threads`);
+  assert.ok(created, "a thread was created for the session");
+  assert.equal(created?.body.auto_archive_duration, 10080);
+  assert.equal(created?.body.type, 11);
+  assert.equal(
+    (h.store.db.prepare("SELECT thread_id FROM sessions").get() as { thread_id: string }).thread_id,
+    THREAD,
+  );
+  // The route carries the channel that owns it, so a Telegram row and a Discord
+  // row can never collide (AC-10.4).
+  assert.equal(
+    (h.store.db.prepare("SELECT chat_id FROM sessions").get() as { chat_id: string }).chat_id,
+    `discord:${ROOM}`,
+  );
+
+  // AC-6.1: the signed payload rides in `custom_id` whole, at the length
+  // `approvalCallbacks` produces. A change of shape fails here, not on Discord.
+  const row = h.buttons();
+  assert.equal(row.length, 2);
+  assert.equal(row[0]?.label, "Allow");
+  assert.ok(row[0]?.custom_id.startsWith("c:"));
+  assert.equal(row[0]?.custom_id.length, 33);
+  const cardId = h.sentIds.at(-1) ?? "";
+  assert.ok(cardId);
+
+  const pressedAt = Date.now();
+  h.press(row[0]?.custom_id ?? "", "42", cardId);
+  await h.settle(200);
+
+  // AC-6.2: the deferred ack goes out before core touches anything, and inside
+  // the window Discord leaves open for an interaction.
+  const ack = h.rest.find((call) => call.path.includes("/interactions/") && call.body.type === 6);
+  assert.ok(ack, "the button press was acknowledged with a deferred update");
+  assert.ok(ack && ack.at - pressedAt < 3000, "the ack landed inside three seconds");
+  const disable = h.rest.find(
+    (call) => call.method === "PATCH" && Array.isArray(call.body.components),
+  );
+  assert.ok(disable, "the card's components were disabled");
+  assert.ok(ack && disable && ack.at <= disable.at, "the ack came first");
+  assert.deepEqual(decision, { outcome: { outcome: "selected", optionId: "allow-once" } });
+
+  // AC-4.3 and AC-4.4: the glyph is the only status Discord has, and the thread
+  // closes after the summary, never before it.
+  const renames = h.rest.filter((call) => call.path === `/channels/${THREAD}` && call.body.name);
+  assert.ok(renames.some((call) => String(call.body.name).startsWith("▸")));
+  assert.ok(renames.some((call) => String(call.body.name).startsWith("✓")));
+  const archive = h.rest.find(
+    (call) => call.path === `/channels/${THREAD}` && call.body.archived === true,
+  );
+  assert.ok(archive, "the finished thread was archived");
+  const summary = h
+    .posted()
+    .filter((call) => call.path === `/channels/${THREAD}/messages`)
+    .at(-1);
+  assert.ok(summary && summary.at <= archive.at, "the summary was posted before the archive");
+
+  // AC-6.4: the same press a second time decides nothing.
+  h.press(row[0]?.custom_id ?? "", "42", cardId);
+  await h.settle(120);
+  assert.equal(
+    (
+      h.store.db.prepare("SELECT count(*) AS n FROM approvals WHERE used_at IS NOT NULL").get() as {
+        n: number;
+      }
+    ).n,
+    1,
+  );
+  await h.finish();
+});
+
+test("a Discord press from outside the sender allowlist is refused and recorded", async () => {
+  // AC-6.5 and AC-6.6: no Discord role appears anywhere on this path. What
+  // decides is the sender allowlist and the signature, and nothing else.
+  let decision: PermissionResponse | undefined;
+  const h = await discordHarness({
+    onPrompt: async (_prompt, route) => {
+      decision = await route.permission({
+        sessionId: "agent-session-1",
+        toolCall: { toolCallId: "tool-1", title: "Write file", kind: "edit" },
+        options: [
+          { optionId: "allow-once", name: "Allow", kind: "allow_once" },
+          { optionId: "reject-once", name: "Reject", kind: "reject_once" },
+        ],
+      });
+      return { stopReason: "end_turn" as const };
+    },
+  });
+  h.command("caraka", "write the file");
+  await h.settle(200);
+  const button = h.buttons()[0]?.custom_id ?? "";
+  assert.ok(button.startsWith("c:"));
+
+  h.press(button, "77");
+  await h.settle(150);
+  assert.equal(decision, undefined, "a stranger's press decides nothing");
+  assert.equal(h.store.db.prepare("SELECT decision FROM approvals").get()?.decision, null);
+  assert.equal(
+    audits(h.store, "approval.decide").some((entry) => entry.result === "denied"),
+    true,
+  );
+
+  h.press(button, "42");
+  await h.settle(200);
+  assert.deepEqual(decision, { outcome: { outcome: "selected", optionId: "allow-once" } });
+  await h.finish();
+});
+
+test("a Discord container that refuses a thread runs linear and is asked once", async () => {
+  // AC-5.1 through AC-5.3, and AC-2.3: capability detection is the error the
+  // first real attempt threw, and the run it happened inside still finishes.
+  const h = await discordHarness({ threadFails: true });
+  h.command("caraka", "first task");
+  await h.settle(250);
+  assert.deepEqual(h.prompts, ["first task"]);
+  assert.equal(
+    (h.store.db.prepare("SELECT thread_id FROM sessions").get() as { thread_id: string }).thread_id,
+    "",
+  );
+  // Linear mode is a mode, not a failure, and every reply says which session
+  // it belongs to.
+  assert.ok(
+    h.posted().some((call) => /^\[[^\]]+\]/.test(String(call.body.content ?? ""))),
+    "linear replies carry the workspace and session header",
+  );
+  const notices = h
+    .posted()
+    .filter((call) => String(call.body.content ?? "").includes("run linear with a header"));
+  assert.equal(notices.length, 1, "the operator is told once, with the remedy");
+  assert.equal(h.store.meta(`threads.discord:${ROOM}`), "off");
+
+  const attemptsBefore = h.rest.filter((call) => call.path.endsWith("/threads")).length;
+  h.command("caraka", "second task");
+  await h.settle(250);
+  assert.equal(
+    h.rest.filter((call) => call.path.endsWith("/threads")).length,
+    attemptsBefore,
+    "a container that refused once is not asked again",
+  );
+  assert.equal(
+    h
+      .posted()
+      .filter((call) => String(call.body.content ?? "").includes("run linear with a header"))
+      .length,
+    1,
+  );
+  await h.finish();
+});
+
+test("a guild channel outside the allowlist is paired in the operator's DM, not in the channel", async () => {
+  // AC-8.1 and AC-8.2. The disclosure is Discord's own wording, and it lands
+  // where only the operator can read it.
+  const h = await discordHarness({ allowChats: [] });
+  h.command("caraka", "too early");
+  await h.settle(200);
+  assert.deepEqual(h.prompts, [], "nothing runs in an unpaired channel");
+  const card = h.posted().at(-1);
+  assert.equal(card?.path, "/channels/dm-1/messages", "the card went to the operator's DM");
+  assert.match(String(card?.body.content ?? ""), /every one of them sees the approval cards/);
+  assert.match(String(card?.body.content ?? ""), /a role never approves anything/);
+  await h.finish();
+});
+
+test("the Discord channel declares three caps and honours the ones core reads", async () => {
+  // AC-2.1 and AC-2.7: a cap without a reader is a promise nothing checks.
+  const h = await discordHarness();
+  assert.deepEqual(Object.keys(h.discord.caps).sort(), ["buttons", "maxChars", "threads"]);
+  assert.equal(h.discord.caps.maxChars, 2000);
+  assert.equal(h.discord.caps.buttons, true);
+  await h.finish();
+});
+
+test("the gateway records that it started, once per run", async () => {
+  // AC-7.1: the earliest row of this action is the moment this installation
+  // first ran, and the beta panel measures setup time from it. `meta` cannot
+  // stand in — `startup.notice` is overwritten past its debounce window.
+  const h = await harness();
+  await h.settle();
+  assert.equal(
+    (
+      h.store.db
+        .prepare("SELECT COUNT(*) AS n FROM audit WHERE action = 'gateway.start'")
+        .get() as { n: number }
+    ).n,
+    1,
+  );
+  await h.finish();
+});
+
+test("with the gateway stopped, the dashboard still serves every panel", async () => {
+  // AC-1.10 and the whole point of K1: the run people most want to read is the
+  // one that already ended. The writer is closed here, not merely idle.
+  const root = await mkdtemp(join(tmpdir(), "caraka-dash-e2e-"));
+  const dbPath = join(root, "caraka.db");
+  const store = new Store(dbPath, createScrubber());
+  const session = store.createSession({
+    principal: "42",
+    chatId: "telegram:42",
+    threadId: "",
+    title: "the run that crashed",
+    workspace: "alpha",
+    agent: "claude-code",
+  });
+  store.setState(session.id, "failed");
+  store.audit("gateway.start", "started", { version: "0.5.0" });
+  store.audit("run.start", "running", { agent: "claude-code" }, "42", session.id);
+  store.close();
+
+  const server = createDashboard({
+    dbPath,
+    scrub: createScrubber(),
+    t: translator(),
+    version: "0.5.0",
+    memoryProvider: "local",
+  });
+  await new Promise<void>((done) => server.listen(0, "127.0.0.1", () => done()));
+  const address = server.address() as { port: number };
+  try {
+    assert.equal(PANEL_PATHS.length, 7);
+    for (const path of PANEL_PATHS) {
+      const response = await fetch(`http://127.0.0.1:${address.port}${path}`);
+      assert.equal(response.status, 200, path);
+      const html = await response.text();
+      assert.match(html, /<title>/);
+      if (path === "/") assert.ok(html.includes("the run that crashed"));
+      if (path === "/runs") assert.ok(html.includes("▸ running"));
+    }
+  } finally {
+    await new Promise<void>((done) => server.close(() => done()));
+  }
 });

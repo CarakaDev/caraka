@@ -21,8 +21,10 @@ if (process.env.FAKE_RECORD) {
     `${JSON.stringify({
       argv: process.argv.slice(2),
       cwd: process.cwd(),
+      // Every CARAKA_* name that survived the spawn, so the test asserts that
+      // none arrived instead of naming the tokens one by one and going stale.
+      caraka: Object.keys(process.env).filter((key) => key.startsWith("CARAKA_")),
       env: {
-        CARAKA_TELEGRAM_TOKEN: process.env.CARAKA_TELEGRAM_TOKEN ?? null,
         FAKE_EXTRA: process.env.FAKE_EXTRA ?? null,
       },
       stdin,

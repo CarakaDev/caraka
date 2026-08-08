@@ -150,6 +150,8 @@ Index: `(container_id, thread_ref)` UNIQUE · `(workspace_id, state)` · `(state
 
 > Aturan: sesi tidak pernah berpindah topic, dan topic tidak pernah dipakai ulang oleh sesi lain — ditegakkan oleh unique index `(container_id, thread_ref)`.
 
+> **Belum dibangun sampai v0.5.** Tabel `container` tidak ada di skema; rute sebuah sesi disimpan langsung di `sessions` sebagai pasangan `(chat_id, thread_id)`. Channel kedua mendarat tanpa kolom `channel`: id chat Discord ber-namespace `discord:<id>` saat ditulis, dan adapternya melepas prefiks itu lagi di tepi REST, sehingga basis data v0.4 terbaca persis seperti sebelumnya dan tidak ada migrasi. Plafonnya nyata dan disengaja — tidak ada kolom yang bisa difilter, jadi "seluruh sesi Discord" butuh pencocokan prefiks. Kolom `channel` dibangun saat ada pembaca pertama yang benar-benar memfilter atau mengelompokkan per channel; sampai itu terjadi, `supports_threads` hidup sebagai kunci di tabel `meta` per container, ditulis saat pembuatan thread gagal dan dihapus oleh `doctor`.
+
 ### `message` — jejak percakapan
 | Kolom | Tipe | Ket |
 |---|---|---|

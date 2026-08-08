@@ -1,13 +1,22 @@
 import { createHash } from "node:crypto";
 import { hostname } from "node:os";
 import { setTimeout as delay } from "node:timers/promises";
-import { addAllowedChat, workspaces, type CarakaConfig, type Workspace } from "../config.js";
+import {
+  addAllowedChat,
+  channelBlocks,
+  workspaces,
+  type CarakaConfig,
+  type Workspace,
+} from "../config.js";
 import {
   gatewayCommands,
-  Telegram,
-  type TelegramMessage,
-  type TelegramUpdate,
-} from "../channels/telegram.js";
+  type Channel,
+  type ChannelId,
+  type InboundCallback,
+  type InboundEvent,
+  type InboundMessage,
+  type MessageRef,
+} from "./channel.js";
 import type {
   AgentCommand,
   AgentDriver,
@@ -19,6 +28,7 @@ import type {
 import { translator, type Translate } from "../i18n.js";
 import { withTimeout, type MemoryProvider, type Scope } from "../memory/index.js";
 import { Store, type Session } from "../store/db.js";
+import { STATE_GLYPH } from "./status.js";
 import {
   approvalCallbacks,
   callbackPurpose,
@@ -59,8 +69,13 @@ const MEMORY_TIMEOUT_MS = 500;
 
 export class Gateway {
   private readonly abort = new AbortController();
-  private readonly allowed: Set<string>;
-  private readonly allowedChats: Set<string>;
+  // Three maps keyed by `channel.id`, filled once from the config. An id is an
+  // identity here, never a branch: a Telegram id means nothing on Discord, so
+  // the allowlists cannot be one list (hard rule 1, `spec/discord-v05.md` K4).
+  private readonly allowed = new Map<ChannelId, Set<string>>();
+  private readonly allowedChats = new Map<ChannelId, Set<string>>();
+  private readonly operators = new Map<ChannelId, string>();
+  private readonly byId = new Map<ChannelId, Channel>();
   private readonly blockedChats = new Set<string>();
   private readonly pending = new Map<string, PendingPermission>();
   private readonly pendingTrust = new Map<
@@ -71,7 +86,7 @@ export class Gateway {
   // (`docs/session-model.md` §5: ask, never guess).
   private readonly pendingChoice = new Map<
     string,
-    { principal: string; message: TelegramMessage; text: string; expiresAt: number }
+    { principal: string; message: InboundMessage; text: string; expiresAt: number }
   >();
   private readonly pendingGroups = new Map<
     string,
@@ -81,7 +96,6 @@ export class Gateway {
   private readonly rate = new Map<string, number[]>();
   private readonly rateNoticed = new Set<string>();
   private readonly forumChats = new Map<string, boolean>();
-  private botName = "";
   private readonly t: Translate;
   private config: CarakaConfig;
   private readonly workspaces: [Workspace, ...Workspace[]];
@@ -101,11 +115,11 @@ export class Gateway {
   constructor(
     config: CarakaConfig,
     private readonly approvalKey: Buffer,
-    private readonly telegram: Telegram,
+    private readonly channels: [Channel, ...Channel[]],
     private readonly driverFor: DriverFor,
     private readonly store: Store,
     private readonly scrub: ReturnType<typeof createScrubber>,
-    private readonly version = "0.4.0",
+    private readonly version = "0.5.0",
     private readonly runLimitMs = RUN_LIMIT_MS,
     // No provider object is the `none` provider; every memory seam starts with
     // this one check.
@@ -117,14 +131,43 @@ export class Gateway {
     this.config = config;
     this.workspaces = workspaces(config);
     this.t = translator(config.language ?? "en");
-    this.allowed = new Set(config.telegram.allowFrom);
-    // A DM chat id is the sender's own id, so a v0.1 config that never heard of
-    // `allowChats` still has its own conversation on the chat allowlist.
-    this.allowedChats = new Set([...config.telegram.allowChats, ...config.telegram.allowFrom]);
+    for (const channel of channels) this.byId.set(channel.id, channel);
+    for (const [id, block] of Object.entries(channelBlocks(config))) {
+      this.allowed.set(id, new Set(block.allowFrom));
+      // A DM chat id is the sender's own id on Telegram, so a v0.1 config that
+      // never heard of `allowChats` still has its own conversation on the list.
+      this.allowedChats.set(id, new Set([...block.allowChats, ...block.allowFrom]));
+      this.operators.set(id, block.allowFrom[0] ?? "");
+    }
   }
 
-  private get operator() {
-    return this.config.telegram.allowFrom[0] ?? "";
+  /**
+   * Which channel owns a stored route. A route written before there was more
+   * than one channel carries the bare container id, and it belongs to the first
+   * channel in the list — which is why the list is ordered and why a v0.4
+   * database keeps routing after the upgrade.
+   */
+  private channelOf(chatId: string): Channel {
+    const cut = chatId.indexOf(":");
+    return (cut > 0 ? this.byId.get(chatId.slice(0, cut)) : undefined) ?? this.channels[0];
+  }
+
+  /** The container id as the operator wrote it in the config, prefix removed. */
+  private container(chatId: string) {
+    const cut = chatId.indexOf(":");
+    return cut > 0 && this.byId.has(chatId.slice(0, cut)) ? chatId.slice(cut + 1) : chatId;
+  }
+
+  private operatorOf(chatId: string) {
+    return this.operators.get(this.channelOf(chatId).id) ?? "";
+  }
+
+  private allows(chatId: string, principal: string) {
+    return this.allowed.get(this.channelOf(chatId).id)?.has(principal) === true;
+  }
+
+  private allowsChat(chatId: string) {
+    return this.allowedChats.get(this.channelOf(chatId).id)?.has(this.container(chatId)) === true;
   }
 
   // Never empty: `workspaces()` lifts the singular into a one-element list.
@@ -153,7 +196,7 @@ export class Gateway {
     return this.workspaces.length === 1 ? this.home : undefined;
   }
 
-  private workspaceForMessage(message: TelegramMessage) {
+  private workspaceForMessage(message: InboundMessage) {
     const { chatId, threadId } = this.route(message);
     return this.chatWorkspace(chatId, this.store.sessionFor(chatId, threadId));
   }
@@ -172,54 +215,91 @@ export class Gateway {
   }
 
   async run() {
+    // The audit log is the only thing that remembers when this installation
+    // first ran, and `meta` cannot stand in: `startup.notice` is overwritten on
+    // every start past its debounce window, so after the first restart it no
+    // longer points at the install. Audit is append-only, so the earliest row
+    // of this action stays the earliest row forever, and the dashboard reads it
+    // as the start of the setup clock. No debounce: a log that never records
+    // that the process started is a hole of its own (T11 `docs/security.md`).
+    this.store.audit("gateway.start", "started", { version: this.version });
     this.store.expireApprovals();
     // A trust window is a promise about a process that is running. A restart
     // ends the process, so it ends the promise.
     const leftover = this.store.closeGrants();
     if (leftover > 0) this.store.audit("trust.close", "restart", { closed: leftover });
-    await this.telegram.deleteWebhook(false, this.abort.signal);
+    // Every channel starts before any of them polls, so a failure leaves none
+    // of them half alive, and the message says which one it was.
+    for (const channel of this.channels) {
+      try {
+        await channel.start?.(this.abort.signal);
+      } catch (error) {
+        throw new Error(
+          this.t("channel.startFailed", {
+            channel: channel.id,
+            message: error instanceof Error ? error.message : String(error),
+          }),
+        );
+      }
+    }
     await this.registerCommands();
     await this.announceStart();
     // The default driver starts now, so a setup that cannot start any route
     // fails at startup, not on the first task.
     await this.driver("", this.home.driver);
-    for await (const update of this.telegram.updates(this.abort.signal)) this.dispatch(update);
+    // One queue map for the whole process, so a second channel cannot start a
+    // second run in a workspace that is already busy (FR-SESS-04).
+    await Promise.all(
+      this.channels.map(async (channel) => {
+        for await (const update of channel.updates(this.abort.signal)) this.dispatch(update);
+      }),
+    );
   }
 
   private async registerCommands() {
-    for (const chatId of this.config.telegram.allowFrom) {
-      try {
-        await this.telegram.setMyCommands(gatewayCommands, chatId);
-      } catch (error) {
-        this.store.audit(
-          "commands.register",
-          "failed",
-          { message: error instanceof Error ? error.message : String(error) },
-          chatId,
-        );
+    for (const channel of this.channels)
+      for (const chatId of this.allowed.get(channel.id) ?? []) {
+        try {
+          await channel.setMyCommands(gatewayCommands, chatId);
+        } catch (error) {
+          this.store.audit(
+            "commands.register",
+            "failed",
+            {
+              channel: channel.id,
+              message: error instanceof Error ? error.message : String(error),
+            },
+            chatId,
+          );
+        }
       }
-    }
   }
 
   private async announceStart() {
     const last = Number(this.store.meta("startup.notice") ?? 0);
     if (Date.now() - last < STARTUP_NOTICE_MS) return;
     this.store.setMeta("startup.notice", String(Date.now()));
-    if (!this.operator) return;
-    await this.sendText(
-      this.operator,
-      this.t("start.notice", {
-        host: hostname(),
-        workspace: this.workspaces.map((workspace) => workspace.slug).join(", "),
-        version: this.version,
-      }),
-      "",
-      undefined,
-      this.operator,
-    ).catch(() => undefined);
+    const notice = this.t("start.notice", {
+      host: hostname(),
+      workspace: this.workspaces.map((workspace) => workspace.slug).join(", "),
+      version: this.version,
+    });
+    for (const channel of this.channels) {
+      const operator = this.operators.get(channel.id);
+      if (!operator) continue;
+      await this.directTo(channel, operator)
+        .then((chatId) => this.sendText(chatId, notice, "", undefined, operator))
+        .catch(() => undefined);
+    }
   }
 
-  private dispatch(update: TelegramUpdate) {
+  // Where a private message to this principal lands. Telegram keys a DM by the
+  // sender's own id and says nothing; Discord has to open the channel first.
+  private async directTo(channel: Channel, principal: string) {
+    return (await channel.direct?.(principal)) ?? principal;
+  }
+
+  private dispatch(update: InboundEvent) {
     if (update.callback_query) {
       void this.handleCallback(update).catch(() => undefined);
       return;
@@ -233,8 +313,13 @@ export class Gateway {
     if (!message?.from) return;
     const chatId = String(message.chat.id);
     const principal = String(message.from.id);
-    if (message.chat.type === "channel" || !this.allowedChats.has(chatId)) return;
-    if (!this.allowed.has(principal)) {
+    // A broadcast channel is refused outright. A room has to be on the chat
+    // allowlist; a private conversation is the sender's own, so the sender list
+    // below is the whole gate — which is what lets a Discord DM through, where
+    // the conversation id is not the person's id.
+    if (message.chat.type === "channel") return;
+    if (message.chat.type !== "private" && !this.allowsChat(chatId)) return;
+    if (!this.allows(chatId, principal)) {
       this.store.audit("msg.reject", "denied", { chatType: message.chat.type }, principal);
       return;
     }
@@ -270,7 +355,7 @@ export class Gateway {
   // workspace and `@slug` inside one moves nothing; elsewhere `@slug` routes
   // and sticks, a lone workspace needs no asking, and an ambiguous chat gets
   // buttons, never a guess.
-  private routeTask(message: TelegramMessage, text: string, create = false) {
+  private routeTask(message: InboundMessage, text: string, create = false) {
     const { chatId, threadId } = this.route(message);
     const principal = String(message.from?.id);
     const session = this.store.sessionFor(chatId, threadId);
@@ -321,13 +406,13 @@ export class Gateway {
     this.queueRun(message, text, chosen, create);
   }
 
-  private queueRun(message: TelegramMessage, text: string, workspace: Workspace, create: boolean) {
+  private queueRun(message: InboundMessage, text: string, workspace: Workspace, create: boolean) {
     this.enqueue(message, workspace.slug, () =>
       create ? this.createOnly(message, workspace) : this.runTask(message, text, workspace),
     );
   }
 
-  private askWorkspace(message: TelegramMessage, text: string) {
+  private askWorkspace(message: InboundMessage, text: string) {
     const { chatId, threadId } = this.route(message);
     const principal = String(message.from?.id);
     this.pendingChoice.set(chatId, {
@@ -355,20 +440,17 @@ export class Gateway {
   // The button does what typing `@slug` would have done: pick, stick, and run
   // whatever task was waiting on the answer. The sender allowlist was already
   // checked at the callback fork.
-  private async chooseWorkspace(
-    query: NonNullable<TelegramUpdate["callback_query"]>,
-    principal: string,
-  ) {
+  private async chooseWorkspace(channel: Channel, query: InboundCallback, principal: string) {
     const chosen = this.workspaceBySlug((query.data ?? "").slice(2));
     const chatId = query.message ? String(query.message.chat.id) : "";
     const waiting = this.pendingChoice.get(chatId);
     if (!chosen || !waiting || waiting.principal !== principal || waiting.expiresAt < Date.now()) {
-      await this.telegram.answerCallback(query.id, this.t("callback.invalid"), true);
+      await channel.answerCallback(query.id, this.t("callback.invalid"), true);
       return;
     }
     this.pendingChoice.delete(chatId);
     this.store.setMeta(`ws.last.${chatId}`, chosen.slug);
-    await this.telegram.answerCallback(query.id, this.t("callback.confirmed"));
+    await channel.answerCallback(query.id, this.t("callback.confirmed"));
     if (waiting.text) this.queueRun(waiting.message, waiting.text, chosen, false);
     else
       await this.sendText(
@@ -381,7 +463,7 @@ export class Gateway {
   }
 
   // Global commands answer in General from any topic (`docs/session-model.md` §5).
-  private listWorkspaces(message: TelegramMessage) {
+  private listWorkspaces(message: InboundMessage) {
     return this.sendText(
       String(message.chat.id),
       this.t("ws.list", { list: this.workspaceLines() }),
@@ -393,7 +475,7 @@ export class Gateway {
 
   // `/switch` writes the preset id and drops the agent-side session id; no
   // agent mode name is known here, let alone hardened (`docs/ui-ux.md`).
-  private async switchAgent(message: TelegramMessage, argument: string) {
+  private async switchAgent(message: InboundMessage, argument: string) {
     const { chatId, threadId } = this.route(message);
     const principal = String(message.from?.id);
     if (!argument || !this.agents.includes(argument))
@@ -421,7 +503,7 @@ export class Gateway {
 
   // A slash command is forwarded only while Caraka has no list to check it
   // against. Once the agent has told us what it answers to, a typo is a typo.
-  private knownAgentCommand(message: TelegramMessage, name: string) {
+  private knownAgentCommand(message: InboundMessage, name: string) {
     const { chatId, threadId } = this.route(message);
     const session = this.store.sessionFor(chatId, threadId);
     const commands = session ? this.facts.get(session.id)?.commands : undefined;
@@ -429,7 +511,7 @@ export class Gateway {
     return commands.some((entry) => entry.name.toLowerCase() === name);
   }
 
-  private rejectCommand(message: TelegramMessage, name: string) {
+  private rejectCommand(message: InboundMessage, name: string) {
     const { chatId, threadId } = this.route(message);
     return this.sendText(
       chatId,
@@ -440,7 +522,7 @@ export class Gateway {
     );
   }
 
-  private listCommands(message: TelegramMessage) {
+  private listCommands(message: InboundMessage) {
     const { chatId, threadId } = this.route(message);
     const session = this.store.sessionFor(chatId, threadId);
     const commands = session ? this.facts.get(session.id)?.commands : undefined;
@@ -452,7 +534,7 @@ export class Gateway {
     return this.sendText(chatId, body, threadId, undefined, String(message.from?.id), session?.id);
   }
 
-  private reportUsage(message: TelegramMessage) {
+  private reportUsage(message: InboundMessage) {
     const { chatId, threadId } = this.route(message);
     const session = this.store.sessionFor(chatId, threadId);
     const usage = session ? this.facts.get(session.id)?.usage : undefined;
@@ -480,7 +562,7 @@ export class Gateway {
     return Math.max(0, RATE_WINDOW_MS - (now - oldest));
   }
 
-  private enqueue(message: TelegramMessage, slug: string, task: () => Promise<void>) {
+  private enqueue(message: InboundMessage, slug: string, task: () => Promise<void>) {
     if (this.stopping) return;
     const principal = String(message.from?.id);
     const wait = this.rateDelay(principal);
@@ -515,11 +597,11 @@ export class Gateway {
     this.queues.set(slug, entry);
   }
 
-  private route(message: TelegramMessage) {
+  private route(message: InboundMessage) {
     return { chatId: String(message.chat.id), threadId: String(message.message_thread_id ?? "") };
   }
 
-  private respond(message: TelegramMessage, response: Promise<unknown>) {
+  private respond(message: InboundMessage, response: Promise<unknown>) {
     void response
       .catch((error: unknown) => this.reportError(message, error))
       .catch(() => undefined);
@@ -532,11 +614,12 @@ export class Gateway {
     replyMarkup?: Record<string, unknown>,
     principal?: string,
     sessionId?: string,
-  ) {
-    if (this.blockedChats.has(chatId))
-      return { message_id: 0, chat: { id: Number(chatId), type: "private" } } as TelegramMessage;
+  ): Promise<MessageRef> {
+    // Nothing was sent, so nothing can be edited or deleted later; the id is a
+    // stand-in that no caller ever reaches for.
+    if (this.blockedChats.has(chatId)) return { message_id: 0 };
     const clean = this.scrub(text);
-    const sent = await this.telegram.sendText(chatId, clean, threadId, replyMarkup);
+    const sent = await this.channelOf(chatId).sendText(chatId, clean, threadId, replyMarkup);
     this.store.audit(
       "msg.out",
       "sent",
@@ -550,7 +633,11 @@ export class Gateway {
   private async sendResult(session: Session, text: string) {
     if (this.blockedChats.has(session.chatId)) return [];
     const clean = this.scrub(text);
-    const sent = await this.telegram.sendResult(session.chatId, clean, session.threadId);
+    const sent = await this.channelOf(session.chatId).sendResult(
+      session.chatId,
+      clean,
+      session.threadId,
+    );
     this.store.audit(
       "msg.out",
       "sent",
@@ -571,18 +658,45 @@ export class Gateway {
     );
   }
 
-  // Topics need a forum on the group side and `can_manage_topics` on the bot
-  // side. Caraka never asks for admin, so a group without them runs linear —
-  // which is a mode, not a failure.
-  private topicsAvailable(message: TelegramMessage) {
-    if (message.chat.type === "private") return this.config.telegram.topics;
-    // `my_chat_member` is where the right arrives, if the operator ever grants
-    // it. Nothing here asks for it.
-    return message.chat.is_forum === true && this.forumChats.get(String(message.chat.id)) === true;
+  // What a container is remembered by once it has refused a thread. It lives in
+  // `meta`, so nothing is added to the schema, and `caraka doctor` clears it so
+  // the next attempt detects again (`docs/session-model.md`).
+  private static threadsKey(chatId: string) {
+    return `threads.${chatId}`;
+  }
+
+  /**
+   * Three questions, in order: has this container already refused, can the
+   * channel hold threads at all, and does this container say it can. `is_forum`
+   * is the container's own answer; Telegram leaves it unsaid in a DM, where the
+   * bot-wide setting already travelled in `caps.threads`, and adds one more
+   * condition in a group — the right to manage topics, which arrives only on a
+   * membership event. Missing is not the same as refused.
+   */
+  private topicsAvailable(message: InboundMessage) {
+    const chatId = String(message.chat.id);
+    if (this.store.meta(Gateway.threadsKey(chatId)) === "off") return false;
+    if (!this.channelOf(chatId).caps.threads) return false;
+    if (message.chat.type === "private") return message.chat.is_forum !== false;
+    return message.chat.is_forum === true && this.forumChats.get(chatId) !== false;
+  }
+
+  // A container that throws on the first real attempt is a container without
+  // threads. Discord throws where Telegram fails quietly, and neither is
+  // probed with a test thread that would count against the very limit being
+  // tested — the first honest attempt is the detection (K7).
+  private noteThreadsOff(chatId: string, principal: string) {
+    const key = Gateway.threadsKey(chatId);
+    if (this.store.meta(key) === "off") return;
+    this.store.setMeta(key, "off");
+    this.store.audit("threads.detect", "unavailable", { chatId }, principal);
+    void this.sendText(chatId, this.t("session.threadsOff"), "", undefined, principal).catch(
+      () => undefined,
+    );
   }
 
   private async createSession(
-    message: TelegramMessage,
+    message: InboundMessage,
     title: string,
     force: boolean,
     workspace: Workspace,
@@ -591,9 +705,12 @@ export class Gateway {
     let threadId = String(message.message_thread_id ?? "");
     if (!threadId && this.topicsAvailable(message)) {
       try {
-        threadId = String((await this.telegram.createTopic(chatId, title)).message_thread_id);
+        threadId = String(
+          (await this.channelOf(chatId).createTopic(chatId, title)).message_thread_id,
+        );
       } catch {
         threadId = "";
+        this.noteThreadsOff(chatId, String(message.from?.id));
       }
     }
     if (!force) {
@@ -612,7 +729,7 @@ export class Gateway {
 
   // A session never changes workspace (FR-SESS-01: the workspace is part of its
   // identity), so a route whose newest session belongs elsewhere gets a new one.
-  private async sessionFor(message: TelegramMessage, title: string, workspace: Workspace) {
+  private async sessionFor(message: InboundMessage, title: string, workspace: Workspace) {
     const { chatId, threadId } = this.route(message);
     const existing = this.store.sessionFor(chatId, threadId);
     if (existing && this.workspaceOf(existing).slug === workspace.slug) return existing;
@@ -625,7 +742,7 @@ export class Gateway {
       : `[${this.workspaceOf(session).slug} · #${session.id.slice(0, 4)}]\n`;
   }
 
-  private async createOnly(message: TelegramMessage, workspace: Workspace) {
+  private async createOnly(message: InboundMessage, workspace: Workspace) {
     const session = await this.createSession(message, this.t("session.untitled"), true, workspace);
     await this.sendText(
       session.chatId,
@@ -637,7 +754,7 @@ export class Gateway {
     );
   }
 
-  private async runTask(message: TelegramMessage, prompt: string, workspace: Workspace) {
+  private async runTask(message: InboundMessage, prompt: string, workspace: Workspace) {
     const session = await this.sessionFor(message, this.title(prompt), workspace);
     const scope: Scope = { kind: "workspace", id: workspace.path };
     await this.setState(session, "running");
@@ -691,11 +808,15 @@ export class Gateway {
             const now = Date.now();
             if (now - lastEdit < 1500) return;
             lastEdit = now;
-            await this.telegram
+            const header = this.header(session);
+            // The tail, never the head: a growing buffer is read for its last
+            // line, and the channel's own limit decides how much of it fits.
+            const room = this.channelOf(session.chatId).caps.maxChars - header.length;
+            await this.channelOf(session.chatId)
               .editText(
                 session.chatId,
                 progress.message_id,
-                this.scrub(`${this.header(session)}${output.slice(-3500)}`),
+                this.scrub(`${header}${output.slice(-room)}`),
               )
               .catch(() => undefined);
           },
@@ -703,12 +824,15 @@ export class Gateway {
         },
       );
       const cancelled = result.stopReason === "cancelled";
-      await this.setState(session, cancelled ? "cancelled" : "done");
       const memoryLine = await this.finishMemory(prompt, output, compiled, !cancelled, scope);
+      // The closing summary goes first and the state change second, because a
+      // channel that archives a finished thread does it inside `setState` and
+      // a summary posted into an archived thread arrives after the door shut.
       await this.sendResult(
         session,
         `${this.header(session)}${output || this.t(cancelled ? "run.cancelled" : "run.noOutput")}${memoryLine}`,
       );
+      await this.setState(session, cancelled ? "cancelled" : "done");
       this.store.audit(
         "run.finish",
         result.stopReason,
@@ -725,7 +849,9 @@ export class Gateway {
     } finally {
       if (timeout) clearTimeout(timeout);
       this.active.delete(workspace.slug);
-      await this.telegram.deleteMessage(session.chatId, progress.message_id).catch(() => undefined);
+      await this.channelOf(session.chatId)
+        .deleteMessage(session.chatId, progress.message_id)
+        .catch(() => undefined);
     }
   }
 
@@ -754,22 +880,23 @@ export class Gateway {
   // glance, and Telegram shows the start of the name. `deleteForumTopic` takes
   // the whole transcript with it, and `closeForumTopic` is supergroups only —
   // so a finished session is renamed, never closed or deleted.
-  private static readonly GLYPH: Record<string, string> = {
-    running: "\u25B8",
-    awaiting_approval: "\u23F8",
-    done: "\u2713",
-    failed: "\u2717",
-    cancelled: "\u2298",
-  };
-
+  //
+  // The map moved to `status.ts` when the dashboard needed the same glyphs. A
+  // state with no glyph there still returns early, exactly as before.
   private async setState(session: Session, state: string) {
     this.store.setState(session.id, state);
     if (!session.threadId) return;
-    const glyph = Gateway.GLYPH[state];
+    const glyph = STATE_GLYPH[state];
     if (!glyph) return;
-    await this.telegram
+    const channel = this.channelOf(session.chatId);
+    await channel
       .editTopic(session.chatId, session.threadId, `${glyph} ${session.title}`)
       .catch(() => undefined);
+    // A channel that can archive a finished thread does so after the rename,
+    // so the closing summary is already in it. Telegram has no such call and
+    // stops at the rename — the absent half of the same capability.
+    if (state === "done" || state === "failed" || state === "cancelled")
+      await channel.finishThread?.(session.chatId, session.threadId).catch(() => undefined);
   }
 
   private async applyGrantedMode(driver: AgentDriver, agentId: string, workspacePath: string) {
@@ -813,7 +940,7 @@ export class Gateway {
 
   // The memory scope of a chat that is not running anything: its resolved
   // workspace, or the first one while the chat has never chosen.
-  private memoryScopeFor(message: TelegramMessage): Scope {
+  private memoryScopeFor(message: InboundMessage): Scope {
     return { kind: "workspace", id: (this.workspaceForMessage(message) ?? this.home).path };
   }
 
@@ -906,11 +1033,11 @@ export class Gateway {
   // empty thread id — General in a forum, the conversation itself everywhere
   // else (`docs/session-model.md`). Provider errors answer as text, never as an
   // error report: memory stays a degradation, not a failure.
-  private sendMemoryReply(message: TelegramMessage, text: string) {
+  private sendMemoryReply(message: InboundMessage, text: string) {
     return this.sendText(String(message.chat.id), text, "", undefined, String(message.from?.id));
   }
 
-  private async rememberMemory(message: TelegramMessage, argument: string) {
+  private async rememberMemory(message: InboundMessage, argument: string) {
     if (!this.memory) return this.sendMemoryReply(message, this.t("memory.off"));
     if (!argument) return this.sendMemoryReply(message, this.t("memory.rememberUsage"));
     try {
@@ -925,7 +1052,7 @@ export class Gateway {
     }
   }
 
-  private async forgetMemory(message: TelegramMessage, argument: string) {
+  private async forgetMemory(message: InboundMessage, argument: string) {
     if (!this.memory) return this.sendMemoryReply(message, this.t("memory.off"));
     if (!argument) return this.sendMemoryReply(message, this.t("memory.forgetUsage"));
     try {
@@ -939,7 +1066,7 @@ export class Gateway {
     }
   }
 
-  private async listMemory(message: TelegramMessage) {
+  private async listMemory(message: InboundMessage) {
     if (!this.memory) return this.sendMemoryReply(message, this.t("memory.off"));
     try {
       const context = await withTimeout(
@@ -971,6 +1098,20 @@ export class Gateway {
     );
     const reject = request.options.find((option) => option.kind === "reject_once");
     if (!allow) return { outcome: { outcome: "cancelled" } } as PermissionResponse;
+
+    // Approval never falls back to chat text (FR-CHAN-02). A channel that
+    // cannot carry a callback button cannot carry a decision either, so the
+    // request is refused and the refusal is on the record.
+    if (!this.channelOf(session.chatId).caps.buttons) {
+      this.store.audit(
+        "approval.decide",
+        "unsupported",
+        { toolCallId: request.toolCall.toolCallId, channel: this.channelOf(session.chatId).id },
+        session.principal,
+        session.id,
+      );
+      return { outcome: { outcome: "cancelled" } } as PermissionResponse;
+    }
 
     const grant = this.store.activeGrant(this.workspaceOf(session).path);
     if (grant && !isHighRisk(request)) {
@@ -1078,30 +1219,33 @@ export class Gateway {
     return "";
   }
 
-  private async handleCallback(update: TelegramUpdate) {
+  private async handleCallback(update: InboundEvent) {
     const query = update.callback_query;
     if (!query) return;
     const principal = String(query.from.id);
+    const origin = query.message ? String(query.message.chat.id) : "";
+    const channel = this.channelOf(origin);
     // Group support rests on this line and nothing else: a member who is not on
-    // the sender allowlist approves nothing, wherever the button was pressed.
-    if (!this.allowed.has(principal)) {
-      this.store.audit("approval.decide", "denied", {}, principal);
-      await this.telegram.answerCallback(query.id, this.t("callback.denied"), true);
+    // the sender allowlist approves nothing, wherever the button was pressed,
+    // and whatever role that channel gave them.
+    if (!this.allows(origin, principal)) {
+      this.store.audit("approval.decide", "denied", { channel: channel.id }, principal);
+      await channel.answerCallback(query.id, this.t("callback.denied"), true);
       return;
     }
     // Every card here is single-use, so the buttons go the moment an allowlisted
     // principal presses one — trust, group pairing, and approval alike. Doing it
     // once at the fork is what stops a third handler from forgetting again.
     if (query.message)
-      await this.telegram
+      await channel
         .clearKeyboard(String(query.message.chat.id), query.message.message_id)
         .catch(() => undefined);
     // Workspace choice carries no signature: the button only does what typing
     // `@slug` as chat text already could, and only for an allowlisted sender.
-    if (query.data?.startsWith("w:")) return this.chooseWorkspace(query, principal);
+    if (query.data?.startsWith("w:")) return this.chooseWorkspace(channel, query, principal);
     const purpose = query.data ? callbackPurpose(query.data) : null;
-    if (purpose === "t") return this.confirmTrust(query.id, query.data ?? "", principal);
-    if (purpose === "g") return this.confirmGroup(query.id, query.data ?? "", principal);
+    if (purpose === "t") return this.confirmTrust(channel, query.id, query.data ?? "", principal);
+    if (purpose === "g") return this.confirmGroup(channel, query.id, query.data ?? "", principal);
 
     const verified = query.data ? verifyApprovalCallback(this.approvalKey, query.data) : null;
     const message = query.message;
@@ -1109,7 +1253,7 @@ export class Gateway {
       ? this.store.sessionFor(String(message.chat.id), String(message.message_thread_id ?? ""))
       : undefined;
     if (!verified || !session) {
-      await this.telegram.answerCallback(query.id, this.t("callback.invalid"), true);
+      await channel.answerCallback(query.id, this.t("callback.invalid"), true);
       return;
     }
     const approval = this.store.resolveApproval(
@@ -1127,7 +1271,7 @@ export class Gateway {
         principal,
         session.id,
       );
-      await this.telegram.answerCallback(query.id, this.t("callback.used"), true);
+      await channel.answerCallback(query.id, this.t("callback.used"), true);
       return;
     }
     const optionId =
@@ -1144,7 +1288,7 @@ export class Gateway {
       principal,
       session.id,
     );
-    await this.telegram.answerCallback(
+    await channel.answerCallback(
       query.id,
       this.t(verified.decision === "allow" ? "callback.allowed" : "callback.rejected"),
     );
@@ -1154,7 +1298,7 @@ export class Gateway {
   // still receives every permission request, still stops at the high-risk list,
   // and still writes an audit line per action. Claude's own bypass mode has one
   // caller, `caraka trust --bypass`, and it is not reachable from chat.
-  private async offerTrust(message: TelegramMessage, argument: string) {
+  private async offerTrust(message: InboundMessage, argument: string) {
     const { chatId, threadId } = this.route(message);
     const principal = String(message.from?.id);
     const minutes = parseDuration(argument);
@@ -1195,7 +1339,7 @@ export class Gateway {
     );
   }
 
-  private async confirmTrust(queryId: string, data: string, principal: string) {
+  private async confirmTrust(channel: Channel, queryId: string, data: string, principal: string) {
     const verified = verifyApprovalCallback(this.approvalKey, data, "t");
     const request = verified ? this.pendingTrust.get(verified.id) : undefined;
     if (
@@ -1210,12 +1354,12 @@ export class Gateway {
         { reason: "signature, principal, or age" },
         principal,
       );
-      await this.telegram.answerCallback(queryId, this.t("callback.invalid"), true);
+      await channel.answerCallback(queryId, this.t("callback.invalid"), true);
       return;
     }
     this.pendingTrust.delete(verified.id);
     if (verified.decision === "reject") {
-      await this.telegram.answerCallback(queryId, this.t("callback.rejected"));
+      await channel.answerCallback(queryId, this.t("callback.rejected"));
       return;
     }
     const expiresAt = Date.now() + request.minutes * 60_000;
@@ -1233,9 +1377,9 @@ export class Gateway {
       { id, minutes: request.minutes, workspace: request.slug },
       principal,
     );
-    await this.telegram.answerCallback(queryId, this.t("callback.confirmed"));
+    await channel.answerCallback(queryId, this.t("callback.confirmed"));
     await this.sendText(
-      principal,
+      await this.directTo(channel, principal),
       this.t("trust.opened", { minutes: request.minutes }),
       "",
       undefined,
@@ -1243,7 +1387,7 @@ export class Gateway {
     ).catch(() => undefined);
   }
 
-  private async closeTrust(message: TelegramMessage) {
+  private async closeTrust(message: InboundMessage) {
     const { chatId, threadId } = this.route(message);
     const principal = String(message.from?.id);
     // No resolvable workspace means no window this chat could call its own.
@@ -1261,7 +1405,7 @@ export class Gateway {
 
   // Pairing a group is confirmed in the operator's DM, never in the group, so
   // whoever authorises it is provably the same person who owns the DM pairing.
-  private async handleMembership(update: TelegramUpdate) {
+  private async handleMembership(update: InboundEvent) {
     const event = update.my_chat_member;
     if (!event) return;
     const chatId = String(event.chat.id);
@@ -1276,19 +1420,23 @@ export class Gateway {
       chatId,
       event.chat.is_forum === true && event.new_chat_member.can_manage_topics === true,
     );
-    if (event.chat.type === "private" || this.allowedChats.has(chatId)) return;
-    if (!this.allowed.has(String(event.from.id)) || !this.operator) return;
+    if (event.chat.type === "private" || this.allowsChat(chatId)) return;
+    const channel = this.channelOf(chatId);
+    const operator = this.operatorOf(chatId);
+    if (!this.allows(chatId, String(event.from.id)) || !operator) return;
     const callback = approvalCallbacks(this.approvalKey, "g");
     const title = event.chat.title ?? chatId;
     this.pendingGroups.set(callback.id, {
-      principal: this.operator,
+      principal: operator,
       chatId,
       title,
       expiresAt: Date.now() + 10 * 60_000,
     });
     await this.sendText(
-      this.operator,
-      this.t("group.pairing", { title, chatId }),
+      await this.directTo(channel, operator),
+      // The disclosure is the channel's own: what a Discord guild member can
+      // read is not what a Telegram group member can read (AC-7.7).
+      channel.pairingText(title, this.container(chatId)),
       "",
       {
         inline_keyboard: [
@@ -1298,11 +1446,11 @@ export class Gateway {
           ],
         ],
       },
-      this.operator,
+      operator,
     );
   }
 
-  private async confirmGroup(queryId: string, data: string, principal: string) {
+  private async confirmGroup(channel: Channel, queryId: string, data: string, principal: string) {
     const verified = verifyApprovalCallback(this.approvalKey, data, "g");
     const request = verified ? this.pendingGroups.get(verified.id) : undefined;
     if (
@@ -1317,52 +1465,43 @@ export class Gateway {
         { reason: "signature, principal, or age" },
         principal,
       );
-      await this.telegram.answerCallback(queryId, this.t("callback.invalid"), true);
+      await channel.answerCallback(queryId, this.t("callback.invalid"), true);
       return;
     }
     this.pendingGroups.delete(verified.id);
     if (verified.decision === "reject") {
-      await this.telegram.answerCallback(queryId, this.t("callback.rejected"));
+      await channel.answerCallback(queryId, this.t("callback.rejected"));
       return;
     }
-    this.allowedChats.add(request.chatId);
-    this.config = await addAllowedChat(this.config, request.chatId).catch(() => this.config);
+    const container = this.container(request.chatId);
+    this.allowedChats.get(channel.id)?.add(container);
+    this.config = await addAllowedChat(this.config, channel.id, container).catch(() => this.config);
     this.store.audit("chat.pair", "granted", { chatId: request.chatId }, principal);
-    await this.telegram.answerCallback(queryId, this.t("callback.confirmed"));
+    await channel.answerCallback(queryId, this.t("callback.confirmed"));
+    const dm = await this.directTo(channel, principal).catch(() => principal);
     await this.sendText(
-      principal,
+      dm,
       this.t("group.paired", { title: request.title }),
       "",
       undefined,
       principal,
     ).catch(() => undefined);
-    await this.sendText(
-      principal,
-      await this.groupReadiness(request.chatId),
-      "",
-      undefined,
-      principal,
-    ).catch(() => undefined);
+    await this.sendText(dm, await this.readiness(request.chatId), "", undefined, principal).catch(
+      () => undefined,
+    );
   }
 
-  // Pairing is the one moment the operator is watching, and privacy mode means
-  // an ordinary group message never reaches the bot at all. Saying so here is
-  // the difference between a documented boundary and a bot that looks broken.
-  private async groupReadiness(chatId: string) {
-    if (!this.botName)
-      this.botName = await this.telegram
-        .getMe()
-        .then((me) => me.username ?? "")
-        .catch(() => "");
-    return this.t("group.ready", {
-      bot: this.botName || "caraka",
-      topics: this.t(this.forumChats.get(chatId) === true ? "group.topicsOn" : "group.topicsOff"),
-    });
+  // Pairing is the one moment the operator is watching, and every channel holds
+  // something back — Telegram by privacy mode, Discord by the intent it never
+  // asked for. Which one it is belongs to the channel; core only says whether
+  // threads are on here.
+  private readiness(chatId: string) {
+    return this.channelOf(chatId).readiness(this.forumChats.get(chatId) === true);
   }
 
   // `/stop` cancels the run of the sender's own workspace — the session topic
   // it came from, or the chat's resolved workspace — and only that one.
-  private async stopActive(message: TelegramMessage) {
+  private async stopActive(message: InboundMessage) {
     const { chatId, threadId } = this.route(message);
     const workspace = this.workspaceForMessage(message);
     const run = workspace ? this.active.get(workspace.slug) : undefined;
@@ -1393,20 +1532,20 @@ export class Gateway {
     );
   }
 
-  private async status(message: TelegramMessage) {
+  private async status(message: InboundMessage) {
     const { chatId, threadId } = this.route(message);
     const session = this.store.sessionFor(chatId, threadId);
     const base = session
       ? `${this.header(session)}${this.t("status.session", { state: session.state })}`
       : this.t("status.none");
-    // In a group the honest answer to "what is going on" includes what Telegram
-    // will and will not hand us, so `/status` repeats the pairing report.
+    // In a room the honest answer to "what is going on" includes what the
+    // channel will and will not hand us, so `/status` repeats the pairing report.
     const body =
-      message.chat.type === "private" ? base : `${base}\n\n${await this.groupReadiness(chatId)}`;
+      message.chat.type === "private" ? base : `${base}\n\n${await this.readiness(chatId)}`;
     await this.sendText(chatId, body, threadId, undefined, String(message.from?.id), session?.id);
   }
 
-  private help(message: TelegramMessage) {
+  private help(message: InboundMessage) {
     const { chatId, threadId } = this.route(message);
     return this.sendText(
       chatId,
@@ -1417,7 +1556,7 @@ export class Gateway {
     );
   }
 
-  private async reportError(message: TelegramMessage, error: unknown) {
+  private async reportError(message: InboundMessage, error: unknown) {
     const details = this.scrub(error instanceof Error ? error.message : error);
     const { chatId, threadId } = this.route(message);
     this.store.audit("error", "failed", { message: details }, String(message.from?.id));

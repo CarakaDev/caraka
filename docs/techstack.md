@@ -56,10 +56,12 @@ Setiap pilihan di bawah punya alasan dan alternatif yang ditolak. Kriteria utama
 | Telegram | **`fetch` bawaan Node** | v0.1 hanya memakai beberapa method Bot API 10.2. Satu adapter HTTP menangani long-polling, 429, topic, rich result, edit progres, dan callback tanpa framework bot. |
 | WhatsApp (unofficial) | **`@whiskeysockets/baileys`** | Standar de-facto; WebSocket (tanpa Puppeteer), jauh lebih ringan dari `whatsapp-web.js`. |
 | WhatsApp (official) | **Graph API langsung** (`fetch`) | Tidak butuh SDK; webhook + REST sederhana. Memberi jalan keluar dari risiko ban. |
-| Discord | **`discord.js`** | Standar; button, thread, role permission. |
+| Discord | **`fetch` + `WebSocket` bawaan Node** | Dibalik dari `discord.js` pada 8 Agustus 2026, lihat di bawah. |
 | Signal | **`signal-cli`** (proses eksternal, JSON-RPC) | Tidak ada Bot API resmi; jalur yang terbukti. P2. |
 
 Ditolak: `whatsapp-web.js` (Puppeteer = Chromium ±300 MB, melanggar target ukuran); `telegraf` (grammY lebih segar); Evolution API/WAHA (proses tambahan, risiko ban tetap sama).
+
+**Kenapa baris Discord dibalik** (8 Agustus 2026, pekerjaan `discord-v05`, ADR-0008). Baris ini semula memilih `discord.js` dengan alasan "standar; button, thread, role permission". Ketiganya benar dan tak satu pun ternyata butuh pustaka. Yang dipakai adapter Discord adalah satu koneksi gateway dan sekitar sepuluh endpoint REST; `discord.js` membawa cache entitas, sharding, voice, dan builder yang tak satu pun dibaca gateway. Baris Telegram tepat di atas sudah membuktikan bentuknya: 302 baris `fetch` polos menangani long-poll, 429, topic, hasil kaya, edit progres, dan callback tanpa framework, dan REST Discord adalah HTTP JSON yang sama. Node ≥ 22 adalah engine terkunci di `package.json` dan `WebSocket` global ada di sana. Hasilnya adalah dependensi runtime yang tetap empat dan sebuah `import()` malas yang hanya berjalan bila blok `discord:` ada di config. Kalau kelak Caraka butuh voice, sharding, atau cache entitas, keputusan ini ditinjau ulang lewat ADR baru — bukan dengan menambah dependensi diam-diam.
 
 ---
 
@@ -129,13 +131,15 @@ Perkiraan ukuran terpasang:
 | Inti + CLI | ~2 MB |
 | grammY | ~1 MB |
 | Baileys | ~4 MB |
-| discord.js (opsional) | ~5 MB |
+| ~~discord.js (opsional)~~ | ~~~5 MB~~ tidak dipakai; adapter Discord memakai `fetch` + `WebSocket` bawaan, 0 MB |
 | better-sqlite3 | ~3 MB |
 | ACP SDK + MCP SDK | ~1,5 MB |
 | **Total v1.0 (Telegram saja)** | **≈ 7 MB** ✅ target < 15 MB |
 | Titen (proses terpisah, opsional) | dipasang sendiri oleh user; tidak masuk paket kita |
 
-Channel dan provider dimuat **secara malas** — pengguna yang hanya memakai Telegram tidak pernah memuat Baileys ataupun discord.js.
+Angka v0.5 terukur: empat dependensi runtime, dan menambahkan Discord menambah nol. Satu berkas ikut ke tarball di luar tabel ini, yaitu `assets/dashboard/htmx.min.js` (51 KB, di-vendor, lihat §9).
+
+Channel dan provider dimuat **secara malas** — pengguna yang hanya memakai Telegram tidak pernah memuat Baileys. Sampai v0.4 kalimat ini adalah aspirasi, karena hanya ada satu channel untuk dimuat. Sejak v0.5 ia terbangun: modul Discord di-`import()` hanya bila blok `discord:` ada di config, dan sebuah test memeriksa bahwa config tanpa blok itu tidak pernah menyentuhnya.
 
 ---
 

@@ -50,8 +50,14 @@ Lewat ACP: 28+ agent termasuk Claude Code, Codex, Gemini CLI, Cursor, Cline, Goo
 **Bisa pakai lebih dari satu agent?**
 Bisa. Semuanya didaftarkan, ganti dengan `/switch <agent>` per workspace.
 
-**Kenapa cuma Telegram?**
-Bot API resmi tanpa risiko ban, long-polling sehingga tidak ada port terbuka, dan satu-satunya platform yang mengizinkan bot membuat topic di chat pribadi tanpa hak admin. Itu yang membuat sesi ber-tab mungkin tanpa setup apa pun. WhatsApp dan Discord menyusul.
+**Kenapa Telegram lebih dulu?**
+Bot API resmi tanpa risiko ban, long-polling sehingga tidak ada port terbuka, dan satu-satunya platform yang mengizinkan bot membuat topic di chat pribadi tanpa hak admin. Itu yang membuat sesi ber-tab mungkin tanpa setup apa pun.
+
+**Channel apa saja yang sudah jalan?**
+Telegram dan, sejak v0.5, Discord: satu public thread per sesi di sebuah text channel, glif state di nama thread, dan kartu approval bertombol yang tetap terikat principal pemilik sesi. Sebuah role Discord tidak pernah memberi otoritas approval. Keduanya memakai interface `Channel` yang sama, dan core tidak tahu channel mana yang menjawab. WhatsApp menyusul di Fase 6, Signal setelahnya.
+
+**Isi pesan biasa di Discord tidak sampai ke bot?**
+Betul, dan itu disengaja. Caraka tidak meminta intent `MESSAGE_CONTENT` yang punya privilege, dengan alasan yang sama seperti privacy mode Telegram tetap menyala: bot ini tidak perlu membaca percakapan orang untuk mengerjakan tugas. Yang sampai adalah slash command dan tombol pada kartu yang Caraka kirim sendiri. Kalimat itu ditampilkan sekali di channel yang baru dipasangkan, bukan dikubur di sini.
 
 **Kenapa satu sesi jadi satu topic?**
 Di terminal kamu buka tab. Chat memaksa lima pekerjaan ke satu aliran. Topic mengembalikan model tab, dan warna ikonnya membuat daftar topic jadi papan status. Detail di `session-model.md`.

@@ -31,10 +31,10 @@
 
 | ID | P | Kebutuhan |
 |---|---|---|
-| FR-CHAN-01 | P0 | **Telegram (Bot API 10.2) adalah satu-satunya channel di v1.0.** Discord & WhatsApp P1, Signal P2. |
+| FR-CHAN-01 | P0 | **Telegram (Bot API 10.2) adalah channel pertama.** Baris ini dulu menulis "satu-satunya channel di v1.0"; sejak v0.5 Discord terpasang sebagai channel kedua lewat interface yang sama (`docs/adr/0008-discord-sebagai-channel-kedua.md`). WhatsApp P1, Signal P2. |
 | FR-CHAN-01b | P0 | Telegram memakai **long-polling** (bukan webhook) sehingga gateway tetap dapat `bind 127.0.0.1` tanpa port terbuka atau tunnel. |
 | FR-CHAN-01c | P0 | Update yang memuat field tak dikenal **wajib diproses, tidak boleh dijatuhkan** — ini penyebab kerusakan paling umum saat versi Bot API naik. |
-| FR-CHAN-02 | P0 | Semua channel mengimplementasikan interface `Channel` yang sama; capability opsional (`edit`, `askChoice`, `sendFile`, `setTyping`) dideklarasikan, dan core melakukan **fallback anggun** bila tidak tersedia. Permission ditolak bila channel tidak punya callback pilihan; approval tidak pernah berpindah ke teks chat. |
+| FR-CHAN-02 | P0 | Semua channel mengimplementasikan interface `Channel` yang sama (`src/core/channel.ts`) dan mendeklarasikan `caps`, dan core melakukan **fallback anggun** bila sebuah kemampuan absen. Terpasang sejak v0.5: `threads`, `buttons`, `maxChars` — tiga yang punya pembaca di core. Permission ditolak bila `caps.buttons` bernilai false; approval tidak pernah berpindah ke teks chat. |
 | FR-CHAN-03 | P0 | WhatsApp mendukung dua provider yang dapat dipilih: `baileys` dan `cloud-api`, dengan konfigurasi berbeda tapi perilaku core identik. |
 | FR-CHAN-04 | P0 | Inbound: teks, gambar, dokumen, voice note (path file lokal disediakan ke agent). Voice note ditranskripsi hanya bila user mengonfigurasi transcriber. |
 | FR-CHAN-05 | P0 | Outbound: teks (dengan code block), file, dan gambar. Konvensi lampiran: baris `MEDIA:<path-atau-url>` yang berdiri sendiri diekstrak core dan dikirim sebagai lampiran. |
@@ -42,7 +42,7 @@
 | FR-CHAN-07 | P0 | Sanitizer keluaran per channel (Telegram MarkdownV2 escaping, WhatsApp formatting terbatas, Discord markdown). |
 | FR-CHAN-08 | P0 | Indikator "sedang mengetik/bekerja" saat run aktif, bila channel mendukung. |
 | FR-CHAN-09 | P1 | Grup: default `requireMention: true`; balasan hanya di thread/reply asal. |
-| FR-CHAN-10 | P1 | Discord: satu thread per sesi. |
+| FR-CHAN-10 | P1 | Discord: satu thread per sesi. Terpasang di v0.5. |
 | FR-CHAN-11 | P0 | Rate limit outbound per channel + jitter; antrean bila melebihi. |
 | FR-CHAN-12 | P0 | Reconnect otomatis dengan backoff eksponensial; status koneksi terekspos ke `doctor` dan log. |
 
@@ -57,7 +57,7 @@
 | FR-AUTH-03 | P0 | Pairing disetujui **di luar chat**: `caraka pair approve <channel> <code>` dari terminal lokal. |
 | FR-AUTH-04 | P0 | Tiga mode kebijakan per principal per workspace: `read-only`, `assisted`, `trusted`. Default `assisted` untuk DM, `read-only` untuk grup. |
 | FR-AUTH-05 | P0 | Mode `trusted` **kedaluwarsa** (batas 60 menit). Jendela trust Caraka boleh dibuka dari chat lewat callback bertanda tangan sekali pakai, tidak pernah lewat teks. Mode `bypassPermissions` milik Claude hanya dari terminal. Lihat `security.md` §5. |
-| FR-AUTH-06 | P1 | Discord: pemetaan role → mode kebijakan. |
+| FR-AUTH-06 | P1 | Discord: pemetaan role → mode kebijakan. **Belum dibangun di v0.5**, dan bukan karena kekurangan waktu: gerbang mode belum ada di jalur run untuk channel mana pun, jadi memetakan role ke `read-only` akan menjanjikan penolakan tulis yang tidak terjadi. Yang dikunci sekarang adalah arahnya: sebuah role tidak pernah memberi otoritas approval (FR-APPR-03 tetap berlaku, `docs/adr/0008-discord-sebagai-channel-kedua.md`). |
 | FR-AUTH-07 | P0 | Semua keputusan otorisasi tercatat di audit log. |
 
 ---
@@ -91,7 +91,7 @@
 | FR-TOPIC-07 | P0 | Topic **General** adalah ruang kontrol: memulai sesi baru, perintah global, dan tautan ke sesi yang dibuat. General tidak pernah ditutup atau dihapus. |
 | FR-TOPIC-08 | P0 | Housekeeping: hapus topic `done` setelah 7 hari (dapat diatur; `0` = jangan pernah); batas **5 sesi aktif** bersamaan — melebihi itu tawarkan menutup yang terlama; `/pin` mengecualikan dari auto-hapus. |
 | FR-TOPIC-09 | P0 | **Deteksi kemampuan wajib.** `createForumTopic` di supergroup **gagal diam-diam** bila forum mode mati. Sistem mendeteksi sekali saat startup, menyimpan `container.supports_threads`, dan jatuh ke **mode linear** (header `[ws · #id]` di setiap balasan) tanpa gagal keras. |
-| FR-TOPIC-10 | P1 | Discord memetakan konsep yang sama ke thread dengan `auto_archive_duration: 10080`, dan **wajib** menghormati batas ±50 thread aktif per channel / 1.000 per guild dengan menutup sesi lama secara proaktif. |
+| FR-TOPIC-10 | P1 | Discord memetakan konsep yang sama ke thread dengan `auto_archive_duration: 10080`. Terpasang di v0.5. Batas ±50 thread aktif per channel / 1.000 per guild tidak ditegakkan dengan menutup sesi lama secara proaktif: thread yang diarsipkan tetap dihitung Discord, jadi sapuan tidak membeli kuota. Sesi yang selesai diarsipkan saat itu juga, dan batasnya tiba sebagai error pembuatan thread yang jatuh ke mode linear (FR-TOPIC-09). |
 | FR-TOPIC-11 | P0 | WhatsApp dan channel tanpa thread memakai mode linear — fungsi identik, hanya lebih padat. |
 
 ---

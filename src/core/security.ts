@@ -7,6 +7,15 @@ const fixedSecretPatterns: Array<[RegExp, string]> = [
   ],
   [/\b\d{6,12}:[A-Za-z0-9_-]{30,}\b/g, "[REDACTED]"],
   [/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g, "[REDACTED]"],
+  // A Discord bot token is three base64url parts joined by dots — the bot's own
+  // id, a timestamp, and a signature — and it does not start with `eyJ`, so the
+  // JWT pattern above never sees it. Lengths alone are not enough of a shape:
+  // `django_rest_framework_ext.models.serializer_helper_functions` fits them,
+  // and a scrubber that eats ordinary dotted identifiers corrupts every message
+  // and every log line it touches. The first part is base64 of a snowflake, so
+  // it always begins with M, N, or O and runs 24 to 26 characters, and the
+  // timestamp part is exactly 6.
+  [/\b[MNO][A-Za-z0-9_-]{22,25}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{25,}\b/g, "[REDACTED]"],
   [/\b(?:sk-ant-|sk-proj-|ghp_|github_pat_|xox[baprs]-|AKIA)[A-Za-z0-9_-]{12,}\b/g, "[REDACTED]"],
   [
     /\b([A-Z][A-Z0-9_]*(?:TOKEN|SECRET|PASSWORD|API_KEY|PRIVATE_KEY))\s*=\s*([^\s]+)/g,

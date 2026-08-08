@@ -4,7 +4,7 @@ Instructions for coding agents working on this repository. Human contributors sh
 
 ## What this project is
 
-Caraka is a bridge from Telegram to the coding agent already installed on the user's machine. It has no reasoning loop, no execution tools, no model provider, and no plugin marketplace, on purpose.
+Caraka is a bridge from a chat app to the coding agent already installed on the user's machine. Telegram came first and Discord landed in v0.5; both speak the same `Channel` contract. It has no reasoning loop, no execution tools, no model provider, and no plugin marketplace, on purpose.
 
 Before writing code, read `docs/blueprint.md` and the phase you are working in from `docs/roadmap.md`.
 
@@ -22,12 +22,14 @@ Two more constraints shape every review:
 ## Repository map
 
 ```
-src/core/        identity router topics policy approval runner memory render audit
-src/channels/    telegram/ (v1) discord/ whatsapp/ signal/
+src/core/        channel.ts (the contract) gateway.ts security.ts status.ts driver.ts
+src/channels/    one flat file per channel: telegram.ts discord.ts (whatsapp, signal later)
 src/drivers/     acp/ cli/ mcp/
 src/memory/      titen/ local/ mcp/
 src/store/       db.ts migrations/
+src/dashboard/   the read-only local page: server.ts queries.ts render.ts
 presets/agents/  one YAML per coding agent
+assets/dashboard/ the page's CSS and the vendored htmx, shipped in the package
 docs/            specification, research, brand
 design/mockups/  the ten .dc.html design comps — the visual source of truth
 site/            the caraka.dev website (Astro, static)
@@ -50,7 +52,7 @@ Nothing is "done" because it looks done. The gate is `npm run lint`, `npm run ty
 
 ## Hard rules
 
-1. **Core never branches on `channel.id`.** Read `channel.caps` and degrade. Adding an `if (channel.id === "telegram")` to core is a design error, not a shortcut.
+1. **Core never branches on `channel.id`.** Read `channel.caps` and degrade. Adding an `if (channel.id === "telegram")` to core is a design error, not a shortcut. Using the id as identity — a map key, a stored route prefix — stays fine; a test greps for the comparison and fails on it. Until v0.5 there was one channel and the rule passed inside a vacuum, so the grep proved nothing.
 2. **Approval can never arrive as chat text.** Signed, single-use callback with a TTL, bound to `(principal, session, request)`. This single rule is what stops a prompt injection approving itself.
 3. **`trusted` mode is terminal-only and must expire.** Enforced by a database constraint, not by convention.
 4. **Secrets are scrubbed before they touch disk or a chat.** The outbound scrubber runs on every message and every log line.

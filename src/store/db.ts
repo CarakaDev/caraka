@@ -257,6 +257,13 @@ export class Store {
       .run(key, value, value);
   }
 
+  /** Drop every `meta` row under a prefix, and say how many went. */
+  clearMeta(prefix: string) {
+    return Number(
+      this.db.prepare("DELETE FROM meta WHERE key LIKE ?").run(`${prefix}%`).changes ?? 0,
+    );
+  }
+
   createSession(input: Omit<Session, "id" | "agentSessionId" | "state">) {
     const now = Date.now();
     const session: Session = {

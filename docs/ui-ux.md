@@ -155,17 +155,21 @@ Baris terakhir setiap topic selalu menjelaskan apa yang terjadi — sehingga daf
 
 ## 5. Aturan format lintas channel
 
+Kolom Telegram dan Discord adalah yang terpasang sejak v0.5; kolom WhatsApp masih rencana. Sel yang belum terbangun ditandai di bawah tabel.
+
 | Aspek | Telegram | Discord | WhatsApp |
 |---|---|---|---|
-| Sesi | forum topic (DM, tanpa admin) | thread (auto-arsip 7 hari) | linear + header `[ws · #id]` |
-| Status sesi | warna ikon topic | prefiks nama | prefiks nama |
-| Hasil | `sendRichMessage` (tabel, code, collapsible) | embed + code block | teks + file |
-| Approval | tombol berwarna, terikat principal | button/select + role | kode teks `ok A7F3` |
-| Progres | edit pesan / rich draft | edit pesan | maks 1 update / 30 dtk |
-| Batas | 32.768 karakter | 2.000 | praktis pendek |
-| Diff panjang | collapsible → file bila > batas | file | file |
+| Sesi | forum topic (DM, tanpa admin) | public thread di text channel, `auto_archive_duration` 10080 mnt | linear + header `[ws · #id]` |
+| Status sesi | glif di nama topic (warna ikon dikunci saat dibuat) | glif di nama thread | prefiks nama |
+| Hasil | `sendRichMessage`, jatuh ke pesan biasa bila ditolak | pesan markdown biasa | teks + file |
+| Approval | tombol, terikat principal | tombol, terikat principal — role tidak pernah mengotorisasi (ADR-0008) | kode teks `ok A7F3` |
+| Progres | edit pesan, ekor 3.900 karakter | edit pesan, ekor sepanjang `caps.maxChars` | maks 1 update / 30 dtk |
+| Batas | 30.000 karakter per rich message, 4.096 per pesan biasa | 2.000 | praktis pendek |
+| Diff panjang | dipecah pada batas block | dipecah; lewat tiga pecahan dikirim sebagai satu berkas `.md` | file |
 
-Aturan keras: **code block tidak pernah terpotong di tengah.** Melebihi batas → potong di batas block, sisanya sebagai file.
+Aturan keras: **code block tidak pernah terpotong di tengah.** Melebihi batas → potong di batas block, dan pesan berikutnya membuka pagarnya kembali. Satu fungsi melakukannya untuk kedua channel (`splitMarkdown` di `src/core/channel.ts`), jadi tidak ada channel yang bisa memotongnya dengan cara sendiri. Ambang tiga pecahan pada baris Discord adalah keputusan keterbacaan, bukan batas platform: dinding empat pesan lebih sulit dibaca daripada satu lampiran.
+
+Dua sel di tabel ini dulu menjanjikan lebih dari yang ada. Embed Discord tidak dibangun: keluaran agent adalah markdown dan Discord membacanya apa adanya, jadi lapisan embed akan menjadi permukaan tanpa pembaca — itu juga yang membuat FR-CHAN-07 terpenuhi tanpa lapisan escape. "button/select + role" pada baris approval adalah cara merender, bukan cara mengotorisasi, dan kata `role` dihapus dari baris itu supaya tidak terbaca sebagai otoritas.
 
 ---
 

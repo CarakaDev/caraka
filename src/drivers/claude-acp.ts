@@ -8,10 +8,17 @@ import { translator, type Translate } from "../i18n.js";
 /** How to spawn an ACP adapter, taken from a preset's `acp:` block. */
 export type AcpSpawn = { command: string; args: string[]; env: Record<string, string> };
 
+/**
+ * The environment a spawned agent inherits, with everything Caraka named to
+ * itself taken out. A prefix rather than a list of one: the token of the next
+ * channel would otherwise leak through the hole the last one left open, and
+ * both drivers spawn through here (`drivers/cli.ts` too), so one filter closes
+ * both.
+ */
 export function claudeEnvironment(source: NodeJS.ProcessEnv = process.env) {
-  const env = { ...source };
-  delete env.CARAKA_TELEGRAM_TOKEN;
-  return env;
+  return Object.fromEntries(
+    Object.entries(source).filter(([key]) => !key.startsWith("CARAKA_")),
+  ) as NodeJS.ProcessEnv;
 }
 
 export class ClaudeAcp implements AgentDriver {

@@ -71,20 +71,19 @@ type OutboundMessage = {
 
 ### 2.2 Channel
 
+Bentuk lengkapnya ada di `src/core/channel.ts` dan dikutip utuh di `docs/api.md` §4. Sejak 8 Agustus 2026 (pekerjaan `discord-v05`) ia dinamai dari permukaan yang benar-benar dipakai gateway, bukan dari sketsa `onMessage`/`onChoice`/`send`:
+
 ```ts
 interface Channel {
   readonly id: ChannelId;
-  readonly caps: {
-    buttons: boolean; edit: boolean; files: boolean;
-    typing: boolean; threads: boolean; maxChars: number;
-  };
-  start(): Promise<void>;
-  stop(): Promise<void>;
-  onMessage(cb: (m: InboundMessage) => void): void;
-  onChoice(cb: (c: ChoiceCallback) => void): void;   // penekanan tombol
-  send(chatId: string, m: OutboundMessage): Promise<MessageRef>;
+  readonly caps: { threads: boolean; buttons: boolean; maxChars: number };
+  start?(signal?: AbortSignal): Promise<void>;
+  updates(signal: AbortSignal): AsyncGenerator<InboundEvent>;
+  // …kirim, edit, hapus, thread, callback: daftar penuhnya di api.md §4
 }
 ```
+
+Update mengalir sebagai async generator yang di-`for await` gateway dalam satu baris. Discord mendorong lewat WebSocket dan Telegram menarik lewat long-poll; jembatan dari dorongan ke generator adalah antrean beberapa baris di dalam adapter, dan itu lebih kecil daripada menulis ulang loop gateway.
 
 Core **tidak pernah** bercabang berdasarkan `channel.id`. Ia hanya membaca `caps` dan menurunkan kualitas secara anggun. Ini satu-satunya cara menjaga jumlah channel tidak meledakkan kompleksitas.
 
@@ -288,21 +287,19 @@ Aturan dependensi satu arah: `channels → core ← drivers`. Channel tidak pern
 
 > Spesifikasi perilaku ada di `docs/session-model.md`; ini bagian teknisnya.
 
-### Perluasan interface `Channel`
+### Bagian thread pada interface `Channel`
 
 ```ts
-caps: { buttons, edit, files, typing, threads, rich, ephemeral, maxChars }
+caps: { threads, buttons, maxChars }
 
-// opsional — hanya bila caps.threads
-createThread?(chatId, spec: ThreadSpec): Promise<ThreadRef>;
-editThread?(ref: ThreadRef, patch: Partial<ThreadSpec>): Promise<void>;
-closeThread?(ref: ThreadRef): Promise<void>;
-deleteThread?(ref: ThreadRef): Promise<void>;
-
-type ThreadSpec = { title: string; iconColor?: number; iconEmojiId?: string };
+createTopic(chatId, name): Promise<ThreadRef>;
+editTopic(chatId, threadId, name): Promise<unknown>;
+finishThread?(chatId, threadId): Promise<unknown>;   // absen = berhenti di rename
 ```
 
-`OutboundMessage` bertambah tiga field opsional: `threadRef?` (topic tujuan), `richBlocks?` (bila `caps.rich`), `ephemeralFor?` (principal id, bila `caps.ephemeral`).
+`finishThread` opsional karena kemampuannya benar-benar berbeda: `closeForumTopic` Telegram hanya berlaku di supergroup dan `deleteForumTopic` ikut membawa transkripnya, jadi sesi Telegram berhenti di penggantian nama; Discord menyetel `archived: true`. Core menandai sesi selesai dengan cara yang sama di kedua kasus.
+
+Lima kemampuan yang dulu ditulis di sini — `edit`, `files`, `typing`, `rich`, `ephemeral` — tetap rencana. Tidak satu pun punya pembaca di core, dan `docs/api.md` §4 sendiri mensyaratkan deklarasi yang jujur.
 
 Core tetap **tidak pernah** bercabang berdasarkan `channel.id` — ia hanya membaca `caps` lalu menurunkan kualitas secara anggun.
 
@@ -316,7 +313,9 @@ sweep()                    → hapus topic done yang lewat close_after; tegakkan
 detect(container)          → uji sekali apakah pembuatan topic berhasil → supports_threads
 ```
 
-**Deteksi wajib.** `createForumTopic` di supergroup **gagal diam-diam** bila forum mode mati. `detect()` membuat satu topic uji lalu menghapusnya; hasilnya disimpan di `container.supports_threads` dan dipakai selamanya sampai `doctor` menyegarkannya.
+**Deteksi wajib.** `createForumTopic` di supergroup **gagal diam-diam** bila forum mode mati, jadi di Telegram deteksinya adalah satu topic uji yang dibuat lalu dihapus.
+
+Discord tidak butuh bentuk itu dan tidak memakainya: ia melempar error saat izin kurang atau batas thread tercapai, sehingga percobaan nyata yang pertama sudah menjadi deteksinya — dan sebuah thread uji hanya akan menambah satu thread ke batas yang sedang diuji. Hasilnya disimpan per container di tabel `meta` dan dihapus oleh `doctor` supaya percobaan berikutnya mendeteksi ulang.
 
 ### Batas per platform
 
@@ -324,7 +323,7 @@ detect(container)          → uji sekali apakah pembuatan topic berhasil → su
 |---|---|
 | Telegram (DM) | maks 5 sesi aktif; hapus `done` setelah 7 hari |
 | Telegram (supergroup) | idem + verifikasi `can_manage_topics` |
-| Discord | `auto_archive_duration: 10080`; jaga < 50 thread aktif/channel dan < 1.000/guild dengan menutup yang terlama |
+| Discord | `auto_archive_duration: 10080`; batas < 50 thread aktif/channel dan < 1.000/guild tidak ditegakkan di sini — thread terarsip tetap dihitung Discord, jadi batasnya tiba sebagai error pembuatan thread (`done/discord-v05/spec.md` AC-4.6) |
 | WhatsApp / tanpa thread | mode linear: setiap balasan berprefiks `[ws · #id]` |
 
 ---

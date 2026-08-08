@@ -141,27 +141,57 @@ Konten yang dikembalikan disuntik ke prompt dengan penanda data, bukan instruksi
 
 Menambah channel berarti mengimplementasikan satu interface dan mendeklarasikan kemampuan dengan jujur.
 
+Bagian ini dulu menggambar `onMessage`/`onChoice`/`send` dan delapan `caps`; gateway tidak pernah memanggil bentuk itu. Sejak 8 Agustus 2026 (pekerjaan `discord-v05`) kontraknya milik `src/core/channel.ts`, dinamai dari method yang benar-benar dipanggil, dan yang di bawah ini adalah salinannya:
+
 ```ts
+type ChannelId = string;
+type ChannelCaps = { threads: boolean; buttons: boolean; maxChars: number };
+type MessageRef = { message_id: number | string };
+type ThreadRef = { message_thread_id: number | string };
+type ChannelCommand = { command: string; description: string };
+
 interface Channel {
   readonly id: ChannelId;
-  readonly caps: {
-    buttons: boolean; edit: boolean; files: boolean; typing: boolean;
-    threads: boolean; rich: boolean; ephemeral: boolean; maxChars: number;
-  };
-  start(): Promise<void>;
-  stop(): Promise<void>;
-  onMessage(cb: (m: InboundMessage) => void): void;
-  onChoice(cb: (c: ChoiceCallback) => void): void;
-  send(chatId: string, m: OutboundMessage): Promise<MessageRef>;
+  readonly caps: ChannelCaps;
 
-  createThread?(chatId: string, t: ThreadSpec): Promise<ThreadRef>;
-  editThread?(ref: ThreadRef, t: Partial<ThreadSpec>): Promise<void>;
-  closeThread?(ref: ThreadRef): Promise<void>;
-  deleteThread?(ref: ThreadRef): Promise<void>;
+  start?(signal?: AbortSignal): Promise<void>;
+  updates(signal: AbortSignal): AsyncGenerator<InboundEvent>;
+
+  setMyCommands(commands: ChannelCommand[], scopeId: string): Promise<unknown>;
+
+  sendText(chatId: string, text: string, threadId?: string,
+           replyMarkup?: Record<string, unknown>): Promise<MessageRef>;
+  sendResult(chatId: string, markdown: string, threadId?: string): Promise<MessageRef[]>;
+  editText(chatId: string, messageId: number | string, text: string): Promise<unknown>;
+  deleteMessage(chatId: string, messageId: number | string): Promise<unknown>;
+
+  createTopic(chatId: string, name: string): Promise<ThreadRef>;
+  editTopic(chatId: string, threadId: string, name: string): Promise<unknown>;
+  finishThread?(chatId: string, threadId: string): Promise<unknown>;
+
+  answerCallback(id: string, text: string, alert?: boolean): Promise<unknown>;
+  clearKeyboard(chatId: string, messageId: number | string): Promise<unknown>;
+
+  getMe(): Promise<{ username?: string }>;
+  direct?(principal: string): Promise<string>;
+  pairingText(title: string, containerId: string): string;
+  readiness(threads: boolean): Promise<string>;
 }
 ```
 
-**Aturan yang paling sering dilanggar kontributor:** core tidak pernah bercabang berdasarkan `channel.id`. Ia membaca `caps` dan menurunkan kualitas. Menambahkan `if (channel.id === "telegram")` ke core adalah kesalahan desain, bukan jalan pintas.
+`InboundEvent` mengisi tepat satu dari tiga slot: `message`, `callback_query`, atau `my_chat_member`. Bentuk ketiganya ada di berkas yang sama.
+
+Empat catatan yang menjelaskan kenapa bentuknya begini:
+
+**Update adalah generator, bukan pendaftaran callback.** `Gateway.run()` menggerakkannya dengan satu `for await`. Channel yang mendorong menjembatani dorongannya ke generator di dalam adapternya sendiri, dan itu beberapa baris antrean.
+
+**`caps` berisi tiga field karena tiga itulah yang punya pembaca.** `threads` menentukan sesi punya thread sendiri atau jalan linear, `buttons` menentukan kartu approval boleh dikirim (tanpanya izin ditolak, tidak pernah pindah ke teks), `maxChars` menentukan panjang potongan ekor buffer progres. `edit`, `files`, `typing`, `rich`, dan `ephemeral` adalah rencana; mendeklarasikannya sekarang berarti menjanjikan sesuatu yang tidak ada yang memeriksa.
+
+**Method bertanda `?` adalah kemampuan yang benar-benar berbeda antar platform.** `finishThread` absen di Telegram karena `closeForumTopic` hanya berlaku di supergroup dan `deleteForumTopic` ikut menghapus transkrip; sesi Telegram berhenti di penggantian nama. `direct` absen di Telegram karena DM dikunci id pengirimnya sendiri, sementara Discord harus membuka channelnya dulu.
+
+**`pairingText` dan `readiness` mengembalikan kalimat, bukan bendera.** Apa yang terbaca anggota sebuah guild Discord bukan apa yang terbaca anggota grup Telegram, dan yang tidak sampai ke bot berbeda pula (privacy mode di satu sisi, intent tanpa privilege di sisi lain). Kata-katanya milik channel supaya core tidak perlu tahu channel mana yang menjawab.
+
+**Aturan yang paling sering dilanggar kontributor:** core tidak pernah bercabang berdasarkan `channel.id`. Ia membaca `caps` dan menurunkan kualitas. Menambahkan `if (channel.id === "telegram")` ke core adalah kesalahan desain, bukan jalan pintas. `channel.id` sendiri sah dipakai sebagai identitas — kunci peta allowlist dan prefiks rute tersimpan — dan sebuah test menjaga batas itu dengan grep yang gagal bila sebuah perbandingan muncul di `src/core/`.
 
 Mendeklarasikan `caps` yang tidak dimiliki lebih buruk daripada mendeklarasikan sedikit: fallback anggun hanya bekerja kalau deklarasinya jujur.
 
