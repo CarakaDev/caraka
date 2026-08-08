@@ -25,7 +25,13 @@ import {
   WhatsApp,
   type WhatsAppOptions,
 } from "../src/channels/whatsapp.js";
-import { type Channel, gatewayCommands, splitMarkdown } from "../src/core/channel.js";
+import {
+  gatewayCommands,
+  splitMarkdown,
+  type Channel,
+  type InboundEvent,
+  type InboundMessage,
+} from "../src/core/channel.js";
 import { Gateway } from "../src/core/gateway.js";
 import {
   agentChecks,
@@ -50,11 +56,19 @@ import {
   PANEL_PATHS,
   resolveBind,
 } from "../src/dashboard/server.js";
-import { channelBlocks, defaultConfig, loadConfig, saveConfig, workspaces } from "../src/config.js";
+import {
+  channelBlocks,
+  defaultConfig,
+  loadConfig,
+  saveConfig,
+  workspaces,
+  type Workspace,
+} from "../src/config.js";
 import type { AgentUpdate, DriverFor } from "../src/core/driver.js";
 import { discoverAgents, type Discovery } from "../src/discovery.js";
 import {
   APPROVAL_CODE_LENGTH,
+  APPROVAL_CODE_REPLY,
   approvalCallbacks,
   callbackPurpose,
   createScrubber,
@@ -323,21 +337,96 @@ const fuzzFragments = [
   "",
 ];
 
-test("a seeded corpus of hostile text breaks none of the three parsers", async () => {
-  // `docs/security.md` §13, box three. Three seams read text nobody wrote by
-  // hand: the splitter cuts what goes out, the memory block builder wraps what
-  // a provider returned, and the callback verifier reads what arrived off the
-  // wire. None of them may throw, and none may hand back something the next
-  // stage cannot parse.
+// What inbound text carries that outbound text never does: a command word, a
+// route, a decision word, and the dress each of those can arrive in. The
+// lookalikes are the interesting half. `ｓｔｏｐ` and `ＡＢＣＤ` are NFKC-equal
+// to `stop` and `ABCD`, `АВСD` is three Cyrillic letters wearing a Latin one,
+// and U+212A and U+017F case-fold to `k` and `s` under a `u` flag nobody set —
+// so each of them reads to a person as something no reader here may accept.
+const inboundFragments = [
+  "/stop",
+  "/yolo",
+  "/ingat",
+  "/switch",
+  "/new",
+  // The mention a group adds to every command, with and without an argument
+  // behind it. It belongs to the command token, so neither of these may leave
+  // any of it in the argument.
+  "/status@caraka_test_bot",
+  "/yolo@caraka_test_bot 30",
+  "/",
+  "//",
+  "/@",
+  "@caraka_test_bot",
+  "@main",
+  "@docs.v2-1",
+  "@__proto__",
+  "@",
+  // Near misses on the two configured slugs: a prefix, a suffix, a different
+  // case, and a name off a prototype. A lookup that stopped being an exact
+  // match would route one of these somewhere the operator never wrote down.
+  "@mai",
+  "@main2",
+  "@MAIN",
+  "@docs",
+  "@constructor",
+  "ok",
+  "no",
+  "OK",
+  ":",
+  "ABCD",
+  // Whole decisions, so the reader is exercised and not only refused. None of
+  // these is the code on any card below; a round that appends anything to one
+  // is the other case worth having, a code with something after it.
+  "ok ABCD",
+  "no Q7T2",
+  "ok:ABCD",
+  " ",
+  "\t",
+  "\n",
+  // Escapes, the way the list above writes what has no glyph: a NUL, a bell,
+  // and two letters that are the `K` and the `s` beside them to every eye and
+  // to no regex.
+  "\u0000",
+  "\u0007",
+  "ｓｔｏｐ",
+  "ＡＢＣＤ",
+  "АВСD",
+  "\u212A",
+  "\u017F",
+];
+
+test("a seeded corpus of hostile text breaks none of the seven parsers", async () => {
+  // `docs/security.md` §13, box three. Seven seams read text nobody wrote by
+  // hand. Three of them face outward or verify what a button carried: the
+  // splitter cuts what goes out, the memory block builder wraps what a provider
+  // returned, and the callback verifier reads what arrived off the wire. Four
+  // face the chat itself: the command reader, the route reader, the decision
+  // reader, and the body reader on the WhatsApp webhook. None of them may
+  // throw, none may hand back something the next stage cannot parse, and the
+  // last two may not read a decision or a route out of text that carries
+  // neither.
   const root = await mkdtemp(join(tmpdir(), "caraka-fuzz-"));
   const scrub = createScrubber();
   const store = new Store(join(root, "test.db"), scrub);
+  // Buttons off, because a card's short code is the only way a decision arrives
+  // on a channel that has none, and reading that code is one of the seams
+  // below. `sendText` answers and drops it: what core says back is not what this
+  // corpus is about, but a channel that cannot answer at all would swallow the
+  // failures on their way past it.
   const channel = {
     id: "telegram",
-    caps: { threads: false, buttons: true, edit: true, maxChars: 4096 },
+    caps: { threads: false, buttons: false, edit: true, maxChars: 4096 },
+    sendText: async () => ({ message_id: 0 }),
   } as unknown as Channel;
+  // Two workspaces, so `@slug` has one to hit and one to miss, and so a chat
+  // that names neither has to be asked rather than routed by default.
+  const slugs = ["main", "docs.v2-1"];
   const gateway = new Gateway(
-    defaultConfig(root, "caraka_test_bot", "42", false),
+    {
+      ...defaultConfig(root, "caraka_test_bot", "42", false),
+      workspaces: slugs.map((slug) => ({ slug, path: root })),
+    },
     Buffer.alloc(32, 9),
     [channel],
     (async () => undefined) as unknown as DriverFor,
@@ -387,10 +476,7 @@ test("a seeded corpus of hostile text breaks none of the three parsers", async (
       // those as fences would make the corpus fail on markdown that is fine.
       const fences = (chunk.match(/^[ \t]*```/gm) ?? []).length;
       assert.equal(fences % 2, 0, `round ${round}: ${fences} fence lines in one chunk`);
-      assert.ok(
-        chunk.length <= limit,
-        `round ${round}: ${chunk.length} past a limit of ${limit}`,
-      );
+      assert.ok(chunk.length <= limit, `round ${round}: ${chunk.length} past a limit of ${limit}`);
     }
 
     // Two: the memory block. A provider's answer is untrusted, so no item may
@@ -439,6 +525,316 @@ test("a seeded corpus of hostile text breaks none of the three parsers", async (
   // refusal and not a verifier that refuses everything.
   assert.deepEqual(verifyApprovalCallback(key, real.allow), { id: real.id, decision: "allow" });
   assert.deepEqual(verifyApprovalCallback(key, real.reject), { id: real.id, decision: "reject" });
+
+  // ─── the four that face the chat ──────────────────────────────────────────
+
+  // Three of them are private and one of them is a method on another object, so
+  // they are reached the way `memoryLines` above is reached. A regex copied into
+  // a test proves the copy works and nothing about the code, so the corpus
+  // drives the real readers. `queueRun` is the exception: it is replaced rather
+  // than read, because what the route reader hands to the queue is a run, a run
+  // is not a parser, and recording the handoff is what keeps the loop a loop.
+  const routed: Array<{ slug: string; text: string }> = [];
+  const inner = gateway as unknown as {
+    parseCommand(text: string): { command?: string; argument: string };
+    routeTask(message: InboundMessage, text: string, create?: boolean): void;
+    queueRun(message: InboundMessage, text: string, workspace: Workspace, create: boolean): void;
+    dispatch(update: InboundEvent): void;
+  };
+  inner.queueRun = (_message, text, workspace) => {
+    routed.push({ slug: workspace.slug, text });
+  };
+  const cloud = recordingWhatsApp().channel;
+  const wire = cloud as unknown as { ingest(raw: string): void; inbox: InboundEvent[] };
+
+  // A session holding a live card is what makes the decision reader answerable
+  // at all, so the corpus can be asked the question that matters: does anything
+  // below decide a card it was never given the code for. The codes are literals
+  // rather than `shortCode()` for the reason the whole file is seeded — a code
+  // that changes per run turns a failure into a story nobody can repeat.
+  const cardIn = (chatId: string, id: string, code: string) => {
+    const session = store.createSession({
+      principal: "42",
+      chatId,
+      threadId: "",
+      title: "fuzz",
+      workspace: "main",
+      agent: "",
+    });
+    store.createApproval({
+      id,
+      principal: "42",
+      sessionId: session.id,
+      agentSessionId: "agent-fuzz",
+      toolCallId: `tool-${id}`,
+      allowOptionId: "yes",
+      rejectOptionId: "no",
+      expiresAt: Date.now() + 600_000,
+      shortCode: code,
+    });
+    return session;
+  };
+  // The card in another session, never written to. Nothing in this test types
+  // into chat 99, so a decision on it could only have crossed a session line.
+  cardIn("99", "fuzz-there", "K2MQ");
+  const decisionOf = (id: string) =>
+    (
+      store.db.prepare("SELECT decision FROM approvals WHERE id = ?").get(id) as
+        | { decision: string | null }
+        | undefined
+    )?.decision ?? null;
+
+  // A generator of its own, seeded separately, so the loop above keeps the exact
+  // sequence that caught the splitter bug rather than being reshuffled by every
+  // draw added down here.
+  const inbound = seeded(0xbaca);
+  const draw = <T>(list: readonly T[]) => list[Math.floor(inbound() * list.length)] as T;
+  const material = [...inboundFragments, ...fuzzFragments];
+  // `spec/whatsapp-v06.md` §7 writes the alphabet down: 32 symbols, and no `I`,
+  // `O`, `0`, or `1`, because the code is read off a screen and typed on a
+  // phone. This is that sentence, not a copy of the reader's own pattern.
+  const codeAlphabet = /^[A-HJ-NP-Z2-9]+$/;
+  let commands = 0;
+  let decisions = 0;
+  let delivered = 0;
+
+  for (let round = 0; round < 240; round += 1) {
+    // The first fragment is drawn from the inbound list alone. Every reader
+    // below is anchored at the front of the message, so a corpus that opens at
+    // random spends most of its rounds proving that prose is not a command.
+    const raw = [
+      draw(inboundFragments),
+      ...Array.from({ length: Math.floor(inbound() * 4) }, () => draw(material)),
+    ]
+      .join("")
+      .slice(0, 100_000);
+    // Whitespace on either end is what a phone keyboard adds, and `dispatch`
+    // takes it off before any reader sees the message. Every assertion below is
+    // about what the readers are actually handed.
+    const text = raw.trim();
+    if (!text) continue;
+    // A chat of its own per round, holding a card of its own. Both have to be
+    // fresh: the sticky workspace one round writes would otherwise answer for
+    // the next, and the wrong-code counter is per session, so a shared card
+    // would lock after five code-shaped rounds and leave every round after it
+    // proving only that a locked session stays quiet.
+    const chatId = `chat-${round}`;
+    cardIn(chatId, chatId, "A7F3");
+    const message = {
+      message_id: round,
+      chat: { id: chatId, type: "private" },
+      from: { id: "42" },
+      text,
+    } satisfies InboundMessage;
+
+    // Four: the command reader. A command is a word at the front of a message
+    // and nowhere else, and the argument is the rest of that same message, never
+    // something the reader made up. Reading the pair back out of what it
+    // produced has to give the same pair — a message whose second reading names
+    // a different command than its first is how a name and an argument stop
+    // agreeing on where the command ended.
+    const { command, argument } = inner.parseCommand(text);
+    if (command === undefined) {
+      assert.equal(argument, "", `round ${round}: an argument with no command`);
+    } else {
+      commands += 1;
+      assert.equal(
+        text.slice(0, 1 + command.length).toLowerCase(),
+        `/${command}`,
+        `round ${round}: ${command} is not what the message opens with`,
+      );
+      assert.ok(
+        argument === "" || text.endsWith(argument),
+        `round ${round}: the argument is not a tail of the message`,
+      );
+      // The command token is one word and the mention that belongs to it, so
+      // the argument starts at the first whitespace in the message and nowhere
+      // else. A message with no whitespace in it carries no argument at all.
+      const gap = text.search(/\s/);
+      assert.equal(
+        argument,
+        gap < 0 ? "" : text.slice(gap).trim(),
+        `round ${round}: the argument does not start where the command ends`,
+      );
+      const reread = inner.parseCommand(argument ? `/${command} ${argument}` : `/${command}`);
+      assert.equal(reread.command, command, `round ${round}: reread as ${reread.command}`);
+      assert.equal(reread.argument, argument, `round ${round}: the argument moved on a reread`);
+    }
+
+    // Five: the route reader. `@slug` may only ever name a workspace the
+    // operator wrote into the config; everything else is a sentence back, not a
+    // route, and the prompt that reaches the queue is the message itself, never
+    // something assembled on the way.
+    routed.length = 0;
+    inner.routeTask(message, text);
+
+    // Six: the decision reader, and the only seam here that is a security
+    // boundary. Two claims. The shape first: when the reader says a message is a
+    // decision, that message is a decision word and a code from the documented
+    // alphabet and nothing else, so a code-shaped run inside a sentence is a
+    // sentence.
+    if (APPROVAL_CODE_REPLY.test(text)) {
+      decisions += 1;
+      const reply = APPROVAL_CODE_REPLY.exec(text);
+      const word = (reply?.[1] ?? "").toLowerCase();
+      const code = reply?.[2] ?? "";
+      assert.ok(word === "ok" || word === "no", `round ${round}: ${word} is not a decision`);
+      assert.equal(code.length, APPROVAL_CODE_LENGTH, `round ${round}: ${code}`);
+      assert.match(code.toUpperCase(), codeAlphabet, `round ${round}: ${code}`);
+      assert.equal(
+        /[\p{L}\p{N}]/u.test(text.slice(word.length, text.length - code.length)),
+        false,
+        `round ${round}: prose between the word and the code`,
+      );
+    }
+    // And the claim that matters: whatever the shape said, nothing this corpus
+    // produces answers a card. `dispatch` is the whole fork — the code reader
+    // first, the command router behind it, the route reader behind that — so
+    // this drives all three the way a message off the wire drives them.
+    inner.dispatch({ message });
+    assert.equal(decisionOf(chatId), null, `round ${round}: the card in this chat decided`);
+    assert.equal(
+      decisionOf("fuzz-there"),
+      null,
+      `round ${round}: a card in another session decided`,
+    );
+    const sticky = store.meta(`ws.last.${chatId}`);
+    if (sticky !== undefined) {
+      assert.ok(slugs.includes(sticky), `round ${round}: stuck to ${JSON.stringify(sticky)}`);
+      assert.ok(text.startsWith(`@${sticky}`), `round ${round}: a route nobody named`);
+    }
+    for (const run of routed) {
+      assert.ok(slugs.includes(run.slug), `round ${round}: a run in ${JSON.stringify(run.slug)}`);
+      assert.ok(text.endsWith(run.text), `round ${round}: the prompt is not a tail of the message`);
+    }
+
+    // Seven: the body reader on the WhatsApp webhook. The corpus takes a turn in
+    // each of the three slots Meta fills, and whatever comes out has to be
+    // something core can hold: a text that is a string, a sender that is not a
+    // room, and a chat id this channel owns.
+    const payload: Record<string, unknown> = { from: "628111", id: "w1", text: { body: "hi" } };
+    const slot = draw(["from", "id", "body"] as const);
+    if (slot === "body") payload.text = { body: text };
+    else payload[slot] = text;
+    const before = wire.inbox.length;
+    wire.ingest(JSON.stringify({ entry: [{ changes: [{ value: { messages: [payload] } }] }] }));
+    for (const event of wire.inbox.slice(before)) {
+      delivered += 1;
+      const arrived = event.message;
+      assert.equal(typeof arrived?.text, "string", `round ${round}: a non-string reached core`);
+      assert.ok(arrived?.text, `round ${round}: an empty message reached core`);
+      const sender = String(arrived?.from?.id ?? "");
+      assert.ok(sender, `round ${round}: a message with no sender`);
+      assert.equal(sender.includes("@"), false, `round ${round}: a room as a principal`);
+      assert.ok(
+        String(arrived?.chat.id).startsWith("whatsapp:"),
+        `round ${round}: ${String(arrived?.chat.id).slice(0, 24)}`,
+      );
+    }
+    wire.inbox.length = 0;
+  }
+
+  // A loop whose readers never read anything would assert nothing and pass.
+  // These are floors on the corpus, not on the code: a whole message that is
+  // exactly a decision is a narrow shape to hit by concatenation, which is why
+  // the curated table below is where that reader gets driven in earnest.
+  assert.ok(commands > 10, `the command reader found ${commands} commands across the corpus`);
+  assert.ok(decisions > 2, `the decision reader saw ${decisions} code-shaped messages`);
+  assert.ok(delivered > 120, `the body reader delivered ${delivered} messages`);
+
+  // The shapes a signature cannot refuse, because they arrive signed. Meta
+  // sends JSON, and JSON holds a number or an object wherever the payload type
+  // says string. All three of these were fatal: a number in `from` reached
+  // `String.prototype.includes` and left the process on an unhandled rejection
+  // out of the POST handler, a number in `text` reached core's `trim` and
+  // stopped the channel, and a body of literal `null` parsed to a value with no
+  // `entry` to read.
+  const malformed: unknown[] = [
+    { from: 628_111, id: "w1", text: { body: "hi" } },
+    { from: "628111", id: "w1", text: { body: 42 } },
+    { from: "628111", id: "w1", text: { body: { body: "hi" } } },
+    { from: { id: "628111" }, id: "w1", text: { body: "hi" } },
+    { from: "628111", id: 7, text: { body: "hi" } },
+    { from: ["628111"], id: "w1", text: { body: ["hi"] } },
+  ];
+  for (const payload of malformed)
+    wire.ingest(JSON.stringify({ entry: [{ changes: [{ value: { messages: [payload] } }] }] }));
+  for (const body of ["", "{", "null", "[]", "5", '"x"', '{"entry":null}', '{"entry":[null]}'])
+    wire.ingest(body);
+  assert.equal(wire.inbox.length, 0, "a payload whose types are not the contract's reached core");
+
+  // The refusals above are refusals of a shape, not of the channel: the
+  // well-formed payload beside them still arrives.
+  wire.ingest(
+    JSON.stringify({
+      entry: [
+        { changes: [{ value: { messages: [{ from: "628", id: "w", text: { body: "hi" } }] } }] },
+      ],
+    }),
+  );
+  assert.equal(wire.inbox.length, 1);
+
+  // The hostile table shuffling fragments cannot reach, against a card whose
+  // attempt counter is untouched: a code inside prose, a code in a script that
+  // is not the code's, a separator that is invisible rather than blank, and
+  // marks that make six characters read as the card's own line. `M4RA` is the
+  // code on the card in this chat, and none of these carries it.
+  cardIn("77", "fuzz-clean", "M4RA");
+  const notADecision = [
+    "ok M4RA please",
+    "the code is ok M4RA",
+    "okM4RA",
+    "ok M4RAx",
+    "ok M4R",
+    "nope M4RA",
+    "no M4RA ok M4RA",
+    // A zero-width space is not whitespace, so it is neither trimmed off the
+    // end nor read as the separator in the middle.
+    "ok M4RA​",
+    "ok​M4RA",
+    // The same six characters wrapped in a bidi override.
+    "‫ok M4RA‬",
+    // Two Cyrillic letters among the Latin ones, then the fullwidth form NFKC
+    // would fold into the real thing, then a Kelvin sign and a long s, which
+    // case-fold to `k` and `s` only under a `u` flag nobody set.
+    "ok М4RА",
+    "ｏｋ　Ｍ４ＲＡ",
+    "ok M4RK",
+    "ok ſ4RA",
+    `ok M4RA ${"x".repeat(100_000)}`,
+  ];
+  for (const text of notADecision) {
+    assert.equal(APPROVAL_CODE_REPLY.test(text.trim()), false, JSON.stringify(text.slice(0, 40)));
+    inner.dispatch({
+      message: { message_id: 1, chat: { id: "77", type: "private" }, from: { id: "42" }, text },
+    });
+    assert.equal(decisionOf("fuzz-clean"), null, JSON.stringify(text.slice(0, 40)));
+  }
+  // The right code, in the wrong session. `K2MQ` is the card in chat 99 and this
+  // is chat 77, so it answers neither: not the card it names, and not the card
+  // that happens to be waiting where it was typed.
+  inner.dispatch({
+    message: {
+      message_id: 2,
+      chat: { id: "77", type: "private" },
+      from: { id: "42" },
+      text: "ok K2MQ",
+    },
+  });
+  assert.equal(decisionOf("fuzz-there"), null, "a code crossed into another session");
+  assert.equal(decisionOf("fuzz-clean"), null, "another card's code decided this one");
+  // And the code that belongs here does decide, so every refusal above is a
+  // refusal and not a reader that refuses everything. Case is not part of the
+  // code, and the spaces a phone keyboard adds are gone before the reader looks.
+  inner.dispatch({
+    message: {
+      message_id: 3,
+      chat: { id: "77", type: "private" },
+      from: { id: "42" },
+      text: " ok m4ra ",
+    },
+  });
+  assert.equal(decisionOf("fuzz-clean"), "allow");
   store.close();
 });
 

@@ -371,8 +371,7 @@ export class Gateway {
       this.respond(message, this.decideByCode(message, text));
       return;
     }
-    const command = /^\/(\w+)(?:@\w+)?(?:\s|$)/.exec(text)?.[1]?.toLowerCase();
-    const argument = text.replace(/^\/\w+(?:@\w+)?\s*/, "").trim();
+    const { command, argument } = this.parseCommand(text);
     if (command === "stop") this.respond(message, this.stopActive(message));
     else if (command === "status") this.respond(message, this.status(message));
     else if (command === "help" || command === "start") this.respond(message, this.help(message));
@@ -389,6 +388,21 @@ export class Gateway {
     else if (command && !this.knownAgentCommand(message, command))
       this.respond(message, this.rejectCommand(message, command));
     else this.routeTask(message, text);
+  }
+
+  /**
+   * The command a message names, and what it left behind. One reader for the
+   * pair, because the two have to agree on where the command ends: this was a
+   * regex each, and two regexes that must stay in sync are one edit away from
+   * disagreeing about it. A bot mention belongs to the command token, so
+   * `/status@caraka_bot` is `status` and the argument is whatever follows the
+   * space. No command means no argument — every branch that reads one is
+   * already behind a name.
+   */
+  private parseCommand(text: string): { command?: string; argument: string } {
+    const match = /^\/(\w+)(?:@\w+)?(?:\s|$)/.exec(text);
+    if (!match?.[1]) return { argument: "" };
+    return { command: match[1].toLowerCase(), argument: text.slice(match[0].length).trim() };
   }
 
   // The routing table (`docs/session-model.md` §5): a session topic keeps its

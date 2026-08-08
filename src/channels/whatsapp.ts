@@ -373,7 +373,19 @@ export class WhatsApp implements Channel {
    * because WhatsApp lists them as a contact (AC-8.9).
    */
   receive(from: string, id: string, text: string) {
-    if (this.stopped || !from || !text) return;
+    if (this.stopped) return;
+    // The three parameter types are a promise the wire cannot keep. Both
+    // providers hand over whatever a JSON payload held, and JSON holds a number
+    // or an object wherever this signature says string. A number in `from`
+    // reached `includes` below and left the process on an unhandled rejection
+    // out of the POST handler; a number in `text` reached core's `trim` and
+    // stopped the channel. The check sits here because this is the one door
+    // both providers come through.
+    if (typeof from !== "string" || typeof id !== "string" || typeof text !== "string") {
+      this.log?.("msg.reject", "malformed", { channel: this.id });
+      return;
+    }
+    if (!from || !text) return;
     // A one-to-one conversation and nothing else. Baileys hands the container's
     // own jid over as the sender, so a group (`…@g.us`), a broadcast, and a
     // newsletter all arrive as one principal that is not a person: every member
@@ -559,13 +571,17 @@ export class WhatsApp implements Channel {
   private ingest(raw: string) {
     let body: CloudPayload;
     try {
-      body = JSON.parse(raw) as CloudPayload;
+      body = (JSON.parse(raw) ?? {}) as CloudPayload;
     } catch {
       return;
     }
+    // `null` is valid JSON, in the body and in every slot the type below
+    // declares as an object, and it is the one value a shape check cannot see
+    // coming. The `??` above and the optional chaining here are what stand
+    // between a signed one and a read on nothing.
     for (const entry of body.entry ?? [])
-      for (const change of entry.changes ?? [])
-        for (const message of change.value?.messages ?? [])
-          this.receive(message.from ?? "", message.id ?? "", message.text?.body ?? "");
+      for (const change of entry?.changes ?? [])
+        for (const message of change?.value?.messages ?? [])
+          this.receive(message?.from ?? "", message?.id ?? "", message?.text?.body ?? "");
   }
 }

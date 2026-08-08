@@ -139,7 +139,9 @@ export function splitMarkdown(input: string, limit = 3900, empty = "(Claude sent
   // cut reopens with is capped: past the cap the language hint is dropped and
   // the block reopens bare. Losing a highlight beats losing the text.
   const cap = Math.max(3, Math.floor(limit / 2) - 5);
-  const longest = Math.max(...(text.match(/^[^\S\n]*```[^\r\n]*/gm) ?? [""]).map((f) => f.trim().length));
+  const longest = Math.max(
+    ...(text.match(/^[^\S\n]*```[^\r\n]*/gm) ?? [""]).map((f) => f.trim().length),
+  );
   const room = Math.max(1, limit - Math.max(16, Math.min(longest, cap) + 5));
   const lines: string[] = [];
   for (let line of text.match(/[^\n]*\n|[^\n]+$/g) ?? [text]) {
