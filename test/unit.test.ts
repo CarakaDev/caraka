@@ -1674,6 +1674,23 @@ test("the three output parsers honour the recorded fixtures", async () => {
   );
 });
 
+test("a failed run is reported in the agent's own words, not the last stderr line", () => {
+  // Recorded from `codex exec --json` on 8 August 2026, with a spent quota: the
+  // reason is on stdout and stderr holds a progress note, so a detail read off
+  // stderr names the wrong cause to the operator and to `npm run smoke`.
+  const stdout = [
+    '{"type":"thread.started","thread_id":"019fe1f8-091f-7f62-8130-d27e98a2f031"}',
+    '{"type":"turn.started"}',
+    '{"type":"error","message":"You\'ve hit your usage limit."}',
+    '{"type":"turn.failed","error":{"message":"You\'ve hit your usage limit."}}',
+  ].join("\n");
+  assert.equal(failureReason(stdout), "You've hit your usage limit.");
+  // Nothing to read is not an invented reason: the caller falls back to stderr.
+  assert.equal(failureReason(""), null);
+  assert.equal(failureReason("Reading additional input from stdin...\n"), null);
+  assert.equal(failureReason('{"type":"agent_message","text":"fine"}'), null);
+});
+
 test("the CLI driver spawns the preset command and resumes with the extracted id", async () => {
   // AC-4.1, AC-4.2, AC-4.3, AC-4.9, and the `{sessionId}` substitution.
   const root = await mkdtemp(join(tmpdir(), "caraka-cli-"));

@@ -55,6 +55,28 @@ function firstString(object: Record<string, unknown>, keys: string[]) {
   return null;
 }
 
+/**
+ * Why the agent stopped, in its own words. A failing CLI agent writes its
+ * reason into the structured stdout it was asked for — codex answers a spent
+ * quota with `{"type":"error","message":…}` — while stderr carries progress
+ * notes, so the last stderr line names the wrong cause about as often as the
+ * right one. Null when stdout said nothing, which is when stderr is all there is.
+ */
+export function failureReason(stdout: string) {
+  let found: string | null = null;
+  for (const line of stdout.split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      const parsed: unknown = JSON.parse(line);
+      const message = (parsed as Record<string, unknown>)?.message;
+      if (typeof message === "string" && message.trim()) found = message.trim();
+    } catch {
+      // A line that is not JSON is progress noise, the same as in parseOutput.
+    }
+  }
+  return found;
+}
+
 function agentMessage(object: Record<string, unknown>, format: "json" | "jsonl") {
   if (format === "json") return firstString(object, ["result", "text", "response", "message"]);
   const item = object.item;
@@ -140,7 +162,8 @@ export class CliDriver implements AgentDriver {
       );
     }
     if (exit.code !== 0) {
-      const detail = this.scrub(collected.stderr.trim()).slice(-400) || `status ${exit.code}`;
+      const reason = failureReason(collected.stdout) ?? collected.stderr.trim();
+      const detail = this.scrub(reason).slice(-400) || `status ${exit.code}`;
       throw new Error(this.t("driver.exit", { command: this.command, detail }));
     }
     const format =

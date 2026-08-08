@@ -43,7 +43,7 @@
     "lint": "oxlint src test scripts && oxfmt --check src test scripts bin package.json tsconfig.json",
     "test": "node --import tsx --test test/unit.test.ts",
     "e2e": "node --import tsx --test test/e2e.test.ts",
-    "smoke": "npm run build && node scripts/smoke-claude.mjs",
+    "smoke": "npm run build && node scripts/smoke-claude.mjs && node scripts/smoke-cli.mjs codex",
     "verify": "npm run lint && npm run typecheck && npm test && npm run e2e && npm run build",
     "prepublishOnly": "npm run verify"
   },
