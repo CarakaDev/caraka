@@ -137,9 +137,17 @@ import MobileMenu from '../components/MobileMenu.astro'
           <a href="/docs" class="hv-btn" style="display: flex; align-items: center; gap: 9px; padding: 15px 22px; background: #E2452C; border-radius: 11px; font-family: 'JetBrains Mono', monospace; font-size: clamp(13px, 1.6vw, 15px); font-weight: 500; color: #FFEDE7; transition: background .2s;">Read the docs →</a>
         </div>
 
+        {/* Leaves the comp at Caraka Landing.dc.html:155-156, which reads
+            `PRE-ALPHA` and `28+ AGENTS VIA ACP`. Four facts, one word each, and
+            the row keeps that shape: the status word became the version because
+            1.0 shipped, and the agent count became the seven files in
+            `presets/agents/` because 28 was the ACP registry's number and this
+            build does not read the registry (`src/discovery.ts`). What v1.0
+            does not prove belongs on /status and in the docs banner, which say
+            it in a sentence; a hero badge has room for a fact, not a caveat. */}
         <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: clamp(14px, 3vw, 26px); font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .12em; color: #5D666F; animation: ck-fade 1s 2.85s both;">
-          <span style="display: flex; align-items: center; gap: 8px;"><span style="position: relative; width: 6px; height: 6px; border-radius: 50%; background: #FFD67E;"><span style="position: absolute; inset: 0; border-radius: 50%; background: #FFD67E; animation: ck-pulse 2.4s ease-out infinite;"></span></span>v1.0 · UNPROVEN</span>
-          <span>MIT</span><span>NODE ≥ 22</span><span>CLAUDE CODE VIA ACP</span>
+          <span style="display: flex; align-items: center; gap: 8px;"><span style="position: relative; width: 6px; height: 6px; border-radius: 50%; background: #FFD67E;"><span style="position: absolute; inset: 0; border-radius: 50%; background: #FFD67E; animation: ck-pulse 2.4s ease-out infinite;"></span></span>v1.0</span>
+          <span>MIT</span><span>NODE ≥ 22</span><span>7 PRESETS VIA ACP</span>
         </div>
       </div>
 
