@@ -161,6 +161,31 @@ const en = {
   "cli.pairFailed": "Telegram pairing failed. Check the connection and try again.",
   "cli.pairConfirm": "Allow {identity} (ID {id}) to send tasks? [y/N]: ",
   "cli.pairCancelled": "Pairing cancelled; no configuration was saved.",
+  // The link carries a bearer secret, so the line under it says what holding
+  // that link means before the operator forwards it to anyone.
+  "cli.pairSecret":
+    "Whoever opens that link first is paired. It works once, it dies in five minutes, and it is the only thing standing between a stranger and this machine — do not forward it.",
+  "fix.header": "\nRepaired:",
+  "fix.leftHeader": "\nLeft alone, because repairing it takes a decision:",
+  "fix.nothing": "\nNothing to repair: every path Caraka owns is where it should be.",
+  "fix.madeDir": "  {path} — created at 0700.",
+  "fix.setMode": "  {path} — mode {before} → {after}. It was readable beyond you.",
+  "fix.clearedPid": "  {path} — removed. The gateway it names is not running.",
+  "fix.keepsConfig":
+    "  {path} — unreadable, and --fix writes neither a configuration nor a credential. Run `caraka init`.",
+  "fix.keepsWorkspace":
+    "  {path} — the workspace is missing. It is your repository, so Caraka does not create it. Clone it back, or point workspace.path at where it moved.",
+  "fix.keepsAllowlist":
+    "  {channel} — the allowlist is empty. Who may send tasks is your decision, so --fix does not fill it. Run `caraka init` again.",
+  "cli.uninstallRunning":
+    "Caraka is running (PID {pid}). Run `caraka stop` first, then `caraka uninstall`.",
+  "cli.uninstallNothing": "There is nothing to remove: no Caraka file exists under {root}.",
+  "cli.uninstallRemoves": "\nThese are deleted, and there is no undo:",
+  "cli.uninstallKeeps":
+    "\nThese are not Caraka's to delete:\n  the Telegram bot — it stays until you delete it in @BotFather\n  every file the coding agent wrote in your workspace, including work you have not committed",
+  "cli.uninstallConfirm": "\nType uninstall to confirm: ",
+  "cli.uninstallCancelled": "Nothing was deleted.",
+  "cli.uninstallDone": "Removed {count} path(s). Caraka is gone from this machine.",
   "cli.languagePrompt": "Interface language [en/id] ({fallback}): ",
   "cli.memoryOffer":
     "\nMemory. Titen keeps what Caraka learns between runs, served locally on 127.0.0.1:7717.\nInstall it now with `curl -fsSL https://titen.dev/install.sh | bash`? [y/N]: ",
@@ -422,6 +447,29 @@ const id: Record<MessageKey, string> = {
   "cli.pairFailed": "Pairing Telegram gagal. Periksa koneksi lalu coba lagi.",
   "cli.pairConfirm": "Izinkan {identity} (ID {id}) mengirim tugas? [y/N]: ",
   "cli.pairCancelled": "Pairing dibatalkan; tidak ada konfigurasi yang disimpan.",
+  "cli.pairSecret":
+    "Siapa pun yang membuka tautan itu lebih dulu akan terpasang. Ia berlaku sekali, mati dalam lima menit, dan hanya itu yang memisahkan orang asing dari mesin ini — jangan diteruskan.",
+  "fix.header": "\nDiperbaiki:",
+  "fix.leftHeader": "\nDibiarkan, karena memperbaikinya butuh keputusan:",
+  "fix.nothing": "\nTidak ada yang perlu diperbaiki: semua path milik Caraka ada di tempatnya.",
+  "fix.madeDir": "  {path} — dibuat dengan mode 0700.",
+  "fix.setMode": "  {path} — mode {before} → {after}. Sebelumnya terbaca di luar akun Anda.",
+  "fix.clearedPid": "  {path} — dihapus. Gateway yang ditulis di dalamnya tidak berjalan.",
+  "fix.keepsConfig":
+    "  {path} — tidak terbaca, dan --fix tidak menulis konfigurasi maupun kredensial. Jalankan `caraka init`.",
+  "fix.keepsWorkspace":
+    "  {path} — workspace-nya hilang. Itu repositori Anda, jadi Caraka tidak membuatnya. Clone lagi, atau arahkan workspace.path ke lokasi barunya.",
+  "fix.keepsAllowlist":
+    "  {channel} — allowlist-nya kosong. Siapa yang boleh mengirim tugas adalah keputusan Anda, jadi --fix tidak mengisinya. Jalankan `caraka init` lagi.",
+  "cli.uninstallRunning":
+    "Caraka sedang berjalan (PID {pid}). Jalankan `caraka stop` dulu, lalu `caraka uninstall`.",
+  "cli.uninstallNothing": "Tidak ada yang bisa dihapus: tidak ada berkas Caraka di bawah {root}.",
+  "cli.uninstallRemoves": "\nIni dihapus, dan tidak bisa dibatalkan:",
+  "cli.uninstallKeeps":
+    "\nIni bukan milik Caraka untuk dihapus:\n  bot Telegram — ia tetap ada sampai Anda menghapusnya di @BotFather\n  semua berkas yang ditulis coding agent di workspace Anda, termasuk yang belum di-commit",
+  "cli.uninstallConfirm": "\nKetik uninstall untuk mengonfirmasi: ",
+  "cli.uninstallCancelled": "Tidak ada yang dihapus.",
+  "cli.uninstallDone": "{count} path dihapus. Caraka hilang dari mesin ini.",
   "cli.languagePrompt": "Bahasa antarmuka [en/id] ({fallback}): ",
   "cli.memoryOffer":
     "\nMemori. Titen menyimpan apa yang Caraka pelajari antar-run, berjalan lokal di 127.0.0.1:7717.\nPasang sekarang dengan `curl -fsSL https://titen.dev/install.sh | bash`? [y/N]: ",

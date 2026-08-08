@@ -1,7 +1,7 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { existsSync, realpathSync } from "node:fs";
-import { chmod, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { chmod, mkdir, readFile, rm, rmdir, stat, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createInterface } from "node:readline/promises";
@@ -14,6 +14,7 @@ import {
   loadConfig,
   privateFile,
   saveConfig,
+  type CarakaConfig,
 } from "./config.js";
 import type { Channel } from "./core/channel.js";
 import type { AgentDriver, DriverFor } from "./core/driver.js";
@@ -278,6 +279,41 @@ export function pairingConfirmed(answer: string) {
   return ["y", "ya", "yes"].includes(answer.trim().toLowerCase());
 }
 
+/** `docs/install-flow.md` §3: how long the wizard holds the deep link open. */
+export const PAIRING_TTL_MS = 5 * 60_000;
+
+/**
+ * The wizard's half of `?start=pair_<code>`. Whoever sends the payload back is
+ * the principal Caraka writes into the allowlist, so the code is a bearer
+ * secret and carries the three properties one needs: 72 bits from
+ * `randomBytes` — the same nonce material `approvalCallbacks` draws on — a
+ * single answer, and a deadline it enforces itself rather than borrowing from
+ * whichever poll happens to be in flight.
+ *
+ * Nothing signs it. An HMAC authenticates a value that travels away and comes
+ * back to a verifier that did not keep it; this code never leaves the process
+ * that will check it, so a signature would re-prove what holding the code
+ * already proves, and it would be a second scheme to keep correct. The
+ * comparison is constant-time because the payload arrives from the network.
+ */
+export function pairingCode(now: () => number = Date.now, ttlMs = PAIRING_TTL_MS) {
+  const payload = `pair_${randomBytes(9).toString("base64url")}`;
+  const expected = Buffer.from(`/start ${payload}`);
+  const expiresAt = now() + ttlMs;
+  let used = false;
+  return {
+    link: (botUsername: string) => `https://t.me/${botUsername}?start=${payload}`,
+    /** True for the one message carrying this code, once, before it expires. */
+    claim(text: string | undefined) {
+      if (used || now() >= expiresAt) return false;
+      const supplied = Buffer.from(text ?? "");
+      if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) return false;
+      used = true;
+      return true;
+    },
+  };
+}
+
 // A flag's value is not a workspace. Without this, `caraka trust --for 30m`
 // opens a window on a directory called `30m` and prints that the window is open.
 export function trustWorkspace(args: string[]) {
@@ -348,11 +384,12 @@ async function init(args: string[]) {
   if (!bot.username) throw new Error(t("cli.botNoUsername"));
   await telegram.deleteWebhook();
 
-  const pairCode = randomBytes(9).toString("base64url");
-  console.log(t("cli.pairOpen", { url: `https://t.me/${bot.username}?start=pair_${pairCode}` }));
+  const pairing = pairingCode();
+  console.log(t("cli.pairOpen", { url: pairing.link(bot.username) }));
+  console.log(t("cli.pairSecret"));
   console.log(t("cli.pairWaiting"));
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5 * 60_000);
+  const timeout = setTimeout(() => controller.abort(), PAIRING_TTL_MS);
   let offset = 0;
   let paired: { id: number; username?: string; first_name: string } | undefined;
   try {
@@ -361,11 +398,7 @@ async function init(args: string[]) {
       for (const update of updates) {
         offset = Math.max(offset, update.update_id + 1);
         const message = update.message;
-        if (
-          message?.chat.type === "private" &&
-          message.from &&
-          message.text === `/start pair_${pairCode}`
-        ) {
+        if (message?.chat.type === "private" && message.from && pairing.claim(message.text)) {
           paired = message.from;
           break;
         }
@@ -438,7 +471,97 @@ export function agentChecks(
   return rows;
 }
 
-async function doctor() {
+const modeText = (mode: number) => `0${(mode & 0o777).toString(8).padStart(3, "0")}`;
+
+/**
+ * What `--fix` is allowed to touch. `docs/install-flow.md` §4 writes down three
+ * modes and nothing else, so those three are the only drift there is a correct
+ * answer for: the directories Caraka owns at 0700, the files it writes at 0600,
+ * and a PID file naming a process that no longer exists. The database and the
+ * discovery cache are absent on purpose — neither was ever promised a mode, and
+ * a repair for a value nobody wrote down is an opinion.
+ *
+ * Everything a repair would have to guess at comes back in `refused` with the
+ * reason attached. Nothing here writes a credential and nothing here opens a
+ * socket: every branch is a `stat`, a `chmod`, a `mkdir`, or an unlink.
+ */
+export async function doctorFix(
+  paths: ReturnType<typeof carakaPaths>,
+  config: CarakaConfig | null,
+  language: Translate,
+) {
+  const fixed: string[] = [];
+  const refused: string[] = [];
+  // `privateFile` already reads Windows as private, because the bits mean
+  // nothing there; a `chmod` on them would report a repair that did not happen.
+  const posix = process.platform !== "win32";
+  const directories = [paths.root, paths.secrets];
+  // On disk it is a credential directory whatever the config says, so a mode
+  // that drifted there is repaired even when the config is the thing that broke.
+  if (config?.whatsapp || existsSync(paths.whatsappSession))
+    directories.push(paths.whatsappSession);
+  for (const path of directories) {
+    const found = await stat(path).catch(() => null);
+    if (!found) {
+      await mkdir(path, { recursive: true, mode: 0o700 });
+      fixed.push(language("fix.madeDir", { path }));
+      continue;
+    }
+    // Only the group and other bits are drift. An owner-executable file is odd
+    // rather than exposed, and squashing it would be a preference.
+    if (posix && (found.mode & 0o077) !== 0) {
+      await chmod(path, 0o700);
+      fixed.push(language("fix.setMode", { path, before: modeText(found.mode), after: "0700" }));
+    }
+  }
+  for (const path of [
+    paths.config,
+    paths.token,
+    paths.discordToken,
+    paths.whatsappToken,
+    paths.whatsappVerify,
+    paths.whatsappAppSecret,
+    paths.approvalKey,
+    paths.pid,
+  ]) {
+    const found = await stat(path).catch(() => null);
+    if (!found || !posix || (found.mode & 0o077) === 0) continue;
+    await chmod(path, 0o600);
+    fixed.push(language("fix.setMode", { path, before: modeText(found.mode), after: "0600" }));
+  }
+  // The one file that stops `caraka start` on its own (exit 78). A PID nobody
+  // is running is unambiguous; a PID that answers is left where it is.
+  const pidFile = await readFile(paths.pid, "utf8").catch(() => null);
+  if (pidFile !== null) {
+    const pid = readPid(pidFile);
+    if (pid === null || !processAlive(pid)) {
+      await rm(paths.pid, { force: true });
+      fixed.push(language("fix.clearedPid", { path: paths.pid }));
+    }
+  }
+  if (!config) refused.push(language("fix.keepsConfig", { path: paths.config }));
+  else {
+    if ((await stat(config.workspace.path).catch(() => null))?.isDirectory() !== true)
+      refused.push(language("fix.keepsWorkspace", { path: config.workspace.path }));
+    for (const [channel, block] of Object.entries(channelBlocks(config)))
+      if (block.allowFrom.length === 0) refused.push(language("fix.keepsAllowlist", { channel }));
+  }
+  return { fixed, refused };
+}
+
+async function doctor(args: string[] = []) {
+  // The repair pass runs before the checks, so the rows below report the state
+  // the operator is left with rather than the one they arrived with.
+  if (args.includes("--fix")) {
+    const config = await loadConfig()
+      .then((loaded) => loaded.config)
+      .catch(() => null);
+    if (config?.language) t = translator(config.language);
+    const { fixed, refused } = await doctorFix(carakaPaths(), config, t);
+    if (fixed.length === 0 && refused.length === 0) console.log(t("fix.nothing"));
+    if (fixed.length > 0) console.log([t("fix.header"), ...fixed].join("\n"));
+    if (refused.length > 0) console.log([t("fix.leftHeader"), ...refused].join("\n"));
+  }
   const checks: Array<[string, boolean, string]> = [];
   checks.push(["Node.js", Number(process.versions.node.split(".")[0]) >= 22, process.version]);
   checks.push(["Git", command("git", ["--version"]).status === 0, "install Git"]);
@@ -740,6 +863,75 @@ export async function dashboardCommand(args: string[]) {
   return server;
 }
 
+/**
+ * Everything `caraka init` and `caraka start` created, and nothing else. The
+ * two SQLite sidecars are here because `caraka.db-wal` holds the tail of the
+ * last session: removing the database and leaving them behind leaves that tail
+ * readable. `~/.caraka` itself is not on the list — it goes only if it is empty
+ * once these are gone, so a file the operator put there survives.
+ */
+export function uninstallTargets(paths: ReturnType<typeof carakaPaths>) {
+  return [
+    paths.config,
+    paths.database,
+    `${paths.database}-wal`,
+    `${paths.database}-shm`,
+    paths.discovery,
+    paths.pid,
+    paths.secrets,
+  ];
+}
+
+// One word, typed in full, the same word in both catalogs because it is the
+// name of the command. `y` decides reversible things; this is not one.
+export function uninstallConfirmed(answer: string) {
+  return answer.trim().toLowerCase() === "uninstall";
+}
+
+/**
+ * The counterpart to `init`. It deletes what Caraka wrote and says out loud
+ * what it will not touch: the bot on Telegram's side, which only @BotFather can
+ * remove, and whatever the coding agent left in the workspace, which is the
+ * operator's work and not this tool's to judge. A running gateway stops it
+ * outright — deleting the database out from under a live poller loses the audit
+ * rows for the run in flight and leaves the process writing to a file that no
+ * longer has a name.
+ */
+async function uninstallCommand() {
+  const paths = carakaPaths();
+  // Read the language while the config that holds it is still on disk.
+  const config = await loadConfig()
+    .then((loaded) => loaded.config)
+    .catch(() => null);
+  if (config?.language) t = translator(config.language);
+  const running = await livePid(paths.pid);
+  if (running !== null) {
+    console.error(t("cli.uninstallRunning", { pid: running }));
+    process.exitCode = 78;
+    return;
+  }
+  const present = uninstallTargets(paths).filter((path) => existsSync(path));
+  if (present.length === 0) {
+    console.log(t("cli.uninstallNothing", { root: paths.root }));
+    return;
+  }
+  console.log(t("cli.uninstallRemoves"));
+  for (const path of present) console.log(`  ${path}`);
+  console.log(t("cli.uninstallKeeps"));
+  const rl = createInterface({ input: stdin, output: stdout });
+  const answer = await rl.question(t("cli.uninstallConfirm"));
+  rl.close();
+  if (!uninstallConfirmed(answer)) {
+    console.log(t("cli.uninstallCancelled"));
+    // Not zero: `caraka uninstall && …` must not read a refusal as a removal.
+    process.exitCode = 1;
+    return;
+  }
+  for (const path of present) await rm(path, { recursive: true, force: true });
+  await rmdir(paths.root).catch(() => undefined);
+  console.log(t("cli.uninstallDone", { count: present.length }));
+}
+
 async function serviceCommand(args: string[]) {
   const kind = flagValue(args, "--print");
   if (!isServiceKind(kind)) throw new Error(t("cli.serviceUsage"));
@@ -765,11 +957,13 @@ function help() {
       version: VERSION,
       body: `  caraka init [--workspace PATH]         Pair Telegram and Claude Code
   caraka doctor                          Check the installation without changing it
+  caraka doctor --fix                    Also repair file modes, a missing directory, a stale PID file
   caraka start                           Run the long-polling gateway
   caraka stop                            Send SIGTERM to the running gateway
   caraka status                          Report whether the gateway is running
   caraka dashboard [--port n]            Read-only dashboard on 127.0.0.1:7718
   caraka trust <workspace> --for 30m     Open a trust window from this terminal
+  caraka uninstall                       Delete Caraka's config, database and secrets after confirming
   caraka service --print systemd         Print a unit file; installs nothing
   caraka --version                       Show the version`,
     }),
@@ -780,12 +974,17 @@ export async function main(args: string[]) {
   try {
     const [subcommand] = args;
     if (subcommand === "init") await init(args.slice(1));
-    else if (subcommand === "doctor") await doctor();
+    else if (subcommand === "doctor") await doctor(args.slice(1));
     else if (subcommand === "start") await start(args.slice(1));
     else if (subcommand === "stop") await stopCommand();
     else if (subcommand === "status") await statusCommand();
     else if (subcommand === "dashboard") await dashboardCommand(args.slice(1));
     else if (subcommand === "trust") await trustCommand(args.slice(1));
+    // Terminal only, and it stays terminal only: `uninstall` from a chat would
+    // be a stranger's message deleting the operator's install, and `doctor
+    // --fix` writes to disk, which hard rule 2's class of decision keeps in
+    // front of the machine. Neither is registered as a chat command.
+    else if (subcommand === "uninstall") await uninstallCommand();
     else if (subcommand === "service") await serviceCommand(args.slice(1));
     else if (subcommand === "--version" || subcommand === "-v") console.log(VERSION);
     else help();

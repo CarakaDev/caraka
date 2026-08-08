@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import { existsSync } from "node:fs";
-import { chmod, mkdir, mkdtemp, readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { request as httpRequest } from "node:http";
 import { hostname, tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
@@ -37,13 +37,18 @@ import {
   agentChecks,
   buildDriver,
   dashboardCommand,
+  doctorFix,
   driverRegistry,
   main,
+  PAIRING_TTL_MS,
+  pairingCode,
   pairingConfirmed,
   processAlive,
   readPid,
   startupSecrets,
   trustWorkspace,
+  uninstallConfirmed,
+  uninstallTargets,
   workspaceArg,
 } from "../src/cli.js";
 import { STATE_COLOR, STATE_GLYPH } from "../src/core/status.js";
@@ -57,6 +62,7 @@ import {
   resolveBind,
 } from "../src/dashboard/server.js";
 import {
+  carakaPaths,
   channelBlocks,
   defaultConfig,
   loadConfig,
@@ -4060,4 +4066,178 @@ test("giving up raises the operator's sentence out of updates() instead of loopi
   for (let n = 0; n <= RECONNECT_ATTEMPTS; n += 1) await fake.drop();
   await assert.rejects(drained, /did not come back after 6 attempts/);
   abort.abort();
+});
+
+// ---- Deep link pairing, doctor --fix, and uninstall (Fase 2) --------------
+
+test("the pairing code answers once, dies on its own clock, and refuses a wrong code", () => {
+  // `docs/install-flow.md` §3. Whoever sends the payload back is written into
+  // the allowlist, so the code is a bearer secret and each refusal below is the
+  // security property rather than an edge case.
+  let clock = 1_000;
+  const pairing = pairingCode(() => clock);
+  const link = pairing.link("caraka_test_bot");
+  assert.match(link, /^https:\/\/t\.me\/caraka_test_bot\?start=pair_[A-Za-z0-9_-]{12}$/);
+  const payload = new URL(link).searchParams.get("start") ?? "";
+
+  // Wrong code, right shape; a payload one character long or short; the bare
+  // command; and no text at all.
+  assert.equal(pairing.claim(`/start pair_${"A".repeat(12)}`), false);
+  assert.equal(pairing.claim(`/start ${payload}x`), false);
+  assert.equal(pairing.claim(`/start ${payload.slice(0, -1)}`), false);
+  assert.equal(pairing.claim(payload), false);
+  assert.equal(pairing.claim("/start"), false);
+  assert.equal(pairing.claim(undefined), false);
+
+  // The right code, and then the same right code again.
+  assert.equal(pairing.claim(`/start ${payload}`), true);
+  assert.equal(pairing.claim(`/start ${payload}`), false);
+
+  // Bound to its own attempt: a second wizard run draws a different code and
+  // does not answer to the first one's payload.
+  const second = pairingCode(() => clock);
+  const secondPayload = new URL(second.link("caraka_test_bot")).searchParams.get("start") ?? "";
+  assert.notEqual(secondPayload, payload);
+  assert.equal(second.claim(`/start ${payload}`), false);
+  assert.equal(second.claim(`/start ${secondPayload}`), true);
+
+  // Expiry is the code's own and not the poll's. One millisecond inside the TTL
+  // it still answers; one full TTL later the same payload is refused.
+  const inTime = pairingCode(() => clock);
+  const inTimePayload = new URL(inTime.link("b")).searchParams.get("start") ?? "";
+  clock += PAIRING_TTL_MS - 1;
+  assert.equal(inTime.claim(`/start ${inTimePayload}`), true);
+  const late = pairingCode(() => clock);
+  const latePayload = new URL(late.link("b")).searchParams.get("start") ?? "";
+  clock += PAIRING_TTL_MS;
+  assert.equal(late.claim(`/start ${latePayload}`), false);
+});
+
+test("doctor --fix repairs what drifted and names what it will not decide", async () => {
+  const oldHome = process.env.CARAKA_HOME;
+  const root = await mkdtemp(join(tmpdir(), "caraka-fix-"));
+  process.env.CARAKA_HOME = root;
+  try {
+    const workspace = await mkdtemp(join(tmpdir(), "caraka-fix-ws-"));
+    const config = defaultConfig(workspace, "caraka_test_bot", "42", true);
+    const paths = await saveConfig(config, "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi");
+    const en = translator("en");
+
+    // Drift with one correct answer: a world-readable config, a group-readable
+    // secrets directory, and a PID file naming a process that is not there.
+    await chmod(paths.config, 0o644);
+    await chmod(paths.secrets, 0o750);
+    await writeFile(paths.pid, "999999999\n", { mode: 0o600 });
+    const first = await doctorFix(paths, config, en);
+    assert.deepEqual(first.refused, []);
+    assert.equal(first.fixed.length, 3, first.fixed.join(" | "));
+    assert.equal((await stat(paths.config)).mode & 0o077, 0);
+    assert.equal((await stat(paths.secrets)).mode & 0o077, 0);
+    assert.equal(existsSync(paths.pid), false);
+    assert.ok(first.fixed.some((line) => line.includes(paths.config) && line.includes("0644")));
+    assert.ok(first.fixed.some((line) => line.includes(paths.pid)));
+
+    // A second pass has nothing left to say, so `--fix` cannot report a repair
+    // it did not make.
+    assert.deepEqual(await doctorFix(paths, config, en), { fixed: [], refused: [] });
+
+    // A PID that answers is left where it is: the file is correct, and removing
+    // it would let a second gateway start behind the first.
+    await writeFile(paths.pid, `${process.pid}\n`, { mode: 0o600 });
+    assert.deepEqual((await doctorFix(paths, config, en)).fixed, []);
+    assert.equal(existsSync(paths.pid), true);
+    await rm(paths.pid, { force: true });
+
+    // The directory comes back; the credential inside it does not, and the
+    // refusal says so instead of writing one.
+    await rm(paths.secrets, { recursive: true, force: true });
+    const missing = await doctorFix(paths, null, en);
+    assert.equal((await stat(paths.secrets)).isDirectory(), true);
+    assert.equal((await stat(paths.secrets)).mode & 0o777, 0o700);
+    assert.equal(existsSync(paths.token), false);
+    assert.equal(existsSync(paths.approvalKey), false);
+    assert.equal(missing.refused.length, 1);
+    assert.match(missing.refused[0] ?? "", /writes neither a configuration nor a credential/);
+
+    // What takes a decision is named and left: a workspace that moved, and an
+    // allowlist nobody has filled.
+    await rm(workspace, { recursive: true, force: true });
+    const judged = await doctorFix(
+      paths,
+      {
+        ...config,
+        telegram: {
+          botUsername: "caraka_test_bot",
+          allowFrom: [],
+          allowChats: [],
+          topics: true,
+          modes: {},
+        },
+      },
+      en,
+    );
+    assert.equal(judged.refused.length, 2, judged.refused.join(" | "));
+    assert.ok(judged.refused.some((line) => line.includes(workspace)));
+    assert.ok(judged.refused.some((line) => line.includes("telegram")));
+
+    // Both catalogs carry the repair vocabulary, and neither is a copy of the
+    // other.
+    for (const key of [
+      "fix.header",
+      "fix.leftHeader",
+      "fix.nothing",
+      "fix.madeDir",
+      "fix.setMode",
+      "fix.clearedPid",
+      "fix.keepsConfig",
+      "fix.keepsWorkspace",
+      "fix.keepsAllowlist",
+      "cli.pairSecret",
+    ] as const) {
+      assert.ok(catalogs.id[key].length > 0, key);
+      assert.notEqual(catalogs.id[key], catalogs.en[key], key);
+    }
+  } finally {
+    if (oldHome === undefined) delete process.env.CARAKA_HOME;
+    else process.env.CARAKA_HOME = oldHome;
+  }
+});
+
+test("uninstall lists only what Caraka wrote and takes the whole word", async () => {
+  const oldHome = process.env.CARAKA_HOME;
+  const root = await mkdtemp(join(tmpdir(), "caraka-uninstall-"));
+  process.env.CARAKA_HOME = root;
+  try {
+    const paths = carakaPaths();
+    assert.deepEqual(uninstallTargets(paths), [
+      join(root, "config.yaml"),
+      join(root, "caraka.db"),
+      join(root, "caraka.db-wal"),
+      join(root, "caraka.db-shm"),
+      join(root, "discovery.json"),
+      join(root, "caraka.pid"),
+      join(root, "secrets"),
+    ]);
+    // Every target is inside ~/.caraka and none of them is ~/.caraka itself, so
+    // a file the operator put beside them outlives the command.
+    for (const path of uninstallTargets(paths)) {
+      assert.ok(path.startsWith(root), path);
+      assert.ok(path.length > root.length, path);
+    }
+  } finally {
+    if (oldHome === undefined) delete process.env.CARAKA_HOME;
+    else process.env.CARAKA_HOME = oldHome;
+  }
+  assert.equal(uninstallConfirmed("uninstall"), true);
+  assert.equal(uninstallConfirmed("  UNINSTALL \n"), true);
+  for (const answer of ["y", "yes", "ya", "", "uninstal", "uninstall now", "n"])
+    assert.equal(uninstallConfirmed(answer), false, answer);
+  // The disclosure is the point of the command, so it cannot go missing in one
+  // language: both catalogs name the bot and the workspace as not Caraka's.
+  for (const catalog of Object.values(catalogs)) {
+    assert.match(catalog["cli.uninstallKeeps"], /BotFather/);
+    assert.ok(catalog["cli.uninstallKeeps"].split("\n").length >= 3);
+  }
+  assert.match(catalogs.en["cli.uninstallKeeps"], /coding agent wrote in your workspace/);
+  assert.match(catalogs.id["cli.uninstallKeeps"], /coding agent di workspace Anda/);
 });
