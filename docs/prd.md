@@ -57,7 +57,7 @@ Tim enterprise yang butuh SSO/RBAC/compliance; pengguna non-teknis; orang yang m
 | G3 | Ringan | Paket < 15 MB · RAM idle < 80 MB · cold start < 2 dtk |
 | G4 | Aman secara default | 0 insiden eksekusi tak disetujui pada beta |
 | G5 | Kepercayaan | ≥ 70% pengguna beta memakai ≥ 3 hari/minggu setelah 1 bulan |
-| G6 | Kesederhanaan kode | Inti ≤ 8.000 LOC |
+| G6 | Kesederhanaan kode | Inti ≤ 8.000 LOC — terpenuhi di v1.0 (7.880), **tidak terpenuhi** sejak v1.1 (8.349 pada 8 Agustus 2026) |
 
 ---
 

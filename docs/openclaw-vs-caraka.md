@@ -33,7 +33,7 @@ Daftar apa yang belum terbukti di Caraka lebih berguna daripada nomor versinya, 
 - Tidak ada nomor WhatsApp hidup yang pernah ditautkan ke kode ini, dan tidak ada webhook Cloud API hidup yang pernah diterima.
 - Adapter memori Titen sejauh ini hanya menjawab fetch tiruan; rutenya dibaca dari sumber Titen v0.7.0, permukaan pra-1.0 yang bisa bergerak.
 - Gerbang beta fase 5 masih terbuka. Dua puluh developer beta belum direkrut, jadi kedua angka Definition of Done-nya belum bisa dijawab oleh siapa pun selain pemakainya.
-- Inti sudah menyentuh plafonnya sendiri: 7.996 baris terhadap ~8.000 yang ditulis di `AGENTS.md`. Itu batasnya, bukan ruang di bawahnya.
+- Inti sudah melewati plafonnya sendiri: 8.349 baris terhadap ~8.000 yang ditulis di `AGENTS.md`. v1.0 menyentuh batas itu pada 7.880; v1.1 menambah gate policy-mode dan tiga perintah, lalu melewatinya. Satu pass penyederhanaan mengembalikan 73 baris dan berhenti di situ karena pemindaian blok ternormalisasi tidak lagi menemukan pengulangan — sisanya butuh fitur dibuang atau komentar dipangkas, dan keduanya ditolak.
 
 **Kamu butuh WhatsApp di nomor yang penting.** Provider `baileys` Caraka memakai jalur tidak resmi, dan halaman risikonya sendiri (`docs/whatsapp-risiko.md`) ditulis supaya kamu bisa memutuskan tidak memakainya. Uji lapangan 14 hari yang menjadi gerbang fase 6 belum dijalankan. Rekomendasi yang berlaku hari ini adalah `cloud-api`, jalur resmi Meta.
 

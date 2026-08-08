@@ -203,5 +203,5 @@
 | NFR-05 | Ukuran paket terinstal | < 15 MB |
 | NFR-06 | Platform | macOS, Linux, Windows (WSL2 untuk channel tertentu) |
 | NFR-07 | Uptime lokal | reconnect otomatis; tidak ada kondisi butuh restart manual pada operasi normal |
-| NFR-08 | Ukuran kode inti | ≤ 8.000 LOC |
+| NFR-08 | Ukuran kode inti | ≤ 8.000 LOC — terlampaui sejak v1.1: 8.349 pada 8 Agustus 2026 |
 | NFR-09 | Bahasa antarmuka | Prosa agent mengikuti bahasa user karena Claude melakukannya. String milik Caraka mengikuti field `language` di `config.yaml` (`en` bawaan, `id` opsional), dipilih sekali saat `init`. Tidak ada deteksi per pesan. |

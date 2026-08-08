@@ -36,6 +36,8 @@ Four boxes that had been open since the specification, closed with code rather t
 
 ### Limited
 
+- The core is over its own ceiling. `src/` measures 8,349 lines against the ~8,000 in `AGENTS.md`; v1.0 sat at 7,880 and this release's policy-mode gate and three commands went past it. A simplification pass gave back 73 lines and stopped where a normalised block scan stopped finding repetition — reaching 8,000 from here costs a feature or the comments that carry the decisions, and both were refused. The ceiling was not raised to meet the number; `docs/prd.md` G6 and `docs/frd.md` NFR-08 record the miss instead.
+
 - **Titen was never contacted.** It is not installed on this machine, and nothing answers on `127.0.0.1:7717`. `titen bootstrap`, `titen serve`, and the compile-latency figure phase 0 asks for have no source to be measured from, so the box stays open and the adapter has still only ever answered a mocked fetch.
 - **The Rich Messages spike still needs a live bot and a person.** What ships is `sendRichMessage` per piece with a plain-text fallback when Telegram rejects it. Structured table and code blocks, `sendRichMessageDraft`, and the retest of whether `editMessageText` with `rich_message` is enough were all out of scope in v0.2 and were never built after. None of the three can be answered from a repository.
 - **Every field gate is still open**, the same nine as at 1.0.0. A gate on the run path is not a week of daily use, five recorded setup sessions, an A/B across twenty tasks, twenty beta developers, or fourteen days on a real WhatsApp number. This release adds a refusal the code can prove and nothing a person has confirmed.

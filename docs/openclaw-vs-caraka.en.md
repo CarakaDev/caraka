@@ -33,7 +33,7 @@ The list of what is unproven in Caraka is more useful than its version number, a
 - No live WhatsApp number was ever linked to this code, and no live Cloud API webhook was ever received.
 - The Titen memory adapter has only ever answered a mocked fetch; its routes were read from the Titen v0.7.0 source, a pre-1.0 surface that can move.
 - The phase 5 beta gate is still open. Twenty beta developers have not been recruited, so neither of its Definition of Done numbers can be answered by anyone but the people who would use it.
-- The core has reached its own ceiling: 7,996 lines against the ~8,000 written in `AGENTS.md`. That is the line, not room below it.
+- The core has passed its own ceiling: 8,349 lines against the ~8,000 written in `AGENTS.md`. v1.0 sat at the line with 7,880; v1.1 added the policy-mode gate and three commands and went over it. One simplification pass gave back 73 lines and stopped there, because a normalised block scan no longer finds repetition — the rest would cost a feature or the comments, and both were refused.
 
 **You need WhatsApp on a number that matters.** Caraka's `baileys` provider uses an unofficial route, and its own risk page (`docs/whatsapp-risiko.md`) is written so that you can decide against it. The fourteen-day field test that gates phase 6 has not been run. The recommendation that stands today is `cloud-api`, Meta's official route.
 
