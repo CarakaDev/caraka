@@ -53,10 +53,11 @@ export const rows = [
   { k: 'Execution tools', a: '20+', b: 'Yes', c: 'Zero', tone: '#FF7A5E', weight: '600', range: r(3, 2.2, 22) },
   { k: 'Plugin marketplace', a: 'Large', b: 'Yes', c: 'None', tone: '#FF7A5E', weight: '600', range: r(4, 2.2, 22) },
   // Comp line 309 reads "1 in v1.0". Telegram shipped at v0.2, Discord at v0.5,
-  // and WhatsApp at v0.6, all three on the same Channel contract, so v1.0 is
-  // the three-channel release rather than the one-channel one the comp drew.
-  // Signal is unscheduled.
-  { k: 'Channels', a: '22', b: 'via gateway', c: '3 in v1.0', tone: '#95A0AB', weight: '400', range: r(5, 2.2, 22) },
+  // and WhatsApp at v0.6, all three on the same Channel contract, so the cell
+  // counts three rather than the one the comp drew. 1.1.0 added no channel;
+  // the number reads the current release because that is the question a reader
+  // asks of it. Signal is unscheduled.
+  { k: 'Channels', a: '22', b: 'via gateway', c: '3 in v1.1', tone: '#95A0AB', weight: '400', range: r(5, 2.2, 22) },
   { k: 'Tokens outside your agent', a: 'Yes, own loop', b: 'Yes', c: 'None', tone: '#8EEE98', weight: '600', range: r(6, 2.2, 22) },
   { k: 'Sandboxing', a: 'Configure it', b: 'Configure it', c: 'Inherited', tone: '#FF7A5E', weight: '600', range: r(7, 2.2, 22) },
   // Comp line 312 presents "Under 3 min" as a report; no setup session has
@@ -66,7 +67,7 @@ export const rows = [
   // The maturity cell carries the same word as the RELEASE STATE stat in
   // src/data/status.ts and the closing line of src/data/security.ts. One
   // question, one answer, in all three places.
-  { k: 'Maturity', a: 'Very high', b: 'High', c: 'v1.0, unproven', tone: '#FF93B2', weight: '600', range: r(9, 2.2, 22) },
+  { k: 'Maturity', a: 'Very high', b: 'High', c: 'v1.1, unproven', tone: '#FF93B2', weight: '600', range: r(9, 2.2, 22) },
 ]
 
 export const complaints = [
@@ -160,7 +161,7 @@ export const picks = [
 ]
 
 export const honest = [
-  'OpenClaw is far more mature. Hundreds of thousands of stars, tens of thousands of commits, a real community. Caraka v1.0 means every phase carries shipped code, and it is unproven: no field gate has been answered by anyone, the author included, and you should treat it that way.',
+  'OpenClaw is far more mature. Hundreds of thousands of stars, tens of thousands of commits, a real community. Caraka v1.1 means every phase carries shipped code, and it is unproven: no field gate has been answered by anyone, the author included, and you should treat it that way.',
   'OpenClaw does work Caraka will never do. Calendar, inbox, browser, home automation. If that is what you need, this is not the answer.',
   // Comp line 355 says "early 2026"; the Vellum quote on this page is dated
   // August 2026.

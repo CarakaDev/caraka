@@ -78,6 +78,12 @@ export const topics = [
 // one agent verified live. `presets/agents/` ships a preset for five of the
 // others since v0.4 — flags transcribed, marked unverified inside each file —
 // so their rows read "preset", a file that exists, not a claim it was run here.
+//
+// Codex keeps that row after 1.1.0. `scripts/smoke-cli.mjs codex` drives the
+// real binary through the real preset, which is more than transcription, and
+// every run of it so far has ended on a spent usage quota without completing a
+// turn. "verified" is a claim an agent earns by answering, so it stays "preset"
+// until one does.
 export const agents = [
   'Claude Code · verified', 'Codex CLI · preset', 'Gemini CLI · preset', 'Cursor · preset',
   'Cline · roadmap', 'Goose · preset', 'Amp · preset', 'Copilot CLI · roadmap',
@@ -153,8 +159,8 @@ export const safety = [
 export const term = [
   { t: '$ npx caraka init', tone: '#5D666F', range: r(0, 2.4, 22) },
   { t: '', tone: '#5D666F', range: r(1, 2.4, 22) },
-  // comp:535 reads `caraka · v0.1.0`; `VERSION` in src/cli.ts is 1.0.0.
-  { t: 'caraka · v1.0.0', tone: '#F6F9FC', mark: 'ꦕꦫꦏ', markTone: '#E2452C', range: r(2, 2.4, 22) },
+  // comp:535 reads `caraka · v0.1.0`; `VERSION` in src/cli.ts is 1.1.0.
+  { t: 'caraka · v1.1.0', tone: '#F6F9FC', mark: 'ꦕꦫꦏ', markTone: '#E2452C', range: r(2, 2.4, 22) },
   { t: '', tone: '#5D666F', range: r(3, 2.4, 22) },
   { t: 'claude login · ready', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(4, 2.4, 22) },
   { t: 'telegram · paired', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(5, 2.4, 22) },

@@ -200,7 +200,7 @@ import MobileToc from '../components/MobileToc.astro'
             <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">07</span>
             <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Verify and run</h2>
           </div>
-          <p style="margin: 0 0 20px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Doctor is read-only. Start keeps the gateway in the foreground, so Ctrl-C ends it while you are still deciding whether to keep it.</p>
+          <p style="margin: 0 0 20px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Doctor is read-only until you pass --fix, which repairs a file mode, a missing directory, or a stale PID file and refuses everything that would take a decision. Start keeps the gateway in the foreground, so Ctrl-C ends it while you are still deciding whether to keep it.</p>
           <div style="background: #05070A; border: 1px solid #171C22; border-radius: 13px; padding: clamp(18px, 2.6vw, 26px); font-family: 'JetBrains Mono', monospace; font-size: clamp(11.5px, 1.5vw, 13px); line-height: 1.95; overflow-x: auto; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">
             {verifyLines.map((v) => (
               <div style={`display: flex; gap: 9px; color: ${v.tone}; white-space: pre;`}>{v.mark && (<span style={`color: ${v.markTone};`}>{v.mark}</span>)}<span>{v.t}</span></div>

@@ -1,4 +1,4 @@
-// Documentation-page copy follows the shipped v1.0 implementation and docs/.
+// Documentation-page copy follows the shipped v1.1 implementation and docs/.
 // design/mockups/Caraka Docs.dc.html decides the layout and stopped deciding
 // the content at v0.1: its chapter 05 is Memory, which arrived at v0.3 as a
 // provider rather than a chapter, and its row lists name commands that were
@@ -134,6 +134,7 @@ export const chapters: Chapter[] = [
       { k: 'sender allowlist', v: 'The gateway refuses to start empty, and a sender outside it is audited as denied wherever it wrote.' },
       { k: 'group pairing', v: 'A group or guild channel is confirmed in the operator’s DM, never in the room itself. Telegram privacy mode stays on, group admin is never requested, and Discord is never asked for the MESSAGE_CONTENT intent.' },
       { k: 'group disclosure', v: 'Putting a room on the allowlist chooses to show that work to everyone who can read it: every one of them sees the approval cards, paths, diffs, and command output. A Discord role changes none of it, and a role never approves anything.' },
+      { k: 'policy mode', v: 'Read once per message, from the channel’s modes map and the kind of container the message arrived in, never from its text. A private conversation the map does not name is assisted; a room the map does not name is read-only, where a write or a command is refused before a card is drawn, /yolo opens no window, and a route that decides permissions itself is not run at all. A read carrying command, content, or an old_string/new_string pair counts as a write, and an unrecognised tool is refused rather than assumed harmless.' },
       { k: 'secret files', v: '~/.caraka/secrets uses mode 0700; every token and the approval key use 0600, and the Baileys auth state is a 0700 directory inside it.' },
       { k: 'scrubber', v: 'Runs before every outbound message on every channel and before every audit detail. No CARAKA_ variable reaches an agent subprocess.' },
       { k: 'audit', v: 'SQLite triggers reject UPDATE and DELETE on audit rows.' },
@@ -147,9 +148,11 @@ export const chapters: Chapter[] = [
     intro: 'One validated YAML file names the workspaces, the configured channels, their allowlists, the interface language, the memory provider, and the agent. Secrets are separate.',
     // comp:272-290 shows a multi-workspace file with memory and mode keys. The
     // workspaces list and the memory block arrived in v0.3 and v0.4, the discord
-    // block in v0.5, and the whatsapp block in v0.6. There is still no mode key:
-    // no policy-mode gate exists on the run path. Every block is additive and
-    // version stays 1, so a file written for an older release still loads.
+    // block in v0.5, the whatsapp block in v0.6, and the mode key in v1.1 — as
+    // `modes` inside a channel block rather than beside the workspace, because
+    // what a conversation may do belongs to the conversation. Every block is
+    // additive and version stays 1, so a file written for an older release
+    // still loads, and one that names no mode gets the documented defaults.
     term: [
       { t: 'version: 1', tone: '#FF7A5E' },
       { t: 'language: en', tone: g },
@@ -165,6 +168,8 @@ export const chapters: Chapter[] = [
       { t: '  appId: "140000000000000000"', tone: '#B2BCC6' },
       { t: '  allowFrom: ["230000000000000000"]', tone: g },
       { t: '  allowChats: ["990000000000000000"]', tone: g },
+      { t: '  modes:              # unnamed rooms stay read-only', tone: '#FF7A5E' },
+      { t: '    "990000000000000000": assisted', tone: g },
       { t: 'whatsapp:             # optional', tone: '#FF7A5E' },
       { t: '  provider: cloud-api', tone: '#B2BCC6' },
       { t: '  phoneNumberId: "1500000000"', tone: g },
@@ -179,19 +184,22 @@ export const chapters: Chapter[] = [
     no: '07', id: 'cli', href: '#cli', label: 'CLI', title: 'CLI reference',
     intro: 'The command surface is small on purpose, and it grows one verb at a time.',
     // comp:292-303 lists eight verbs including pair, audit, ws and uninstall.
+    // `uninstall` came back in v1.1; pair, audit, and ws are still not verbs.
     // The router in src/cli.ts answers the verbs below and nothing else.
     rows: [
-      { k: 'npx caraka init [--workspace PATH]', v: 'Check prerequisites, choose the interface language, validate the bot, pair one Telegram principal, and write private config.' },
+      { k: 'npx caraka init [--workspace PATH]', v: 'Check prerequisites, choose the interface language, validate the bot, pair one Telegram principal over a deep link that works once and expires in five minutes, and write private config.' },
       { k: 'npx caraka doctor', v: 'Read-only checks for runtime, config, the workspace, the agents found on PATH, secret file modes, the allowlist of each configured channel, memory, and topic capability.' },
+      { k: 'npx caraka doctor --fix', v: 'Repair the three kinds of drift install-flow.md writes a correct value for — a directory Caraka owns that is not 0700, a file it wrote that is not 0600, a PID file naming a process that is gone — then run the checks, so the rows report the state you are left with. An unreadable config, a missing workspace, and an empty allowlist are printed with the reason they were left alone.' },
       { k: 'npx caraka start', v: 'Run the gateway in the foreground for every channel the config names.' },
       { k: 'npx caraka stop', v: 'Send SIGTERM to the PID the running gateway wrote to ~/.caraka/caraka.pid.' },
       { k: 'npx caraka status', v: 'Report whether the gateway runs, with its PID, workspace, and configured channels. No token, and nothing anyone wrote in chat.' },
       { k: 'npx caraka dashboard [--port n]', v: 'Serve a read-only page on 127.0.0.1:7718 that reads the same database the gateway writes: seven panels covering sessions, runs, approvals, audit, policy, memory, and the two beta numbers. It answers GET only, and it works while the gateway is stopped.' },
       { k: 'npx caraka trust <ws> --for 30m', v: 'Open a trust window from the terminal, sixty minutes at most. Adding --bypass hands the permission decisions to Claude itself, where Caraka cannot see them.' },
+      { k: 'npx caraka uninstall', v: 'Delete the config, the database with both SQLite sidecars, the discovery cache, the PID file, and the secrets directory, after listing them and taking the word uninstall typed in full. A running gateway stops it before anything is removed. The Telegram bot and everything the coding agent wrote in your workspace are named as not Caraka’s to delete.' },
       { k: 'npx caraka service --print systemd|launchd|schtasks', v: 'Print one unit file to stdout.' },
       { k: 'npx caraka --version', v: 'Print the package version.' },
       { k: 'npm i -g caraka', v: 'Optional global install; use caraka instead of npx afterward.' },
     ],
-    note: 'There is no doctor --fix, uninstall command, workspace manager, or audit CLI. caraka service writes nothing and installs nothing: it prints a unit for you to save and load yourself, and the macOS one starts at login rather than at boot.',
+    note: 'There is no workspace manager and no audit CLI. doctor --fix and uninstall are terminal-only and are registered as no chat command: one writes to disk and the other deletes an install, and neither is a stranger’s message to send. caraka service writes nothing and installs nothing: it prints a unit for you to save and load yourself, and the macOS one starts at login rather than at boot.',
   },
 ]

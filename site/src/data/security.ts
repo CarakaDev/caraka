@@ -1,4 +1,4 @@
-// Security-page copy follows docs/security.md and the shipped v1.0 runtime.
+// Security-page copy follows docs/security.md and the shipped v1.1 runtime.
 // Where a line below no longer matches design/mockups/Caraka Security.dc.html,
 // the comment above it names the comp line and what shipped instead. The comp
 // still decides how this page looks; it stopped deciding what is true of the
@@ -83,11 +83,12 @@ export const threats = [
     id: 'T6',
     name: 'Leaking into a group',
     // Comp line 311 promises read-only groups behind a mention, with ephemeral
-    // messages for sensitive output. v0.2 ships neither: a group message needs
-    // both allowlists (gateway.ts:161-165), and ephemeral was refused as a
-    // control (done/v02/spec.md §2b.2), so the disclosure is stated instead.
+    // messages for sensitive output. Half of that arrived in v1.1: a room the
+    // config does not name is read-only on the run path, not behind a mention
+    // but by default. Ephemeral was refused as a control and stays refused
+    // (done/v02/spec.md §2b.2), so the disclosure is stated instead.
     control:
-      'A group message needs its chat and its sender on the allowlists, and pairing is confirmed in the operator DM. Caraka never asks for group admin, so a bot left in privacy mode reads only commands and replies to itself. Every member of a paired group sees the approval cards, paths, and command output.',
+      'A group message needs its chat and its sender on the allowlists, and pairing is confirmed in the operator DM. A room the channel’s modes map does not name runs read-only: the task reads, and a write or a command is refused before a card is drawn. Caraka never asks for group admin, so a bot left in privacy mode reads only commands and replies to itself. Every member of a paired group still sees the approval cards, paths, and command output.',
   },
   {
     id: 'T7',
@@ -128,15 +129,20 @@ export const threats = [
   },
 ].map((t, i) => ({ ...t, range: r(i, 2.4, 24) }))
 
-// Comp line 325 gives the group row four crosses. An allowlisted group or guild
-// channel runs like the DM it was paired from — no policy-mode gate exists on the
-// run path for any channel — and the row that stays empty is the one missing
-// either list. Colours and column order are the comp's.
+// Comp line 325 gives the group row four crosses, and since v1.1 the code
+// agrees with it by default: a room the channel's `modes` map does not name
+// runs read-only, so a write or a command is refused before a card is drawn
+// (src/core/security.ts `resolvePolicyMode`, `writesOrExecutes`). The comp had
+// one group row; there are two here because the opt-in is the whole point —
+// the same room named `assisted` in config.yaml behaves as the DM does. The row
+// that stays empty is still the one missing either list. Colours and column
+// order are the comp's.
 export const modes = [
   { name: 'allowed DM', tone: '#FF7A5E', bg: '#12100F', r: '✓', rTone: ok, w: '✓', wTone: ok, e: 'button', eTone: warn, p: '✓', pTone: ok, range: r(0, 3, 24) },
   { name: 'unlisted chat or user', tone: '#95A0AB', bg: '#0C1116', r: '✗', rTone: no, w: '✗', wTone: no, e: '✗', eTone: no, p: '✗', pTone: no, range: r(1, 3, 24) },
-  { name: 'allowed group or guild channel', tone: '#95A0AB', bg: '#0C1116', r: '✓', rTone: ok, w: '✓', wTone: ok, e: 'button', eTone: warn, p: '✓', pTone: ok, range: r(2, 3, 24) },
-  { name: 'signed callback', tone: '#95A0AB', bg: '#0C1116', r: '✓', rTone: ok, w: '—', wTone: no, e: '✓', eTone: ok, p: '✓', pTone: ok, range: r(3, 3, 24) },
+  { name: 'group, not in modes', tone: '#95A0AB', bg: '#0C1116', r: '✓', rTone: ok, w: '✓', wTone: ok, e: 'read-only', eTone: no, p: '✓', pTone: ok, range: r(2, 3, 24) },
+  { name: 'group, opted in', tone: '#95A0AB', bg: '#0C1116', r: '✓', rTone: ok, w: '✓', wTone: ok, e: 'button', eTone: warn, p: '✓', pTone: ok, range: r(3, 3, 24) },
+  { name: 'signed callback', tone: '#95A0AB', bg: '#0C1116', r: '✓', rTone: ok, w: '—', wTone: no, e: '✓', eTone: ok, p: '✓', pTone: ok, range: r(4, 3, 24) },
 ]
 
 export const risky = [
@@ -155,6 +161,11 @@ export const mandatory = [
   // Claude", which v0.2 makes false; the comp line it ported (336) asked for
   // groups behind an explicit opt-in, and the two allowlists are that opt-in.
   'A message reaches Claude only when its chat is on the chat allowlist and its sender is on the sender allowlist.',
+  // docs/security.md §4 control 6, which was a sentence until v1.1 put a gate
+  // under it (src/core/gateway.ts, in front of both the card and the trust
+  // window). The mode is read from the config and the container, never from
+  // anything a sender or the agent writes.
+  'A room never gets write or execute without an explicit opt-in. Naming it assisted under the channel’s modes is that opt-in; until then the run reads and nothing else, and /yolo from that room opens no window.',
   'Approval only through a single-use bearer secret with a TTL, bound to the principal, the session, and the request. Where a channel has buttons that is a signed callback; where it has none it is the code on the card, generated server-side and printed nowhere else. A plain word is never a decision on any channel.',
   'Token and approval key files use mode 0600 inside a mode-0700 secrets directory.',
   'The outbound scrubber runs before every message on every channel, and before every audit detail.',
@@ -180,9 +191,9 @@ export const notClaimed = [
   // and says so (src/cli.ts:366-397, gateway.ts:969-977).
   'The bypassPermissions mode belongs to Claude and is opened from the terminal alone. Inside that window Caraka is never asked for permission, so its audit records that the window was open and not what ran inside it.',
   // The same word the RELEASE STATE stat in src/data/status.ts and the maturity
-  // row in src/data/compare.ts use. Reaching 1.0 means every phase carries
+  // row in src/data/compare.ts use. Reaching 1.1 means every phase carries
   // shipped code; it does not mean anyone outside this repository has run it.
-  'Caraka v1.0 is unproven. Every phase has shipped code and not one field gate has been answered by a person, so treat it as software that has not yet been attacked in the wild.',
+  'Caraka v1.1 is unproven. Every phase has shipped code and not one field gate has been answered by a person, so treat it as software that has not yet been attacked in the wild.',
   'Vulnerabilities in your coding agent, in Telegram, in Discord, or in WhatsApp are theirs to fix. We will help route the report.',
 ]
 
@@ -199,6 +210,7 @@ export const inScope = [
   // A group message reaching Claude is the shipped behaviour now, so the
   // reportable failure is a chat or sender that is on neither list.
   'A message from a chat or sender outside the allowlists reaching Claude',
+  'A write or a command running in a conversation the config leaves read-only',
   'Secret leakage through Caraka messages or audit entries',
   'Caraka opening an undocumented network listener',
 ]
@@ -208,5 +220,5 @@ export const outScope = [
   'Vulnerabilities in the coding agent itself',
   'Vulnerabilities in Telegram, Discord, or WhatsApp',
   'Tool access enabled directly in the coding agent configuration',
-  'Policy modes, which are specified and have no gate on the run path in any channel',
+  'Mapping a Discord role to a policy mode, which is specified and not built. The modes map is keyed by container, or by principal in a private conversation, never by role',
 ]

@@ -118,11 +118,18 @@ export const verifyLines = [
   { t: '', tone: d, range: r(7, 2, 24) },
   { t: '$ npx caraka start', tone: '#FF7A5E', range: r(8, 2, 24) },
   { t: 'Ctrl-C stops it here; npx caraka stop ends one started elsewhere', tone: d, range: r(9, 2, 24) },
-  // Three lines the comp has no counterpart for (its transcript, lines 390-401,
-  // ends on `caraka doctor --fix` and `caraka uninstall`, neither of which
-  // exists). `service` prints and returns; the macOS caveat is the honest
-  // reading of a per-user LaunchAgent (src/service.ts:74-86).
+  // Three lines the comp has no counterpart for. `service` prints and returns;
+  // the macOS caveat is the honest reading of a per-user LaunchAgent
+  // (src/service.ts:74-86).
   { t: '', tone: d, range: r(10, 2, 24) },
   { t: '$ npx caraka service --print systemd', tone: '#FF7A5E', range: r(11, 2, 24) },
   { t: 'prints a unit and writes nothing; the macOS agent starts at login, not at boot', tone: d, range: r(12, 2, 24) },
+  // The comp's own last two transcript lines (390-401), dropped while neither
+  // command existed and restored in v1.1 now that both do. The comments beside
+  // them are the comp's words, and both are the honest reading of the code:
+  // --fix repairs three kinds of drift and refuses the rest, and uninstall
+  // leaves the workspace alone.
+  { t: '', tone: d, range: r(13, 2, 24) },
+  { t: '$ npx caraka doctor --fix     # repairs what it can', tone: d, range: r(14, 2, 24) },
+  { t: '$ npx caraka uninstall        # clean, repos untouched', tone: d, range: r(15, 2, 24) },
 ] as { t: string; tone: string; mark?: string; markTone?: string; range: string }[]

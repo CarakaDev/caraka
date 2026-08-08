@@ -20,12 +20,15 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.0.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.1.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
-  // Seven presets load; Claude Code is the one route ever run against a live
-  // agent here. Three channels since v0.6 — Telegram, Discord, WhatsApp — and
-  // WhatsApp counts as shipped code, not as a linked number: none has ever been
-  // linked, which the cards below state in as many words.
+  // Seven presets load; Claude Code is the one route that has ever completed a
+  // turn against a live agent here. 1.1.0 added a live smoke for the codex
+  // preset, and its only runs so far ended on a spent usage quota, so the count
+  // of proven agents is still one. Three channels since v0.6 — Telegram,
+  // Discord, WhatsApp — and WhatsApp counts as shipped code, not as a linked
+  // number: none has ever been linked, which the cards below state in as many
+  // words.
   { n: '3', label: 'CHANNELS', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
   { n: '1', label: 'PRIVATE OPERATOR', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
 ]
@@ -94,7 +97,7 @@ export const phases: Phase[] = [
     range: r(6, 3, 26) },
   { n: '7', title: 'Public release · v1.0', dur: '2 weeks', live: true, ...shipped,
     q: 'Is it ready to be trusted by strangers?',
-    gate: 'Every goal in prd.md is met and measured. Fifteen agents are not covered: seven presets ship, and Claude Code is the only one ever run against a live binary here. Taking the release to the Indonesian developer community and to the ACP ecosystem is the step nothing in a repository can perform.',
+    gate: 'Every goal in prd.md is met and measured. Fifteen agents are not covered: seven presets ship, Claude Code is the only one that has ever answered a live binary here, and the codex smoke added in 1.1.0 has so far only reached a spent quota. Taking the release to the Indonesian developer community and to the ACP ecosystem is the step nothing in a repository can perform.',
     range: r(7, 3, 26) },
 ]
 
@@ -114,6 +117,32 @@ export const releases = [
         'Watch the dashboard swap a panel in a real browser with the CSP live',
         'Run fourteen days on a real WhatsApp number with no ban and no manual relink, or publish the honest finding that makes Cloud API the default',
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
+      ] },
+    ] },
+  { v: '1.1.0', state: 'unproven', date: '8 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'ADDED', tone: '#8EEE98', items: [
+        'The policy-mode gate on the run path, which every release before this one specified and none enforced. A conversation the config does not name runs assisted in a direct message and read-only in a room, and read-only refuses a permission request before the card is drawn, refuses /yolo because a trust window covers the whole workspace, and refuses to start at all on a route that decides permissions itself and would give read-only nothing to refuse at. What counts as a write is not the kind label the agent wrote: a read carrying command, content, or an old_string/new_string pair is read as a write, and a tool nobody recognises is refused rather than assumed harmless',
+        'A modes map per channel block, keyed by container id or, in a private conversation, by the principal. The shipped config opts nothing in, and trusted cannot be written there at all — a window has to expire, so it stays with caraka trust and /yolo',
+        'Deep-link pairing that behaves like the bearer secret it is: 72 bits from randomBytes, one answer, a five-minute deadline it enforces itself, and a constant-time comparison because the payload arrives from the network. The wizard now prints a line under the link saying that whoever opens it first is paired',
+        'caraka doctor --fix, which repairs only the three things install-flow.md wrote a correct value for — the directories Caraka owns at 0700, the files it writes at 0600, and a PID file naming a process that is gone — and prints what it refuses with the reason: an unreadable config, a missing workspace, an empty allowlist',
+        'caraka uninstall, which deletes the config, the database with both SQLite sidecars, the discovery cache, the PID file, and the whole secrets directory, and names the two things it will not touch: the bot on Telegram’s side, and whatever the coding agent wrote in your workspace. A running gateway stops it at exit 78, and the confirmation takes the word uninstall typed in full',
+        'A live smoke for the CLI route, npm run smoke now running scripts/smoke-cli.mjs codex after the Claude one: the real preset through the real loader, the real driver, the real binary, two turns and a resume. It skips when the binary is absent and fails when it is present and will not answer',
+        'A CI job that runs npm audit over the production tree and over the tree an install that chose the Baileys provider ends up with, which closes the reason security.md deferred that row',
+      ] },
+      { label: 'CHANGED', tone: '#6FB9F0', items: [
+        'A cede record from --bypass is now held per agent session rather than per workspace. Two conversations on one workspace hold two sessions, and the old key let either of them consume the other’s record, after which nothing restored the session that really was ceded',
+        'A failed CLI run is reported in the agent’s own words. codex writes its reason into the structured stdout it was asked for while stderr carries progress notes, so the last stderr line named the wrong cause about as often as the right one',
+        'Two security.md §13 rows moved. Safest-shipped-default is met, because the gate it was waiting for exists; the npm audit row is still deferred, but for a new reason — the command now runs, and on the Baileys tree it answers three findings',
+        'Roadmap phase 2 stopped saying its boxes were empty. Five of its seven were already built and unticked, and deep-link pairing, doctor --fix, and uninstall are the three this release added',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'Titen was never contacted. It is not installed on this machine and nothing answers on 127.0.0.1:7717, so titen bootstrap, titen serve, and the compile-latency number in phase 0 have no source to be measured from',
+        'The Rich Messages spike is still open. What ships is sendRichMessage with a plain-text fallback; structured blocks, sendRichMessageDraft, and the retest of editMessageText with rich_message all need a live bot and a person typing to it',
+        'One agent is proven against a live binary, not two. The codex smoke exists and reaches the real binary, and every run of it so far has come back on a spent usage quota, so the preset is reachable rather than proven',
+        'Every field gate is still open, the same nine listed above. A gate on the run path is not a week of use, five recorded setup sessions, an A/B across twenty tasks, twenty beta developers, or fourteen days on a real WhatsApp number',
+        'src/ stands at 8,422 lines against the ~8,000 line ceiling in AGENTS.md. The features were built and the fold that pays for them was not; that is over the budget, not near it',
+        'Two cells of the assisted row are still design. The table writes ✗ for git push and deploy; what the code does is send a card for both, because the high-risk list applies first and is not differentiated by mode',
       ] },
     ] },
   { v: '1.0.0', state: 'unproven', date: '8 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),

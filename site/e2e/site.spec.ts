@@ -329,16 +329,28 @@ test.describe('the comps still decide the layout', () => {
     // held at 6805 — the row had room for a seventh link at 1440px. Measured
     // 8 August 2026, Chromium at 1440x900, against `rm -rf dist && npm run
     // build`, twice, identical both times.
+    //
+    // v1.1 moved five, measured the same way and on the same viewport, twice,
+    // identical both times. /status +1222 to 12035: the 1.1.0 card, which
+    // carries three groups rather than two. /docs +509: a policy-mode row on
+    // the security table, two lines in the config sample, and two more CLI
+    // verbs, all of which wrap. /security +246: a fifth row in the mode table,
+    // a mandatory control that had been a sentence until this release, one more
+    // reportable failure, and a rewritten group-disclosure control. /install
+    // +76: the comp's own last two transcript lines, restored now that both
+    // commands exist. /brand/readme +24: the repo card gained the mode gate.
+    // / and /compare held — their edits landed inside cells and chips that were
+    // already there.
     const EXPECTED: Record<string, number> = {
-      // v1.0 copy — measured from the site (see above)
+      // v1.1 copy — measured from the site (see above)
       '/': 6580,
-      '/docs': 6805,
+      '/docs': 7314,
       '/compare': 5931,
-      '/install': 5364,
-      '/security': 5901,
+      '/install': 5440,
+      '/security': 6147,
       '/whatsapp-risk': 6857,
-      '/status': 10813,
-      '/brand/readme': 5533,
+      '/status': 12035,
+      '/brand/readme': 5557,
       // still measured against the comp
       '/story': 5734,
       '/brand': 10177,
