@@ -232,9 +232,9 @@ Prinsip: **warisi, jangan bangun ulang.**
 
 ## 8. Jaringan
 
-- Default bind `127.0.0.1`. Flag `--bind 0.0.0.0` mencetak peringatan besar dan mencatat audit event.
+- Default bind `127.0.0.1`. Flag `--bind 0.0.0.0` mencetak peringatan besar dan mencatat audit event. Sejak v0.5 satu-satunya listener yang diatur baris ini adalah dasbor read-only (`caraka dashboard`); peringatan dan baris audit `dashboard.start` ditulis sebelum listener menerima koneksi pertama.
 - Webhook (WhatsApp Cloud API): verifikasi `X-Hub-Signature-256` wajib; tolak request tanpa signature valid; reverse proxy dengan TLS.
-- Telegram: long-polling sebagai default (tidak butuh port terbuka sama sekali) — inilah alasan tambahan menjadikan Telegram channel pertama. **Di v1.0 tidak ada webhook sama sekali**, sehingga seluruh kelas risiko "port terbuka ke internet" tidak berlaku.
+- Telegram: long-polling sebagai default (tidak butuh port terbuka sama sekali) — inilah alasan tambahan menjadikan Telegram channel pertama. **Di v1.0 tidak ada webhook sama sekali**, sehingga seluruh kelas risiko "port terbuka ke internet" tidak berlaku. Klaim itu tetap berlaku untuk webhook, dan sejak v0.5 ia berdampingan dengan satu socket: dasbor read-only mendengarkan di loopback, tidak menerima apa pun dari internet, dan tidak menjadi jalan masuk bagi channel mana pun.
 - Titen dijalankan lokal (`127.0.0.1:7717`); bila user memilih instans remote, onboarding menyatakan secara eksplisit bahwa data memori akan meninggalkan mesin.
 - Tidak ada telemetri keluar. Tanpa pengecualian.
 
@@ -310,6 +310,7 @@ Kejujuran adalah bagian dari postur keamanan:
 - Kami **tidak** bisa mencegah WhatsApp memblokir nomormu bila memakai provider tidak resmi.
 - Kami **tidak** melihat satu pun keputusan izin selama jendela `--bypass` terbuka, jadi kami tidak mengaudit isinya. Yang tercatat hanya jendelanya.
 - Kami **tidak** bisa menyembunyikan pekerjaan dari anggota grup yang kamu masukkan ke allowlist.
+- Kami **tidak** memasang autentikasi pada dasbor lokal. Selama `caraka dashboard` berjalan, siapa pun di mesin itu yang dapat mencapai `127.0.0.1` dapat membacanya, termasuk pengguna lokal lain yang tidak punya izin baca atas `~/.caraka/caraka.db`. Batas yang sebenarnya adalah izin berkas database itu, dan dasbor melebarkannya selama ia hidup. Yang **tidak** termasuk dalam batas itu adalah peramban: dasbor hanya menjawab request yang datang dengan literal alamat atau `localhost` di header `Host`, sehingga halaman web yang mengarahkan namanya sendiri ke 127.0.0.1 tidak bisa membaca panel mana pun sebagai origin-nya sendiri.
 - Kami **tidak** melakukan audit keamanan pihak ketiga (belum); status ini akan dinyatakan terbuka sampai berubah.
 
 ---

@@ -109,12 +109,14 @@ Separuh mesin DoD ini tercentang saat `v0.4.0` dirilis: test `one dummy preset Y
 
 **Pertanyaan:** apakah produk ini bertahan di tangan orang lain?
 
-- [ ] Discord + thread + approval berbasis role (memetakan model sesi yang sama)
-- [ ] Dashboard read-only lokal (htmx)
+- [x] Discord + thread + approval terikat principal (memetakan model sesi yang sama) — `done/discord-v05/spec.md`. Baris ini dulu menulis "approval berbasis role"; role Discord tidak pernah memberi otoritas approval, dan pemetaan role → mode kebijakan (FR-AUTH-06) menunggu gerbang modenya ada di jalur run.
+- [x] Dashboard read-only lokal (htmx) — `caraka dashboard`, `done/dashboard-v05/spec.md`
 - [ ] Rekrut 20 developer beta, utamakan Indonesia
-- [ ] Instrumentasi lokal opt-in: waktu setup, aktivasi (tanpa telemetri keluar)
+- [x] Instrumentasi lokal: waktu setup dan aktivasi, dihitung dari audit yang sudah ada, tanpa telemetri keluar. Opt-in melekat pada **membagikan** angkanya, bukan pada mengumpulkannya — audit adalah kontrol wajib dan tidak pernah opsional, jadi angkanya sudah ada di mesin sebelum ada yang membukanya.
 
 **Definition of done:** ≥ 60% peserta mengirim pesan pertama dalam 24 jam **tanpa bertanya**; 0 insiden eksekusi tanpa persetujuan.
+
+Dua baris mesin fase ini tercentang saat `v0.5.0` dirilis. Yang tersisa adalah gerbang manusia: rekrutmen 20 developer beta dan kedua angka DoD hanya bisa dijawab oleh orang lain yang memakainya. Keduanya dipindah menjadi validasi pasca-rilis atas keputusan pemilik 8 Agustus 2026 (`spec/v10.md`), bentuk yang sama dengan Fase 4, dan hasilnya dicatat di sini begitu ada.
 
 ---
 

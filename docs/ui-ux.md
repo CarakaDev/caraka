@@ -2,7 +2,7 @@
 
 **Versi:** 0.2 · **Tanggal:** 7 Agustus 2026
 
-> Produk ini nyaris tidak punya UI. Permukaannya adalah **chat** dan **terminal**. Ini dokumen *interaction design*, bukan *visual design*.
+> Produk ini nyaris tidak punya UI. Permukaannya adalah **chat**, **terminal**, dan sejak v0.5 satu **dasbor lokal read-only** di `127.0.0.1`. Ini dokumen *interaction design*, bukan *visual design*.
 
 ---
 
@@ -186,6 +186,7 @@ caraka init                             # terpasang
 caraka doctor [--fix]                   # terpasang (--fix belum)
 caraka start                            # terpasang
 caraka stop | status                    # terpasang
+caraka dashboard [--port n] [--bind addr]         # terpasang
 caraka service --print systemd|launchd|schtasks   # terpasang
 caraka trust <workspace> --for 60m      # terpasang
 caraka trust <workspace> --bypass --for 60m       # terpasang

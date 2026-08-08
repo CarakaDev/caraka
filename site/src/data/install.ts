@@ -1,8 +1,8 @@
 // Install-page copy follows docs/install-guide.md and docs/install-with-ai.md.
 // The layout stays aligned with design/mockups/Caraka Install.dc.html. That comp
 // documents an install script and a pricing table that were never built, so this
-// file already carries its own text; the comments below mark where v0.2 changed
-// what that text can say.
+// file already carries its own text; the comments below mark where the code
+// changed what that text can say.
 
 import { r } from '../lib/anim'
 
@@ -23,7 +23,7 @@ export const toc = [
 export const chain = [
   { n: '1', title: 'Node.js 22 or newer', body: 'The runtime for Caraka and npx. Check it with node --version before starting.', range: r(0, 5, 28) },
   { n: '2', title: 'Git', body: 'Claude works inside the repository you choose. Caraka checks that Git is available before pairing.', range: r(1, 5, 28) },
-  { n: '3', title: 'Claude Code, signed in', body: 'v0.2 connects to the official Claude ACP adapter. Run claude auth status to confirm access.', range: r(2, 5, 28) },
+  { n: '3', title: 'A coding agent, signed in', body: 'Claude Code over the official ACP adapter is the route verified here; init accepts any of the seven presets it finds on PATH. Run claude auth status to confirm access.', range: r(2, 5, 28) },
 ]
 
 export const notNeeded = ['Docker', 'a cloud account', 'a domain', 'an open port', 'a webhook', 'a reverse proxy', 'a TLS certificate', 'a background service']
@@ -54,11 +54,11 @@ export const prices = [
 
 export const costNotes = [
   { tag: 'NO MODEL KEY', tone: '#8EEE98', bg: '#12100F', border: '#2B1612', t: 'Claude keeps its own authentication, model, tools, and sandbox.', range: r(0, 3, 24) },
-  { tag: 'NO LISTENER', tone: '#8EEE98', bg: '#0C1116', border: '#171C22', t: 'Telegram uses long-polling. Caraka does not bind a network port.', range: r(1, 3, 24) },
+  { tag: 'NO LISTENER', tone: '#8EEE98', bg: '#0C1116', border: '#171C22', t: 'No channel binds a port: Telegram is polled, Discord is an outbound socket. Only caraka dashboard listens, on 127.0.0.1, and only when you start it.', range: r(1, 3, 24) },
   { tag: 'PRIVATE TOKEN', tone: '#FFD67E', bg: '#0C1116', border: '#171C22', t: 'The bot token stays outside config.yaml in a mode-0600 file.', range: r(2, 3, 24) },
-  { tag: 'ONE WORKSPACE', tone: '#7A848F', bg: '#0C1116', border: '#171C22', t: 'v0.2 deliberately supports one operator, bot, workspace, and Claude adapter.', range: r(3, 3, 24) },
+  { tag: 'ONE OPERATOR', tone: '#7A848F', bg: '#0C1116', border: '#171C22', t: 'One operator, deliberately. More than one workspace is supported, and @slug in front of a message picks which.', range: r(3, 3, 24) },
   // Comp lines 364-369 hold four pricing notes the port replaced with what init
-  // does. This fifth card is the language question v0.2 asks once at init
+  // does. This fifth card is the language question init asks once
   // (src/cli.ts:141-148); the second sentence is what it deliberately does not
   // do (done/v02/spec.md §3.3).
   { tag: 'LANGUAGE ASKED ONCE', tone: '#7A848F', bg: '#0C1116', border: '#171C22', t: 'init asks for English or Indonesian and writes the answer to config.yaml. Caraka never picks a language from the text of a message.', range: r(4, 3, 24) },

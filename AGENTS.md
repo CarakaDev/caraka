@@ -38,7 +38,7 @@ spec/ plan/      work in flight
 done/            work that shipped or was cancelled, with the reason
 ```
 
-Dependency direction is one-way: `channels → core ← drivers`. A channel never imports a driver, and a driver never imports a channel.
+Dependency direction is one-way: `channels → core ← drivers`. A channel never imports a driver, and a driver never imports a channel. `src/dashboard/` sits on the same side as a channel: it imports `src/core` and `src/store`, and nothing in `src/core` imports it.
 
 ## How work moves
 

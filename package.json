@@ -28,6 +28,7 @@
     "caraka": "bin/caraka.mjs"
   },
   "files": [
+    "assets/dashboard",
     "bin",
     "dist",
     "presets"

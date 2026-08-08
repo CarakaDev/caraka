@@ -103,6 +103,7 @@ Ditolak: `whatsapp-web.js` (Puppeteer = Chromium ±300 MB, melanggar target ukur
 |---|---|
 | Alasan | Dashboard hanya read-only: daftar sesi, riwayat run, audit, memori. Tidak ada alasan memasang React + bundler + toolchain untuk empat tabel. Menjaga janji "satu paket, kecil". |
 | Alternatif ditolak | React/Next/Vite SPA — menambah puluhan MB dan pipeline build demi tampilan tabel. |
+| Pengiriman htmx | Berkasnya di-vendor ke `assets/dashboard/htmx.min.js` dan disajikan dari listener itu sendiri, tidak dari CDN. Mesin yang menjalankan Caraka adalah mesin yang memegang kode orang; halaman itu tidak boleh menghubungi origin pihak ketiga, dan tetap bekerja tanpa jaringan. Versi dan sha256-nya dicatat di `plan/dashboard-v05.md`; anggaran dependensi runtime tidak bergerak. |
 
 ---
 

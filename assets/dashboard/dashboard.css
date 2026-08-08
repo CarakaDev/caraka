@@ -1,0 +1,183 @@
+/*
+ * Tones from the neutral ramp and the semantic table in docs/brand.md. Nothing
+ * is loaded from anywhere: no imported sheet, no declared face, no remote
+ * anything, so the page renders the same with the network unplugged. A unit
+ * test greps this file for those at-rules, which is why none is named here.
+ *
+ * Status colour is decoration only. The glyph and the state name are in the
+ * markup, so a browser that never fetched this file still tells the states
+ * apart (AGENTS.md hard rule 7).
+ *
+ * Contrast against the page background #05080C, measured 8 August 2026:
+ * n-900 17.07 · n-700 10.42 · n-500 5.28 · running 9.44 · awaiting_approval
+ * 14.50 · done 14.17 · failed 9.62 · cancelled 7.62. Telegram's sixth icon
+ * colour, the red one, appears nowhere below: a unit test greps for its value,
+ * so it is not written here either.
+ */
+:root {
+  --n-000: #05080c;
+  --n-050: #0c1116;
+  --n-100: #171c22;
+  --n-200: #292e35;
+  --n-500: #7a848f;
+  --n-700: #b2bcc6;
+  --n-900: #e9edf2;
+  --state-idle: #7a848f;
+  --state-running: #6fb9f0;
+  --state-awaiting_approval: #ffd67e;
+  --state-done: #8eee98;
+  --state-failed: #ff93b2;
+  --state-cancelled: #cb86db;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 1.5rem 1.25rem 4rem;
+  background: var(--n-000);
+  color: var(--n-900);
+  font: 14px/1.55 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.note,
+.stamp,
+.empty {
+  color: var(--n-500);
+  margin: 0.35rem 0;
+}
+
+.empty {
+  padding: 1.5rem 0;
+}
+
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 1rem 0 0.5rem;
+  border-bottom: 1px solid var(--n-200);
+  padding-bottom: 0.5rem;
+}
+
+nav a {
+  color: var(--n-700);
+  text-decoration: none;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--n-100);
+  border-radius: 3px;
+}
+
+nav a:hover,
+nav a:focus-visible {
+  color: var(--n-900);
+  border-color: var(--n-200);
+}
+
+nav a.on {
+  color: var(--n-900);
+  border-color: var(--n-500);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 13px;
+}
+
+th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--n-700);
+  background: var(--n-050);
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--n-200);
+  white-space: nowrap;
+}
+
+td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--n-100);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+tbody tr:hover td {
+  background: var(--n-050);
+}
+
+.state {
+  white-space: nowrap;
+  color: var(--n-700);
+}
+
+.state-idle {
+  color: var(--state-idle);
+}
+
+.state-running {
+  color: var(--state-running);
+}
+
+.state-awaiting_approval {
+  color: var(--state-awaiting_approval);
+}
+
+.state-done {
+  color: var(--state-done);
+}
+
+.state-failed {
+  color: var(--state-failed);
+}
+
+.state-cancelled {
+  color: var(--state-cancelled);
+}
+
+.beta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.4rem 1.25rem;
+  margin: 1rem 0;
+}
+
+.beta dt {
+  color: var(--n-500);
+}
+
+.beta dd {
+  margin: 0;
+}
+
+details {
+  margin: 1rem 0;
+  border: 1px solid var(--n-100);
+  border-radius: 3px;
+  padding: 0.6rem 0.8rem;
+}
+
+summary {
+  cursor: pointer;
+  color: var(--n-700);
+}
+
+pre {
+  margin: 0.5rem 0 0;
+  padding: 0.6rem 0.8rem;
+  background: var(--n-050);
+  border: 1px solid var(--n-100);
+  border-radius: 3px;
+  overflow-x: auto;
+  color: var(--n-900);
+}

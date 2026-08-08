@@ -144,7 +144,7 @@ export const safety = [
   'The allowlist is mandatory — the gateway refuses to start without one.',
   'The chat and the sender are separate allowlists, and a message must pass both.',
   'Approvals are signed, single-use callbacks with a TTL. Chat text can never approve.',
-  'Telegram uses long-polling. v0.2 opens no listening port.',
+  'No channel listens: Telegram is polled, Discord is an outbound socket. The only listener is the dashboard, on 127.0.0.1, read-only, GET only.',
   'Secrets are scrubbed from outbound messages and append-only audit details.',
   'Model API keys are never touched — those belong to your coding agent.',
   'A trust window expires on the clock, and high-risk actions still ask for a tap.',

@@ -1,4 +1,4 @@
-// Security-page copy follows docs/security.md and the shipped v0.2 runtime.
+// Security-page copy follows docs/security.md and the shipped v0.5 runtime.
 // Where a line below no longer matches design/mockups/Caraka Security.dc.html,
 // the comment above it names the comp line and what shipped instead. The comp
 // still decides how this page looks; it stopped deciding what is true of the
@@ -13,24 +13,24 @@ const ok = '#8EEE98',
 export const toc = [
   { no: '01', id: 'boundary', href: '#boundary', title: 'Trust boundary' },
   { no: '02', id: 'threats', href: '#threats', title: 'Threats' },
-  { no: '03', id: 'modes', href: '#modes', title: 'Telegram routes' },
+  { no: '03', id: 'modes', href: '#modes', title: 'Chat routes' },
   { no: '04', id: 'defaults', href: '#defaults', title: 'Defaults' },
   { no: '05', id: 'honest', href: '#honest', title: 'What we do not claim' },
   { no: '06', id: 'report', href: '#report', title: 'Reporting' },
 ]
 
 export const headline = [
-  { tag: 'NO PORT', t: 'Telegram uses long-polling. v0.2 opens no listener or webhook.' },
+  { tag: 'NO PORT', t: 'No channel listens: Telegram is polled, Discord is an outbound socket, and there is no webhook anywhere.' },
   { tag: 'NO KEYS', t: 'Model API keys are never requested, stored, or transmitted. Those belong to your agent.' },
   { tag: 'NO TOOLS', t: "Caraka ships no execution tools. Claude owns the tool policy and sandbox." },
   { tag: 'NO MARKETPLACE', t: 'No plugin registry, no dynamic loading, no third-party skill supply chain.' },
 ]
 
 export const untrusted = [
-  'Telegram messages and callback payloads',
-  'Text streamed back by Claude',
+  'Telegram messages, Discord events, and callback payloads',
+  'Text streamed back by the coding agent',
   'Tool titles, targets, and raw input from ACP',
-  'Unknown fields in Telegram updates',
+  'Unknown fields in an update from either channel',
 ]
 
 export const trusted = [
@@ -67,7 +67,7 @@ export const threats = [
     id: 'T4',
     name: 'Secret exfiltration through a reply',
     control:
-      'Outbound text and audit details are scrubbed. The Telegram token is removed from the Claude subprocess environment.',
+      'Outbound text and audit details are scrubbed, including the shape of a Discord bot token. No variable whose name starts with CARAKA_ reaches an agent subprocess.',
   },
   {
     id: 'T5',
@@ -88,7 +88,7 @@ export const threats = [
   {
     id: 'T7',
     name: 'Gateway exposed to the internet',
-    control: 'The gateway only makes outbound Telegram requests and starts no network listener.',
+    control: 'Both channels are outbound only, so the gateway opens nothing. Since v0.5 one listener exists and it is not a channel: caraka dashboard binds 127.0.0.1, answers GET only, and holds the database read-only. Binding it anywhere else needs --bind, which prints a warning and writes an audit row first.',
   },
   {
     id: 'T8',
@@ -98,7 +98,7 @@ export const threats = [
   {
     id: 'T9',
     name: 'WhatsApp account ban',
-    control: 'Not applicable: v0.2 contains no WhatsApp channel code.',
+    control: 'Not applicable: there is no WhatsApp channel code in the package.',
   },
   {
     id: 'T10',
@@ -113,23 +113,24 @@ export const threats = [
   {
     id: 'T12',
     name: 'Memory poisoning',
-    control: 'Not applicable: v0.2 does not install, query, or write a memory provider.',
+    control: 'Recalled text is labelled as data, its memory markers are stripped so it cannot pose as instruction, and the injected context is capped at 6 items in 800 tokens.',
   },
   {
     id: 'T13',
     name: 'Forged approval callback',
     control:
-      'callback_data is capped at 64 bytes, so the payload stays server-side and only an HMAC-signed id travels.',
+      'The payload stays server-side and only an HMAC-signed id travels — 33 characters, inside both Telegram\u2019s 64-byte callback_data and Discord\u2019s custom_id.',
   },
 ].map((t, i) => ({ ...t, range: r(i, 2.4, 24) }))
 
-// Comp line 325 gives the group row four crosses. In v0.2 an allowlisted group
-// runs like the DM it was paired from, and the row that stays empty is the one
-// missing either list. Colours and column order are the comp's.
+// Comp line 325 gives the group row four crosses. An allowlisted group or guild
+// channel runs like the DM it was paired from — no policy-mode gate exists on the
+// run path for any channel — and the row that stays empty is the one missing
+// either list. Colours and column order are the comp's.
 export const modes = [
   { name: 'allowed DM', tone: '#FF7A5E', bg: '#12100F', r: '✓', rTone: ok, w: '✓', wTone: ok, e: 'button', eTone: warn, p: '✓', pTone: ok, range: r(0, 3, 24) },
   { name: 'unlisted chat or user', tone: '#95A0AB', bg: '#0C1116', r: '✗', rTone: no, w: '✗', wTone: no, e: '✗', eTone: no, p: '✗', pTone: no, range: r(1, 3, 24) },
-  { name: 'allowed group', tone: '#95A0AB', bg: '#0C1116', r: '✓', rTone: ok, w: '✓', wTone: ok, e: 'button', eTone: warn, p: '✓', pTone: ok, range: r(2, 3, 24) },
+  { name: 'allowed group or guild channel', tone: '#95A0AB', bg: '#0C1116', r: '✓', rTone: ok, w: '✓', wTone: ok, e: 'button', eTone: warn, p: '✓', pTone: ok, range: r(2, 3, 24) },
   { name: 'signed callback', tone: '#95A0AB', bg: '#0C1116', r: '✓', rTone: ok, w: '—', wTone: no, e: '✓', eTone: ok, p: '✓', pTone: ok, range: r(3, 3, 24) },
 ]
 
@@ -151,9 +152,9 @@ export const mandatory = [
   'A message reaches Claude only when its chat is on the chat allowlist and its sender is on the sender allowlist.',
   'Approval only through a signed, single-use callback with a TTL. Chat text is never a fallback.',
   'Token and approval key files use mode 0600 inside a mode-0700 secrets directory.',
-  'The outbound scrubber runs before Telegram messages and audit details.',
+  'The outbound scrubber runs before every message on every channel, and before every audit detail.',
   'SQLite triggers keep audit rows append-only.',
-  'Long-polling opens no listener; unavailable topics fall back to linear mode.',
+  'No channel opens a listener; where threads are unavailable, sessions fall back to linear mode with a header.',
   // Comp line 333 already asked for a trust window that expires under a
   // database constraint. v0.2 has it (src/store/db.ts:100), so the card states
   // what the window does not suspend (gateway.ts:546-570).
@@ -164,12 +165,14 @@ export const notClaimed = [
   'Caraka cannot guarantee that Claude asks before every operation. The coding agent owns its tool policy and sandbox.',
   'A signed button proves who approved one request; it does not make the approved operation safe.',
   'We have not had a third-party security audit. This will be stated openly until it changes.',
+  'The local dashboard has no authentication. While caraka dashboard runs, anyone on that machine who can reach 127.0.0.1 can read it, including a local user with no read permission on the database file. Loopback is not an authentication boundary; what the page does refuse is a browser arriving under someone else\u2019s hostname.',
+  'Nothing on the Discord path has ever run against a real Discord. The evidence is a mocked gateway socket and a mocked REST surface, so the real payload shapes, the real 429 behaviour, and the real permissions are unproven.',
   // The second tier, which has no line in the comp because the comp has no
   // trust window. Terminal-only by AC-6.13/6.14; the audit records the window
   // and says so (src/cli.ts:366-397, gateway.ts:969-977).
   'The bypassPermissions mode belongs to Claude and is opened from the terminal alone. Inside that window Caraka is never asked for permission, so its audit records that the window was open and not what ran inside it.',
-  'Caraka v0.2 is an early preview. Treat it as software that has not yet been attacked in the wild.',
-  'Vulnerabilities in your coding agent, in Telegram, or in their libraries are theirs to fix. We will help route the report.',
+  'Caraka v0.5 is a closed beta. Treat it as software that has not yet been attacked in the wild.',
+  'Vulnerabilities in your coding agent, in Telegram, or in Discord are theirs to fix. We will help route the report.',
 ]
 
 export const commitments = [
@@ -192,7 +195,7 @@ export const inScope = [
 export const outScope = [
   'Anything the operator explicitly approved',
   'Vulnerabilities in the coding agent itself',
-  'Vulnerabilities in Telegram or its libraries',
+  'Vulnerabilities in Telegram or in Discord',
   'Tool access enabled directly in the coding agent configuration',
-  'Channels and policy modes not shipped in v0.2',
+  'Policy modes, which are specified and have no gate on the run path in any channel',
 ]

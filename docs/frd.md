@@ -176,7 +176,7 @@
 | FR-AUD-03 | P0 | **Redaksi otomatis** rahasia sebelum ditulis dan sebelum dikirim ke chat (pola `sk-`, `ghp_`, `AKIA`, JWT, blok private key, isi `.env`). |
 | FR-AUD-04 | P0 | `caraka audit --since 24h [--workspace x]` untuk penelusuran. |
 | FR-AUD-05 | P1 | Rotasi + retensi yang dapat dikonfigurasi (default 30 hari). |
-| FR-AUD-06 | P1 | Dashboard web read-only di `127.0.0.1`. |
+| FR-AUD-06 | P1 | Dashboard web read-only di `127.0.0.1`. Terpasang di v0.5 sebagai `caraka dashboard [--port n] [--bind addr]`: tujuh panel, hanya GET, handle SQLite dibuka `readOnly`. |
 
 ---
 
@@ -184,8 +184,8 @@
 
 | ID | P | Kebutuhan |
 |---|---|---|
-| FR-OPS-01 | P0 | Gateway bind ke `127.0.0.1` secara default; membuka ke alamat lain memerlukan flag eksplisit + peringatan. |
-| FR-OPS-02 | P0 | Perintah: `start`, `stop`, `status`, `logs`, `doctor`, `pair`, `audit`, `session`, `config`. Terpasang: `init`, `doctor`, `start`, `stop`, `status`, `trust`, `service`. **Dispesifikasikan, belum di v0.2:** `logs`, `pair`, `audit`, `session`, `config`. |
+| FR-OPS-01 | P0 | Gateway bind ke `127.0.0.1` secara default; membuka ke alamat lain memerlukan flag eksplisit + peringatan. Satu-satunya listener sampai v0.5 adalah dasbor FR-AUD-06, dan `--bind` di luar daftar loopback mencetak peringatan serta menulis audit `dashboard.start` sebelum listener menerima koneksi. |
+| FR-OPS-02 | P0 | Perintah: `start`, `stop`, `status`, `logs`, `doctor`, `pair`, `audit`, `session`, `config`. Terpasang: `init`, `doctor`, `start`, `stop`, `status`, `dashboard`, `trust`, `service`. **Dispesifikasikan, belum di v0.2:** `logs`, `pair`, `audit`, `session`, `config`. |
 | FR-OPS-03 | P1 | **Cetak** berkas service untuk tiga platform (systemd user unit, launchd agent, schtasks) lewat `caraka service --print`. Caraka tidak pernah memasangnya, tidak punya hook `postinstall`, dan tidak pernah mencetak `sudo`. Windows dulu tidak disebut di baris ini meski CLI-nya tiga platform; sekarang disebut, dan kata "install" diganti "cetak". Template launchd dan schtasks dikirim **belum diuji**. |
 | FR-OPS-04 | P0 | Reload konfigurasi tanpa kehilangan sesi aktif bila memungkinkan. |
 | FR-OPS-05 | P1 | Cron/jadwal sederhana untuk memicu prompt berulang (default: nonaktif). |
