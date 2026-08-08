@@ -230,17 +230,34 @@ $ cd site && npm run check
 
  Test Files  2 passed (2)
       Tests  26 passed (26)
-   Start at  16:49:19
-   Duration  130ms (transform 31ms, setup 0ms, import 52ms, tests 25ms, environment 0ms)
 
 $ cd site && npm run e2e
   2 skipped
   110 passed (44.9s)
 
 $ cd site && npm run build
-16:50:19 [build] 13 page(s) built in 422ms
-16:50:19 [build] Complete!
+17:00:50 [build] 13 page(s) built in 318ms
+17:00:50 [build] Complete!
 ```
+
+### Gerbang situs pertama kali hijau di atas `dist/` yang basi
+
+Putaran pertama `npm run e2e` di `site/` lulus 110 dan tidak boleh dihitung.
+`playwright.config.ts` memakai `reuseExistingServer` di luar CI, dan mesin ini
+memegang daemon `astro preview` yang hidup sejak 7 Agustus. Daemon itu menyajikan
+`site/dist` apa adanya, jadi selama `dist` belum dibangun ulang, yang diukur
+adalah situs versi lama. Sesudah `rm -rf dist && npm run build`, test tinggi
+dokumen gagal di enam rute.
+
+Angkanya bukan regresi: enam baseline `EXPECTED` di `site/e2e/site.spec.ts`
+memang ditulis dari pengukuran yang sah atas pohon yang sudah tidak ada lagi.
+Yang benar, diukur dua kali di atas build bersih dan sama persis dua-duanya:
+`/status` 10813, `/security` 5836, `/docs` 6805, `/install` 5364, `/compare`
+5931, `/brand/readme` 5533, `/` 6580 tidak berubah. Komentar di berkas test itu
+sekarang menyebut jebakannya, supaya orang berikutnya membangun ulang dulu
+sebelum memercayai angka yang aneh.
+
+Keluaran yang ditempel di atas adalah putaran sesudah baseline diperbaiki.
 
 ```
 $ find src -name '*.ts' | xargs wc -l | tail -1

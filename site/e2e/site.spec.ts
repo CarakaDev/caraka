@@ -300,26 +300,35 @@ test.describe('the comps still decide the layout', () => {
     // cells that already existed, and 'topics, threads, or a header' is shorter
     // than the line it replaced.
     //
-    // v1.0 moved five, all re-measured 8 August 2026, Chromium, same viewport:
-    // /status +1476 to 10136 (the 1.0.0 card with its own ADDED and LIMITED
-    // groups, a ninth open gate, and a longer gate sentence on five of the eight
-    // phase rows), /security +495 (a fourteenth threat control, the CLI route's
+    // v1.0 moved seven. Read these against v0.6, not against the first set of
+    // v1.0 numbers this file carried: those were taken against a `dist/` built
+    // before the last copy edits landed, so they were a real measurement of a
+    // tree that no longer existed. The set below was taken after `rm -rf dist
+    // && npm run build`, twice, identical both times — 8 August 2026, Chromium,
+    // 1440x900. If a number here ever looks impossible, rebuild before
+    // believing it: `npm run e2e` reuses a preview server it did not start.
+    //
+    // /status +2153 to 10813 is the largest move this page has taken. The 1.0.0
+    // card carries its own ADDED and LIMITED groups, a ninth open gate joins the
+    // list, and every phase row now names an open gate where three of them used
+    // to read done. /security +741: a fourteenth threat control, the CLI route's
     // missing permission hook added to what we do not claim, and four rewritten
-    // entries), /docs +284 (the release banner grew a line, and the doctor,
-    // start and dashboard rows now wrap), /install +67 and / +65 (a rewritten
-    // hero and one rewritten section on each). /compare held again: the memory
-    // line the port had dropped came back inside a list that already existed,
-    // and the longer honesty sentence stayed within its paragraph. /brand/readme
-    // held: the rewritten blockquote wraps to the same line count at this width.
+    // entries. /docs +306: the release banner grew, and the doctor, start, and
+    // dashboard rows wrap. /install +154 and / +65: a rewritten hero and a
+    // rewritten section on each. /compare +58, which is the first time it has
+    // moved since the port: the memory line the port had dropped came back.
+    // /brand/readme −16 to 5533, the height it held before v0.6, because the
+    // repo card's status chip and the board's blockquote were both rewritten
+    // shorter.
     const EXPECTED: Record<string, number> = {
       // v1.0 copy — measured from the site (see above)
       '/': 6580,
-      '/docs': 6783,
-      '/compare': 5873,
-      '/install': 5277,
-      '/security': 5590,
-      '/status': 10136,
-      '/brand/readme': 5549,
+      '/docs': 6805,
+      '/compare': 5931,
+      '/install': 5364,
+      '/security': 5836,
+      '/status': 10813,
+      '/brand/readme': 5533,
       // still measured against the comp
       '/story': 5734,
       '/brand': 10177,
