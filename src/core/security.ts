@@ -181,6 +181,20 @@ export function cedesPermission(optionId: string) {
 }
 
 /**
+ * The permission response that selects an option, and the one that cancels when
+ * there is no option to select. Ten call sites across the gateway and the guard
+ * below wrote the pair out; the answer to "what happens when the agent offered
+ * no `reject_once`" is now in one place rather than restated at each of them.
+ */
+export function chooseOption<Response>(optionId: string | null | undefined): Response {
+  return (
+    optionId
+      ? { outcome: { outcome: "selected", optionId } }
+      : { outcome: { outcome: "cancelled" } }
+  ) as Response;
+}
+
+/**
  * The last thing a permission response passes through. A response that would
  * cede standing permission is replaced by `reject_once`, whether the option came
  * from a button, a timer, or a trust window.
@@ -193,12 +207,9 @@ export function guardPermission<
   if (outcome.outcome !== "selected" || !outcome.optionId) return response;
   const chosen = request.options.find((option) => option.optionId === outcome.optionId);
   if (!cedesPermission(outcome.optionId) && chosen?.kind !== "allow_always") return response;
-  const reject = request.options.find((option) => option.kind === "reject_once");
-  return (
-    reject
-      ? { outcome: { outcome: "selected", optionId: reject.optionId } }
-      : { outcome: { outcome: "cancelled" } }
-  ) as Response;
+  return chooseOption<Response>(
+    request.options.find((option) => option.kind === "reject_once")?.optionId,
+  );
 }
 
 // `docs/security.md` §5. These keep their buttons inside a trust window.

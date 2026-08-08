@@ -563,34 +563,34 @@ async function doctor(args: string[] = []) {
     if (refused.length > 0) console.log([t("fix.leftHeader"), ...refused].join("\n"));
   }
   const checks: Array<[string, boolean, string]> = [];
-  checks.push(["Node.js", Number(process.versions.node.split(".")[0]) >= 22, process.version]);
-  checks.push(["Git", command("git", ["--version"]).status === 0, "install Git"]);
+  // Name, verdict, and what to do about a red one — the triple `printChecks`
+  // reads. Written as a call rather than a pushed array literal because the
+  // brackets were what pushed half of these rows onto four lines each.
+  const check = (name: string, ok: boolean, detail: string) => checks.push([name, ok, detail]);
+  check("Node.js", Number(process.versions.node.split(".")[0]) >= 22, process.version);
+  check("Git", command("git", ["--version"]).status === 0, "install Git");
   // Doctor is the one caller that refreshes discovery past the cache's age.
   checks.push(...agentChecks(await discoverAgents({ refresh: true }), claudeAuthenticated, t));
   let loaded: Awaited<ReturnType<typeof loadConfig>>;
   try {
     loaded = await loadConfig();
     t = translator(loaded.config.language ?? "en");
-    checks.push(["Config", true, loaded.paths.config]);
+    check("Config", true, loaded.paths.config);
   } catch {
-    checks.push(["Config", false, `run \`caraka init\` (${carakaPaths().config})`]);
+    check("Config", false, `run \`caraka init\` (${carakaPaths().config})`);
     printChecks(checks);
     process.exitCode = 1;
     return;
   }
-  checks.push([
+  check(
     "Workspace",
     (await stat(loaded.config.workspace.path).catch(() => null))?.isDirectory() === true,
     loaded.config.workspace.path,
-  ]);
+  );
   if (loaded.config.telegram)
-    checks.push(["Telegram token mode", await privateFile(loaded.paths.token), "must be 0600"]);
+    check("Telegram token mode", await privateFile(loaded.paths.token), "must be 0600");
   if (loaded.config.discord)
-    checks.push([
-      "Discord token mode",
-      await privateFile(loaded.paths.discordToken),
-      "must be 0600",
-    ]);
+    check("Discord token mode", await privateFile(loaded.paths.discordToken), "must be 0600");
   // The Baileys auth state is the WhatsApp session itself, so its directory is
   // checked the way a key file is; the Cloud API has three secrets and no
   // directory. A missing path reads as a failing row, not as a thrown doctor.
@@ -604,14 +604,10 @@ async function doctor(args: string[] = []) {
       ["app secret", loaded.paths.whatsappAppSecret, "0600"],
     ] as const)
       if (existsSync(path))
-        checks.push([
-          `WhatsApp ${name} mode`,
-          await privateFile(path),
-          `must be ${mode} (${path})`,
-        ]);
-  checks.push(["Approval key mode", await privateFile(loaded.paths.approvalKey), "must be 0600"]);
+        check(`WhatsApp ${name} mode`, await privateFile(path), `must be ${mode} (${path})`);
+  check("Approval key mode", await privateFile(loaded.paths.approvalKey), "must be 0600");
   for (const [id, block] of Object.entries(channelBlocks(loaded.config)))
-    checks.push([`Allowlist (${id})`, block.allowFrom.length > 0, "run init again"]);
+    check(`Allowlist (${id})`, block.allowFrom.length > 0, "run init again");
   // A Titen that is configured gets a health probe; any other provider is a
   // choice, not a fault, so its row can never turn the exit code red.
   const memory = loaded.config.memory;
@@ -621,7 +617,7 @@ async function doctor(args: string[] = []) {
     })
       .then((response) => response.ok)
       .catch(() => false);
-    checks.push(["Titen memory", healthy, "run `titen serve`"]);
+    check("Titen memory", healthy, "run `titen serve`");
     let loopback = false;
     try {
       loopback = LOOPBACK_HOSTS.includes(new URL(memory.endpoint).hostname);
@@ -633,29 +629,25 @@ async function doctor(args: string[] = []) {
         `Memory endpoint ${memory.endpoint} is not loopback: memory data leaves this machine.`,
       );
   } else {
-    checks.push([`Memory (${memory.provider})`, true, ""]);
+    check(`Memory (${memory.provider})`, true, "");
   }
   const telegram = loaded.config.telegram;
   if (telegram) {
     try {
       const me = await new Telegram(loaded.token, fetch, undefined, t).getMe();
-      checks.push([
-        "Telegram",
-        me.username === telegram.botUsername,
-        `@${me.username ?? "unknown"}`,
-      ]);
-      checks.push([
+      check("Telegram", me.username === telegram.botUsername, `@${me.username ?? "unknown"}`);
+      check(
         "Topics",
         me.has_topics_enabled === true,
         "turn on Threaded Mode for this bot in @BotFather",
-      ]);
-      checks.push([
+      );
+      check(
         "User-created topics",
         me.allows_users_to_create_topics === true,
         "controlled by “Disallow users to create new threads” in @BotFather",
-      ]);
+      );
     } catch {
-      checks.push(["Telegram", false, "token or connection problem"]);
+      check("Telegram", false, "token or connection problem");
     }
   }
   // Doctor is where a container that once refused a thread gets another
@@ -663,11 +655,7 @@ async function doctor(args: string[] = []) {
   const store = new Store(loaded.paths.database, createScrubber(startupSecrets(loaded)));
   const cleared = store.clearMeta("threads.");
   store.close();
-  checks.push([
-    "Thread detection",
-    true,
-    cleared > 0 ? `${cleared} container(s) will be tried again` : "",
-  ]);
+  check("Thread detection", true, cleared > 0 ? `${cleared} container(s) will be tried again` : "");
   printChecks(checks);
   if (checks.some(([, ok]) => !ok)) process.exitCode = 1;
 }

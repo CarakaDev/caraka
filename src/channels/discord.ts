@@ -11,6 +11,7 @@
 import { setTimeout as delay } from "node:timers/promises";
 import {
   drainInbox,
+  evict,
   splitMarkdown,
   type Channel,
   type ChannelCaps,
@@ -64,18 +65,6 @@ export type Socket = {
   close(code?: number, reason?: string): void;
   addEventListener(type: string, handler: (event: { data?: unknown; code?: number }) => void): void;
 };
-
-/** Drop the oldest entries until one more fits. Insertion order is the age. */
-function evict(
-  store: { size: number; keys(): Iterator<string>; delete(key: string): unknown },
-  limit: number,
-) {
-  while (store.size >= limit) {
-    const oldest: string | undefined = store.keys().next().value;
-    if (oldest === undefined) return;
-    store.delete(oldest);
-  }
-}
 
 export type DiscordOptions = {
   token: string;

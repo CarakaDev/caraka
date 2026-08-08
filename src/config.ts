@@ -235,6 +235,11 @@ export function carakaPaths(root = process.env.CARAKA_HOME ?? join(homedir(), ".
   };
 }
 
+/**
+ * Write, lock, then move into place. The config file goes out this way too: it
+ * is not a credential, but it is written 0600 by the same three lines, and two
+ * copies of a rename-into-place is one copy away from a half-written config.
+ */
 export async function atomicSecret(path: string, value: string) {
   const temporary = `${path}.${process.pid}.tmp`;
   await writeFile(temporary, value, { mode: 0o600 });
@@ -274,10 +279,7 @@ export async function saveConfig(
   } catch {
     await atomicSecret(paths.approvalKey, randomBytes(32).toString("base64url"));
   }
-  const temporary = `${paths.config}.${process.pid}.tmp`;
-  await writeFile(temporary, stringify(config), { mode: 0o600 });
-  await chmod(temporary, 0o600);
-  await rename(temporary, paths.config);
+  await atomicSecret(paths.config, stringify(config));
   return paths;
 }
 
@@ -357,10 +359,6 @@ export async function addAllowedChat(config: CarakaConfig, channel: string, chat
     ...config,
     [channel]: { ...block, allowChats: [...block.allowChats, chatId] },
   };
-  const paths = carakaPaths();
-  const temporary = `${paths.config}.${process.pid}.tmp`;
-  await writeFile(temporary, stringify(next), { mode: 0o600 });
-  await chmod(temporary, 0o600);
-  await rename(temporary, paths.config);
+  await atomicSecret(carakaPaths().config, stringify(next));
   return next;
 }

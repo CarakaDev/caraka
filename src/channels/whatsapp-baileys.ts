@@ -11,6 +11,7 @@
  */
 import { chmod, mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
+import { evict } from "../core/channel.js";
 import type { Translate } from "../i18n.js";
 import {
   RECONNECT_ATTEMPTS,
@@ -238,11 +239,7 @@ export async function connectBaileys(options: BaileysOptions): Promise<WhatsAppT
   const remember = (key: WireKey | undefined) => {
     const id = key?.id ?? "";
     if (!id || !key) return "";
-    while (keys.size >= REMEMBERED) {
-      const oldest: string | undefined = keys.keys().next().value;
-      if (oldest === undefined) break;
-      keys.delete(oldest);
-    }
+    evict(keys, REMEMBERED);
     keys.set(id, key);
     return id;
   };

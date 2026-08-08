@@ -118,6 +118,19 @@ export async function* drainInbox(
   }
 }
 
+// Drop the oldest entries until one more fits. Insertion order is the age. Both
+// push channels keep bounded maps of what they sent, and both wrote this loop.
+export function evict(
+  store: { size: number; keys(): Iterator<string>; delete(key: string): unknown },
+  limit: number,
+) {
+  while (store.size >= limit) {
+    const oldest: string | undefined = store.keys().next().value;
+    if (oldest === undefined) return;
+    store.delete(oldest);
+  }
+}
+
 function toggledFence(line: string, openFence: string | null) {
   const match = /^\s*(```[^\r\n]*)/.exec(line);
   if (!match) return openFence;

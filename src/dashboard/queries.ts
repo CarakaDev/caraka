@@ -9,6 +9,7 @@
  * as unbuilt).
  */
 import type { DatabaseSync } from "node:sqlite";
+import type { PolicyGrant } from "../store/db.js";
 
 const ROW_LIMIT = 200;
 const DAY_MS = 24 * 60 * 60_000;
@@ -102,17 +103,12 @@ export function audit(db: DatabaseSync, since: number) {
     .all(since, ROW_LIMIT) as AuditRow[];
 }
 
-export type GrantRow = {
-  id: string;
-  workspace: string;
-  mode: string;
-  grantedBy: string;
-  principal: string | null;
-  agentMode: string | null;
-  createdAt: number;
-  expiresAt: number | null;
-  closedAt: number | null;
-};
+/**
+ * The same nine columns `Store` reads out of `policy_grant`, field for field.
+ * Written twice until now, which is one of the two places a column added to that
+ * table could have been read back under a different name.
+ */
+export type GrantRow = PolicyGrant;
 
 /** The same reading `Store.activeGrant` uses: the row and the clock must agree. */
 export function grantOpen(row: GrantRow, now: number) {
