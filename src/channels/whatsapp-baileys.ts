@@ -24,7 +24,7 @@ import {
 export const BAILEYS_PACKAGE = "@whiskeysockets/baileys";
 // Pinned exactly, because CI never installs it: a range would let an API change
 // arrive on an operator's machine with nothing in this repository to catch it.
-export const BAILEYS_VERSION = "6.7.18";
+export const BAILEYS_VERSION = "6.7.22";
 
 const USER_SUFFIX = "@s.whatsapp.net";
 // How many of our own message keys are kept for a later edit. A message older
