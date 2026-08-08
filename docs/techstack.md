@@ -127,20 +127,22 @@ Ditolak: `whatsapp-web.js` (Puppeteer = Chromium ±300 MB, melanggar target ukur
 
 Batas keras: **≤ 25 dependensi runtime langsung**, dan setiap penambahan harus dijustifikasi di PR.
 
-Perkiraan ukuran terpasang:
+Ukuran terukur, bukan perkiraan. Setiap baris menyebut versi tempat ia dibaca:
 
-| Bagian | Perkiraan |
+| Yang diukur | Angka |
 |---|---|
-| Inti + CLI | ~2 MB |
-| grammY | ~1 MB |
-| Baileys | ~4 MB |
-| ~~discord.js (opsional)~~ | ~~~5 MB~~ tidak dipakai; adapter Discord memakai `fetch` + `WebSocket` bawaan, 0 MB |
-| better-sqlite3 | ~3 MB |
-| ACP SDK + MCP SDK | ~1,5 MB |
-| **Total v1.0 (Telegram saja)** | **≈ 7 MB** ✅ target < 15 MB |
+| Tarball `npm pack` (`1.0.0`) | 185.268 byte, isi terbuka 703.958 byte, 86 berkas |
+| Pohon terpasang, `npm install caraka-0.6.0.tgz --omit=dev` (`0.6.0`, `docs/roadmap.md`) | 309.248.851 byte, 106 paket |
+| Dari pohon itu, `@anthropic-ai/claude-agent-sdk-linux-x64` | 275.013.181 byte |
 | Titen (proses terpisah, opsional) | dipasang sendiri oleh user; tidak masuk paket kita |
 
-Angka v0.5 terukur: empat dependensi runtime, dan menambahkan Discord menambah nol. Satu berkas ikut ke tarball di luar tabel ini, yaitu `assets/dashboard/htmx.min.js` (51 KB, di-vendor, lihat §9).
+Sasaran G3 "Paket < 15 MB" **terpenuhi untuk yang diterbitkan dan tidak terpenuhi untuk yang mendarat di disk pemasang**. Yang menempati 275 MB itu biner platform Claude Agent SDK, yang masuk lewat `@agentclientprotocol/claude-agent-acp`; daftar dependensi tidak berubah antara `0.6.0` dan `1.0.0`, jadi selisih pohonnya sebesar selisih `dist/` kami sendiri.
+
+Sasaran G3 "RAM idle < 80 MB" juga **tidak terpenuhi**: 94.324 kB terbaca pada detik ke-25 (`docs/roadmap.md`), dan `node -e ''` sendiri sudah menghabiskan 42 MB di antaranya, jadi memangkas `src/` tidak akan menutupnya.
+
+Perkiraan lama di tempat ini menghitung grammY, better-sqlite3, dan MCP SDK. Tidak satu pun dari ketiganya pernah dipasang: Telegram memakai `fetch`, penyimpanan memakai `node:sqlite` bawaan, dan MCP belum terbangun.
+
+Angka v0.5 terukur: empat dependensi runtime, dan menambahkan Discord menambah nol. Satu berkas di dalam tarball itu bukan kode kami, yaitu `assets/dashboard/htmx.min.js` (51 KB, di-vendor, lihat §9).
 
 Channel dan provider dimuat **secara malas** — pengguna yang hanya memakai Telegram tidak pernah memuat Baileys. Sampai v0.4 kalimat ini adalah aspirasi, karena hanya ada satu channel untuk dimuat. Sejak v0.5 ia terbangun: modul Discord di-`import()` hanya bila blok `discord:` ada di config, dan sebuah test memeriksa bahwa config tanpa blok itu tidak pernah menyentuhnya.
 

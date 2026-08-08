@@ -4,7 +4,7 @@ Thanks for looking. Caraka is deliberately small, and keeping it small is the ma
 
 ## Before you write code
 
-Caraka is **pre-alpha**: the specification is complete, the implementation is not. Read [docs/blueprint.md](docs/blueprint.md) and the phase you are working in from [docs/roadmap.md](docs/roadmap.md) first. Open an issue before starting anything substantial, so we do not both build the same thing differently.
+Caraka is at v1.0 and **unproven**: every phase of the roadmap carries shipped code, and not one of its field gates has been answered by anyone. Read [docs/blueprint.md](docs/blueprint.md) and the phase you are working in from [docs/roadmap.md](docs/roadmap.md) first. Open an issue before starting anything substantial, so we do not both build the same thing differently.
 
 ## The one rule
 

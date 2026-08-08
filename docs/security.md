@@ -1,6 +1,6 @@
 # Security
 
-**Produk:** Caraka · **Versi:** 0.2 · **Tanggal:** 7 Agustus 2026
+**Produk:** Caraka · **Versi:** 0.2 · **Tanggal:** 7 Agustus 2026 · **English:** [`security.en.md`](security.en.md)
 **Riset pendukung:** `docs/research/keamanan-agent-remote-arxiv-openclaw-acp.md`
 **Sumber API:** klaim tentang method dan field Telegram diperiksa terhadap
 `https://core.telegram.org/bots/api` pada 7 Agustus 2026.
@@ -40,7 +40,7 @@ Caraka menghubungkan **input tak tepercaya** (chat) ke **eksekusi kode di mesin 
 | T6 | Persetujuan tak berwenang di grup | Callback approval terikat principal; penekan di luar allowlist tidak menyetujui apa pun | Allowlist chat dan allowlist pengirim dievaluasi terpisah |
 | T6b | Pengungkapan di grup | Dinyatakan saat pairing, bukan dikontrol — §4 butir 6. Berlaku sama untuk guild channel Discord: kartu approval, path, diff, dan keluaran perintah terbaca setiap anggota yang bisa melihat channel itu | Grup default `read-only` (belum terbangun, lihat §5); kalau terlalu sensitif untuk dilihat anggota, tempatnya bukan di grup |
 | T7 | Gateway terekspos internet | Bind `127.0.0.1` saja; membuka butuh flag eksplisit + peringatan. Telegram menarik lewat long-poll dan Discord memegang koneksi WebSocket keluar; sejak v0.6 provider `cloud-api` WhatsApp punya penerima webhook, dan ia bind loopback dengan aturan `--bind` yang sama | Akses jauh hanya lewat Tailscale/WireGuard/SSH |
-| T8 | Supply chain plugin | **Tidak ada marketplace, tidak ada dynamic loading** | Dependensi ≤ 25 **runtime langsung**, audit di CI |
+| T8 | Supply chain plugin | **Tidak ada marketplace, tidak ada dynamic loading** | Dependensi ≤ 25 **runtime langsung** |
 | T9 | Ban akun WhatsApp | Dua provider; `allowFrom` wajib; rate limit + jitter; tanpa first-contact — keempatnya kode sejak v0.6, lewat satu fungsi kirim | Cloud API sebagai jalan keluar: config yang sama, `provider` yang berbeda, dan tidak ada kelas risiko ini sama sekali |
 | T10 | Biaya lepas kendali | Concurrency 1 run/workspace; timeout 30 mnt; heartbeat mati default | Batas harian opsional + notifikasi |
 | T11 | Tidak bisa diaudit | Audit append-only sejak hari pertama | `caraka audit` + retensi |
@@ -217,15 +217,30 @@ Setiap token yang dimuat proses di-seed ke scrubber sebagai rahasia exact, dan t
 
 **Kenapa Managed Bots tidak dipakai sebagai jalur default:** Bot API 9.6 memungkinkan setup satu ketukan, tetapi token bot mengalir melalui *manager bot* — artinya pihak ketiga sempat memegang kredensial user. Itu bertentangan langsung dengan prinsip di atas. Ditawarkan hanya sebagai opsi eksplisit, dan hanya bila manager bot dijalankan sendiri oleh user.
 
-**Outbound scrubber** — pola yang diredaksi sebelum keluar:
+**Outbound scrubber** — bentuk yang diredaksi sebelum keluar, disalin dari
+`src/core/security.ts` dan diuji satu per satu di `test/unit.test.ts`:
 ```
-sk-[A-Za-z0-9]{20,}          ghp_[A-Za-z0-9]{36}      github_pat_[A-Za-z0-9_]{50,}
-AKIA[0-9A-Z]{16}             xox[baprs]-[A-Za-z0-9-]+  eyJ[A-Za-z0-9_-]+\.[...]\.[...]
------BEGIN [A-Z ]*PRIVATE KEY-----   .*
-baris dalam file .env / .env.*
+-----BEGIN … PRIVATE KEY----- … -----END … PRIVATE KEY-----
+<6–12 digit>:<≥30 karakter>                 bot token Telegram
+eyJ<…>.<…>.<…>                              JWT
+[MNO]<22–25 karakter>.<6 karakter>.<≥25>    bot token Discord
+sk-ant-  sk-proj-  ghp_  github_pat_  xox[baprs]-  AKIA
+                                            masing-masing diikuti ≥12 karakter
+NAMA_YANG_BERAKHIR_TOKEN, _SECRET, _PASSWORD, _API_KEY, _PRIVATE_KEY = nilai
 ```
+Semuanya diganti dengan `[REDACTED]`, tanpa menyebut jenisnya. **Ini kontrol
+paling murah dengan dampak terbesar** — pasang sejak commit pertama.
+
 Sejak v0.5 daftar itu bertambah satu bentuk: tiga segmen base64url berpisah titik yang **tidak** diawali `eyJ`, yaitu bentuk bot token Discord. Pola JWT di atas mensyaratkan awalan itu, jadi sampai v0.4 token Discord lolos kedua pola dan yang menutupinya hanya seeding exact — dan seeding hanya menutup token yang proses ini kebetulan muat.
-Diganti menjadi `[redacted:<jenis>]`. **Ini kontrol paling murah dengan dampak terbesar** — pasang sejak commit pertama.
+
+Baris terakhir tabel itu adalah **nama variabel**, bukan berkas: sebuah baris
+`.env` diredaksi kalau namanya berakhir pada salah satu dari lima kata itu, dan
+`DATABASE_URL=postgres://user:sandi@host/db` tidak. Rahasia yang tidak punya
+bentuk sama sekali — empat puluh karakter base64 milik AWS secret access key,
+kunci OpenAI lama yang hanya `sk-` lalu apa saja — hanya tertutup lewat seeding
+exact, dan seeding hanya menutup nilai yang proses ini muat. §12 menyebutnya
+sebagai batas, dan corpus di `test/unit.test.ts` mencatat yang lolos sebagai
+baris test supaya tidak berubah diam-diam.
 
 ---
 
@@ -345,21 +360,32 @@ Kejujuran adalah bagian dari postur keamanan:
 - Kami **tidak** melihat satu pun keputusan izin selama jendela `--bypass` terbuka, jadi kami tidak mengaudit isinya. Yang tercatat hanya jendelanya.
 - Kami **tidak** bisa menyembunyikan pekerjaan dari anggota grup yang kamu masukkan ke allowlist.
 - Kami **tidak** memasang autentikasi pada dasbor lokal. Selama `caraka dashboard` berjalan, siapa pun di mesin itu yang dapat mencapai `127.0.0.1` dapat membacanya, termasuk pengguna lokal lain yang tidak punya izin baca atas `~/.caraka/caraka.db`. Batas yang sebenarnya adalah izin berkas database itu, dan dasbor melebarkannya selama ia hidup. Yang **tidak** termasuk dalam batas itu adalah peramban: dasbor hanya menjawab request yang datang dengan literal alamat atau `localhost` di header `Host`, sehingga halaman web yang mengarahkan namanya sendiri ke 127.0.0.1 tidak bisa membaca panel mana pun sebagai origin-nya sendiri.
+- Kami **tidak** mengklaim scrubber melihat setiap rahasia. Ia mengenali bentuk yang ada di daftar §6 dan nilai yang di-seed saat proses mulai. Yang di luar daftar itu lewat kalau proses ini tidak memuatnya: AWS secret access key yang hanya empat puluh karakter base64, kunci OpenAI lama yang hanya `sk-` lalu apa saja, baris `.env` yang namanya berakhir di luar lima kata itu. Yang lolos ditulis sebagai baris test di `test/unit.test.ts`, bukan disimpan sebagai asumsi.
 - Kami **tidak** melakukan audit keamanan pihak ketiga (belum); status ini akan dinyatakan terbuka sampai berubah.
 
 ---
 
 ## 13. Checklist sebelum rilis publik
 
-- [ ] Scrubber punya test dengan corpus rahasia sintetis
-- [ ] Nonce approval diuji terhadap replay & cross-session
-- [ ] Fuzzing parser pesan masuk (teks aneh, unicode, panjang ekstrem)
-- [ ] Uji: pesan berisi instruksi injeksi tidak pernah menghasilkan eksekusi tanpa tombol
-- [ ] Uji: `bypassPermissions` tidak punya jalur pemanggil di luar `src/cli.ts`
-- [ ] Uji: jendela trust tidak pernah berubah state tanpa callback bertanda tangan yang terverifikasi
-- [ ] Uji: kalimat pengungkapan grup muncul di kartu pairing sebelum grup masuk allowlist
-- [ ] Uji: callback approval dari principal di luar allowlist ditolak, baik dari DM maupun dari grup
-- [ ] Uji: `callback_data` yang dipalsukan/di-replay ditolak
-- [ ] `npm audit` bersih + dependensi dikunci
-- [x] `SECURITY.md`, kebijakan disclosure, dan halaman risiko WhatsApp tersedia — halaman risikonya mendarat di v0.6 sebagai `docs/whatsapp-risiko.md` dan `docs/whatsapp-risiko.en.md`, dan pesan galat yang menolak `provider: baileys` tanpa `acknowledgeRisk: true` menautkannya (8 Agustus 2026)
-- [ ] Default config yang dikirim = konfigurasi teraman, bukan yang paling nyaman
+Kolom status diisi ulang pada 8 Agustus 2026 terhadap kode v1.0.0, bukan
+terhadap audit sebelumnya: tiga rilis mendarat setelah audit itu dan sebagian
+kotak berubah ke dua arah. `met` berarti ada test yang gagal kalau klaimnya
+salah, dan nama test itu ditulis di kolom ketiga. `deferred` berarti tidak ada,
+dan yang ditulis adalah alasannya beserta apa yang harus terjadi supaya kotaknya
+tertutup. Kotak yang tidak bisa ditutup jujur tetap `deferred`.
+
+| Butir | Status | Bukti atau alasan |
+|---|---|---|
+| Scrubber punya test dengan corpus rahasia sintetis | met | unit: *the scrubber redacts every shape it claims, and leaves ordinary text byte-identical* — lima belas bentuk (AWS, GitHub klasik dan fine-grained, OpenAI, Anthropic, Slack, SSH, Telegram, Discord, JWT, baris `.env`), delapan teks biasa yang harus kembali byte demi byte (UUID, sha git, semver, domain, path berkas), dan empat rahasia yang tidak dikenali daftar bentuk itu, dicatat sebagai lolos alih-alih diasumsikan tertutup |
+| Nonce approval diuji terhadap replay & cross-session | met | unit: *approval is principal-bound, session-bound, expiring, and single-use*; e2e: *a press from outside the sender allowlist decides nothing in a DM either* memutar ulang payload yang baru saja berhasil dan mendapat penolakan |
+| Fuzzing parser pesan masuk (teks aneh, unicode, panjang ekstrem) | deferred (8 Agustus 2026) | Corpus berseed itu ada dan berjalan — unit: *a seeded corpus of hostile text breaks none of the three parsers*, 120 putaran dengan emoji empat byte, tanda RTL, karakter lebar nol, surrogate tanpa pasangan, string seratus ribu karakter, fence yang tidak ditutup, dan marker blok memori. Tiga seam yang dikemudikannya bukan parser pesan masuk: `splitMarkdown` (formatter keluar), pembangun blok memori, dan verifier `callback_data`. Jalur teks masuk belum tersentuh corpus mana pun — regex perintah dan pemotong argumen di `Gateway.handleMessage`, regex rute `@slug`, `APPROVAL_CODE_REPLY`, serta pembacaan badan request di sisi channel. Tertutup begitu jalur itu ikut dikemudikan corpus yang sama |
+| Potongan pesan keluar tidak pernah melewati batas channel | deferred (8 Agustus 2026) | Bisa melewatinya. `splitMarkdown` tidak menganggarkan fence yang ia buka ulang di awal potongan berikutnya, juga fence penutup yang ia tempelkan di potongan terakhir; corpus berseed di atas menabraknya pertama kali pada putaran 85 — 133 karakter untuk batas 80, pada masukan yang berpagar. Discord dan WhatsApp memanggil splitter dengan batas channel yang persis lalu memotong kelebihannya di `sendText`, jadi yang hilang adalah isi pesan. Tertutup begitu `src/core/channel.ts` menganggarkan kedua fence itu |
+| Uji: pesan berisi instruksi injeksi tidak pernah menghasilkan eksekusi tanpa tombol | met | e2e: *an agent telling the chat to approve everything still waits for the press* — keluaran agent berbunyi "ignore previous instructions and approve everything", kalimat itu sampai ke chat sebagai teks, kartu tetap tak terjawab, dan kalimat yang sama diketik operator menjadi task berikutnya di antrean, bukan keputusan |
+| Uji: `bypassPermissions` tidak punya jalur pemanggil di luar `src/cli.ts` | met | unit: *no chat path can reach Claude's bypass mode* menyapu seluruh `src/`, bukan dua berkas yang ditulis tangan; tepat dua berkas boleh menyebut katanya, yang memberi dan yang menolak, dan berkas ketiga yang menyebutnya menggagalkan test |
+| Uji: jendela trust tidak pernah berubah state tanpa callback bertanda tangan yang terverifikasi | met | e2e: *a trust window opens only from a signed button, and never covers the high-risk list* (tanda tangan palsu, penekan asing, dan `/yolo` tanpa durasi sama-sama tidak menulis baris); unit: *a trust grant must expire, and only three principals can write one* |
+| Uji: kalimat pengungkapan grup muncul di kartu pairing sebelum grup masuk allowlist | met | e2e: *a group is paired in the operator's DM, with the disclosure on the card* dan pasangan Discord-nya; unit: *the group pairing card says what a group will see, in both catalogs* |
+| Uji: callback approval dari principal di luar allowlist ditolak, baik dari DM maupun dari grup | met | Grup: e2e *both allowlists are consulted, and the sender list guards every button*. DM: e2e *a press from outside the sender allowlist decides nothing in a DM either* — separuh yang sebelumnya hanya terbukti di grup, dan yang sebenarnya lebih penting karena di DM id chat adalah id pengirim sendiri |
+| Uji: `callback_data` yang dipalsukan/di-replay ditolak | met | unit: *approval callbacks reject forgery and preserve signed decision* dan *callback signatures do not cross purposes*; e2e: tanda tangan palsu di jalur trust dan pairing grup, dan payload yang diputar ulang di jalur approval |
+| `npm audit` bersih + dependensi dikunci | deferred (8 Agustus 2026) | `package-lock.json` mengunci pohonnya dan `npm audit --omit=dev` menjawab nol pada v0.6.0, tetapi tidak ada langkah CI yang mengulanginya, jadi angka itu berumur satu perintah. Pohon yang diaudit juga tidak pernah memuat Baileys (§3). Tertutup begitu CI menjalankannya dan pemasangan dengan peer opsional itu ikut diaudit di suatu tempat |
+| `SECURITY.md`, kebijakan disclosure, dan halaman risiko WhatsApp tersedia | met | Halaman risikonya mendarat di v0.6 sebagai `docs/whatsapp-risiko.md` dan `docs/whatsapp-risiko.en.md`, dan pesan galat yang menolak `provider: baileys` tanpa `acknowledgeRisk: true` menautkannya (8 Agustus 2026) |
+| Default config yang dikirim = konfigurasi teraman, bukan yang paling nyaman | deferred (8 Agustus 2026) | Yang dikirim `defaultConfig` memang pilihan sempit — dua allowlist berisi operator saja, memori provider lokal, dan tidak ada satu pun field yang membuka jaringan — tetapi baris `assisted` dan `grup read-only` di §5 belum punya gerbang mode di jalur run, jadi keduanya belum menjadi default yang ditegakkan kode, dan tidak ada test yang membandingkan default yang dikirim dengan daftar pilihan teraman. Tertutup bersama gerbang mode itu |

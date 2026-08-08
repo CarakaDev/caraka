@@ -118,7 +118,7 @@ const en = {
   "whatsapp.loggedOut":
     "WhatsApp logged this device out, so Caraka stopped instead of reconnecting — repeated reconnects after a logout are the reported way to lose the account. Delete `~/.caraka/secrets/whatsapp/` and start Caraka again to link the device from scratch.",
   "whatsapp.gaveUp":
-    "WhatsApp did not come back after {attempts} attempts, so Caraka stopped trying. Read `docs/troubleshooting.md`, then start again once the connection is back.",
+    "WhatsApp did not come back after {attempts} attempts, so Caraka stopped trying. Read https://github.com/CarakaDev/caraka/blob/main/docs/troubleshooting.en.md, then start again once the connection is back.",
   "whatsapp.pairingCode":
     "\nThis device is not linked yet. On the phone, open WhatsApp → Linked devices → Link with phone number, and type:\n{code}\n",
   "whatsapp.pairingNoNumber":
@@ -126,7 +126,7 @@ const en = {
   "whatsapp.webhookExposed":
     "\n════════════════════════════════════════════════════════════\n⚠  The WhatsApp webhook will listen on {host}:{port}, not on\n   127.0.0.1. Every request is still checked against\n   X-Hub-Signature-256, and nothing else about that address is\n   protected. Put a reverse proxy with TLS in front of it.\n════════════════════════════════════════════════════════════\n",
   "whatsapp.riskNotice":
-    "\n⚠  WhatsApp provider: baileys. This logs in as a linked device on a real\n   account, and the account can be banned for it. Use a number kept apart from\n   the personal one, and read docs/whatsapp-risiko.md for what is known about how\n   often this happens.\n",
+    "\n⚠  WhatsApp provider: baileys. This logs in as a linked device on a real\n   account, and the account can be banned for it. Use a number kept apart\n   from the personal one, and read what is known about how often it happens:\n   https://github.com/CarakaDev/caraka/blob/main/docs/whatsapp-risiko.en.md\n",
   "acp.start": "Claude could not start over ACP. Run `claude auth login`, then try again.",
   "acp.notStarted": "Claude ACP has not started.",
   "preset.invalid": "Preset {file} is invalid at `{field}` and was skipped.",
@@ -372,7 +372,7 @@ const id: Record<MessageKey, string> = {
   "whatsapp.loggedOut":
     "WhatsApp mengeluarkan perangkat ini, jadi Caraka berhenti alih-alih menyambung ulang — sambung ulang berulang sesudah logout adalah pola yang dilaporkan menghilangkan akun. Hapus `~/.caraka/secrets/whatsapp/` lalu jalankan Caraka lagi untuk menautkan perangkat dari awal.",
   "whatsapp.gaveUp":
-    "WhatsApp tidak kembali sesudah {attempts} percobaan, jadi Caraka berhenti mencoba. Baca `docs/troubleshooting.md`, lalu jalankan lagi setelah koneksinya pulih.",
+    "WhatsApp tidak kembali sesudah {attempts} percobaan, jadi Caraka berhenti mencoba. Baca https://github.com/CarakaDev/caraka/blob/main/docs/troubleshooting.md, lalu jalankan lagi setelah koneksinya pulih.",
   "whatsapp.pairingCode":
     "\nPerangkat ini belum tertaut. Di ponsel, buka WhatsApp → Perangkat tertaut → Tautkan dengan nomor telepon, lalu ketik:\n{code}\n",
   "whatsapp.pairingNoNumber":
@@ -380,7 +380,7 @@ const id: Record<MessageKey, string> = {
   "whatsapp.webhookExposed":
     "\n════════════════════════════════════════════════════════════\n⚠  Webhook WhatsApp akan mendengarkan di {host}:{port}, bukan\n   127.0.0.1. Setiap request tetap diperiksa terhadap\n   X-Hub-Signature-256, dan selain itu alamat tersebut tidak\n   terlindungi. Pasang reverse proxy ber-TLS di depannya.\n════════════════════════════════════════════════════════════\n",
   "whatsapp.riskNotice":
-    "\n⚠  Provider WhatsApp: baileys. Ini masuk sebagai perangkat tertaut pada akun\n   sungguhan, dan akun itu bisa diblokir karenanya. Pakai nomor yang terpisah\n   dari nomor pribadi, dan baca docs/whatsapp-risiko.md untuk apa yang diketahui\n   tentang seberapa sering hal itu terjadi.\n",
+    "\n⚠  Provider WhatsApp: baileys. Ini masuk sebagai perangkat tertaut pada akun\n   sungguhan, dan akun itu bisa diblokir karenanya. Pakai nomor yang terpisah\n   dari nomor pribadi, dan baca apa yang diketahui tentang seberapa seringnya:\n   https://github.com/CarakaDev/caraka/blob/main/docs/whatsapp-risiko.md\n",
   "acp.start":
     "Claude tidak dapat dimulai lewat ACP. Jalankan `claude auth login`, lalu coba lagi.",
   "acp.notStarted": "Claude ACP belum dimulai.",

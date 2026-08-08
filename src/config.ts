@@ -97,7 +97,7 @@ const configShape = {
           code: "custom",
           path: ["acknowledgeRisk"],
           message:
-            "whatsapp.provider baileys needs acknowledgeRisk: true. The account can be banned for it; docs/whatsapp-risiko.md says what is known about how often.",
+            "whatsapp.provider baileys needs acknowledgeRisk: true. The account can be banned for it; https://github.com/CarakaDev/caraka/blob/main/docs/whatsapp-risiko.en.md says what is known about how often.",
         });
       if (block.provider === "cloud-api" && !block.phoneNumberId)
         ctx.addIssue({

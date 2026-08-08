@@ -16,7 +16,23 @@ Roadmap ini adalah urutan **pembuktian**, bukan daftar fitur. Setiap fase menjaw
 - [ ] **Topic di private chat:** `createForumTopic` di DM tanpa hak admin; kirim ke `message_thread_id`; tetapkan `icon_color` saat membuat, lalu tandai keadaan lewat `editForumTopic` (`name` dan `icon_custom_emoji_id`, karena `icon_color` tidak dapat diubah setelahnya). Konfirmasi perilaku klien (gelembung "Type any message to create a new thread"). Butir ini dulu menyebut `closeForumTopic`; method itu didokumentasikan hanya untuk supergroup, jadi tidak ada yang bisa di-spike di DM (`telegram-integration.md` §2).
 - [ ] **Rich Messages:** `sendRichMessage` dengan block table + code; `sendRichMessageDraft` untuk streaming; uji ulang apakah `editMessageText` ber-`rich_message` (Bot API 10.1) sudah cukup, atau pola kirim-baru + hapus-lama masih dibutuhkan.
 - [ ] **Titen:** `titen bootstrap` + `titen serve`; POST `/v1/observations`, `/v1/context/compile`; ukur latensi compile.
-- [ ] Ukur: latensi ack, RAM, cold start.
+- [ ] Ukur: latensi ack, RAM, cold start. RAM dan cold start sudah terukur di bawah. Latensi ack belum: ia dibaca dari pesan sungguhan ke bot yang hidup, jadi butuh token yang bekerja dan orang yang mengetik, dan tidak ada cara mengukurnya dari sini.
+
+### Pengukuran RAM, cold start, dan ukuran paket
+
+Mesin: AMD Ryzen AI 9 HX 370 (24 thread), RAM 24.194.772 kB, Linux 7.0.0-28-generic x86_64, Node v24.18.0, npm 11.16.0. Yang diukur adalah `dist/` hasil `npm run build` di atas `v0.6.0`. Puncak RSS dan waktu dinding datang dari `/usr/bin/time -v`, yang menghitung proses beserta anak yang sudah dituai. RSS saat diam dibaca dari `VmRSS` di `/proc/<pid>/status`, disampel tiap 500 md. Setiap angka di bawah adalah bacaan apa adanya, bukan pembulatan ke sasaran G3 di `prd.md`.
+
+**Cold start** — `caraka start` memakai config bertoken Telegram mati. Baris `Caraka is live` terbit pada 119 md, 121 md, dan 146 md dalam tiga kali menjalankan. Proses lalu berhenti pada 772–838 md; selisihnya satu perjalanan HTTPS ke `api.telegram.org` yang dijawab 401. Penolakan itu jatuh di dalam `channel.start()`, jadi angka ini belum memuat spawn adapter ACP. Sebagai pembanding: `node -e ''` 10 md, dan `import("./dist/cli.js")` saja 110–150 md.
+
+**Puncak RSS `caraka start` sampai penolakan** — 103.288, 103.916, 104.112, 104.440, dan 105.864 kB dalam lima kali menjalankan.
+
+**RAM saat diam** — token yang mati membuat proses mati juga, jadi angka diam dibaca dari jalur yang benar-benar sampai ke loop: config `whatsapp` `cloud-api` dengan kredensial palsu, baris `startup.notice` disemai lebih dulu supaya tidak ada satu pun paket keluar dari mesin. Pada detik ke-25, proses `caraka` memegang 94.324 kB dan adapter ACP yang ia spawn memegang 107.612 kB, jadi 201.936 kB untuk keduanya. Selama 30 detik, pohon proses bergerak antara 199.880 kB dan 231.220 kB.
+
+Yang mengisi 94 MB itu bukan kode Caraka: `node -e ''` sendiri sudah 41.956–42.396 kB, dan `import("@agentclientprotocol/sdk")` saja membawanya ke 89.560 kB. Sasaran G3 "RAM idle < 80 MB" karena itu tidak terpenuhi, dan tidak akan terpenuhi dengan memangkas `src/`.
+
+**`caraka doctor`** — 1,05–1,12 detik dinding dengan puncak RSS pohon 323.244–324.120 kB pada mesin yang punya `claude` dan `codex` di PATH; puncak itu milik `claude --version` yang di-spawn discovery, bukan milik doctor. Dengan PATH tanpa agent sama sekali, doctor sendiri 0,73–0,77 detik dan 102.236–103.256 kB.
+
+**Ukuran paket** — `npm pack --json` sesudah `npm run build`: tarball 182.869 byte, isi terbuka 697.228 byte, 86 berkas. Terpasang, angkanya lain: `npm install caraka-0.6.0.tgz --omit=dev` ke direktori kosong menarik 106 paket dan menempati 309.248.851 byte, dan 275.013.181 byte di antaranya adalah `@anthropic-ai/claude-agent-sdk-linux-x64`, yang masuk lewat `@agentclientprotocol/claude-agent-acp`. Sasaran G3 "Paket < 15 MB" terpenuhi untuk yang diterbitkan dan tidak terpenuhi untuk yang mendarat di disk pemasang.
 
 **Gerbang keputusan:** bila permission hook ACP tidak andal → arsitektur approval dirancang ulang **sebelum** melanjutkan. Bila topic di private chat tidak berperilaku seperti dokumentasi → model sesi turun ke mode linear dan seluruh UX ditinjau ulang.
 
@@ -43,6 +59,8 @@ gerbang untuk menutup fase ini; nomor paket tidak menggantikan bukti pemakaian.
 
 **Definition of done:** penulis memakainya 1 minggu penuh dan menyelesaikan ≥ 5 tugas nyata tanpa membuka laptop; daftar topic terasa **lebih rapi** daripada satu aliran chat. Bila terasa mengganggu, perbaiki dulu — jangan tambah fitur.
 
+Dogfood seminggu itu belum dijalankan saat fase-fase sesudahnya mendarat; ia dipindah menjadi validasi pasca-rilis atas keputusan pemilik 8 Agustus 2026 (`spec/v10.md`), dan hasilnya dicatat di sini begitu ada.
+
 ---
 
 ## Fase 2 — Install yang mulus (1 minggu) → `v0.2`
@@ -68,6 +86,8 @@ tidak bisa menutupi kartu approval (`security.md` §4). Grup masuk dengan
 pengungkapan yang dinyatakan, bukan dengan kerahasiaan yang dijanjikan.
 
 **Definition of done:** median waktu dari `npx` sampai pesan pertama terkirim **< 3 menit**, tanpa pertanyaan ke penulis.
+
+Lima rekaman setup itu belum ada, dan tanpa rekamannya median di atas tidak punya sampel untuk dihitung. Keduanya dipindah menjadi validasi pasca-rilis atas keputusan pemilik 8 Agustus 2026 (`spec/v10.md`), dan hasilnya dicatat di sini begitu ada.
 
 ---
 
@@ -139,15 +159,17 @@ Lima baris mesin fase ini tercentang saat `v0.6.0` dirilis. Yang tersisa adalah 
 
 ## Fase 7 — Rilis publik (2 minggu) → `v1.0`
 
-- [ ] Checklist keamanan `security.md` tuntas
-- [ ] Dokumentasi dwibahasa (ID/EN) + halaman risiko WhatsApp — separuhnya sudah mendarat lebih awal: halaman risikonya ditulis di v0.6 dalam dua bahasa (`docs/whatsapp-risiko.md`, `docs/whatsapp-risiko.en.md`) karena pesan galat yang menolak `provider: baileys` menautkannya. Sisa dokumentasi dwibahasa, dan halaman risiko di `caraka.dev`, tetap pekerjaan fase ini
-- [ ] ≥ 15 agent tercakup (7 diuji langsung, sisanya via ACP Registry)
-- [ ] `SECURITY.md`, `CONTRIBUTING.md`, lisensi MIT, repo publik
-- [ ] Artikel pembanding jujur: "Kapan pakai OpenClaw, kapan pakai Caraka"
-- [ ] Kontribusi balik: catatan integrasi ke ekosistem ACP & Titen
+- [ ] Checklist keamanan `security.md` tuntas — diisi ulang pada 8 Agustus 2026 terhadap kode v1.0.0, bukan terhadap audit yang mengisinya saat versi masih 0.2. Sembilan dari tiga belas baris `met`, masing-masing menyebut test yang gagal kalau klaimnya berhenti benar; empat `deferred` dengan tanggal dan syarat penutupnya (fuzz jalur teks masuk, `splitMarkdown` yang bisa melewati batas channel, `npm audit` tanpa langkah CI, default teraman tanpa gerbang mode di jalur run). Baris ketiga belas baru dan lahir sudah `deferred`: corpus berseed menabrak bug splitter saat membuktikan hal lain. Kotak ini tetap `[ ]` sampai keempatnya tertutup
+- [ ] Dokumentasi dwibahasa (ID/EN) + halaman risiko WhatsApp — tujuh dokumen di bawah `docs/` punya pasangan Inggris pada 8 Agustus 2026: `faq`, `install-guide`, `security`, `troubleshooting`, `openclaw-vs-caraka`, `integrasi-ekosistem`, dan `whatsapp-risiko`, yang ditulis dua bahasa lebih dulu di v0.6 karena pesan galat penolak `provider: baileys` menautkannya. `README.md` punya `README.id.md`. Tiga puluh delapan berkas lain di bawah `docs/` masih Indonesia saja, termasuk seluruh `docs/adr/` dan `docs/research/`, dan halaman risiko di `caraka.dev` belum punya rute. Keduanya tetap pekerjaan sesudah rilis ini
+- [ ] Cakupan agent — tujuh preset terkirim di `presets/agents/`. Lima menyatakan blok `acp:` dan dijalankan oleh satu klien ACP yang mengambil perintah spawn-nya dari preset (`claude-code`, `amp`, `cursor`, `gemini`, `goose`); tiga menyatakan `command:` untuk driver CLI generik (`claude-code`, `codex`, `aider`), jadi `claude-code` membawa kedua jalur. Yang pernah dijalankan terhadap biner hidup di mesin ini cuma **Claude Code**, dan cuma lewat jalur ACP-nya (`scripts/smoke-claude.mjs`). Enam preset sisanya **terjangkau, bukan teruji**: perintah dan bendera mereka datang dari matriks riset, dan lima berkas menandai sendiri bahwa isinya belum diverifikasi (`aider`, `amp`, `cursor`, `gemini`, `goose`). `codex.yaml` tidak membawa penanda itu: headernya menyebut `docs/api.md` §1 sebagai sumber, dan bloknya disalin apa adanya dari sana. Baris ini dulu berbunyi "≥ 15 agent tercakup (7 diuji langsung, sisanya via ACP Registry)" — tujuh yang diuji langsung tidak pernah terjadi, dan pembacaan ACP Registry dicabut dari discovery pada 8 Agustus 2026 (`done/driver-v04/plan.md`), sehingga satu-satunya cara cakupan bertambah adalah satu berkas YAML lagi. Sasaran G2 di `prd.md` (≥ 15 agent) belum terpenuhi
+- [x] `SECURITY.md`, `CONTRIBUTING.md`, lisensi MIT, repo publik
+- [x] Artikel pembanding jujur: "Kapan pakai OpenClaw, kapan pakai Caraka" — `docs/openclaw-vs-caraka.md` dan pasangan Inggrisnya, ditulis supaya memilih OpenClaw adalah kesimpulan yang ia tawarkan. Halaman `/compare` di situs (`site/src/pages/compare.astro`, isinya `site/src/data/compare.ts`) sudah lebih dulu memuat tabel "kalau kamu mau X, pakai Y" yang mengarahkan tiga kebutuhan ke OpenClaw dan Hermes
+- [x] Kontribusi balik: catatan integrasi ke ekosistem ACP & Titen — `docs/integrasi-ekosistem.md` dan pasangan Inggrisnya: yang klien ini butuhkan dari ACP dan dari Titen, yang tidak bisa ia sebut dengan kosakata protokolnya sendiri, dan penyebutan bahwa separuh pasangan itu ditulis penulis yang juga menulis separuh lainnya. Mengirimkannya ke hulu belum dilakukan
 - [ ] Peluncuran: komunitas dev Indonesia → ekosistem ACP/MCP → publik
 
 **Definition of done:** seluruh sasaran G1–G6 di `prd.md` terpenuhi dan terukur.
+
+Peluncuran ke komunitas dev Indonesia dan ke ekosistem ACP belum dijalankan; ia dipindah menjadi langkah pasca-rilis atas keputusan pemilik 8 Agustus 2026 (`spec/v10.md`), bentuk yang sama dengan gerbang lapangan di Fase 3 sampai 6, dan tanggalnya dicatat di sini begitu ada.
 
 ---
 
@@ -162,6 +184,8 @@ Lima baris mesin fase ini tercentang saat `v0.6.0` dirilis. Yang tersisa adalah 
 | Cron sederhana | **bukan** heartbeat berbasis agent — mahal & berisik |
 | Managed Bots one-tap | hanya bila manager bot dijalankan user sendiri |
 | Memory dengan LLM | mengikuti roadmap `consolidations` Titen, bukan dibangun sendiri |
+
+Baris pertama tabel itu sudah meninggalkan jejak di kode tanpa menjadi kemampuan: skema preset menerima `driver: mcp`, tetapi tidak ada jalur yang membangunnya, dan preset yang menyebut nilai itu tanpa blok `acp:` maupun `command:` berhenti di galat `driver.none` (`src/cli.ts`). Nilainya cadangan nama, bukan driver.
 
 **Tidak akan pernah masuk:** marketplace plugin, agent runtime sendiri, tool eksekusi sendiri, aplikasi mobile, hosted multi-tenant.
 

@@ -1,5 +1,7 @@
 # FAQ
 
+**English:** [`faq.en.md`](faq.en.md)
+
 Pertanyaan yang berulang sebelum orang berani memasang. Jawaban panjangnya ada di dokumen yang ditautkan.
 
 ---
@@ -85,13 +87,13 @@ Mode default `assisted`: setiap tulis berkas dan setiap perintah berhenti dan me
 Allowlist wajib, dan gateway menolak jalan tanpa itu. Pengirim tak dikenal dibalas netral dan permintaannya dicatat. Persetujuan pairing hanya dari terminal.
 
 **Prompt injection bagaimana?**
-Persetujuan tidak pernah bisa datang dari teks chat, hanya dari callback bertanda tangan sekali pakai. Teks jahat tidak bisa menyetujui dirinya sendiri. Itu satu aturan yang memutus seluruh kelas serangan ini.
+Persetujuan selalu berupa rahasia sekali pakai yang terikat pada `(principal, sesi, permintaan)`: callback bertanda tangan di channel yang punya tombol, dan kode yang cuma tercetak di kartu di channel yang tidak punya. Tidak ada kata biasa yang pernah menjadi keputusan, jadi teks jahat tidak bisa menyetujui dirinya sendiri.
 
 **Rahasiaku bisa bocor ke chat?**
-Scrubber keluaran berjalan di setiap pesan dan setiap baris log, menyaring pola `sk-`, `ghp_`, `AKIA`, JWT, blok private key, dan isi `.env`.
+Scrubber keluaran berjalan di setiap pesan dan setiap baris log. Bentuk yang dikenalinya ada di tabel `docs/security.md` §6: blok private key, bot token Telegram, bot token Discord, JWT, awalan `sk-ant-`, `sk-proj-`, `ghp_`, `github_pat_`, `xox[baprs]-`, `AKIA`, dan baris yang namanya berakhir `_TOKEN`, `_SECRET`, `_PASSWORD`, `_API_KEY`, atau `_PRIVATE_KEY`. Baris terakhir itu nama variabel, bukan berkas: `DATABASE_URL=postgres://user:sandi@host/db` tidak diredaksi. Rahasia yang tidak punya bentuk sama sekali — kunci OpenAI lama yang cuma `sk-` lalu apa saja, atau empat puluh karakter AWS secret access key — hanya tertutup lewat seeding exact.
 
 **Port terbuka ke internet?**
-Tidak. Bind ke `127.0.0.1`, dan Telegram memakai long-polling. Di v1.0 tidak ada webhook sama sekali.
+Caraka tidak membuka apa pun ke internet atas inisiatifnya sendiri. Telegram memakai long-polling, dan kedua listener yang ada — dasbor read-only dan penerima webhook WhatsApp Cloud API — bind ke `127.0.0.1` secara default. Webhook itu memverifikasi `X-Hub-Signature-256` dengan perbandingan waktu-tetap, juga saat bind loopback. Keluar dari loopback butuh keputusan operator yang eksplisit, tercetak, dan teraudit.
 
 ---
 

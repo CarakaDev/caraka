@@ -51,7 +51,7 @@ The full threat model lives in [docs/security.md](docs/security.md). The short v
 
 ## Supported versions
 
-Caraka is **pre-alpha**. Until `1.0.0`, only the latest published version receives security fixes.
+Only the latest published version receives security fixes: nothing is backported, and there are no maintained release branches. A fix arrives as the next release, so the supported version is whichever one is newest when you read this. While the version still starts with `0.`, that release can change behaviour as well, and [CHANGELOG.md](CHANGELOG.md) says what moved.
 
 ## Disclosure
 

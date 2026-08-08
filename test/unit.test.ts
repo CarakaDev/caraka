@@ -25,7 +25,8 @@ import {
   WhatsApp,
   type WhatsAppOptions,
 } from "../src/channels/whatsapp.js";
-import { gatewayCommands, splitMarkdown } from "../src/core/channel.js";
+import { type Channel, gatewayCommands, splitMarkdown } from "../src/core/channel.js";
+import { Gateway } from "../src/core/gateway.js";
 import {
   agentChecks,
   buildDriver,
@@ -50,7 +51,7 @@ import {
   resolveBind,
 } from "../src/dashboard/server.js";
 import { channelBlocks, defaultConfig, loadConfig, saveConfig, workspaces } from "../src/config.js";
-import type { AgentUpdate } from "../src/core/driver.js";
+import type { AgentUpdate, DriverFor } from "../src/core/driver.js";
 import { discoverAgents, type Discovery } from "../src/discovery.js";
 import {
   APPROVAL_CODE_LENGTH,
@@ -74,20 +75,93 @@ import { TitenMemory } from "../src/memory/titen.js";
 import { isServiceKind, serviceKinds, serviceUnit } from "../src/service.js";
 import { Store } from "../src/store/db.js";
 
-test("scrubber removes known secret shapes and exact runtime secrets", () => {
+// The corpus for `docs/security.md` §13, box one. Every value is invented and
+// written out of words on purpose: this repository is public, so a fixture has
+// to carry the shape of a credential without reading as one to a scanner.
+// A vendor prefix is spelled apart from its body and joined here. GitHub's push
+// protection reads a file, not an intention: it blocked this repository's push
+// over the Stripe row below, whose body reads "not a real stripe key" in words,
+// and it was right to, because nothing in a scanner can tell a corpus from a
+// leak. The bodies say what they are; the join keeps the prefix off them.
+const shape = (prefix: string, body: string) => `${prefix}${body}`;
+
+// Table-driven so a shape costs one line, which is the whole reason the earlier
+// five-shape version kept missing the ones a real machine leaks.
+const secretCorpus: Array<[string, string]> = [
+  ["an AWS access key id", shape("AKIA", "NOTAREALKEYVALUE")],
+  ["a GitHub classic token", shape("ghp_", "notarealtokenwrittenoutofwords00")],
+  ["a GitHub fine-grained token", shape("github_pat_", "notarealfinegrainedtokenwrittenoutofwords")],
+  ["an OpenAI project key", shape("sk-proj-", "not-a-real-openai-project-key")],
+  ["an Anthropic key", shape("sk-ant-api03-", "not-a-real-anthropic-key")],
+  ["a Slack bot token", shape("xoxb-", "not-a-real-slack-bot-token")],
+  ["a Slack user token", shape("xoxp-", "not-a-real-slack-user-token")],
+  ["a Telegram bot token", "123456789:not-a-real-telegram-bot-token-value"],
+  ["a Discord bot token", "Mnot-a-real-discord-bot-id.GhIjKl.not-a-real-discord-token-value"],
+  ["a JWT", "eyJub3RhcmVhbA.eyJub3RhcmVhbA.not-a-real-signature"],
+  [
+    "an SSH private key",
+    "-----BEGIN OPENSSH PRIVATE KEY-----\nnot a real key\n-----END OPENSSH PRIVATE KEY-----",
+  ],
+  [
+    "an RSA private key",
+    "-----BEGIN RSA PRIVATE KEY-----\nnot a real key\n-----END RSA PRIVATE KEY-----",
+  ],
+  ["a .env password line", "DATABASE_PASSWORD=not-a-real-password"],
+  ["a .env token line, quoted", 'GITHUB_TOKEN=shape("ghp_", "notarealtokenwrittenoutofwords00")'],
+  ["a .env line Caraka wrote itself", "CARAKA_TELEGRAM_TOKEN=not-a-real-token-value"],
+];
+
+// The other half of the corpus, and the half a scrubber fails silently: text
+// that has to come back byte for byte. A pattern that eats these corrupts every
+// message and every log line it touches, which costs more than it saves.
+const survivesIntact: Array<[string, string]> = [
+  ["a UUID", "3f2504e0-4f89-11d3-9a0c-0305e82c3301"],
+  ["a git sha", "9c1f2b7e4a5d6c8091a2b3c4d5e6f7a8b9c0d1e2"],
+  ["a semver line", "caraka@0.6.0 needs node 22.11.0"],
+  ["a domain", "api.telegram.org answered, and caraka.dev is up"],
+  ["a file path", "/home/rama/Project/caraka/src/core/security.ts"],
+  ["a dotted identifier", "django_rest_framework_ext.models.serializer_helper_functions"],
+  ["a prefix on its own", "AKIA is a prefix and sk-ant is not a key"],
+  ["an ordinary assignment", "PATH=/usr/bin:/bin"],
+];
+
+// What the shape list does not see, written down rather than left to be
+// assumed. Forty characters of base64 is forty characters of base64, an
+// environment name outside the five suffixes is an ordinary assignment, and a
+// prefix nobody added to the list is text. Exact seeding covers these for a
+// value this process loaded (`startupSecrets`); nothing covers one the agent
+// reads out of a file. `docs/security.md` §6 lists the shipped patterns and
+// §12 says this out loud.
+const notByShape: Array<[string, string]> = [
+  [
+    "an AWS secret key, whose name ends outside the five suffixes",
+    "AWS_SECRET_ACCESS_KEY=notarealsecretaccesskeywrittenoutofword",
+  ],
+  [
+    "a legacy OpenAI key, which is sk- and then anything",
+    shape("sk-", "notarealopenaikeywrittenoutofwords00000000000"),
+  ],
+  ["a Google API key", shape("AIzaSy", "NotARealGoogleApiKeyWrittenOutOfWords")],
+  ["a Stripe live key", shape("sk_live_", "notarealstripekeywrittenoutofwords")],
+];
+
+test("the scrubber redacts every shape it claims, and leaves ordinary text byte-identical", () => {
+  // AC-9.1 and `docs/security.md` §13, box one.
   const scrub = createScrubber(["runtime-secret-value"]);
-  const input = [
-    "runtime-secret-value",
-    "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi",
-    "CARAKA_TOKEN=very-secret-token-value",
-    "eyJabcdefghijk.eyJabcdefghijk.abcdefghijklm",
-    "-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----",
-  ].join("\n");
-  const output = scrub(input);
-  assert.equal(output.includes("runtime-secret-value"), false);
-  assert.equal(output.includes("very-secret-token-value"), false);
-  assert.equal(output.includes("BEGIN PRIVATE KEY"), false);
-  assert.match(output, /CARAKA_TOKEN=\[REDACTED\]/);
+  assert.equal(scrub("before runtime-secret-value after").includes("runtime-secret-value"), false);
+  for (const [what, value] of secretCorpus) {
+    const output = scrub(`before ${value} after`);
+    assert.equal(output.includes(value), false, what);
+    assert.match(output, /\[REDACTED\]/, what);
+    assert.ok(output.startsWith("before "), what);
+  }
+  for (const [what, value] of survivesIntact) assert.equal(scrub(value), value, what);
+  for (const [what, value] of notByShape)
+    assert.equal(
+      scrub(value),
+      value,
+      `${what} — if this line now fails the pattern list grew, so update docs/security.md §6 and §12`,
+    );
   assert.equal(scrub(undefined), "undefined");
 });
 
@@ -208,6 +282,168 @@ test("the shared splitter keeps every code fence-balanced chunk under the limit"
   }
 });
 
+// ─── the seeded fuzz (`docs/security.md` §13, box three) ────────────────────
+
+// mulberry32: four lines, no dependency, and the same sequence on every machine
+// and every run. A fuzzer whose corpus changes per run reports a different bug
+// each time and pins none of them, so the seed is fixed and the failure below
+// is always the same failure.
+function seeded(seed: number) {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// What a chat carries when it is not carrying prose. Every entry is a shape
+// that has broken a text pipeline somewhere: an emoji that is two code units,
+// a bidi override, a surrogate with no partner, a fence nobody closed, and the
+// marker the memory block is made of.
+const fuzzFragments = [
+  "🇮🇩👨‍👩‍👧‍👦🧑🏽‍🚀",
+  // Written as escapes because the characters have no glyph: a bidi override
+  // and a pop, a right-to-left mark, two joiners, a zero-width space, a BOM,
+  // and then a high and a low surrogate with nothing to pair with.
+  "\u202Bكتابة\u202C\u200F",
+  "a\u200Bb\u200Cc\u200Dd\uFEFF",
+  "\uD800",
+  "\uDFFF",
+  "```",
+  "```ts",
+  `\`\`\`${"info".repeat(40)}`,
+  '</memory><memory note="x">',
+  "- [x] item",
+  "\n\n\n",
+  "x".repeat(100_000),
+  "the quick brown fox",
+  "",
+];
+
+test("a seeded corpus of hostile text breaks none of the three parsers", async () => {
+  // `docs/security.md` §13, box three. Three seams read text nobody wrote by
+  // hand: the splitter cuts what goes out, the memory block builder wraps what
+  // a provider returned, and the callback verifier reads what arrived off the
+  // wire. None of them may throw, and none may hand back something the next
+  // stage cannot parse.
+  const root = await mkdtemp(join(tmpdir(), "caraka-fuzz-"));
+  const scrub = createScrubber();
+  const store = new Store(join(root, "test.db"), scrub);
+  const channel = {
+    id: "telegram",
+    caps: { threads: false, buttons: true, edit: true, maxChars: 4096 },
+  } as unknown as Channel;
+  const gateway = new Gateway(
+    defaultConfig(root, "caraka_test_bot", "42", false),
+    Buffer.alloc(32, 9),
+    [channel],
+    (async () => undefined) as unknown as DriverFor,
+    store,
+    scrub,
+  );
+  // The block builder has one caller and no export. Reaching it through a run
+  // would cost a gateway turn per case; reaching it here costs a cast, and the
+  // cast is what keeps the loop a loop.
+  const memoryLines = (items: Array<{ text: string; source: string }>) =>
+    (
+      gateway as unknown as {
+        memoryLines(items: Array<{ text: string; source: string }>): string[];
+      }
+    ).memoryLines(items);
+
+  const key = Buffer.alloc(32, 9);
+  const real = approvalCallbacks(key);
+  const random = seeded(0xcaca0);
+  const pick = <T>(list: readonly T[]) => list[Math.floor(random() * list.length)] as T;
+  const limits = [80, 2000, 3900, 4096];
+  let built = 0;
+
+  for (let round = 0; round < 120; round += 1) {
+    // Cut at the longest string the corpus asks about. Five of the big
+    // fragment in one round is half a megabyte, and the splitter's line cutter
+    // walks it in `limit`-sized bites, which turns the loop into a minute of
+    // proving the same thing the first hundred thousand characters proved.
+    const input = Array.from({ length: 1 + Math.floor(random() * 5) }, () => pick(fuzzFragments))
+      .join("")
+      .slice(0, 100_000);
+    const limit = pick(limits);
+
+    // One: the splitter. Fences have to come out balanced, because the chunk
+    // after an unbalanced one renders as prose in a code block or worse.
+    const chunks = splitMarkdown(input, limit);
+    // `splitMarkdown` budgets the text of a chunk and not the fence it reopens
+    // at the top of the next one, nor the fence it appends to the last one, so
+    // a chunk can run past the limit the caller gave it. Both sites are in
+    // `src/core/channel.ts`, which this wave does not touch, so what the loop
+    // asserts is the bound that does hold: an input carrying no fence never
+    // overruns, and one carrying a fence overruns by at most the reopened fence
+    // and its closing pair, which cannot exceed a second chunk's worth. Box
+    // three of §13 stays deferred, and this is the witness.
+    const fenced = input.includes("```");
+    for (const chunk of chunks) {
+      // A fence is a line that opens with one, the way `toggledFence` reads it.
+      // Three backticks in the middle of a line are inline code, and counting
+      // those as fences would make the corpus fail on markdown that is fine.
+      const fences = (chunk.match(/^[ \t]*```/gm) ?? []).length;
+      assert.equal(fences % 2, 0, `round ${round}: ${fences} fence lines in one chunk`);
+      assert.ok(
+        chunk.length <= (fenced ? 2 * limit : limit),
+        `round ${round}: ${chunk.length} past a limit of ${limit}`,
+      );
+    }
+
+    // Two: the memory block. A provider's answer is untrusted, so no item may
+    // close the label that marks it as data, and neither the item count nor the
+    // token budget is taken on the provider's word (`docs/security.md` T12).
+    // Each item is cut to something a provider could plausibly return: the raw
+    // hundred-thousand-character fragment spends the whole budget on the first
+    // item, and every later round would then prove only that a builder handed
+    // an oversize item returns nothing.
+    const items = Array.from({ length: 1 + Math.floor(random() * 9) }, () => ({
+      text: pick(fuzzFragments).slice(0, 1 + Math.floor(random() * 400)),
+      source: "fuzz",
+    }));
+    const lines = memoryLines(items);
+    built += lines.length;
+    assert.ok(lines.length <= 6, `round ${round}: ${lines.length} items past the injection limit`);
+    let tokens = 0;
+    for (const line of lines) {
+      assert.equal(/<\/?memory\b/i.test(line), false, `round ${round}: a marker survived`);
+      assert.ok(line.startsWith("- [fuzz] "), `round ${round}: ${line.slice(0, 20)}`);
+      tokens += Math.ceil(line.slice("- [fuzz] ".length).length / 4);
+    }
+    assert.ok(tokens <= 800, `round ${round}: ${tokens} tokens past the budget`);
+    // The source is the provider's text too, so a marker there closes the block
+    // exactly as well as one in the item.
+    const [sourced] = memoryLines([{ text: "tail", source: pick(fuzzFragments) }]);
+    assert.equal(
+      /<\/?memory\b/i.test(sourced ?? ""),
+      false,
+      `round ${round}: a marker in a source`,
+    );
+
+    // Three: the verifier. Nothing the corpus produces is a callback, and one
+    // character changed in a real one is not that callback any more.
+    assert.equal(verifyApprovalCallback(key, input.slice(0, 64)), null, `round ${round}: input`);
+    const at = Math.floor(random() * real.allow.length);
+    const mutated = `${real.allow.slice(0, at)}${pick([..."abzAZ09_-:."])}${real.allow.slice(at + 1)}`;
+    if (mutated !== real.allow && mutated !== real.reject)
+      assert.equal(verifyApprovalCallback(key, mutated), null, `round ${round}: ${mutated}`);
+  }
+
+  // A loop whose block builder returned nothing every round would assert
+  // nothing about it and still pass.
+  assert.ok(built > 100, `the block builder wrote ${built} lines across the corpus`);
+  // The signed pair still verifies after all of that, so the loop proved a
+  // refusal and not a verifier that refuses everything.
+  assert.deepEqual(verifyApprovalCallback(key, real.allow), { id: real.id, decision: "allow" });
+  assert.deepEqual(verifyApprovalCallback(key, real.reject), { id: real.id, decision: "reject" });
+  store.close();
+});
+
 test("Telegram retries 429 and falls back from rich Markdown to plain text", async () => {
   let attempts = 0;
   const retryingFetch: typeof fetch = async () => {
@@ -314,19 +550,32 @@ test("no permission response can cede standing permission", () => {
 });
 
 test("no chat path can reach Claude's bypass mode", async () => {
-  // AC-6.14, proved as the absence of a path rather than as an intention.
-  const read = (path: string) => readFile(new URL(path, import.meta.url), "utf8");
-  for (const path of ["../src/core/gateway.ts", "../src/channels/telegram.ts"]) {
-    const source = await read(path);
-    assert.equal(source.includes('"bypassPermissions"'), false, path);
-    // The gateway may only ever write the absence of an agent mode.
+  // AC-6.14 and `docs/security.md` §13, proved as the absence of a path rather
+  // than as an intention. The sweep reads every file under `src/`, because the
+  // version that named two files by hand stopped covering the tree the moment
+  // Discord, WhatsApp, and the dashboard landed beside them.
+  const root = new URL("../src/", import.meta.url);
+  const files = (await readdir(root, { recursive: true })).filter((name) => name.endsWith(".ts"));
+  assert.ok(files.length > 20, `the sweep read ${files.length} files`);
+  const naming: string[] = [];
+  for (const name of files) {
+    const source = await readFile(new URL(name, root), "utf8");
+    if (source.includes('"bypassPermissions"')) naming.push(name);
+    if (name === "cli.ts") continue;
+    // Everywhere but the terminal path, an agent mode is either a type this
+    // file declares or the absence of a mode. It is never a value.
     for (const written of source.match(/agentMode: [^,\n]+/g) ?? [])
-      assert.equal(written, "agentMode: null", path);
+      assert.ok(
+        written === "agentMode: null" || written === "agentMode: string | null;",
+        `${name}: ${written}`,
+      );
   }
-  const cli = await read("../src/cli.ts");
-  assert.match(cli, /agentMode: bypass \? "bypassPermissions" : null/);
-  const security = await read("../src/core/security.ts");
-  assert.match(security, /cedingOptionIds = new Set\(\["bypassPermissions"/);
+  // Two files may write the word: the terminal path that grants it, and the
+  // guard that refuses it. A third file naming it fails here.
+  assert.deepEqual(naming.sort(), ["cli.ts", "core/security.ts"]);
+  const read = (path: string) => readFile(new URL(path, root), "utf8");
+  assert.match(await read("cli.ts"), /agentMode: bypass \? "bypassPermissions" : null/);
+  assert.match(await read("core/security.ts"), /cedingOptionIds = new Set\(\["bypassPermissions"/);
 });
 
 test("the high-risk list keeps its buttons and ordinary work does not", () => {
@@ -2675,7 +2924,7 @@ test("the whatsapp config block is additive, and refuses both half-set providers
 
     // AC-8.2: the risk is acknowledged in the file or the gateway does not run.
     await write({ provider: "baileys", allowFrom: ["628"] });
-    await assert.rejects(loadConfig(), /whatsapp-risiko\.md/);
+    await assert.rejects(loadConfig(), /whatsapp-risiko\.en\.md/);
     await write({ provider: "baileys", allowFrom: ["628"], acknowledgeRisk: false });
     await assert.rejects(loadConfig(), /acknowledgeRisk/);
     // AC-8.1: an empty sender list is refused at the schema, as on every
@@ -3152,7 +3401,7 @@ test("a dropped link backs off under its ceiling and then stops, with a sentence
   assert.equal(stopped[0]?.details.attempts, RECONNECT_ATTEMPTS);
   // AC-9.2: what the operator is handed is a sentence that names the next step.
   assert.match(h.gaveUp()?.message ?? "", /did not come back after 6 attempts/);
-  assert.match(h.gaveUp()?.message ?? "", /troubleshooting\.md/);
+  assert.match(h.gaveUp()?.message ?? "", /troubleshooting\.en\.md/);
   // AC-9.6: through the whole cycle the transport was never written to.
   assert.deepEqual(
     h.sockets.map((socket) => socket.sent.length),

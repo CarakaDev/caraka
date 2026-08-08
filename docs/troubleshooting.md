@@ -1,5 +1,7 @@
 # Troubleshooting
 
+**English:** [`troubleshooting.en.md`](troubleshooting.en.md)
+
 Gejala, sebab, perbaikan. Untuk pemasangan awal lihat `install-guide.md`.
 
 Langkah pertama selalu sama:
