@@ -61,6 +61,7 @@ export function buildDriver(
       command: script ? process.execPath : acpCommand,
       args: script ? [real, ...preset.acp.args] : preset.acp.args,
       env: preset.acp.env,
+      asksPermission: preset.acp.asksPermission,
     });
   }
   if (forced === "acp")

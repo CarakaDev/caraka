@@ -4,20 +4,28 @@ import { homedir } from "node:os";
 import { basename, isAbsolute, join, resolve } from "node:path";
 import { parse, stringify } from "yaml";
 import { z } from "zod";
+import { POLICY_MODES, type PolicyMode } from "./core/security.js";
 import type { Language } from "./i18n.js";
 
 const TITEN_ENDPOINT = "http://127.0.0.1:7717";
 
 // One entry per repository the gateway serves (`docs/erd.md` workspace table).
 // `driver` forces a route and `agent` names the preset new sessions start on;
-// both are written only by hand. A policy `mode` field is deliberately absent:
-// a config key that promises a safety gate belongs here only once the gate
-// exists in the run path.
+// both are written only by hand. A policy `mode` field is deliberately absent
+// here: what a conversation may do is a property of the conversation, so the
+// gate reads `modes` off the channel block below and never off a workspace.
 const workspaceEntry = z.object({
   slug: z.string().min(1),
   path: z.string().refine(isAbsolute, "workspaces[].path must be absolute"),
   driver: z.enum(["acp", "cli"]).optional(),
   agent: z.string().min(1).optional(),
+});
+
+// A trusted window has a clock on it (hard rule 3), so it is opened by
+// `caraka trust` and never written here, where nothing would close it again.
+const configuredMode = z.enum(POLICY_MODES).refine((mode) => mode !== "trusted", {
+  message:
+    "A trusted window has to expire, so it is opened by `caraka trust <workspace> --for <duration>` and never written into config.yaml. Use assisted here.",
 });
 
 // Two lists per channel, two decisions: a message is served only when its
@@ -28,6 +36,11 @@ const allowlists = {
   // A v0.1 file has neither the key nor a group, and its DM chat id is the
   // operator's own id.
   allowChats: z.array(z.string()).default([]),
+  // The opt-in `docs/security.md` §4 control 6 asks for: container id — or, in
+  // a private conversation, the principal's own id — to policy mode. An id
+  // nobody wrote here keeps the documented default, `assisted` in a private
+  // conversation and `read-only` in a room.
+  modes: z.record(z.string(), configuredMode).default({}),
 };
 
 const configShape = {
@@ -75,6 +88,9 @@ const configShape = {
       // Caraka refuses group messages outright (`src/channels/whatsapp.ts`
       // `receive`) and there is no room for a room allowlist to gate.
       allowFrom: allowlists.allowFrom,
+      // Every container here is a private conversation, so these are keyed by
+      // the principal.
+      modes: allowlists.modes,
       // The number the linked device runs as. AC-8.10: keep it apart from the
       // personal number.
       number: z.string().min(1).optional(),
@@ -135,7 +151,12 @@ export type CarakaConfig = z.infer<typeof configSchema>;
 export type Workspace = z.infer<typeof workspaceEntry>;
 
 /** What core needs from a channel's config block, keyed by the channel's id. */
-export type ChannelBlock = { allowFrom: string[]; allowChats: string[]; threads: boolean };
+export type ChannelBlock = {
+  allowFrom: string[];
+  allowChats: string[];
+  threads: boolean;
+  modes: Record<string, PolicyMode>;
+};
 
 /**
  * The one place the channel names are written down. Core reads this map and
@@ -150,17 +171,25 @@ export function channelBlocks(config: CarakaConfig): Record<string, ChannelBlock
       allowFrom: telegram.allowFrom,
       allowChats: telegram.allowChats,
       threads: telegram.topics,
+      modes: telegram.modes,
     };
   if (discord)
     blocks.discord = {
       allowFrom: discord.allowFrom,
       allowChats: discord.allowChats,
       threads: discord.threads,
+      modes: discord.modes,
     };
   // WhatsApp holds no threads on either provider, so every session there runs
   // linear behind the header core already writes. The room list is empty
   // because no room reaches this channel at all.
-  if (whatsapp) blocks.whatsapp = { allowFrom: whatsapp.allowFrom, allowChats: [], threads: false };
+  if (whatsapp)
+    blocks.whatsapp = {
+      allowFrom: whatsapp.allowFrom,
+      allowChats: [],
+      threads: false,
+      modes: whatsapp.modes,
+    };
   return blocks;
 }
 
@@ -179,6 +208,14 @@ export function carakaPaths(root = process.env.CARAKA_HOME ?? join(homedir(), ".
   return {
     root: base,
     config: join(base, "config.yaml"),
+    // The directory every credential sits in, named here because two commands
+    // now need it by name: `saveConfig` creates it and `caraka uninstall`
+    // removes it.
+    secrets: join(base, "secrets"),
+    // Written by `src/discovery.ts`, which computes the same path from `root`.
+    // It is listed here because uninstall removes what Caraka created, and a
+    // path nobody wrote down is a path uninstall leaves behind.
+    discovery: join(base, "discovery.json"),
     // `token` keeps its name: renaming it to `telegramToken` touches four call
     // sites and changes nothing.
     token: join(base, "secrets", "telegram.token"),
@@ -219,9 +256,9 @@ export async function saveConfig(
   secrets: ChannelSecrets = {},
 ) {
   const paths = carakaPaths();
-  await mkdir(join(paths.root, "secrets"), { recursive: true, mode: 0o700 });
+  await mkdir(paths.secrets, { recursive: true, mode: 0o700 });
   await chmod(paths.root, 0o700);
-  await chmod(join(paths.root, "secrets"), 0o700);
+  await chmod(paths.secrets, 0o700);
   if (token) await atomicSecret(paths.token, `${token.trim()}\n`);
   for (const name of [
     "discordToken",
@@ -303,7 +340,9 @@ export function defaultConfig(
     version: 1,
     language,
     workspace: { name: basename(path), path },
-    telegram: { botUsername, allowFrom: [principal], allowChats: [principal], topics },
+    // No mode is written: the shipped file opts nothing in, so the operator's
+    // own conversation is `assisted` and anything paired later is `read-only`.
+    telegram: { botUsername, allowFrom: [principal], allowChats: [principal], topics, modes: {} },
     agent: { adapter: "claude-agent-acp", adapterVersion: "0.63.0" },
     memory: { provider: memory, endpoint: TITEN_ENDPOINT },
   };

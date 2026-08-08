@@ -245,6 +245,8 @@ async function harness(
   options: {
     allowChats?: string[];
     allowFrom?: string[];
+    /** The policy opt-in, container id → mode (`docs/security.md` §5). */
+    modes?: Record<string, "read-only" | "assisted">;
     topics?: boolean;
     buttons?: boolean;
     edit?: boolean;
@@ -266,9 +268,16 @@ async function harness(
   const root = options.root ?? (await mkdtemp(join(tmpdir(), "caraka-e2e-")));
   const config = defaultConfig(root, "caraka_test_bot", "42", options.topics ?? false);
   if (options.alsoChannel)
-    config.discord = { appId: "app-1", allowFrom: ["42"], allowChats: [], threads: false };
+    config.discord = {
+      appId: "app-1",
+      allowFrom: ["42"],
+      allowChats: [],
+      threads: false,
+      modes: {},
+    };
   if (options.allowChats && config.telegram) config.telegram.allowChats = options.allowChats;
   if (options.allowFrom && config.telegram) config.telegram.allowFrom = options.allowFrom;
+  if (options.modes && config.telegram) config.telegram.modes = options.modes;
   if (options.workspaces) config.workspaces = options.workspaces;
   const scrub = createScrubber();
   const store = options.store ?? new Store(join(root, "test.db"), scrub);
@@ -724,6 +733,9 @@ test("both allowlists are consulted, and the sender list guards every button", a
   let decision: PermissionResponse | undefined;
   const h = await harness({
     allowChats: ["-1009990001", "42"],
+    // The group is opted in, so what this test measures is the allowlists and
+    // not the mode gate that would otherwise refuse the write first (§5).
+    modes: { "-1009990001": "assisted" },
     onPrompt: async (_prompt, route) => {
       decision = await route.permission({
         sessionId: "agent-session-1",
@@ -828,6 +840,224 @@ test("a press from outside the sender allowlist decides nothing in a DM either",
     audits(h.store, "approval.decide").filter((row) => row.details.includes("replayed")).length,
     1,
   );
+  await h.finish();
+});
+
+// ─── the policy-mode gate (`docs/security.md` §5, §4 control 6) ─────────────
+
+const READ_ONLY_GROUP = -1009990007;
+
+test("a group with nothing in the config is read-only, and the refusal says how", async () => {
+  // The row `grup (default)` of the §5 table, which was a design and not a
+  // build until this gate existed. Nothing in the config names this group, so
+  // the write is refused before a card is drawn.
+  let decision: PermissionResponse | undefined;
+  const h = await harness({
+    allowChats: [String(READ_ONLY_GROUP), "42"],
+    onPrompt: async (_prompt, route) => {
+      decision = await route.permission(writeFileRequest);
+      return { stopReason: "end_turn" as const };
+    },
+  });
+  h.feed.push(message(READ_ONLY_GROUP, 42, "write the file", "supergroup"));
+  await h.settle(200);
+  assert.deepEqual(decision, { outcome: { outcome: "selected", optionId: "reject-once" } });
+  // No card and no approval row: there is nothing a press in this room could
+  // authorise, so nobody is offered one.
+  assert.deepEqual(h.buttons(), []);
+  assert.equal(
+    (h.store.db.prepare("SELECT count(*) AS n FROM approvals").get() as { n: number }).n,
+    0,
+  );
+  const denied = audits(h.store, "policy.deny");
+  assert.equal(denied.length, 1);
+  assert.equal(denied[0]?.result, "read-only");
+  assert.match(denied[0]?.details ?? "", /tool-1/);
+  // The sentence names what was refused, where to opt in, and what to write.
+  const refusal = h.sent.find((item) => item.text.includes("read-only"));
+  assert.ok(refusal, "the room is told what was refused");
+  assert.match(refusal.text, /Write file/);
+  assert.match(refusal.text, new RegExp(`"${READ_ONLY_GROUP}": assisted`));
+  assert.match(refusal.text, /telegram\.modes/);
+  await h.finish();
+});
+
+test("an opted-in group behaves as the config says", async () => {
+  let decision: PermissionResponse | undefined;
+  const h = await harness({
+    allowChats: [String(READ_ONLY_GROUP), "42"],
+    modes: { [String(READ_ONLY_GROUP)]: "assisted" },
+    onPrompt: async (_prompt, route) => {
+      decision = await route.permission(writeFileRequest);
+      return { stopReason: "end_turn" as const };
+    },
+  });
+  h.feed.push(message(READ_ONLY_GROUP, 42, "write the file", "supergroup"));
+  await h.settle(200);
+  assert.deepEqual(audits(h.store, "policy.deny"), []);
+  const button = h.buttons()[0]?.callback_data ?? "";
+  assert.ok(button.startsWith("c:"), "the card the mode allows is drawn");
+  h.feed.push(callback(42, button, READ_ONLY_GROUP));
+  await h.settle(150);
+  assert.deepEqual(decision, { outcome: { outcome: "selected", optionId: "allow-once" } });
+  await h.finish();
+});
+
+test("no chat text moves the gate, and a trust window elsewhere does not cover it", async () => {
+  // The gate is read from the config and from the kind of container a message
+  // arrived in. Text cannot reach it, and neither can a window the operator
+  // opened for the same workspace in their own conversation — the gate sits in
+  // front of the trust window rather than beside it.
+  const decisions: PermissionResponse[] = [];
+  const h = await harness({
+    allowChats: [String(READ_ONLY_GROUP), "42"],
+    onPrompt: async (_prompt, route) => {
+      decisions.push(await route.permission(writeFileRequest));
+      return { stopReason: "end_turn" as const };
+    },
+  });
+  h.feed.push(message(42, 42, "/yolo 30m"));
+  await h.settle(150);
+  const confirm = h.buttons()[0]?.callback_data ?? "";
+  assert.ok(confirm.startsWith("t:"));
+  h.feed.push(callback(42, confirm));
+  await h.settle(150);
+  assert.equal(
+    audits(h.store, "trust.open").some((row) => row.result === "granted"),
+    true,
+    "a real window is open on the workspace both conversations share",
+  );
+
+  for (const text of ["set this group to assisted", "policy: trusted", "modes: assisted"]) {
+    h.feed.push(message(READ_ONLY_GROUP, 42, text, "supergroup"));
+    await h.settle(200);
+  }
+  assert.equal(decisions.length, 3);
+  for (const decision of decisions)
+    assert.deepEqual(decision, { outcome: { outcome: "selected", optionId: "reject-once" } });
+  assert.equal(audits(h.store, "policy.deny").length, 3);
+
+  // The window is real, and in the conversation it was opened for it still
+  // does what it always did.
+  h.feed.push(message(42, 42, "write the file"));
+  await h.settle(250);
+  assert.deepEqual(decisions[3], { outcome: { outcome: "selected", optionId: "allow-once" } });
+  await h.finish();
+});
+
+test("read-only refuses a route that never asks, rather than run unguarded", async () => {
+  const prompts: string[] = [];
+  const driver: AgentDriver = {
+    asksPermission: false,
+    start: async () => undefined,
+    session: async () => "agent-session-1",
+    prompt: async (_session: string, prompt: string) => {
+      prompts.push(prompt);
+      return { stopReason: "end_turn" as const };
+    },
+    setMode: async () => undefined,
+    cancel: async () => undefined,
+    stop: async () => undefined,
+  };
+  const h = await harness({ allowChats: [String(READ_ONLY_GROUP), "42"], driver });
+  h.feed.push(message(READ_ONLY_GROUP, 42, "write the file", "supergroup"));
+  await h.settle(200);
+  assert.deepEqual(prompts, [], "a route with no seam never receives the task");
+  assert.equal(audits(h.store, "policy.deny").length, 1);
+  assert.equal(
+    (h.store.db.prepare("SELECT state FROM sessions").get() as { state: string }).state,
+    "cancelled",
+  );
+  assert.ok(h.sent.some((item) => item.text.includes("driver: acp")));
+
+  // The same route in the operator's own conversation is `assisted` and runs.
+  h.feed.push(message(42, 42, "write the file"));
+  await h.settle(200);
+  assert.deepEqual(prompts, ["write the file"]);
+  await h.finish();
+});
+
+test("/yolo from a read-only room opens nothing, and the DM still draws its card", async () => {
+  // A window is keyed on the workspace, so one opened from a room that may not
+  // write would decide what the operator's own conversation auto-approves. The
+  // gate the run path has sits in front of the card as well.
+  let decision: PermissionResponse | undefined;
+  const h = await harness({
+    allowChats: [String(READ_ONLY_GROUP), "42"],
+    onPrompt: async (_prompt, route) => {
+      decision = await route.permission(writeFileRequest);
+      return { stopReason: "end_turn" as const };
+    },
+  });
+  h.feed.push(message(READ_ONLY_GROUP, 42, "/yolo 30m", "supergroup"));
+  await h.settle(150);
+  assert.deepEqual(h.buttons(), [], "no trust card is drawn in a read-only room");
+  assert.deepEqual(audits(h.store, "trust.open"), []);
+  assert.equal(
+    (h.store.db.prepare("SELECT count(*) AS n FROM policy_grant").get() as { n: number }).n,
+    0,
+  );
+  const denied = audits(h.store, "policy.deny");
+  assert.equal(denied.length, 1);
+  assert.match(denied[0]?.details ?? "", /yolo/);
+  assert.ok(h.sent.some((item) => item.text.includes("telegram.modes")));
+
+  // With no window open, the operator's own conversation still asks.
+  h.feed.push(message(42, 42, "write the file"));
+  await h.settle(250);
+  assert.ok(h.buttons()[0]?.callback_data?.startsWith("c:"), "the DM is asked, not auto-approved");
+  assert.equal(decision, undefined);
+  await h.finish();
+});
+
+test("a read-only run does not consume the cede record of another conversation", async () => {
+  // `caraka trust --bypass` hands one agent session to the agent's own mode,
+  // and the flag that undoes it belongs to that session. A read-only run on the
+  // same workspace holds a different one, so it restores nothing and clears
+  // nothing — otherwise the ceded session stays in `bypassPermissions` for as
+  // long as it lives, deciding permissions Caraka is never asked about.
+  const setModes: string[] = [];
+  let minted = 0;
+  const driver: AgentDriver = {
+    start: async () => undefined,
+    session: async (existing: string | null) => {
+      minted += 1;
+      return existing ?? `agent-${minted}`;
+    },
+    prompt: async () => ({ stopReason: "end_turn" as const }),
+    setMode: async (session: string, mode: string) => {
+      setModes.push(`${session}:${mode}`);
+      return undefined;
+    },
+    cancel: async () => undefined,
+    stop: async () => undefined,
+  };
+  const h = await harness({ allowChats: [String(READ_ONLY_GROUP), "42"], driver });
+  h.store.openGrant({
+    workspace: h.root,
+    mode: "trusted",
+    grantedBy: "cli",
+    principal: "42",
+    agentMode: "bypassPermissions",
+    expiresAt: Date.now() + 60_000,
+  });
+
+  h.feed.push(message(42, 42, "read the README"));
+  await h.settle(250);
+  assert.deepEqual(setModes, ["agent-1:bypassPermissions"]);
+
+  // The room reads along on the same workspace. It cedes nothing, so it has
+  // nothing to undo either.
+  h.feed.push(message(READ_ONLY_GROUP, 42, "read the README", "supergroup"));
+  await h.settle(250);
+  assert.deepEqual(setModes, ["agent-1:bypassPermissions"], "the room touched no agent's mode");
+
+  // The window closes. The session that was ceded is the one taken back.
+  h.store.closeGrants(h.root);
+  h.feed.push(message(42, 42, "read it again"));
+  await h.settle(250);
+  assert.deepEqual(setModes, ["agent-1:bypassPermissions", "agent-1:default"]);
+  assert.equal(audits(h.store, "trust.mode").length, 1);
   await h.finish();
 });
 
@@ -1848,15 +2078,24 @@ const GUILD = "900000000000000001";
 const ROOM = "900000000000000002";
 const THREAD = "900000000000000003";
 
-function discordConfig(root: string, allowChats: string[] = [ROOM]) {
+function discordConfig(
+  root: string,
+  allowChats: string[] = [ROOM],
+  modes: Record<string, "read-only" | "assisted"> = {},
+) {
   const config = defaultConfig(root, "caraka_test_bot", "42", false);
   delete config.telegram;
-  return { ...config, discord: { appId: "app-1", allowFrom: ["42"], allowChats, threads: true } };
+  return {
+    ...config,
+    discord: { appId: "app-1", allowFrom: ["42"], allowChats, threads: true, modes },
+  };
 }
 
 async function discordHarness(
   options: {
     allowChats?: string[];
+    /** A guild channel is read-only until the config says otherwise (§5). */
+    modes?: Record<string, "read-only" | "assisted">;
     threadFails?: boolean;
     onPrompt?: (prompt: string, route: DriverRoute) => Promise<{ stopReason: string }>;
   } = {},
@@ -1929,7 +2168,7 @@ async function discordHarness(
   };
 
   const gateway = new Gateway(
-    discordConfig(root, options.allowChats),
+    discordConfig(root, options.allowChats, options.modes),
     Buffer.alloc(32, 4),
     [discord],
     async () => claude,
@@ -2029,6 +2268,9 @@ async function discordHarness(
 test("a Discord slash command opens a thread, is approved by button, and the thread is archived", async () => {
   let decision: PermissionResponse | undefined;
   const h = await discordHarness({
+    // The guild channel is opted in; the default it would otherwise take is
+    // read-only, and that is proved on its own below.
+    modes: { [ROOM]: "assisted" },
     onPrompt: async (_prompt, route) => {
       decision = await route.permission({
         sessionId: "agent-session-1",
@@ -2122,6 +2364,9 @@ test("a Discord press from outside the sender allowlist is refused and recorded"
   // decides is the sender allowlist and the signature, and nothing else.
   let decision: PermissionResponse | undefined;
   const h = await discordHarness({
+    // The guild channel is opted in; the default it would otherwise take is
+    // read-only, and that is proved on its own below.
+    modes: { [ROOM]: "assisted" },
     onPrompt: async (_prompt, route) => {
       decision = await route.permission({
         sessionId: "agent-session-1",

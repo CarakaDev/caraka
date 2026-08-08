@@ -65,6 +65,12 @@ const en = {
   "error.report":
     "Claude could not finish the task. {details}\nTry /new or run `npx caraka doctor` on the computer.",
   "start.notice": "Caraka is up on {host}. Workspace {workspace}, version {version}.",
+  "policy.readOnly":
+    '⛔ Refused: {tool}{target}\nThis conversation is read-only, so no write and no command runs here. To let it, add "{container}": assisted under {channel}.modes in config.yaml and restart. A room stays read-only until someone opts it in.',
+  "policy.noSeam":
+    "⛔ Not run. This workspace's route decides permissions itself and never asks Caraka, so read-only has nothing to refuse a write at. Send the task from your direct message with the bot, or give this workspace `driver: acp` in config.yaml.",
+  "policy.noTrust":
+    "⛔ No window opened. This conversation is read-only, and a trust window covers the whole workspace, including the conversations that are not. Send /yolo from your direct message with the bot, or opt this one in under {channel}.modes in config.yaml first.",
   "trust.needDuration": "Write a duration, for example /yolo 30m. The longest is 60 minutes.",
   "trust.tooLong": "The longest trust window is 60 minutes.",
   "trust.needButtons":
@@ -320,6 +326,12 @@ const id: Record<MessageKey, string> = {
   "error.report":
     "Claude tidak dapat menyelesaikan tugas. {details}\nCoba /new atau jalankan `npx caraka doctor` di komputer.",
   "start.notice": "Caraka aktif di {host}. Workspace {workspace}, versi {version}.",
+  "policy.readOnly":
+    '⛔ Ditolak: {tool}{target}\nPercakapan ini read-only, jadi tidak ada tulis dan tidak ada perintah yang berjalan di sini. Untuk mengizinkannya, tambahkan "{container}": assisted di bawah {channel}.modes pada config.yaml lalu mulai ulang. Sebuah ruang tetap read-only sampai ada yang memilihnya masuk.',
+  "policy.noSeam":
+    "⛔ Tidak dijalankan. Route workspace ini memutuskan izin sendiri dan tidak pernah bertanya ke Caraka, jadi read-only tidak punya tempat untuk menolak tulis. Kirim tugasnya dari pesan langsung dengan bot, atau beri workspace ini `driver: acp` di config.yaml.",
+  "policy.noTrust":
+    "⛔ Tidak ada jendela yang dibuka. Percakapan ini read-only, sedangkan jendela trust berlaku untuk seluruh workspace, termasuk percakapan yang bukan read-only. Kirim /yolo dari pesan langsung dengan bot, atau masukkan percakapan ini dulu di bawah {channel}.modes pada config.yaml.",
   "trust.needDuration": "Tulis durasinya, misalnya /yolo 30m. Paling lama 60 menit.",
   "trust.tooLong": "Jendela trust paling lama 60 menit.",
   "trust.needButtons":

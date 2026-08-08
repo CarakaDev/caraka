@@ -32,6 +32,11 @@ export const presetSchema = z
         command: z.string().min(1),
         args: z.array(z.string()).default([]),
         env: z.record(z.string(), z.string()).default({}),
+        // Whether this adapter was seen sending `session/request_permission`
+        // on a real run. One adapter class serves every ACP preset, so the
+        // claim belongs to the agent, not to the class. Unset means nobody
+        // watched, and a read-only run refuses a route nobody watched.
+        asksPermission: z.boolean().default(false),
       })
       .strict()
       .optional(),

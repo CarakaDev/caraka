@@ -6,7 +6,12 @@ import type { AgentDriver, AgentUpdate, DriverRoute } from "../core/driver.js";
 import { translator, type Translate } from "../i18n.js";
 
 /** How to spawn an ACP adapter, taken from a preset's `acp:` block. */
-export type AcpSpawn = { command: string; args: string[]; env: Record<string, string> };
+export type AcpSpawn = {
+  command: string;
+  args: string[];
+  env: Record<string, string>;
+  asksPermission?: boolean;
+};
 
 /**
  * The environment a spawned agent inherits, with everything Caraka named to
@@ -22,6 +27,14 @@ export function claudeEnvironment(source: NodeJS.ProcessEnv = process.env) {
 }
 
 export class ClaudeAcp implements AgentDriver {
+  /**
+   * Whether `session/request_permission` really arrives from this agent. This
+   * class spawns every preset with an `acp:` block, and most of those presets
+   * are marked unverified, so the answer is the preset's to give
+   * (`acp.asksPermission`) and not the class's to assume. No spawn spec means
+   * the locked `claude-agent-acp` dependency, which the smoke exercises here.
+   */
+  readonly asksPermission: boolean;
   private child: ChildProcessWithoutNullStreams | undefined;
   private connection: acp.ClientConnection | undefined;
   private readonly routes = new Map<string, DriverRoute>();
@@ -29,7 +42,9 @@ export class ClaudeAcp implements AgentDriver {
   constructor(
     private readonly t: Translate = translator(),
     private readonly spawnSpec?: AcpSpawn,
-  ) {}
+  ) {
+    this.asksPermission = spawnSpec ? spawnSpec.asksPermission === true : true;
+  }
 
   async start() {
     if (this.connection) return;

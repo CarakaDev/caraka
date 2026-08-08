@@ -110,6 +110,52 @@ export function callbackPurpose(callback: string): CallbackPurpose | null {
   return head === "c:" || head === "t:" || head === "g:" ? (head[0] as CallbackPurpose) : null;
 }
 
+/** `docs/security.md` §5 names these three, and nothing names a fourth. */
+export const POLICY_MODES = ["read-only", "assisted", "trusted"] as const;
+export type PolicyMode = (typeof POLICY_MODES)[number];
+
+/**
+ * The mode a run answers to, resolved per (channel, container, principal). The
+ * map belongs to one channel, so an id is never read against another channel's.
+ * What the config does not name falls to the documented default: `assisted` in
+ * a private conversation, `read-only` wherever a room reads along, because a
+ * room never gets write or execute without an explicit opt-in (§4, control 6).
+ * A principal key answers only in a private conversation — in a room the
+ * container's own entry is the opt-in, and nothing else stands in for it.
+ */
+export function resolvePolicyMode(
+  modes: Map<string, PolicyMode> | undefined,
+  container: string,
+  principal: string,
+  isPrivate: boolean,
+): PolicyMode {
+  const named = modes?.get(container) ?? (isPrivate ? modes?.get(principal) : undefined);
+  return named ?? (isPrivate ? "assisted" : "read-only");
+}
+
+// The tool kinds that only observe. A request carrying any other kind, none at
+// all included, changes something: an unrecognised tool is not evidence that it
+// is harmless, so read-only refuses it.
+const readingKinds = new Set(["read", "search", "think", "fetch"]);
+
+// The payload fields no read carries. `kind` is a label the agent writes, and
+// T1/T2 in `docs/security.md` §2 both end with an agent that writes what suits
+// it, so the label clears the gate only when the payload agrees with it.
+const writingFields = ["command", "content", "new_string", "old_string", "edits", "patch"];
+
+/** True when `read-only` has to refuse this request outright. */
+export function writesOrExecutes(request: {
+  toolCall?: { kind?: string | null; rawInput?: unknown };
+}) {
+  if (!readingKinds.has(request.toolCall?.kind ?? "")) return true;
+  const raw = request.toolCall?.rawInput;
+  const input = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  return writingFields.some((field) => {
+    const value = input[field];
+    return (typeof value === "string" && value !== "") || Array.isArray(value);
+  });
+}
+
 // A trust window is bounded by the clock, and the bound is the same number
 // whether the terminal or a signed callback opened it.
 export const trustLimitMinutes = 60;

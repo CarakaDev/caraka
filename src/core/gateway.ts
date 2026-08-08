@@ -38,10 +38,13 @@ import {
   guardPermission,
   isHighRisk,
   parseDuration,
+  resolvePolicyMode,
   shortCode,
   trustLimitMinutes,
   verifyApprovalCallback,
+  writesOrExecutes,
   type createScrubber,
+  type PolicyMode,
 } from "./security.js";
 
 type PendingPermission = {
@@ -77,6 +80,8 @@ export class Gateway {
   // the allowlists cannot be one list (hard rule 1, `spec/discord-v05.md` K4).
   private readonly allowed = new Map<ChannelId, Set<string>>();
   private readonly allowedChats = new Map<ChannelId, Set<string>>();
+  // The fourth map, and the same rule: what the operator opted in, per channel.
+  private readonly modes = new Map<ChannelId, Map<string, PolicyMode>>();
   private readonly operators = new Map<ChannelId, string>();
   private readonly byId = new Map<ChannelId, Channel>();
   private readonly blockedChats = new Set<string>();
@@ -146,6 +151,7 @@ export class Gateway {
       // A DM chat id is the sender's own id on Telegram, so a v0.1 config that
       // never heard of `allowChats` still has its own conversation on the list.
       this.allowedChats.set(id, new Set([...block.allowChats, ...block.allowFrom]));
+      this.modes.set(id, new Map(Object.entries(block.modes)));
       this.operators.set(id, block.allowFrom[0] ?? "");
     }
   }
@@ -177,6 +183,22 @@ export class Gateway {
 
   private allowsChat(chatId: string) {
     return this.allowedChats.get(this.channelOf(chatId).id)?.has(this.container(chatId)) === true;
+  }
+
+  /**
+   * The mode this message runs under. It is read once, here, from the config
+   * and from the kind of container the message arrived in — never from the
+   * text, so nothing a sender or an agent writes can move it, and never from
+   * which channel answered.
+   */
+  private policyMode(message: InboundMessage): PolicyMode {
+    const chatId = String(message.chat.id);
+    return resolvePolicyMode(
+      this.modes.get(this.channelOf(chatId).id),
+      this.container(chatId),
+      String(message.from?.id),
+      message.chat.type === "private",
+    );
   }
 
   // Never empty: `workspaces()` lifts the singular into a one-element list.
@@ -791,6 +813,7 @@ export class Gateway {
 
   private async runTask(message: InboundMessage, prompt: string, workspace: Workspace) {
     const session = await this.sessionFor(message, this.title(prompt), workspace);
+    const mode = this.policyMode(message);
     const scope: Scope = { kind: "workspace", id: workspace.path };
     await this.setState(session, "running");
     const progress = await this.sendText(
@@ -810,9 +833,24 @@ export class Gateway {
       // The session's own agent, on the workspace's own route (AC-5.4): the
       // registry behind `driverFor` decides what serves this pair.
       const driver = await this.driver(session.agent, workspace.driver);
+      // A route that decides permissions itself has no seam for read-only to
+      // refuse a write at, so the run does not start rather than start
+      // unguarded (`docs/security.md` §5).
+      if (mode === "read-only" && driver.asksPermission === false) {
+        this.store.audit(
+          "policy.deny",
+          mode,
+          { reason: "route asks nothing" },
+          session.principal,
+          session.id,
+        );
+        await this.sendResult(session, `${this.header(session)}${this.t("policy.noSeam")}`);
+        await this.setState(session, "cancelled");
+        return;
+      }
       agentId = await driver.session(agentId, workspace.path);
       if (agentId !== session.agentSessionId) this.store.setAgentSession(session.id, agentId);
-      await this.applyGrantedMode(driver, agentId, workspace.path);
+      await this.applyGrantedMode(driver, agentId, workspace.path, mode);
       this.active.set(workspace.slug, { local: session, agentId, driver });
       compiled = await this.compileMemory(session, prompt, scope);
       this.store.audit(
@@ -860,7 +898,7 @@ export class Gateway {
               )
               .catch(() => undefined);
           },
-          permission: (request) => this.askPermission(session, agentId!, request),
+          permission: (request) => this.askPermission(session, agentId!, request, mode),
         },
       );
       const cancelled = result.stopReason === "cancelled";
@@ -939,10 +977,23 @@ export class Gateway {
       await channel.finishThread?.(session.chatId, session.threadId).catch(() => undefined);
   }
 
-  private async applyGrantedMode(driver: AgentDriver, agentId: string, workspacePath: string) {
+  private async applyGrantedMode(
+    driver: AgentDriver,
+    agentId: string,
+    workspacePath: string,
+    mode: PolicyMode,
+  ) {
     const grant = this.store.activeGrant(workspacePath);
-    if (grant?.agentMode) {
-      this.cededModes.add(workspacePath);
+    // A cession belongs to the agent session it was applied to, never to the
+    // workspace: two conversations on one workspace hold two sessions, and a
+    // key made of the path alone lets either of them consume the other's
+    // record — after which nothing restores the session that really was ceded.
+    const ceded = `${workspacePath}\0${agentId}`;
+    // A window is opened on a workspace, and a read-only conversation is not
+    // covered by one opened elsewhere: ceding the agent's own mode here would
+    // hand it every decision this run is meant to refuse.
+    if (grant?.agentMode && mode !== "read-only") {
+      this.cededModes.add(ceded);
       await driver.setMode(agentId, grant.agentMode).catch(() => undefined);
       return;
     }
@@ -950,8 +1001,9 @@ export class Gateway {
     // mode is session state on Claude's side and `session/load` reuses a live
     // session as it stands, so without this line `/lock` reports a closed window
     // while the agent keeps deciding permissions by itself and Caraka is never
-    // asked. Only a mode this process set is undone, per workspace.
-    if (!this.cededModes.delete(workspacePath)) return;
+    // asked. Only a mode this process set is undone, and only on the session it
+    // was set on: a read-only run passing through here restores nothing.
+    if (!this.cededModes.delete(ceded)) return;
     await driver.setMode(agentId, "default").catch(() => undefined);
     this.store.audit("trust.mode", "restored", { mode: "default" });
   }
@@ -1121,7 +1173,12 @@ export class Gateway {
     }
   }
 
-  private async askPermission(session: Session, agentId: string, request: PermissionRequest) {
+  private async askPermission(
+    session: Session,
+    agentId: string,
+    request: PermissionRequest,
+    mode: PolicyMode,
+  ) {
     // The one line that keeps a `bypassPermissions` option — which ExitPlanMode
     // really does send, first in the list on a non-root machine — from becoming
     // a one-tap button in a private chat. The id is read as well as the kind, so
@@ -1131,6 +1188,39 @@ export class Gateway {
       (option) => option.kind === "allow_once" && !cedesPermission(option.optionId),
     );
     const reject = request.options.find((option) => option.kind === "reject_once");
+
+    // The mode gate, in front of the trust window and in front of the card: in
+    // read-only there is nothing a press could authorise, so nothing is asked.
+    // It refuses ahead of the approval path and replaces no part of it — the
+    // high-risk list still keeps its buttons everywhere else.
+    if (mode === "read-only" && writesOrExecutes(request)) {
+      this.store.audit(
+        "policy.deny",
+        mode,
+        { toolCallId: request.toolCall.toolCallId, kind: request.toolCall.kind ?? "" },
+        session.principal,
+        session.id,
+      );
+      await this.sendText(
+        session.chatId,
+        `${this.header(session)}${this.t("policy.readOnly", {
+          tool:
+            request.toolCall.title ?? request.toolCall.kind ?? this.t("permission.fallbackTitle"),
+          target: this.permissionTarget(request),
+          channel: this.channelOf(session.chatId).id,
+          container: this.container(session.chatId),
+        })}`,
+        session.threadId,
+        undefined,
+        session.principal,
+        session.id,
+      );
+      return (
+        reject
+          ? { outcome: { outcome: "selected", optionId: reject.optionId } }
+          : { outcome: { outcome: "cancelled" } }
+      ) as PermissionResponse;
+    }
     if (!allow) return { outcome: { outcome: "cancelled" } } as PermissionResponse;
 
     const grant = this.store.activeGrant(this.workspaceOf(session).path);
@@ -1428,6 +1518,15 @@ export class Gateway {
   // caller, `caraka trust --bypass`, and it is not reachable from chat.
   private async offerTrust(message: InboundMessage, argument: string) {
     const { chatId } = this.route(message);
+    // The same gate the run path has, in front of the card for the same reason:
+    // a window is opened on the workspace, not on this conversation, so one
+    // opened from a read-only room would raise what the operator's own DM
+    // auto-approves without the room ever writing a byte itself.
+    const mode = this.policyMode(message);
+    if (mode === "read-only") {
+      this.store.audit("policy.deny", mode, { command: "yolo" }, String(message.from?.id));
+      return this.reply(message, this.t("policy.noTrust", { channel: this.channelOf(chatId).id }));
+    }
     // The trust card is confirmed by a signed button and by nothing else, so a
     // channel without one is told that rather than handed a card it cannot
     // answer. `caraka trust` from the terminal is the route that still works.

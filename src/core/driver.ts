@@ -47,6 +47,13 @@ export type DriverRoute = {
 };
 
 export interface AgentDriver {
+  /**
+   * Whether this route hands tool permissions back to core. A route that
+   * decides them itself sets it false, and a `read-only` run does not start
+   * there: without the seam there is nothing for a policy mode to refuse at.
+   */
+  readonly asksPermission?: boolean;
+
   start(): Promise<void>;
   /** Returns the agent-side session id, loading `existing` when it still resolves. */
   session(existing: string | null, cwd: string): Promise<string>;

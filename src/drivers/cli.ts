@@ -69,6 +69,8 @@ function agentMessage(object: Record<string, unknown>, format: "json" | "jsonl")
 type CliSession = { cwd: string; external: string | null; turns: number };
 
 export class CliDriver implements AgentDriver {
+  /** No permission hook on this route: the process runs, and then it is over. */
+  readonly asksPermission = false;
   private readonly command: string;
   private readonly sessions = new Map<string, CliSession>();
   private readonly children = new Map<string, ChildProcessWithoutNullStreams>();

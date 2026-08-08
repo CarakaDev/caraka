@@ -75,12 +75,16 @@ import {
   guardPermission,
   isHighRisk,
   parseDuration,
+  POLICY_MODES,
+  resolvePolicyMode,
   shortCode,
   trustLimitMinutes,
   verifyApprovalCallback,
+  writesOrExecutes,
+  type PolicyMode,
 } from "../src/core/security.js";
 import { claudeEnvironment, ClaudeAcp } from "../src/drivers/claude-acp.js";
-import { CliDriver, parseOutput } from "../src/drivers/cli.js";
+import { CliDriver, failureReason, parseOutput } from "../src/drivers/cli.js";
 import { loadPresets, presetSchema, resolveCommand } from "../src/drivers/preset.js";
 import { catalogs, defaultLanguage, translator } from "../src/i18n.js";
 import { withTimeout } from "../src/memory/index.js";
@@ -992,6 +996,81 @@ test("the high-risk list keeps its buttons and ordinary work does not", () => {
     assert.equal(isHighRisk({ toolCall: { rawInput } }), false, JSON.stringify(rawInput));
 });
 
+test("what the config does not name, the documented default names", () => {
+  // `docs/security.md` §5 and §4 control 6, at the resolver. The map is one
+  // channel's, the container and the principal are that channel's own ids.
+  const empty = undefined;
+  assert.equal(resolvePolicyMode(empty, "-100999", "42", false), "read-only");
+  assert.equal(resolvePolicyMode(empty, "42", "42", true), "assisted");
+  // A Discord DM: the conversation id is not the person's, so the principal is
+  // the key an operator can actually write.
+  const modes = new Map<string, PolicyMode>([
+    ["-100999", "assisted"],
+    ["42", "read-only"],
+  ]);
+  assert.equal(resolvePolicyMode(modes, "dm-channel-7", "42", true), "read-only");
+  assert.equal(resolvePolicyMode(modes, "-100999", "42", false), "assisted");
+  // In a room only the room's own entry opts it in. A principal named
+  // elsewhere does not carry their private mode into a group.
+  assert.equal(resolvePolicyMode(modes, "-100777", "42", false), "read-only");
+  // The three names of §5, and no invented fourth.
+  assert.deepEqual([...POLICY_MODES], ["read-only", "assisted", "trusted"]);
+});
+
+test("read-only refuses everything that is not plainly a read", () => {
+  for (const kind of ["read", "search", "think", "fetch"])
+    assert.equal(writesOrExecutes({ toolCall: { kind } }), false, kind);
+  // An unrecognised tool is not evidence that it is harmless, so it is refused
+  // with the writes — a missing kind included.
+  for (const kind of ["edit", "delete", "move", "execute", "switch_mode", "other", "", undefined])
+    assert.equal(writesOrExecutes({ toolCall: { kind } }), true, String(kind));
+  assert.equal(writesOrExecutes({}), true);
+  // `kind` is a label the agent writes, and T2 ends with an agent that writes
+  // what suits it. A payload only a write or a command carries is refused
+  // whatever the label says.
+  const mislabelled = [
+    { command: "rm -rf /" },
+    { file_path: "/srv/app/.env", content: "TOKEN=1" },
+    { file_path: "/srv/app/index.ts", old_string: "a", new_string: "b" },
+    { edits: [{ old_string: "a", new_string: "b" }] },
+  ];
+  for (const rawInput of mislabelled)
+    assert.equal(
+      writesOrExecutes({ toolCall: { kind: "read", rawInput } }),
+      true,
+      JSON.stringify(rawInput),
+    );
+  // A real read still passes, so the gate refuses writes rather than tools.
+  for (const rawInput of [{ file_path: "/srv/app/index.ts" }, { command: "" }, {}, null])
+    assert.equal(
+      writesOrExecutes({ toolCall: { kind: "read", rawInput } }),
+      false,
+      JSON.stringify(rawInput),
+    );
+});
+
+test("a route that answers permissions itself says so, and both shipped ones do", () => {
+  // The gate asks the driver a question instead of knowing which driver it is,
+  // the way core asks a channel for `caps` (`AGENTS.md`, hard rule 1).
+  assert.equal(new ClaudeAcp().asksPermission, true);
+  assert.equal(new CliDriver(cliPreset()).asksPermission, false);
+  // One adapter class spawns every ACP preset, so the claim is the preset's.
+  // An ACP block that never says it was watched asking counts as unwatched, and
+  // a read-only run refuses it rather than trusting it.
+  const spawn = { command: "gemini", args: ["--experimental-acp"], env: {} };
+  assert.equal(new ClaudeAcp(undefined, spawn).asksPermission, false);
+  assert.equal(new ClaudeAcp(undefined, { ...spawn, asksPermission: true }).asksPermission, true);
+});
+
+test("only the ACP preset that was watched asking claims to ask", async () => {
+  // The claim ships in the YAML, so it is read off disk rather than restated.
+  const { presets } = await loadPresets();
+  const claiming = [...presets.values()]
+    .filter((preset) => preset.acp?.asksPermission === true)
+    .map((preset) => preset.id);
+  assert.deepEqual(claiming, ["claude-code"]);
+});
+
 test("callback signatures do not cross purposes", () => {
   const key = Buffer.alloc(32, 3);
   const trust = approvalCallbacks(key, "t");
@@ -1020,6 +1099,72 @@ test("interface language defaults to English and never comes from a message", as
   for (const path of ["gateway.ts", "../channels/telegram.ts"]) {
     const source = await readFile(new URL(`../src/core/${path}`, import.meta.url), "utf8");
     assert.equal(source.includes("language_code"), false, path);
+  }
+});
+
+test("the mode opt-in is additive, and a trusted window is not written in a file", async () => {
+  const oldHome = process.env.CARAKA_HOME;
+  const root = await mkdtemp(join(tmpdir(), "caraka-modes-"));
+  process.env.CARAKA_HOME = root;
+  try {
+    const config = defaultConfig(root, "caraka_test_bot", "42", false);
+    const paths = await saveConfig(config, "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi");
+    // What the wizard ships opts nothing in, so nothing is written down and
+    // every default stands (`docs/security.md` §13, the last box).
+    assert.deepEqual((await loadConfig()).config.telegram?.modes, {});
+
+    const base = {
+      version: 1,
+      workspace: { name: "old", path: root },
+      agent: { adapter: "claude-agent-acp", adapterVersion: "0.63.0" },
+    };
+    // A v0.1 file knows no `modes` key and still parses, with the empty map
+    // that means "every default stands".
+    await writeFile(
+      paths.config,
+      stringify({
+        ...base,
+        telegram: { botUsername: "caraka_test_bot", allowFrom: ["42"], topics: false },
+      }),
+    );
+    const old = await loadConfig();
+    assert.equal(old.config.version, 1);
+    assert.deepEqual(old.config.telegram?.modes, {});
+    assert.deepEqual(channelBlocks(old.config).telegram?.modes, {});
+
+    // Written by hand, `version` stays 1, and the map reaches core as it was.
+    const opted = {
+      ...base,
+      telegram: {
+        botUsername: "caraka_test_bot",
+        allowFrom: ["42"],
+        allowChats: ["-100999"],
+        topics: false,
+        modes: { "-100999": "assisted", "42": "read-only" },
+      },
+    };
+    await writeFile(paths.config, stringify(opted));
+    assert.deepEqual(channelBlocks((await loadConfig()).config).telegram?.modes, {
+      "-100999": "assisted",
+      "42": "read-only",
+    });
+
+    // Hard rule 3: a window that never closes is not a window, so the third
+    // mode name is refused here and the message says where it is opened.
+    await writeFile(
+      paths.config,
+      stringify({ ...opted, telegram: { ...opted.telegram, modes: { "-100999": "trusted" } } }),
+    );
+    await assert.rejects(loadConfig(), /caraka trust/);
+    // And no fourth name is admitted under any spelling.
+    await writeFile(
+      paths.config,
+      stringify({ ...opted, telegram: { ...opted.telegram, modes: { "-100999": "readonly" } } }),
+    );
+    await assert.rejects(loadConfig());
+  } finally {
+    if (oldHome === undefined) delete process.env.CARAKA_HOME;
+    else process.env.CARAKA_HOME = oldHome;
   }
 });
 
