@@ -56,6 +56,8 @@ export const gatewayCommands: BotCommand[] = [
   { command: "new", description: "Start a fresh session in this conversation" },
   { command: "status", description: "Report the state of this conversation's session" },
   { command: "stop", description: "Cancel the running task" },
+  { command: "ws", description: "List the workspaces and their paths" },
+  { command: "switch", description: "Run this session on another agent preset" },
   { command: "commands", description: "List the commands the agent reported" },
   { command: "usage", description: "Report the context and cost the agent reported" },
   { command: "ingat", description: "Save a note to memory" },

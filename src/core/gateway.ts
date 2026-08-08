@@ -1,20 +1,21 @@
 import { createHash } from "node:crypto";
 import { hostname } from "node:os";
 import { setTimeout as delay } from "node:timers/promises";
-import type {
-  AvailableCommand,
-  RequestPermissionRequest,
-  RequestPermissionResponse,
-  SessionNotification,
-} from "@agentclientprotocol/sdk";
-import { addAllowedChat, type CarakaConfig } from "../config.js";
+import { addAllowedChat, workspaces, type CarakaConfig, type Workspace } from "../config.js";
 import {
   gatewayCommands,
   Telegram,
   type TelegramMessage,
   type TelegramUpdate,
 } from "../channels/telegram.js";
-import { ClaudeAcp } from "../drivers/claude-acp.js";
+import type {
+  AgentCommand,
+  AgentDriver,
+  AgentUpdate,
+  DriverFor,
+  PermissionRequest,
+  PermissionResponse,
+} from "./driver.js";
 import { translator, type Translate } from "../i18n.js";
 import { withTimeout, type MemoryProvider, type Scope } from "../memory/index.js";
 import { Store, type Session } from "../store/db.js";
@@ -33,11 +34,11 @@ import {
 type PendingPermission = {
   sessionId: string;
   timer: NodeJS.Timeout;
-  finish(response: RequestPermissionResponse): void;
+  finish(response: PermissionResponse): void;
 };
 
 type SessionFacts = {
-  commands: AvailableCommand[] | undefined;
+  commands: AgentCommand[] | undefined;
   usage: { used: number; size: number; cost?: string } | undefined;
 };
 
@@ -64,7 +65,13 @@ export class Gateway {
   private readonly pending = new Map<string, PendingPermission>();
   private readonly pendingTrust = new Map<
     string,
-    { principal: string; minutes: number; expiresAt: number }
+    { principal: string; minutes: number; path: string; slug: string; expiresAt: number }
+  >();
+  // One stashed task per chat, waiting on the workspace buttons
+  // (`docs/session-model.md` §5: ask, never guess).
+  private readonly pendingChoice = new Map<
+    string,
+    { principal: string; message: TelegramMessage; text: string; expiresAt: number }
   >();
   private readonly pendingGroups = new Map<
     string,
@@ -77,10 +84,17 @@ export class Gateway {
   private botName = "";
   private readonly t: Translate;
   private config: CarakaConfig;
-  private queue = Promise.resolve();
-  private queued = 0;
-  private cededMode = false;
-  private active: { local: Session; agentId: string } | undefined;
+  private readonly workspaces: [Workspace, ...Workspace[]];
+  // One FIFO chain and at most one active run per workspace (FR-SESS-04);
+  // workspaces run beside each other, never behind each other.
+  private readonly queues = new Map<string, { chain: Promise<void>; depth: number }>();
+  private readonly cededModes = new Set<string>();
+  private readonly active = new Map<
+    string,
+    { local: Session; agentId: string; driver: AgentDriver }
+  >();
+  // Every driver this process resolved, so shutdown can stop each one once.
+  private readonly resolved = new Set<AgentDriver>();
   private stopping = false;
   private shutdown: Promise<void> | undefined;
 
@@ -88,17 +102,20 @@ export class Gateway {
     config: CarakaConfig,
     private readonly approvalKey: Buffer,
     private readonly telegram: Telegram,
-    private readonly claude: ClaudeAcp,
+    private readonly driverFor: DriverFor,
     private readonly store: Store,
     private readonly scrub: ReturnType<typeof createScrubber>,
-    private readonly version = "0.3.0",
+    private readonly version = "0.4.0",
     private readonly runLimitMs = RUN_LIMIT_MS,
     // No provider object is the `none` provider; every memory seam starts with
     // this one check.
     private readonly memory?: MemoryProvider,
     private readonly memoryTimeoutMs = MEMORY_TIMEOUT_MS,
+    // The loaded preset ids, for `/switch` to check an argument against.
+    private readonly agents: string[] = [],
   ) {
     this.config = config;
+    this.workspaces = workspaces(config);
     this.t = translator(config.language ?? "en");
     this.allowed = new Set(config.telegram.allowFrom);
     // A DM chat id is the sender's own id, so a v0.1 config that never heard of
@@ -110,6 +127,50 @@ export class Gateway {
     return this.config.telegram.allowFrom[0] ?? "";
   }
 
+  // Never empty: `workspaces()` lifts the singular into a one-element list.
+  private get home(): Workspace {
+    return this.workspaces[0];
+  }
+
+  private workspaceBySlug(slug: string) {
+    return this.workspaces.find((workspace) => workspace.slug === slug);
+  }
+
+  // A session row from before v0.4, or one whose slug left the config, runs on
+  // the first workspace — exactly what every session ran on before v0.4.
+  private workspaceOf(session: Session) {
+    return this.workspaceBySlug(session.workspace) ?? this.home;
+  }
+
+  // The workspace a chat means when it does not say: its session at this route,
+  // else the sticky default, else the only workspace there is. Undefined means
+  // the chat has to be asked.
+  private chatWorkspace(chatId: string, session: Session | undefined) {
+    if (session) return this.workspaceOf(session);
+    const sticky = this.store.meta(`ws.last.${chatId}`);
+    const found = sticky ? this.workspaceBySlug(sticky) : undefined;
+    if (found) return found;
+    return this.workspaces.length === 1 ? this.home : undefined;
+  }
+
+  private workspaceForMessage(message: TelegramMessage) {
+    const { chatId, threadId } = this.route(message);
+    return this.chatWorkspace(chatId, this.store.sessionFor(chatId, threadId));
+  }
+
+  private workspaceLines() {
+    return this.workspaces.map((workspace) => `@${workspace.slug} · ${workspace.path}`).join("\n");
+  }
+
+  // Selection is the driver layer's job (`channels → core ← drivers`); core
+  // hands over the session's agent id and the workspace's forced route, and
+  // keeps the instance only to stop it later.
+  private async driver(agent: string, forced?: "acp" | "cli") {
+    const driver = await this.driverFor(agent, forced);
+    this.resolved.add(driver);
+    return driver;
+  }
+
   async run() {
     this.store.expireApprovals();
     // A trust window is a promise about a process that is running. A restart
@@ -119,7 +180,9 @@ export class Gateway {
     await this.telegram.deleteWebhook(false, this.abort.signal);
     await this.registerCommands();
     await this.announceStart();
-    await this.claude.start();
+    // The default driver starts now, so a setup that cannot start any route
+    // fails at startup, not on the first task.
+    await this.driver("", this.home.driver);
     for await (const update of this.telegram.updates(this.abort.signal)) this.dispatch(update);
   }
 
@@ -147,7 +210,7 @@ export class Gateway {
       this.operator,
       this.t("start.notice", {
         host: hostname(),
-        workspace: this.config.workspace.name,
+        workspace: this.workspaces.map((workspace) => workspace.slug).join(", "),
         version: this.version,
       }),
       "",
@@ -195,10 +258,165 @@ export class Gateway {
     else if (command === "ingat") this.respond(message, this.rememberMemory(message, argument));
     else if (command === "lupakan") this.respond(message, this.forgetMemory(message, argument));
     else if (command === "memori") this.respond(message, this.listMemory(message));
-    else if (command === "new") this.enqueue(message, () => this.createOnly(message));
+    else if (command === "ws") this.respond(message, this.listWorkspaces(message));
+    else if (command === "switch") this.respond(message, this.switchAgent(message, argument));
+    else if (command === "new") this.routeTask(message, text, true);
     else if (command && !this.knownAgentCommand(message, command))
       this.respond(message, this.rejectCommand(message, command));
-    else this.enqueue(message, () => this.runTask(message, text));
+    else this.routeTask(message, text);
+  }
+
+  // The routing table (`docs/session-model.md` §5): a session topic keeps its
+  // workspace and `@slug` inside one moves nothing; elsewhere `@slug` routes
+  // and sticks, a lone workspace needs no asking, and an ambiguous chat gets
+  // buttons, never a guess.
+  private routeTask(message: TelegramMessage, text: string, create = false) {
+    const { chatId, threadId } = this.route(message);
+    const principal = String(message.from?.id);
+    const session = this.store.sessionFor(chatId, threadId);
+    if (threadId && session) {
+      this.queueRun(message, text, this.workspaceOf(session), create);
+      return;
+    }
+    const at = /^@([\w.-]+)(?:\s+|$)/.exec(text);
+    if (at) {
+      const slug = at[1] ?? "";
+      const chosen = this.workspaceBySlug(slug);
+      if (!chosen) {
+        this.respond(
+          message,
+          this.sendText(
+            chatId,
+            this.t("ws.unknown", { slug, list: this.workspaceLines() }),
+            threadId,
+            undefined,
+            principal,
+          ),
+        );
+        return;
+      }
+      this.store.setMeta(`ws.last.${chatId}`, chosen.slug);
+      const rest = text.slice(at[0].length).trim();
+      if (!rest && !create) {
+        this.respond(
+          message,
+          this.sendText(
+            chatId,
+            this.t("ws.sticky", { slug: chosen.slug }),
+            threadId,
+            undefined,
+            principal,
+          ),
+        );
+        return;
+      }
+      this.queueRun(message, rest || text, chosen, create);
+      return;
+    }
+    const chosen = this.chatWorkspace(chatId, session);
+    if (!chosen) {
+      this.askWorkspace(message, create ? "" : text);
+      return;
+    }
+    this.queueRun(message, text, chosen, create);
+  }
+
+  private queueRun(message: TelegramMessage, text: string, workspace: Workspace, create: boolean) {
+    this.enqueue(message, workspace.slug, () =>
+      create ? this.createOnly(message, workspace) : this.runTask(message, text, workspace),
+    );
+  }
+
+  private askWorkspace(message: TelegramMessage, text: string) {
+    const { chatId, threadId } = this.route(message);
+    const principal = String(message.from?.id);
+    this.pendingChoice.set(chatId, {
+      principal,
+      message,
+      text,
+      expiresAt: Date.now() + 10 * 60_000,
+    });
+    this.respond(
+      message,
+      this.sendText(
+        chatId,
+        this.t("ws.choose"),
+        threadId,
+        {
+          inline_keyboard: this.workspaces.map((workspace) => [
+            { text: `@${workspace.slug}`, callback_data: `w:${workspace.slug}` },
+          ]),
+        },
+        principal,
+      ),
+    );
+  }
+
+  // The button does what typing `@slug` would have done: pick, stick, and run
+  // whatever task was waiting on the answer. The sender allowlist was already
+  // checked at the callback fork.
+  private async chooseWorkspace(
+    query: NonNullable<TelegramUpdate["callback_query"]>,
+    principal: string,
+  ) {
+    const chosen = this.workspaceBySlug((query.data ?? "").slice(2));
+    const chatId = query.message ? String(query.message.chat.id) : "";
+    const waiting = this.pendingChoice.get(chatId);
+    if (!chosen || !waiting || waiting.principal !== principal || waiting.expiresAt < Date.now()) {
+      await this.telegram.answerCallback(query.id, this.t("callback.invalid"), true);
+      return;
+    }
+    this.pendingChoice.delete(chatId);
+    this.store.setMeta(`ws.last.${chatId}`, chosen.slug);
+    await this.telegram.answerCallback(query.id, this.t("callback.confirmed"));
+    if (waiting.text) this.queueRun(waiting.message, waiting.text, chosen, false);
+    else
+      await this.sendText(
+        chatId,
+        this.t("ws.sticky", { slug: chosen.slug }),
+        "",
+        undefined,
+        principal,
+      ).catch(() => undefined);
+  }
+
+  // Global commands answer in General from any topic (`docs/session-model.md` §5).
+  private listWorkspaces(message: TelegramMessage) {
+    return this.sendText(
+      String(message.chat.id),
+      this.t("ws.list", { list: this.workspaceLines() }),
+      "",
+      undefined,
+      String(message.from?.id),
+    );
+  }
+
+  // `/switch` writes the preset id and drops the agent-side session id; no
+  // agent mode name is known here, let alone hardened (`docs/ui-ux.md`).
+  private async switchAgent(message: TelegramMessage, argument: string) {
+    const { chatId, threadId } = this.route(message);
+    const principal = String(message.from?.id);
+    if (!argument || !this.agents.includes(argument))
+      return this.sendText(
+        chatId,
+        this.t("switch.unknown", { list: this.agents.join(", ") || "—" }),
+        threadId,
+        undefined,
+        principal,
+      );
+    const session = this.store.sessionFor(chatId, threadId);
+    if (!session)
+      return this.sendText(chatId, this.t("status.none"), threadId, undefined, principal);
+    this.store.setAgent(session.id, argument);
+    this.store.audit("session.switch", "switched", { agent: argument }, principal, session.id);
+    return this.sendText(
+      chatId,
+      this.t("switch.done", { agent: argument }),
+      threadId,
+      undefined,
+      principal,
+      session.id,
+    );
   }
 
   // A slash command is forwarded only while Caraka has no list to check it
@@ -262,31 +480,39 @@ export class Gateway {
     return Math.max(0, RATE_WINDOW_MS - (now - oldest));
   }
 
-  private enqueue(message: TelegramMessage, task: () => Promise<void>) {
+  private enqueue(message: TelegramMessage, slug: string, task: () => Promise<void>) {
     if (this.stopping) return;
     const principal = String(message.from?.id);
     const wait = this.rateDelay(principal);
     const { chatId, threadId } = this.route(message);
+    const entry = this.queues.get(slug) ?? { chain: Promise.resolve(), depth: 0 };
     if (wait > 0 && !this.rateNoticed.has(principal)) {
       this.rateNoticed.add(principal);
       void this.sendText(chatId, this.t("queue.limit"), threadId, undefined, principal).catch(
         () => undefined,
       );
-    } else if (this.queued > 0) {
-      void this.sendText(chatId, this.t("queue.queued"), threadId, undefined, principal).catch(
-        () => undefined,
-      );
+    } else if (entry.depth > 0) {
+      // depth counts the running task and everything behind it, so a new task
+      // lands at position depth in this workspace's queue.
+      void this.sendText(
+        chatId,
+        this.t("queue.queued", { n: entry.depth }),
+        threadId,
+        undefined,
+        principal,
+      ).catch(() => undefined);
     }
-    this.queued += 1;
-    this.queue = this.queue
+    entry.depth += 1;
+    entry.chain = entry.chain
       .then(async () => {
         if (wait > 0) await delay(wait, undefined, { signal: this.abort.signal });
         await task();
       })
       .catch((error: unknown) => (this.stopping ? undefined : this.reportError(message, error)))
       .finally(() => {
-        this.queued -= 1;
+        entry.depth -= 1;
       });
+    this.queues.set(slug, entry);
   }
 
   private route(message: TelegramMessage) {
@@ -355,7 +581,12 @@ export class Gateway {
     return message.chat.is_forum === true && this.forumChats.get(String(message.chat.id)) === true;
   }
 
-  private async createSession(message: TelegramMessage, title: string, force: boolean) {
+  private async createSession(
+    message: TelegramMessage,
+    title: string,
+    force: boolean,
+    workspace: Workspace,
+  ) {
     const { chatId } = this.route(message);
     let threadId = String(message.message_thread_id ?? "");
     if (!threadId && this.topicsAvailable(message)) {
@@ -374,22 +605,28 @@ export class Gateway {
       chatId,
       threadId,
       title,
+      workspace: workspace.slug,
+      agent: workspace.agent ?? "",
     });
   }
 
-  private async sessionFor(message: TelegramMessage, title: string) {
+  // A session never changes workspace (FR-SESS-01: the workspace is part of its
+  // identity), so a route whose newest session belongs elsewhere gets a new one.
+  private async sessionFor(message: TelegramMessage, title: string, workspace: Workspace) {
     const { chatId, threadId } = this.route(message);
     const existing = this.store.sessionFor(chatId, threadId);
-    if (existing) return existing;
-    return this.createSession(message, title, false);
+    if (existing && this.workspaceOf(existing).slug === workspace.slug) return existing;
+    return this.createSession(message, title, existing !== undefined, workspace);
   }
 
   private header(session: Session) {
-    return session.threadId ? "" : `[${this.config.workspace.name} · #${session.id.slice(0, 4)}]\n`;
+    return session.threadId
+      ? ""
+      : `[${this.workspaceOf(session).slug} · #${session.id.slice(0, 4)}]\n`;
   }
 
-  private async createOnly(message: TelegramMessage) {
-    const session = await this.createSession(message, this.t("session.untitled"), true);
+  private async createOnly(message: TelegramMessage, workspace: Workspace) {
+    const session = await this.createSession(message, this.t("session.untitled"), true, workspace);
     await this.sendText(
       session.chatId,
       `${this.header(session)}${this.t("session.created")}`,
@@ -400,8 +637,9 @@ export class Gateway {
     );
   }
 
-  private async runTask(message: TelegramMessage, prompt: string) {
-    const session = await this.sessionFor(message, this.title(prompt));
+  private async runTask(message: TelegramMessage, prompt: string, workspace: Workspace) {
+    const session = await this.sessionFor(message, this.title(prompt), workspace);
+    const scope: Scope = { kind: "workspace", id: workspace.path };
     await this.setState(session, "running");
     const progress = await this.sendText(
       session.chatId,
@@ -417,30 +655,36 @@ export class Gateway {
     let timeout: NodeJS.Timeout | undefined;
     let compiled: { id: string; block: string } | undefined;
     try {
-      agentId = await this.claude.session(agentId, this.config.workspace.path);
+      // The session's own agent, on the workspace's own route (AC-5.4): the
+      // registry behind `driverFor` decides what serves this pair.
+      const driver = await this.driver(session.agent, workspace.driver);
+      agentId = await driver.session(agentId, workspace.path);
       if (agentId !== session.agentSessionId) this.store.setAgentSession(session.id, agentId);
-      await this.applyGrantedMode(agentId);
-      this.active = { local: session, agentId };
-      compiled = await this.compileMemory(session, prompt);
+      await this.applyGrantedMode(driver, agentId, workspace.path);
+      this.active.set(workspace.slug, { local: session, agentId, driver });
+      compiled = await this.compileMemory(session, prompt, scope);
       this.store.audit(
         "run.start",
         "running",
         {
-          agent: "claude",
+          agent: session.agent || "default",
           promptBytes: Buffer.byteLength(prompt),
           memoryBytes: compiled ? Buffer.byteLength(compiled.block) : 0,
         },
         session.principal,
         session.id,
       );
-      timeout = setTimeout(() => void this.cancelForTime(session, agentId!), this.runLimitMs);
-      const result = await this.claude.prompt(
+      timeout = setTimeout(
+        () => void this.cancelForTime(driver, session, agentId!),
+        this.runLimitMs,
+      );
+      const result = await driver.prompt(
         agentId,
         compiled ? `${compiled.block}\n\n${prompt}` : prompt,
         {
           update: async (notification) => {
             this.recordFacts(session.id, notification);
-            this.observeToolCall(notification);
+            this.observeToolCall(notification, scope);
             const text = this.agentText(notification);
             if (!text) return;
             output = `${output}${text}`.slice(-240_000);
@@ -460,7 +704,7 @@ export class Gateway {
       );
       const cancelled = result.stopReason === "cancelled";
       await this.setState(session, cancelled ? "cancelled" : "done");
-      const memoryLine = await this.finishMemory(prompt, output, compiled, !cancelled);
+      const memoryLine = await this.finishMemory(prompt, output, compiled, !cancelled, scope);
       await this.sendResult(
         session,
         `${this.header(session)}${output || this.t(cancelled ? "run.cancelled" : "run.noOutput")}${memoryLine}`,
@@ -480,13 +724,13 @@ export class Gateway {
       throw error;
     } finally {
       if (timeout) clearTimeout(timeout);
-      this.active = undefined;
+      this.active.delete(workspace.slug);
       await this.telegram.deleteMessage(session.chatId, progress.message_id).catch(() => undefined);
     }
   }
 
-  private async cancelForTime(session: Session, agentId: string) {
-    await this.claude.cancel(agentId).catch(() => undefined);
+  private async cancelForTime(driver: AgentDriver, session: Session, agentId: string) {
+    await driver.cancel(agentId).catch(() => undefined);
     await this.setState(session, "cancelled");
     this.store.audit(
       "run.timeout",
@@ -528,25 +772,24 @@ export class Gateway {
       .catch(() => undefined);
   }
 
-  private async applyGrantedMode(agentId: string) {
-    const grant = this.store.activeGrant(this.config.workspace.path);
+  private async applyGrantedMode(driver: AgentDriver, agentId: string, workspacePath: string) {
+    const grant = this.store.activeGrant(workspacePath);
     if (grant?.agentMode) {
-      this.cededMode = true;
-      await this.claude.setMode(agentId, grant.agentMode).catch(() => undefined);
+      this.cededModes.add(workspacePath);
+      await driver.setMode(agentId, grant.agentMode).catch(() => undefined);
       return;
     }
     // A window that closed or expired has to take the agent's mode with it. The
     // mode is session state on Claude's side and `session/load` reuses a live
     // session as it stands, so without this line `/lock` reports a closed window
     // while the agent keeps deciding permissions by itself and Caraka is never
-    // asked. Only a mode this process set is undone.
-    if (!this.cededMode) return;
-    this.cededMode = false;
-    await this.claude.setMode(agentId, "default").catch(() => undefined);
+    // asked. Only a mode this process set is undone, per workspace.
+    if (!this.cededModes.delete(workspacePath)) return;
+    await driver.setMode(agentId, "default").catch(() => undefined);
     this.store.audit("trust.mode", "restored", { mode: "default" });
   }
 
-  private recordFacts(sessionId: string, notification: SessionNotification) {
+  private recordFacts(sessionId: string, notification: AgentUpdate) {
     const update = notification.update;
     const facts = this.facts.get(sessionId) ?? { commands: undefined, usage: undefined };
     if (update.sessionUpdate === "available_commands_update")
@@ -561,15 +804,17 @@ export class Gateway {
     this.facts.set(sessionId, facts);
   }
 
-  private agentText(notification: SessionNotification) {
+  private agentText(notification: AgentUpdate) {
     const update = notification.update;
     return update.sessionUpdate === "agent_message_chunk" && update.content.type === "text"
       ? update.content.text
       : "";
   }
 
-  private get memoryScope(): Scope {
-    return { kind: "workspace", id: this.config.workspace.path };
+  // The memory scope of a chat that is not running anything: its resolved
+  // workspace, or the first one while the chat has never chosen.
+  private memoryScopeFor(message: TelegramMessage): Scope {
+    return { kind: "workspace", id: (this.workspaceForMessage(message) ?? this.home).path };
   }
 
   // What a provider hands back is untrusted (`docs/security.md` §2): a stored
@@ -595,11 +840,11 @@ export class Gateway {
   // the prompt as labelled data, never as instruction (`docs/security.md` T3).
   // Failure or overrun degrades to no memory, records `memory_degraded`, and
   // the run goes on: memory never blocks a reply.
-  private async compileMemory(session: Session, task: string) {
+  private async compileMemory(session: Session, task: string, scope: Scope) {
     if (!this.memory) return undefined;
     try {
       const context = await withTimeout(
-        this.memory.compile({ scope: this.memoryScope, task, budgetTokens: MEMORY_BUDGET_TOKENS }),
+        this.memory.compile({ scope, task, budgetTokens: MEMORY_BUDGET_TOKENS }),
         this.memoryTimeoutMs,
       );
       const lines = this.memoryLines(context.items);
@@ -622,11 +867,11 @@ export class Gateway {
 
   // Seam B. A tool call's title is an observation. Fire-and-forget, so a slow
   // memory process never slows the stream.
-  private observeToolCall(notification: SessionNotification) {
+  private observeToolCall(notification: AgentUpdate, scope: Scope) {
     const update = notification.update;
     if (!this.memory || update.sessionUpdate !== "tool_call") return;
     void this.memory
-      .observe({ scope: this.memoryScope, kind: "tool_call", text: update.title })
+      .observe({ scope, kind: "tool_call", text: update.title })
       .catch(() => undefined);
   }
 
@@ -640,16 +885,15 @@ export class Gateway {
     output: string,
     compiled: { id: string } | undefined,
     ok: boolean,
+    scope: Scope,
   ) {
     if (!this.memory) return "";
-    void this.memory
-      .observe({ scope: this.memoryScope, kind: "user_prompt", text: prompt })
-      .catch(() => undefined);
+    void this.memory.observe({ scope, kind: "user_prompt", text: prompt }).catch(() => undefined);
     if (compiled) void this.memory.feedback(compiled.id, { ok }).catch(() => undefined);
     if (!output) return "";
     try {
       const id = await withTimeout(
-        this.memory.observe({ scope: this.memoryScope, kind: "agent_output", text: output }),
+        this.memory.observe({ scope, kind: "agent_output", text: output }),
         this.memoryTimeoutMs,
       );
       return id ? `\n\n${this.t("memory.saved", { id })}` : "";
@@ -671,7 +915,7 @@ export class Gateway {
     if (!argument) return this.sendMemoryReply(message, this.t("memory.rememberUsage"));
     try {
       const id = await this.memory.observe({
-        scope: this.memoryScope,
+        scope: this.memoryScopeFor(message),
         kind: "note",
         text: argument,
       });
@@ -700,7 +944,7 @@ export class Gateway {
     try {
       const context = await withTimeout(
         this.memory.compile({
-          scope: this.memoryScope,
+          scope: this.memoryScopeFor(message),
           task: "",
           budgetTokens: MEMORY_BUDGET_TOKENS,
         }),
@@ -716,11 +960,7 @@ export class Gateway {
     }
   }
 
-  private async askPermission(
-    session: Session,
-    agentId: string,
-    request: RequestPermissionRequest,
-  ) {
+  private async askPermission(session: Session, agentId: string, request: PermissionRequest) {
     // The one line that keeps a `bypassPermissions` option — which ExitPlanMode
     // really does send, first in the list on a non-root machine — from becoming
     // a one-tap button in a private chat. The id is read as well as the kind, so
@@ -730,9 +970,9 @@ export class Gateway {
       (option) => option.kind === "allow_once" && !cedesPermission(option.optionId),
     );
     const reject = request.options.find((option) => option.kind === "reject_once");
-    if (!allow) return { outcome: { outcome: "cancelled" } } as RequestPermissionResponse;
+    if (!allow) return { outcome: { outcome: "cancelled" } } as PermissionResponse;
 
-    const grant = this.store.activeGrant(this.config.workspace.path);
+    const grant = this.store.activeGrant(this.workspaceOf(session).path);
     if (grant && !isHighRisk(request)) {
       const line = `${this.header(session)}${this.t("permission.auto", {
         tool: request.toolCall.title ?? request.toolCall.kind ?? this.t("permission.fallbackTitle"),
@@ -755,7 +995,7 @@ export class Gateway {
       );
       return guardPermission(request, {
         outcome: { outcome: "selected", optionId: allow.optionId },
-      } as RequestPermissionResponse);
+      } as PermissionResponse);
     }
 
     const callback = approvalCallbacks(this.approvalKey);
@@ -794,8 +1034,8 @@ export class Gateway {
       session.principal,
       session.id,
     );
-    return new Promise<RequestPermissionResponse>((resolve) => {
-      const finish = (response: RequestPermissionResponse) => {
+    return new Promise<PermissionResponse>((resolve) => {
+      const finish = (response: PermissionResponse) => {
         const pending = this.pending.get(callback.id);
         if (pending) clearTimeout(pending.timer);
         this.pending.delete(callback.id);
@@ -824,7 +1064,7 @@ export class Gateway {
     });
   }
 
-  private permissionTarget(request: RequestPermissionRequest) {
+  private permissionTarget(request: PermissionRequest) {
     const locations = request.toolCall.locations?.map((item) => item.path).slice(0, 3) ?? [];
     if (locations.length)
       return `\n${this.t("permission.target")}: ${this.scrub(locations.join(", ")).slice(0, 700)}`;
@@ -856,6 +1096,9 @@ export class Gateway {
       await this.telegram
         .clearKeyboard(String(query.message.chat.id), query.message.message_id)
         .catch(() => undefined);
+    // Workspace choice carries no signature: the button only does what typing
+    // `@slug` as chat text already could, and only for an allowlisted sender.
+    if (query.data?.startsWith("w:")) return this.chooseWorkspace(query, principal);
     const purpose = query.data ? callbackPurpose(query.data) : null;
     if (purpose === "t") return this.confirmTrust(query.id, query.data ?? "", principal);
     if (purpose === "g") return this.confirmGroup(query.id, query.data ?? "", principal);
@@ -919,17 +1162,26 @@ export class Gateway {
       return this.sendText(chatId, this.t("trust.needDuration"), threadId, undefined, principal);
     if (minutes > trustLimitMinutes)
       return this.sendText(chatId, this.t("trust.tooLong"), threadId, undefined, principal);
-    if (this.store.activeGrant(this.config.workspace.path))
+    // A window is a promise about one workspace, so an ambiguous chat picks
+    // one first — the same buttons a task would get.
+    const workspace = this.workspaceForMessage(message);
+    if (!workspace) {
+      this.askWorkspace(message, "");
+      return;
+    }
+    if (this.store.activeGrant(workspace.path))
       return this.sendText(chatId, this.t("trust.alreadyOpen"), threadId, undefined, principal);
     const callback = approvalCallbacks(this.approvalKey, "t");
     this.pendingTrust.set(callback.id, {
       principal,
       minutes,
+      path: workspace.path,
+      slug: workspace.slug,
       expiresAt: Date.now() + 10 * 60_000,
     });
     return this.sendText(
       chatId,
-      this.t("trust.card", { minutes, workspace: this.config.workspace.name }),
+      this.t("trust.card", { minutes, workspace: workspace.slug }),
       threadId,
       {
         inline_keyboard: [
@@ -968,14 +1220,19 @@ export class Gateway {
     }
     const expiresAt = Date.now() + request.minutes * 60_000;
     const id = this.store.openGrant({
-      workspace: this.config.workspace.path,
+      workspace: request.path,
       mode: "trusted",
       grantedBy: "chat",
       principal,
       agentMode: null,
       expiresAt,
     });
-    this.store.audit("trust.open", "granted", { id, minutes: request.minutes }, principal);
+    this.store.audit(
+      "trust.open",
+      "granted",
+      { id, minutes: request.minutes, workspace: request.slug },
+      principal,
+    );
     await this.telegram.answerCallback(queryId, this.t("callback.confirmed"));
     await this.sendText(
       principal,
@@ -989,7 +1246,9 @@ export class Gateway {
   private async closeTrust(message: TelegramMessage) {
     const { chatId, threadId } = this.route(message);
     const principal = String(message.from?.id);
-    const closed = this.store.closeGrants(this.config.workspace.path);
+    // No resolvable workspace means no window this chat could call its own.
+    const workspace = this.workspaceForMessage(message);
+    const closed = workspace ? this.store.closeGrants(workspace.path) : 0;
     if (closed > 0) this.store.audit("trust.close", "locked", { closed }, principal);
     return this.sendText(
       chatId,
@@ -1101,9 +1360,13 @@ export class Gateway {
     });
   }
 
+  // `/stop` cancels the run of the sender's own workspace — the session topic
+  // it came from, or the chat's resolved workspace — and only that one.
   private async stopActive(message: TelegramMessage) {
     const { chatId, threadId } = this.route(message);
-    if (!this.active) {
+    const workspace = this.workspaceForMessage(message);
+    const run = workspace ? this.active.get(workspace.slug) : undefined;
+    if (!run) {
       await this.sendText(
         chatId,
         this.t("stop.none"),
@@ -1113,20 +1376,20 @@ export class Gateway {
       );
       return;
     }
-    await this.claude.cancel(this.active.agentId);
+    await run.driver.cancel(run.agentId);
     for (const [id, pending] of this.pending) {
-      if (pending.sessionId === this.active.local.id)
-        pending.finish({ outcome: { outcome: "cancelled" } });
+      if (pending.sessionId !== run.local.id) continue;
+      pending.finish({ outcome: { outcome: "cancelled" } });
       this.pending.delete(id);
     }
-    await this.setState(this.active.local, "cancelled");
+    await this.setState(run.local, "cancelled");
     await this.sendText(
-      this.active.local.chatId,
-      `${this.header(this.active.local)}${this.t("stop.cancelling")}`,
-      this.active.local.threadId,
+      run.local.chatId,
+      `${this.header(run.local)}${this.t("stop.cancelling")}`,
+      run.local.threadId,
       undefined,
-      this.active.local.principal,
-      this.active.local.id,
+      run.local.principal,
+      run.local.id,
     );
   }
 
@@ -1177,19 +1440,22 @@ export class Gateway {
     for (const pending of this.pending.values())
       pending.finish({ outcome: { outcome: "cancelled" } });
     this.pending.clear();
-    if (this.active) await this.claude.cancel(this.active.agentId).catch(() => undefined);
-    await this.claude.stop();
+    for (const run of this.active.values())
+      await run.driver.cancel(run.agentId).catch(() => undefined);
+    for (const driver of this.resolved) await driver.stop().catch(() => undefined);
     this.store.expireApprovals();
     // A window closed by shutdown says what it covered and what it did not. For
     // a window that ceded decisions to the agent, that is the window itself and
     // nothing inside it.
-    const open = this.store.activeGrant(this.config.workspace.path);
+    const open = this.workspaces
+      .map((workspace) => this.store.activeGrant(workspace.path))
+      .find((grant) => grant);
     if (this.store.closeGrants() > 0)
       this.store.audit("trust.close", "shutdown", {
         cededMode: open?.agentMode ?? null,
         auditedActionsInside: open?.agentMode ? false : true,
       });
-    await this.queue.catch(() => undefined);
+    for (const entry of this.queues.values()) await entry.chain.catch(() => undefined);
     this.store.close();
   }
 }

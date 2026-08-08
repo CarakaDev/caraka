@@ -45,6 +45,7 @@ Adapter ACP lebih tua dari yang didukung. Perbarui agent-nya, atau paksa jalur C
 ```yaml
 workspaces:
   - slug: toko-api
+    path: /absolute/path/ke/toko-api
     driver: cli
 ```
 

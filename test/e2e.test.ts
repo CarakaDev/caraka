@@ -1,15 +1,25 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import test from "node:test";
-import type { RequestPermissionRequest, RequestPermissionResponse } from "@agentclientprotocol/sdk";
+import test, { after } from "node:test";
+import { fileURLToPath } from "node:url";
+import { stringify } from "yaml";
 import { Telegram, type TelegramMessage, type TelegramUpdate } from "../src/channels/telegram.js";
-import { defaultConfig } from "../src/config.js";
+import { defaultConfig, type Workspace } from "../src/config.js";
+import { driverRegistry } from "../src/cli.js";
+import type {
+  AgentDriver,
+  DriverFor,
+  DriverRoute,
+  PermissionRequest,
+  PermissionResponse,
+} from "../src/core/driver.js";
 import { Gateway } from "../src/core/gateway.js";
 import { createScrubber } from "../src/core/security.js";
-import { ClaudeAcp, type ClaudeRoute } from "../src/drivers/claude-acp.js";
+import { loadPresets } from "../src/drivers/preset.js";
+import { translator } from "../src/i18n.js";
 import type { Filter, MemoryProvider, Outcome, Scope } from "../src/memory/index.js";
 import { Store } from "../src/store/db.js";
 
@@ -91,12 +101,12 @@ test("private allowlisted Telegram message reaches Claude and signed approval re
   } as unknown as Telegram;
 
   let receivedPrompt = "";
-  const claude = {
+  const claude: AgentDriver = {
     start: async () => undefined,
     session: async () => "agent-session-1",
-    prompt: async (_session: string, prompt: string, route: ClaudeRoute) => {
+    prompt: async (_session: string, prompt: string, route: DriverRoute) => {
       receivedPrompt = prompt;
-      const request: RequestPermissionRequest = {
+      const request: PermissionRequest = {
         sessionId: "agent-session-1",
         toolCall: { toolCallId: "tool-1", title: "Write file", kind: "edit" },
         options: [
@@ -104,7 +114,7 @@ test("private allowlisted Telegram message reaches Claude and signed approval re
           { optionId: "reject-once", name: "Reject", kind: "reject_once" },
         ],
       };
-      const choice: RequestPermissionResponse = await route.permission(request);
+      const choice: PermissionResponse = await route.permission(request);
       assert.deepEqual(choice, { outcome: { outcome: "selected", optionId: "allow-once" } });
       await route.update({
         sessionId: "agent-session-1",
@@ -115,13 +125,14 @@ test("private allowlisted Telegram message reaches Claude and signed approval re
       });
       return { stopReason: "end_turn" as const };
     },
+    setMode: async () => undefined,
     cancel: async () => undefined,
     stop: async () => {
       claudeStops += 1;
     },
-  } as unknown as ClaudeAcp;
+  };
 
-  const gateway = new Gateway(config, approvalKey, telegram, claude, store, scrub);
+  const gateway = new Gateway(config, approvalKey, telegram, async () => claude, store, scrub);
   await gateway.run();
   assert.equal(receivedPrompt, "write the file");
   assert.equal(topicAttempted, true);
@@ -200,22 +211,43 @@ function callback(from: number, data: string, chatId = from) {
   };
 }
 
+// A forgery that is always a forgery. Appending a constant `x` collided with
+// the real signature whenever base64url happened to end in `x` — one run in
+// 64, the forged card verified, and the test failed as a flake.
+function forged(data: string) {
+  return `${data.slice(0, -1)}${data.endsWith("x") ? "y" : "x"}`;
+}
+
+// Every harness registers its own shutdown, and the file closes them all at
+// the end. Without this, one failing assertion abandons a live gateway whose
+// polling loop keeps the process open until the runner's timeout, and the
+// suite reports a hang instead of the failure.
+const finishers: Array<() => Promise<void>> = [];
+after(async () => {
+  for (const finish of finishers) await finish().catch(() => undefined);
+});
+
 async function harness(
   options: {
     allowChats?: string[];
     topics?: boolean;
     editTopicFails?: boolean;
-    onPrompt?: (prompt: string, route: ClaudeRoute) => Promise<{ stopReason: string }>;
+    onPrompt?: (prompt: string, route: DriverRoute) => Promise<{ stopReason: string }>;
+    driver?: AgentDriver;
+    driverFor?: DriverFor;
     store?: Store;
     root?: string;
     runLimitMs?: number;
     memory?: MemoryProvider;
     memoryTimeoutMs?: number;
+    workspaces?: Workspace[];
+    agents?: string[];
   } = {},
 ) {
   const root = options.root ?? (await mkdtemp(join(tmpdir(), "caraka-e2e-")));
   const config = defaultConfig(root, "caraka_test_bot", "42", options.topics ?? false);
   if (options.allowChats) config.telegram.allowChats = options.allowChats;
+  if (options.workspaces) config.workspaces = options.workspaces;
   const scrub = createScrubber();
   const store = options.store ?? new Store(join(root, "test.db"), scrub);
   const feed = new Feed();
@@ -268,10 +300,10 @@ async function harness(
   } as unknown as Telegram;
 
   const prompts: string[] = [];
-  const claude = {
+  const claude: AgentDriver = options.driver ?? {
     start: async () => undefined,
     session: async () => "agent-session-1",
-    prompt: async (_session: string, prompt: string, route: ClaudeRoute) => {
+    prompt: async (_session: string, prompt: string, route: DriverRoute) => {
       prompts.push(prompt);
       return options.onPrompt
         ? await options.onPrompt(prompt, route)
@@ -279,22 +311,24 @@ async function harness(
     },
     setMode: async (_session: string, mode: string) => {
       calls.push(`set_mode:${mode}`);
+      return undefined;
     },
     cancel: async () => undefined,
     stop: async () => undefined,
-  } as unknown as ClaudeAcp;
+  };
 
   const gateway = new Gateway(
     config,
     Buffer.alloc(32, 4),
     telegram,
-    claude,
+    options.driverFor ?? (async () => claude),
     store,
     scrub,
     "0.2.0",
     options.runLimitMs ?? 30 * 60_000,
     options.memory,
     options.memoryTimeoutMs ?? 500,
+    options.agents ?? [],
   );
   const running = gateway.run();
   const buttons = () => {
@@ -304,6 +338,12 @@ async function harness(
       | undefined;
     return rows?.[0] ?? [];
   };
+  const finish = async () => {
+    feed.close();
+    await running;
+    await gateway.stop();
+  };
+  finishers.push(finish);
   return {
     root,
     store,
@@ -315,11 +355,7 @@ async function harness(
     async settle(ms = 60) {
       await delay(ms);
     },
-    async finish() {
-      feed.close();
-      await running;
-      await gateway.stop();
-    },
+    finish,
   };
 }
 
@@ -385,7 +421,7 @@ const exitPlanOptions = [
 function planRequest(
   id: string,
   options: Array<{ optionId: string; name: string; kind: string }>,
-): RequestPermissionRequest {
+): PermissionRequest {
   return {
     sessionId: "agent-session-1",
     toolCall: {
@@ -395,11 +431,11 @@ function planRequest(
       rawInput: { plan: "ship it" },
     },
     options,
-  } as RequestPermissionRequest;
+  };
 }
 
 test("ExitPlanMode's own options never reach the chat as a standing grant", async () => {
-  const answers: Record<string, RequestPermissionResponse> = {};
+  const answers: Record<string, PermissionResponse> = {};
   const h = await harness({
     onPrompt: async (_prompt, route) => {
       answers.real = await route.permission(planRequest("tool-plan", exitPlanOptions));
@@ -462,8 +498,8 @@ test("ExitPlanMode's own options never reach the chat as a standing grant", asyn
 });
 
 test("a trust window opens only from a signed button, and never covers the high-risk list", async () => {
-  let ordinary: RequestPermissionResponse | undefined;
-  let risky: RequestPermissionResponse | undefined;
+  let ordinary: PermissionResponse | undefined;
+  let risky: PermissionResponse | undefined;
   const options = [
     { optionId: "allow-once", name: "Yes", kind: "allow_once" as const },
     { optionId: "reject-once", name: "No", kind: "reject_once" as const },
@@ -515,7 +551,7 @@ test("a trust window opens only from a signed button, and never covers the high-
   assert.equal(count(), 0);
 
   // AC-6.10: a forged signature and a stranger both fail.
-  h.feed.push(callback(42, `${confirm.slice(0, -1)}x`));
+  h.feed.push(callback(42, forged(confirm)));
   h.feed.push(callback(99, confirm));
   await h.settle();
   assert.equal(count(), 0);
@@ -641,7 +677,7 @@ test("a bypass window that ends takes the agent's mode with it", async () => {
 });
 
 test("both allowlists are consulted, and the sender list guards every button", async () => {
-  let decision: RequestPermissionResponse | undefined;
+  let decision: PermissionResponse | undefined;
   const h = await harness({
     allowChats: ["-1009990001", "42"],
     onPrompt: async (_prompt, route) => {
@@ -717,7 +753,7 @@ test("a group is paired in the operator's DM, with the disclosure on the card", 
   assert.ok(confirm.startsWith("g:"));
 
   // AC-7b.4: a forged signature adds nothing to the allowlist.
-  h.feed.push(callback(42, `${confirm.slice(0, -1)}x`));
+  h.feed.push(callback(42, forged(confirm)));
   h.feed.push(message(-1009990003, 42, "too early", "supergroup"));
   await h.settle();
   assert.deepEqual(h.prompts, []);
@@ -1251,5 +1287,374 @@ test("with topics on, a memory command from a session thread answers in General"
   const reply = h.sent.at(-1);
   assert.match(reply?.text ?? "", /note ab12cd/);
   assert.equal(reply?.thread, "");
+  await h.finish();
+});
+
+test("one dummy preset YAML drives a full turn to the channel through the CLI driver", async () => {
+  // AC-4.1 `spec/v10.md` / AC-2.1 `spec/driver-v04.md`: adding an agent is one
+  // YAML file, and the gateway runs it through the production selection path —
+  // the preset map into `driverRegistry`, never a hand-built driver. The diff
+  // half of the proof — a preset commit whose `git diff --stat` shows nothing
+  // under `src/core/` — is read off the commit, not asserted here
+  // (plan driver-v04, closing step).
+  const presetsDir = await mkdtemp(join(tmpdir(), "caraka-presets-"));
+  const stub = fileURLToPath(new URL("./fixtures/bin/fake-agent.mjs", import.meta.url));
+  const dummy = (id: string, reply: string) =>
+    writeFile(
+      join(presetsDir, `${id}.yaml`),
+      stringify({
+        id,
+        driver: "cli",
+        command: process.execPath,
+        args: [stub],
+        output: "jsonl",
+        sessionIdFields: ["thread_id"],
+        env: {
+          FAKE_STDOUT: [
+            `{"type":"thread.started","thread_id":"${id}-1"}`,
+            `{"type":"item.completed","item":{"type":"agent_message","text":"${reply}"}}`,
+          ].join("\n"),
+        },
+      }),
+    );
+  await dummy("dummy", "the dummy agent replies");
+  await dummy("dummy2", "the second dummy replies");
+  const { presets, errors } = await loadPresets(presetsDir);
+  assert.deepEqual(errors, []);
+  const h = await harness({
+    driverFor: driverRegistry(presets, "dummy", translator(), createScrubber()),
+    agents: [...presets.keys()],
+  });
+  h.feed.push(message(42, 42, "say hi"));
+  await h.settle(500);
+  assert.ok(
+    h.sent.some((item) => item.text.includes("the dummy agent replies")),
+    "the stub agent's answer reached the channel",
+  );
+  // AC-8.1's production half: `/switch` changes which preset the next task
+  // runs, not only which id the row carries.
+  h.feed.push(message(42, 42, "/switch dummy2"));
+  h.feed.push(message(42, 42, "say hi again"));
+  await h.settle(500);
+  assert.ok(
+    h.sent.some((item) => item.text.includes("the second dummy replies")),
+    "the switched session's next task ran on the other preset",
+  );
+  await h.finish();
+});
+
+// A driver whose runs can be held open and whose session ids name their
+// workspace, so the tests can see which workspace ran, queued, or was stopped.
+function heldDriver() {
+  const prompts: string[] = [];
+  const cancels: string[] = [];
+  const releases = new Map<string, (result: { stopReason: string }) => void>();
+  const driver: AgentDriver = {
+    start: async () => undefined,
+    session: async (existing, cwd) => existing ?? `agent-${cwd.split("/").pop() ?? ""}`,
+    prompt: async (sessionId, prompt) => {
+      prompts.push(`${sessionId}:${prompt}`);
+      if (prompt.includes("hold"))
+        return new Promise<{ stopReason: string }>((resolve) => releases.set(sessionId, resolve));
+      return { stopReason: "end_turn" };
+    },
+    setMode: async () => undefined,
+    cancel: async (sessionId) => {
+      cancels.push(sessionId);
+      releases.get(sessionId)?.({ stopReason: "cancelled" });
+      releases.delete(sessionId);
+    },
+    stop: async () => undefined,
+  };
+  const release = (sessionId: string) => {
+    releases.get(sessionId)?.({ stopReason: "end_turn" });
+    releases.delete(sessionId);
+  };
+  return { driver, prompts, cancels, release };
+}
+
+test("@slug routes and sticks, workspaces run side by side, and /stop picks the sender's", async () => {
+  // AC-6.4 through AC-6.7, AC-6.10 by omission, AC-7.1 through AC-7.4.
+  const root = await mkdtemp(join(tmpdir(), "caraka-multiws-"));
+  const alpha = join(root, "alpha");
+  const beta = join(root, "beta");
+  const d = heldDriver();
+  const h = await harness({
+    root,
+    driver: d.driver,
+    workspaces: [
+      { slug: "alpha", path: alpha },
+      { slug: "beta", path: beta },
+    ],
+  });
+
+  // AC-6.6: an unregistered slug answers with the list and starts nothing.
+  h.feed.push(message(42, 42, "@gamma try this"));
+  await h.settle();
+  assert.match(h.sent.at(-1)?.text ?? "", /No workspace is called gamma/);
+  assert.match(h.sent.at(-1)?.text ?? "", /@alpha[\s\S]*@beta/);
+  assert.deepEqual(d.prompts, []);
+
+  // AC-6.4: @slug routes; the header names the workspace, not the config global.
+  h.feed.push(message(42, 42, "@alpha quick job"));
+  await h.settle(150);
+  assert.ok(d.prompts.includes("agent-alpha:quick job"));
+  assert.ok(h.sent.some((item) => item.text.startsWith("[alpha")));
+
+  // AC-7.1 and AC-7.3: a held run in beta neither blocks alpha nor is blocked.
+  h.feed.push(message(42, 42, "@beta hold the fort"));
+  await h.settle(150);
+  assert.ok(d.prompts.includes("agent-beta:hold the fort"));
+  h.feed.push(message(42, 42, "@alpha hold here too"));
+  await h.settle(150);
+  assert.ok(
+    d.prompts.includes("agent-alpha:hold here too"),
+    "alpha runs while beta's run is still open",
+  );
+
+  // AC-7.2: a third task for a busy workspace queues with its number.
+  h.feed.push(message(42, 42, "@beta one more"));
+  await h.settle();
+  assert.ok(h.sent.some((item) => item.text.includes("(#1)")));
+  assert.equal(d.prompts.includes("agent-beta:one more"), false);
+
+  // AC-7.4: /stop follows the chat's workspace — the newest session here is
+  // alpha's — and leaves beta's run open.
+  h.feed.push(message(42, 42, "/stop"));
+  await h.settle(150);
+  assert.ok(h.sent.some((item) => item.text.includes("Cancelling the task")));
+  assert.ok(
+    d.prompts.includes("agent-beta:one more") === false,
+    "beta's queue did not move on alpha's /stop",
+  );
+  const states = h.store.db
+    .prepare("SELECT workspace, state FROM sessions ORDER BY created_at")
+    .all() as Array<{ workspace: string; state: string }>;
+  assert.deepEqual(
+    states.map((row) => `${row.workspace}:${row.state}`),
+    ["alpha:done", "beta:running", "alpha:cancelled"],
+  );
+
+  // The held beta run ends; its queued task runs on the sticky default (beta
+  // was the last @slug this chat routed to — AC-6.5, AC-6.7).
+  d.release("agent-beta");
+  await h.settle(150);
+  assert.ok(d.prompts.includes("agent-beta:one more"));
+  h.feed.push(message(42, 42, "no prefix this time"));
+  await h.settle(150);
+  assert.ok(d.prompts.includes("agent-beta:no prefix this time"));
+  await h.finish();
+});
+
+test("an ambiguous chat is asked with buttons, and the button routes like @slug", async () => {
+  // AC-6.8 has its pair in every single-workspace test above; this is AC-6.9.
+  const root = await mkdtemp(join(tmpdir(), "caraka-choosews-"));
+  const d = heldDriver();
+  const h = await harness({
+    root,
+    driver: d.driver,
+    workspaces: [
+      { slug: "alpha", path: join(root, "alpha") },
+      { slug: "beta", path: join(root, "beta") },
+    ],
+  });
+  h.feed.push(message(42, 42, "which repo am I in"));
+  await h.settle();
+  assert.deepEqual(d.prompts, [], "nothing runs before the chat answers");
+  const rows = h.sent.at(-1)?.markup?.inline_keyboard as Array<
+    Array<{ text: string; callback_data: string }>
+  >;
+  assert.deepEqual(
+    rows.flat().map((button) => button.callback_data),
+    ["w:alpha", "w:beta"],
+  );
+
+  // A sender off the allowlist presses first and decides nothing.
+  h.feed.push(callback(99, "w:beta"));
+  await h.settle();
+  assert.deepEqual(d.prompts, []);
+
+  h.feed.push(callback(42, "w:beta"));
+  await h.settle(150);
+  assert.deepEqual(d.prompts, ["agent-beta:which repo am I in"]);
+  assert.equal(
+    (
+      h.store.db.prepare("SELECT value FROM meta WHERE key = 'ws.last.42'").get() as {
+        value: string;
+      }
+    )?.value,
+    "beta",
+  );
+  // The choice sticks: the next bare message goes to beta without asking.
+  h.feed.push(message(42, 42, "carry on"));
+  await h.settle(150);
+  assert.ok(d.prompts.includes("agent-beta:carry on"));
+  await h.finish();
+});
+
+test("a session topic keeps its workspace, and @slug inside it moves nothing", async () => {
+  // AC-6.10: the workspace is part of the session's identity, so inside its
+  // topic `@beta` is text for the agent, not a routing instruction.
+  const root = await mkdtemp(join(tmpdir(), "caraka-topicws-"));
+  const d = heldDriver();
+  const h = await harness({
+    root,
+    driver: d.driver,
+    topics: true,
+    workspaces: [
+      { slug: "alpha", path: join(root, "alpha") },
+      { slug: "beta", path: join(root, "beta") },
+    ],
+  });
+  h.feed.push(message(42, 42, "@alpha start here"));
+  await h.settle(150);
+  assert.ok(d.prompts.includes("agent-alpha:start here"));
+  h.feed.push({
+    message: {
+      message_id: 901,
+      from: { id: 42, first_name: "Rama", is_bot: false },
+      chat: { id: 42, type: "private" },
+      message_thread_id: 7001,
+      text: "@beta try to move",
+    } as TelegramMessage,
+  });
+  await h.settle(150);
+  assert.ok(
+    d.prompts.includes("agent-alpha:@beta try to move"),
+    "the text runs on the session's own workspace, untouched",
+  );
+  assert.equal(
+    d.prompts.some((prompt) => prompt.startsWith("agent-beta:")),
+    false,
+  );
+  // The sticky default did not move either.
+  assert.equal(
+    (
+      h.store.db.prepare("SELECT value FROM meta WHERE key = 'ws.last.42'").get() as {
+        value: string;
+      }
+    )?.value,
+    "alpha",
+  );
+  await h.finish();
+});
+
+test("a trust window and the memory scope follow the session's workspace", async () => {
+  // AC-6.11: grants, approval routing, and memory scope come from the
+  // session's workspace, never from the config global.
+  const root = await mkdtemp(join(tmpdir(), "caraka-wsscope-"));
+  const alpha = join(root, "alpha");
+  const beta = join(root, "beta");
+  const memory = new MemoryStub();
+  const decisions: Record<string, PermissionResponse> = {};
+  const h = await harness({
+    root,
+    memory,
+    workspaces: [
+      { slug: "alpha", path: alpha },
+      { slug: "beta", path: beta },
+    ],
+    onPrompt: async (prompt, route) => {
+      decisions[prompt] = await route.permission({
+        sessionId: "agent-session-1",
+        toolCall: {
+          toolCallId: `tool-${prompt.length}`,
+          title: "Write file",
+          kind: "edit",
+          rawInput: { file_path: "src/index.ts" },
+        },
+        options: [
+          { optionId: "allow-once", name: "Allow", kind: "allow_once" },
+          { optionId: "reject-once", name: "Reject", kind: "reject_once" },
+        ],
+      });
+      return { stopReason: "end_turn" as const };
+    },
+  });
+  h.store.openGrant({
+    workspace: beta,
+    mode: "trusted",
+    grantedBy: "cli",
+    principal: null,
+    agentMode: null,
+    expiresAt: Date.now() + 30 * 60_000,
+  });
+  // Inside beta's window: allowed without a card, announced as the window's.
+  h.feed.push(message(42, 42, "@beta inside the window"));
+  await h.settle(200);
+  assert.deepEqual(decisions["inside the window"], {
+    outcome: { outcome: "selected", optionId: "allow-once" },
+  });
+  assert.ok(h.sent.some((item) => item.text.includes("Trust window:") && !item.markup));
+  // The same request from alpha draws buttons: beta's window is not alpha's.
+  h.feed.push(message(42, 42, "@alpha needs a button"));
+  await h.settle(200);
+  assert.equal(decisions["needs a button"], undefined);
+  const row = h.buttons();
+  assert.ok(row[0]?.callback_data.startsWith("c:"));
+  h.feed.push(callback(42, row[0]?.callback_data ?? ""));
+  await h.settle(200);
+  assert.deepEqual(decisions["needs a button"], {
+    outcome: { outcome: "selected", optionId: "allow-once" },
+  });
+  // Memory observations carried each run's own workspace path as its scope.
+  const scopes = memory.observed
+    .filter((entry) => entry.kind === "user_prompt")
+    .map((entry) => `${entry.text}@${entry.scope.id}`);
+  assert.deepEqual(scopes.sort(), [`inside the window@${beta}`, `needs a button@${alpha}`].sort());
+  await h.finish();
+});
+
+test("shutdown cancels the active run in every workspace", async () => {
+  // AC-7.5: stopNow walks the whole active map, not one global slot.
+  const root = await mkdtemp(join(tmpdir(), "caraka-shutdown-"));
+  const d = heldDriver();
+  const h = await harness({
+    root,
+    driver: d.driver,
+    workspaces: [
+      { slug: "alpha", path: join(root, "alpha") },
+      { slug: "beta", path: join(root, "beta") },
+    ],
+  });
+  h.feed.push(message(42, 42, "@alpha hold one"));
+  h.feed.push(message(42, 42, "@beta hold two"));
+  await h.settle(200);
+  assert.ok(d.prompts.includes("agent-alpha:hold one"));
+  assert.ok(d.prompts.includes("agent-beta:hold two"));
+  await h.finish();
+  assert.deepEqual(d.cancels.sort(), ["agent-alpha", "agent-beta"]);
+});
+
+test("/switch rebinds the session to a loaded preset and /ws answers in General", async () => {
+  // AC-8.1, AC-8.2, AC-8.4.
+  const h = await harness({ agents: ["claude-code", "codex"] });
+  h.feed.push(message(42, 42, "start something"));
+  await h.settle(150);
+  const before = h.store.db
+    .prepare("SELECT agent, agent_session_id AS sid FROM sessions")
+    .get() as { agent: string; sid: string | null };
+  assert.equal(before.agent, "");
+  assert.equal(before.sid, "agent-session-1");
+
+  // An id that is not a loaded preset answers with the loaded list.
+  h.feed.push(message(42, 42, "/switch warp"));
+  await h.settle();
+  assert.match(h.sent.at(-1)?.text ?? "", /claude-code, codex/);
+
+  h.feed.push(message(42, 42, "/switch codex"));
+  await h.settle();
+  const after = h.store.db.prepare("SELECT agent, agent_session_id AS sid FROM sessions").get() as {
+    agent: string;
+    sid: string | null;
+  };
+  assert.equal(after.agent, "codex");
+  assert.equal(after.sid, null, "the old agent-side session goes with the old agent");
+
+  h.feed.push(message(42, 42, "/ws"));
+  await h.settle();
+  const reply = h.sent.at(-1);
+  assert.match(reply?.text ?? "", /Workspaces:/);
+  assert.equal(reply?.thread, "", "global commands answer in General");
   await h.finish();
 });

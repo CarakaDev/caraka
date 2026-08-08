@@ -74,17 +74,20 @@ export const topics = [
   { glyph: '⊘', name: 'toko-api · restructure docs', id: '#a81', color: '#CB86DB', ink: '#5D666F', bg: '#0C1116', bar: 0, delay: '0s', range: r(5, 3.5, 30) },
 ]
 
-// comp:509 lists 13 agents plus "+ 15 more" with no status. Only Claude Code is
-// driven today: `src/drivers/` holds `claude-acp.ts` and nothing else.
+// comp:509 lists 13 agents plus "+ 15 more" with no status. Claude Code is the
+// one agent verified live. `presets/agents/` ships a preset for five of the
+// others since v0.4 — flags transcribed, marked unverified inside each file —
+// so their rows read "preset", a file that exists, not a claim it was run here.
 export const agents = [
-  'Claude Code · v0.2', 'Codex CLI · roadmap', 'Gemini CLI · roadmap', 'Cursor · roadmap',
-  'Cline · roadmap', 'Goose · roadmap', 'Amp · roadmap', 'Copilot CLI · roadmap',
+  'Claude Code · v0.2', 'Codex CLI · preset', 'Gemini CLI · preset', 'Cursor · preset',
+  'Cline · roadmap', 'Goose · preset', 'Amp · preset', 'Copilot CLI · roadmap',
   'Devin · roadmap', 'Factory Droid · roadmap', 'Auggie · roadmap',
   'OpenHands · roadmap', 'Qwen Code · roadmap', 'ACP keeps the path open',
 ].map((n, i) => ({ n, range: r(i, 1.6, 24) }))
 
-// comp:512-516 describes all three routes as working. Two are still roadmap:
-// there is no `presets/agents/` directory and no MCP server in the package.
+// comp:512-516 describes all three routes as working. The CLI card returned to
+// the comp's own words when v0.4 shipped `src/drivers/cli.ts` and
+// `presets/agents/`; the MCP route stays roadmap — no MCP server in the package.
 export const layers = [
   {
     tag: 'ACP · PRIMARY',
@@ -97,10 +100,10 @@ export const layers = [
     range: r(0, 4, 28),
   },
   {
-    tag: 'CLI · ROADMAP',
+    tag: 'CLI · FALLBACK',
     tone: '#7A848F',
-    title: 'One YAML when it lands',
-    body: 'The planned CLI route adds agents through presets/agents/. It is not part of v0.2.',
+    title: 'A YAML file, not code',
+    body: 'Agents without ACP are driven by a declarative preset. Adding one is a single file in presets/agents/.',
     bg: '#0C1116',
     border: '#171C22',
     delay: '1.3s',

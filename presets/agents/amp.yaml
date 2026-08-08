@@ -1,0 +1,8 @@
+# Amp (Sourcegraph). ACP lewat wrapper `amp-acp` 0.9.0 per matriks riset
+# baris 14.
+id: amp
+driver: acp
+acp:
+  # belum diverifikasi — nama binari wrapper dari matriks riset; belum diuji di mesin ini
+  command: amp-acp
+  args: []

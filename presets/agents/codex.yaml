@@ -1,0 +1,11 @@
+# Codex CLI (OpenAI). Dari docs/api.md §1, dipangkas ke field yang dibaca
+# kode. `--sandbox read-only` adalah kontrol keamanan (docs/security.md §7),
+# bukan preferensi — jangan dilonggarkan lewat preset.
+id: codex
+driver: cli
+command: codex
+args: ["exec", "--json", "--color", "never", "--sandbox", "read-only", "--skip-git-repo-check"]
+resumeArgs: ["exec", "resume", "{sessionId}", "--color", "never", "--sandbox", "read-only"]
+output: jsonl
+resumeOutput: text
+sessionIdFields: ["thread_id", "session_id"]

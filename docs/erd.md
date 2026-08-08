@@ -253,7 +253,11 @@ Tanpa UPDATE/DELETE dari kode aplikasi; pembersihan hanya lewat job retensi.
    Sebelum v0.2 tabel ini tidak ada dan tidak ada yang menegakkan kedaluwarsa apa
    pun; klaim itu dulu benar tentang desain dan salah tentang build.
 3. `approval.nonce` unik global dan hanya bisa dipakai sekali (`decision` sekali tulis).
-4. Maksimal satu `run` berstatus `running` per `workspace_id` — dijaga oleh unique partial index.
+4. Maksimal satu `run` berstatus `running` per `workspace_id` — di desain dijaga
+   unique partial index; build v0.4 menegakkannya di level aplikasi (satu slot
+   aktif per workspace di dalam proses tunggal gateway), karena tabel `run`
+   sendiri belum dibangun. Index-nya menyusul bersama tabelnya (dicatat
+   8 Agustus 2026, `driver-v04`).
 4b. Maksimal satu `session` per `(container_id, thread_ref)` — topic tidak pernah dipakai ulang.
 4c. Maksimal **5** `session` aktif (`running`/`awaiting_approval`/`queued`) per principal — ditegakkan `topics.sweep()`, bukan constraint DB.
 5. `message.text` dan `audit_event.detail_json` disimpan **setelah** redaksi rahasia. Tidak ada data mentah rahasia yang pernah masuk disk.

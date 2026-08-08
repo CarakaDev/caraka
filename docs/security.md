@@ -251,9 +251,13 @@ Melebihi batas → pesan jelas + antrean, bukan diam-diam dibuang.
 Sampai v0.1 tabel ini adalah desain, bukan build: tidak ada rate limiter dan tidak
 ada batas durasi run di kode, dan satu-satunya timer adalah TTL approval 10 menit
 beserta backoff `retry_after`. v0.2 membangun dua barisnya, yaitu 20 pesan per
-sender per 60 detik dan batas run 30 menit yang mengirim `session/cancel`. Empat
-baris sisanya (run bersamaan, approval pending, outbound per channel, ukuran
-lampiran) **dispesifikasikan, belum di v0.2**.
+sender per 60 detik dan batas run 30 menit yang mengirim `session/cancel`. v0.4
+membangun baris run bersamaan: satu run aktif per workspace, ditegakkan di level
+aplikasi oleh gateway (proses tunggal, satu slot per workspace — tabel `run`
+ber-index unik di `erd.md` belum dibangun), dengan antrean FIFO per workspace,
+ack bernomor "diantrekan (#n)", dan `/stop` yang membatalkan run milik workspace
+pengirimnya saja. Tiga baris sisanya (approval pending, outbound per channel,
+ukuran lampiran) **dispesifikasikan, belum dibangun**.
 
 ---
 

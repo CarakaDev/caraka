@@ -10,6 +10,12 @@ export type Session = {
   agentSessionId: string | null;
   title: string;
   state: string;
+  // The workspace slug and agent preset id. Both TEXT without FK, the same
+  // deliberate deviation `policy_grant.workspace` records in `docs/erd.md`.
+  // '' on rows from before v0.4 reads as the first configured workspace and
+  // the default agent.
+  workspace: string;
+  agent: string;
 };
 
 export type PolicyGrant = {
@@ -57,6 +63,8 @@ export class Store {
         agent_session_id TEXT,
         title TEXT NOT NULL,
         state TEXT NOT NULL DEFAULT 'idle',
+        workspace TEXT NOT NULL DEFAULT '',
+        agent TEXT NOT NULL DEFAULT '',
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
       ) STRICT;
@@ -113,6 +121,18 @@ export class Store {
         created_at INTEGER NOT NULL
       ) STRICT;
     `);
+    // A file from before v0.4 has sessions without the two routing columns.
+    // ponytail: two PRAGMA-guarded ALTERs instead of the numbered-migration
+    // ledger `docs/techstack.md` promises; build the ledger at the third one.
+    const sessionColumns = new Set(
+      (this.db.prepare("PRAGMA table_info(sessions)").all() as Array<{ name: string }>).map(
+        (column) => column.name,
+      ),
+    );
+    if (!sessionColumns.has("workspace"))
+      this.db.exec("ALTER TABLE sessions ADD COLUMN workspace TEXT NOT NULL DEFAULT ''");
+    if (!sessionColumns.has("agent"))
+      this.db.exec("ALTER TABLE sessions ADD COLUMN agent TEXT NOT NULL DEFAULT ''");
     // FTS5 is present in the Node builds this repo targets (measured on Node
     // v24.18.0; a unit test repeats the probe). A build without it keeps the
     // Store usable and drops `memorySearch` to LIKE matching.
@@ -247,8 +267,8 @@ export class Store {
     };
     this.db
       .prepare(
-        `INSERT INTO sessions(id, principal, chat_id, thread_id, title, state, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO sessions(id, principal, chat_id, thread_id, title, state, workspace, agent, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         session.id,
@@ -257,6 +277,8 @@ export class Store {
         session.threadId,
         this.scrub(session.title),
         session.state,
+        session.workspace,
+        session.agent,
         now,
         now,
       );
@@ -267,7 +289,7 @@ export class Store {
     return this.db
       .prepare(
         `SELECT id, principal, chat_id AS chatId, thread_id AS threadId,
-                agent_session_id AS agentSessionId, title, state
+                agent_session_id AS agentSessionId, title, state, workspace, agent
          FROM sessions WHERE chat_id = ? AND thread_id = ? ORDER BY updated_at DESC LIMIT 1`,
       )
       .get(chatId, threadId) as Session | undefined;
@@ -277,9 +299,20 @@ export class Store {
     return this.db
       .prepare(
         `SELECT id, principal, chat_id AS chatId, thread_id AS threadId,
-                agent_session_id AS agentSessionId, title, state FROM sessions WHERE id = ?`,
+                agent_session_id AS agentSessionId, title, state, workspace, agent
+         FROM sessions WHERE id = ?`,
       )
       .get(id) as Session | undefined;
+  }
+
+  // `/switch`: the next run starts a fresh agent-side session on the new
+  // preset, so the old agent session id goes with the old agent.
+  setAgent(id: string, agent: string) {
+    this.db
+      .prepare(
+        "UPDATE sessions SET agent = ?, agent_session_id = NULL, updated_at = ? WHERE id = ?",
+      )
+      .run(agent, Date.now(), id);
   }
 
   setAgentSession(id: string, agentSessionId: string) {

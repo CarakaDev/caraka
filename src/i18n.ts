@@ -2,7 +2,7 @@
 // `id` is typed against `en`, so a missing key fails `tsc` and never reaches a chat.
 
 const en = {
-  "queue.queued": "◌ Task queued.",
+  "queue.queued": "◌ Task queued (#{n}).",
   "queue.limit": "◌ 20 messages a minute is the limit. The rest are queued.",
   "session.untitled": "New task",
   "session.created": "Write the task for Claude here.",
@@ -29,7 +29,13 @@ const en = {
   "status.session": "Status: {state}.",
   "status.none": "No session in this conversation yet.",
   "help.body":
-    "Send a task as an ordinary message. Commands: /new, /status, /stop, /commands, /usage, /ingat, /lupakan, /memori, /yolo, /lock, /help.",
+    "Send a task as an ordinary message; `@workspace` in front routes it. Commands: /new, /status, /stop, /ws, /switch, /commands, /usage, /ingat, /lupakan, /memori, /yolo, /lock, /help.",
+  "ws.choose": "Which workspace should take this?",
+  "ws.unknown": "No workspace is called {slug}. These exist:\n{list}",
+  "ws.list": "Workspaces:\n{list}",
+  "ws.sticky": "Tasks in this chat now go to {slug}.",
+  "switch.unknown": "That is not a loaded preset. Loaded: {list}",
+  "switch.done": "This session switches to {agent} on its next task.",
   "help.commandsEmpty": "Claude has not sent its command list for this session yet.",
   "help.commands": "Claude commands for this session:\n{list}",
   "help.unknownCommand":
@@ -76,10 +82,19 @@ const en = {
   "telegram.refused": "Telegram refused {method}.",
   "acp.start": "Claude could not start over ACP. Run `claude auth login`, then try again.",
   "acp.notStarted": "Claude ACP has not started.",
+  "preset.invalid": "Preset {file} is invalid at `{field}` and was skipped.",
+  "driver.noSession": "The CLI driver does not know that session. Send /new to start over.",
+  "driver.exit": "{command} stopped with an error. {detail}",
+  "driver.acpMissing":
+    "Agent {agent}: the ACP command `{command}` was not found. Install it, or set `driver: cli` under `workspace` in config.yaml.",
+  "driver.cliMissing":
+    "Agent {agent}: its preset has no CLI command. Install the ACP adapter, or remove `driver: cli` from config.yaml.",
+  "driver.none":
+    "Agent {agent}: neither the ACP adapter nor a CLI command was found. Install the agent, then run `npx caraka doctor`.",
+  "agents.none":
+    "No coding agent was found: none is installed, or none is on PATH. Install one (claude, codex, gemini, cline, cursor-agent, goose, amp), then run `caraka doctor` to confirm it is detected.",
   "cli.nodeVersion": "Node.js 22 or newer is required.",
   "cli.gitMissing": "Git was not found. Install Git, then run init again.",
-  "cli.claudeMissing": "Claude Code was not found. Install Claude Code, then run init again.",
-  "cli.claudeLogin": "Claude Code is not logged in. Run `claude auth login`, then repeat init.",
   "cli.workspaceMissing": "Workspace not found: {path}",
   "cli.workspaceArg": "Write a path after `--workspace`.",
   "cli.tokenPrompt": "Bot token from @BotFather (not shown): ",
@@ -123,7 +138,7 @@ export type MessageKey = keyof typeof en;
 export type Language = "en" | "id";
 
 const id: Record<MessageKey, string> = {
-  "queue.queued": "◌ Tugas masuk antrean.",
+  "queue.queued": "◌ Tugas masuk antrean (#{n}).",
   "queue.limit": "◌ Batasnya 20 pesan per menit. Sisanya masuk antrean.",
   "session.untitled": "Tugas baru",
   "session.created": "Tulis tugas untuk Claude di sini.",
@@ -150,7 +165,13 @@ const id: Record<MessageKey, string> = {
   "status.session": "Status: {state}.",
   "status.none": "Belum ada sesi di percakapan ini.",
   "help.body":
-    "Kirim tugas sebagai pesan biasa. Perintah: /new, /status, /stop, /commands, /usage, /ingat, /lupakan, /memori, /yolo, /lock, /help.",
+    "Kirim tugas sebagai pesan biasa; `@workspace` di depan merutekannya. Perintah: /new, /status, /stop, /ws, /switch, /commands, /usage, /ingat, /lupakan, /memori, /yolo, /lock, /help.",
+  "ws.choose": "Workspace mana yang mengerjakan ini?",
+  "ws.unknown": "Tidak ada workspace bernama {slug}. Yang ada:\n{list}",
+  "ws.list": "Daftar workspace:\n{list}",
+  "ws.sticky": "Tugas di chat ini sekarang masuk ke {slug}.",
+  "switch.unknown": "Itu bukan preset yang termuat. Yang termuat: {list}",
+  "switch.done": "Sesi ini beralih ke {agent} pada tugas berikutnya.",
   "help.commandsEmpty": "Claude belum mengirim daftar perintah untuk sesi ini.",
   "help.commands": "Perintah Claude untuk sesi ini:\n{list}",
   "help.unknownCommand": "Caraka tidak mengenal /{name}. Kirim /commands untuk daftar dari Claude.",
@@ -194,10 +215,19 @@ const id: Record<MessageKey, string> = {
   "acp.start":
     "Claude tidak dapat dimulai lewat ACP. Jalankan `claude auth login`, lalu coba lagi.",
   "acp.notStarted": "Claude ACP belum dimulai.",
+  "preset.invalid": "Preset {file} tidak sah pada `{field}` dan dilewati.",
+  "driver.noSession": "Driver CLI tidak mengenal sesi itu. Kirim /new untuk memulai lagi.",
+  "driver.exit": "{command} berhenti dengan galat. {detail}",
+  "driver.acpMissing":
+    "Agent {agent}: perintah ACP `{command}` tidak ditemukan. Pasang dulu, atau setel `driver: cli` di bagian `workspace` config.yaml.",
+  "driver.cliMissing":
+    "Agent {agent}: preset-nya tidak punya perintah CLI. Pasang adapter ACP-nya, atau hapus `driver: cli` dari config.yaml.",
+  "driver.none":
+    "Agent {agent}: adapter ACP maupun perintah CLI tidak ditemukan. Pasang agent-nya, lalu jalankan `npx caraka doctor`.",
+  "agents.none":
+    "Tidak ada coding agent yang ditemukan: belum terpasang, atau tidak ada di PATH. Pasang salah satu (claude, codex, gemini, cline, cursor-agent, goose, amp), lalu jalankan `caraka doctor` untuk memastikan terdeteksi.",
   "cli.nodeVersion": "Node.js 22 atau lebih baru diperlukan.",
   "cli.gitMissing": "Git tidak ditemukan. Pasang Git, lalu jalankan init lagi.",
-  "cli.claudeMissing": "Claude Code tidak ditemukan. Pasang Claude Code, lalu jalankan init lagi.",
-  "cli.claudeLogin": "Claude Code belum login. Jalankan `claude auth login`, lalu ulangi init.",
   "cli.workspaceMissing": "Workspace tidak ditemukan: {path}",
   "cli.workspaceArg": "Isi path setelah `--workspace`.",
   "cli.tokenPrompt": "Token bot dari @BotFather (tidak ditampilkan): ",

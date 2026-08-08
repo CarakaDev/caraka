@@ -1,0 +1,7 @@
+# Goose (Block). ACP native per matriks riset baris 13.
+id: goose
+driver: acp
+acp:
+  command: goose
+  # belum diverifikasi — subperintah dari dokumentasi Goose; belum diuji di mesin ini
+  args: ["acp"]

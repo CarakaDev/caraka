@@ -1,0 +1,12 @@
+# Claude Code. Jalur utama ACP lewat adapter resmi yang terkunci sebagai
+# dependency (`@agentclientprotocol/claude-agent-acp`, package.json); jalur CLI
+# dari blok terverifikasi docs/design.md §4.
+id: claude-code
+driver: acp
+acp:
+  command: claude-agent-acp
+  args: []
+command: claude
+args: ["-p", "--output-format", "json", "--session-id", "{sessionId}"]
+resumeArgs: ["-p", "--output-format", "json", "--resume", "{sessionId}"]
+output: json

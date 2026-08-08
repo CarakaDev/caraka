@@ -8,12 +8,12 @@ Tiga permukaan ekstensi, dan hanya tiga. Tidak ada plugin runtime, tidak ada dyn
 
 ---
 
-## 1. Preset agent (jalur CLI)
+## 1. Preset agent
 
-Menambah dukungan agent baru pada jalur CLI adalah satu berkas YAML di `presets/agents/`. Kalau butuh kode inti, abstraksinya salah.
+Menambah dukungan agent baru adalah satu berkas YAML di `presets/agents/`. Kalau butuh kode inti, abstraksinya salah — dan sejak v0.4 ada test yang menjaganya: `one dummy preset YAML drives a full turn to the channel through the CLI driver` di `test/e2e.test.ts`.
 
 ```yaml
-# presets/agents/codex.yaml
+# presets/agents/codex.yaml — berkas yang benar-benar dikirim v0.4
 id: codex
 driver: cli
 command: codex
@@ -22,31 +22,28 @@ resumeArgs: ["exec", "resume", "{sessionId}", "--color", "never", "--sandbox", "
 output: jsonl
 resumeOutput: text
 sessionIdFields: ["thread_id", "session_id"]
-sessionMode: existing
-modelArg: "--model"
-imageArg: "--image"
 ```
+
+Skema Zod-nya (`src/drivers/preset.ts`) memuat persis field yang dibaca loader dan kedua driver:
 
 | Field | Tipe | Arti |
 |---|---|---|
 | `id` | string | unik, dipakai di `/switch <id>` |
 | `driver` | `acp` \| `cli` \| `mcp` | jalur yang dipakai |
-| `command` | string | biner yang dicari di `PATH` |
+| `command` | string | biner jalur CLI; dicari di `PATH`, path absolut juga sah |
 | `args[]` | string[] | argumen giliran pertama. `{sessionId}` disubstitusi |
 | `resumeArgs[]` | string[] | argumen giliran lanjutan |
 | `input` | `arg` \| `stdin` | cara prompt dikirim. Default `arg` |
 | `maxPromptArgChars` | number | di atas ini, prompt pindah ke stdin |
 | `output` | `json` \| `jsonl` \| `text` | format keluaran giliran pertama |
 | `resumeOutput` | sama | format giliran lanjutan bila berbeda |
-| `sessionMode` | `always` \| `existing` \| `none` | kapan id sesi dikirim |
 | `sessionIdFields[]` | string[] | kunci yang dibaca untuk menemukan id sesi |
-| `systemPromptArg` | string | flag untuk menyisipkan system prompt |
-| `systemPromptWhen` | `first` \| `always` | kapan dikirim |
-| `modelArg` · `modelAliases` | string · map | pemilihan model |
-| `imageArg` · `imageMode` | string · `repeat` \| `join` | lampiran gambar |
-| `serialize` | boolean | paksa satu proses pada satu waktu |
+| `env` | map | env tambahan untuk proses agent |
+| `acp` | `{command, args[], env}` | spawn adapter ACP; `command` di-resolve terhadap `PATH` plus `node_modules/.bin` paket |
 
-**Menerima preset baru** butuh tiga hal: perintahnya sudah diuji sendiri oleh pengirim, agent-nya berjalan non-interaktif dan kembali saat selesai, dan smoke test CI-nya lulus.
+Dua amandemen 8 Agustus 2026 (pekerjaan `driver-v04`) membentuk tabel ini. Pertama, blok `acp:` masuk: tabel lama hanya mengenal field jalur CLI, padahal spawn ACP dikeraskan di kode driver — dan `{command, args, env}` terbukti cukup, vscode-acp berbicara ke sembilan agent berbeda hanya dengan tiga field itu per agent. Satu preset boleh memuat kedua jalur; pemilihan otomatis jatuh dari ACP ke CLI (FR-DRV-07). Kedua, field `sessionMode`, `systemPromptArg`, `systemPromptWhen`, `modelArg`/`modelAliases`, `imageArg`/`imageMode`, dan `serialize` keluar dari tabel: belum ada satu pun pembacanya di `src/`, dan skema yang menerima field tanpa pembaca menjanjikan perilaku yang tidak ada. Masing-masing kembali saat ada driver yang membacanya.
+
+**Menerima preset baru** butuh tiga hal: perintahnya sudah diuji sendiri oleh pengirim, agent-nya berjalan non-interaktif dan kembali saat selesai, dan flag yang belum diuji ditandai `# belum diverifikasi` beserta sumbernya di dalam berkas. Job `presets` di CI menjaga skemanya; smoke hidup tetap per mesin.
 
 ---
 
@@ -172,22 +169,27 @@ Mendeklarasikan `caps` yang tidak dimiliki lebih buruk daripada mendeklarasikan 
 
 ## 5. Bentuk internal
 
-Diimplementasikan driver, tidak untuk diperluas dari luar.
+Diimplementasikan driver, tidak untuk diperluas dari luar. Bagian ini dulu menggambar delta `text`/`thought`/`tool`/`diff`/`plan` dan sebuah `PermissionRequest` ber-`action` dan `risk`; gateway tidak pernah membaca bentuk itu. Sejak 8 Agustus 2026 (pekerjaan `driver-v04`) tipe ini milik `src/core/driver.ts`, dinamai dari permukaan yang benar-benar dibaca:
 
 ```ts
-type AgentUpdate =
-  | { type: "text"; delta: string }
-  | { type: "thought"; delta: string }
-  | { type: "tool"; name: string; status: "start" | "ok" | "error"; detail?: string }
-  | { type: "diff"; path: string; added: number; removed: number; patch?: string }
-  | { type: "plan"; steps: { text: string; done: boolean }[] };
+type AgentUpdate = {
+  sessionId: string;
+  update:
+    | { sessionUpdate: "agent_message_chunk"; content: { type: string; text: string } }
+    | { sessionUpdate: "available_commands_update"; availableCommands: AgentCommand[] }
+    | { sessionUpdate: "usage_update"; used: number; size: number;
+        cost?: { amount: number | string; currency: string } | null }
+    | { sessionUpdate: "tool_call"; toolCallId: string; title: string };
+};
 
 type PermissionRequest = {
-  id: string; sessionId: string;
-  action: "write" | "exec" | "network" | "delete" | "git";
-  target: string; summary: string; patch?: string;
-  risk: "low" | "high";
+  sessionId: string;
+  toolCall: {
+    toolCallId: string; title?: string | null; kind?: string | null;
+    rawInput?: unknown; locations?: Array<{ path: string }> | null;
+  };
+  options: Array<{ optionId: string; name: string; kind: string }>;
 };
 ```
 
-`AgentUpdate` sengaja superset kecil dari `session/update` ACP: cukup untuk merender chat, tidak lebih. Driver CLI mensimulasikan `text` dan `done` saja, lalu mengiklankan `caps.streaming = false`.
+Bentuknya subset wire ACP: driver ACP meneruskannya apa adanya tanpa terjemahan, driver CLI memfabrikasi satu `agent_message_chunk` per giliran. Jalur CLI karena itu tanpa streaming, dan `/commands` serta `/usage` di jalur itu terdegradasi ke jawaban kosong — update-nya tidak pernah datang.

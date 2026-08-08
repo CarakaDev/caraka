@@ -1,0 +1,64 @@
+# The verification gate from `standards/ears.md`, run on every push and pull
+# request. No coding agent is installed on these runners: a live smoke against
+# claude/codex/gemini needs the binary and its credentials, which CI does not
+# have — so smoke stays a per-machine command (`npm run smoke`) instead of a
+# green light this workflow could fake. What CI can honestly verify is here:
+# the four gate commands, the schema over every shipped preset, and the parser
+# fixtures recorded in `test/fixtures/`.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run e2e
+
+  presets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Every file in presets/agents/ through the real loader and Zod schema.
+      # The loader collects invalid files instead of throwing, so the step
+      # fails on the collected list, and a count mismatch catches a file the
+      # loader never saw (a duplicated id overwrites its twin in the map).
+      - name: validate presets against the schema
+        run: |
+          node --import tsx --input-type=module -e '
+            import { readdir } from "node:fs/promises";
+            import { loadPresets } from "./src/drivers/preset.ts";
+            const files = (await readdir("presets/agents")).filter((f) => /\.ya?ml$/.test(f));
+            const { presets, errors } = await loadPresets();
+            for (const error of errors) console.error(error);
+            if (errors.length > 0) process.exit(1);
+            if (presets.size !== files.length) {
+              console.error(`${files.length} preset files, ${presets.size} loaded ids`);
+              process.exit(1);
+            }
+            console.log(`${presets.size} presets valid: ${[...presets.keys()].join(", ")}`);
+          '
+      # The recorded output fixtures against the three parsers — the part of a
+      # preset's contract that runs without any agent binary.
+      - name: run the parser and preset fixtures
+        run: node --import tsx --test --test-name-pattern "preset|parsers" test/unit.test.ts

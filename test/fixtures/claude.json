@@ -1,0 +1,9 @@
+{
+  "type": "result",
+  "subtype": "success",
+  "is_error": false,
+  "duration_ms": 4180,
+  "result": "The answer text.",
+  "session_id": "5c1c7316-3193-4d02-9186-a1fdf9d8e6d7",
+  "total_cost_usd": 0.0031
+}

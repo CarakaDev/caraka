@@ -68,8 +68,8 @@ Ketik biasa. Tidak perlu prefiks, tidak perlu perintah. **Topic adalah konteksny
 | `/start` | mana saja | pairing deep link | terpasang |
 | `/commands` `/usage` | mana saja | daftar perintah agent, pemakaian terakhir | terpasang |
 | `/yolo <durasi>` `/lock` | topic sesi | buka dan tutup jendela trust | terpasang |
-| `/ws` | mana saja → dijawab di General | daftar workspace | dispesifikasikan, belum di v0.2 |
-| `/switch <agent>` | topic sesi | ganti coding agent | dispesifikasikan, belum di v0.2 |
+| `/ws` | mana saja → dijawab di General | daftar workspace | terpasang |
+| `/switch <id preset>` | topic sesi | ganti coding agent pada giliran berikutnya | terpasang |
 | `/mode read-only\|assisted` | topic sesi | turunkan/naikkan izin | dispesifikasikan, belum di v0.2 |
 | `/pin` `/unpin` | topic sesi | kecualikan dari auto-hapus | dispesifikasikan, belum di v0.2 |
 | `/ingat <teks>` `/lupakan <id>` `/memori` | mana saja → dijawab di General | kelola memori | terpasang |

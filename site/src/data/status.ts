@@ -13,7 +13,7 @@ import { r } from '../lib/anim'
 // three specification-era stats. The version is package.json's; the other three
 // were already replaced when v0.1 shipped.
 export const stats = [
-  { n: '0.3.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '0.4.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Preview', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   { n: 'Claude', label: 'SUPPORTED AGENT', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
   { n: '1', label: 'PRIVATE OPERATOR', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
@@ -41,11 +41,12 @@ interface Phase {
 }
 
 // Leaves the comp at Caraka Status.dc.html:245,249,253, which pulses phase 0 and
-// plans phases 1 and 2. v0.3 is published, so the pulse marks phase 3; only one
-// phase pulses because the comp draws one. Phases 1-3 keep "in progress" rather
-// than "done" because roadmap.md still holds their field gates open: the dogfood
-// week, the three-minute install, and phase 3's A/B — moved past the release by
-// owner decision on 8 August 2026.
+// plans phases 1 and 2. v0.4 is published, so the pulse marks phase 4; only one
+// phase pulses because the comp draws one. Phases 1-4 keep "in progress" rather
+// than "done" because roadmap.md still holds a field gate open on each: the
+// dogfood week, the three-minute install, phase 3's A/B, and phase 4's watch of
+// someone adding an agent without asking — the last two moved past their
+// releases by owner decision on 8 August 2026.
 export const phases: Phase[] = [
   { n: '0', title: 'Technical spike', dur: '1 week', ...done,
     q: 'Do the three foundations behave the way the documentation says?',
@@ -59,11 +60,11 @@ export const phases: Phase[] = [
     q: 'Can someone else install it without help?',
     gate: 'Median time from npx to first delivered message stays under three minutes, with no questions asked of the author.',
     range: r(2, 3, 26) },
-  { n: '3', title: 'Memory with Titen · v0.3', dur: '2 weeks', live: true, ...now,
+  { n: '3', title: 'Memory with Titen · v0.3', dur: '2 weeks', ...now,
     q: 'Does memory improve the answer, or just add noise?',
     gate: 'A personal A/B across twenty tasks, with and without memory. If it does not feel better, reduce memory rather than add more.',
     range: r(3, 3, 26) },
-  { n: '4', title: 'Proving the abstraction · v0.4', dur: '2 weeks', ...next,
+  { n: '4', title: 'Proving the abstraction · v0.4', dur: '2 weeks', live: true, ...now,
     q: 'Is the driver layer genuinely generic, or only generic-looking?',
     gate: 'Adding a new agent is one YAML file with no core code touched. If it needs code, the abstraction is wrong and gets fixed now.',
     range: r(4, 3, 26) },
@@ -92,6 +93,27 @@ export const releases = [
         'Use Caraka for one full week and finish five real tasks',
         'Record five real setup sessions from people who have never seen it',
         'Run the personal A/B across twenty tasks, with and without memory',
+        'Watch someone add an agent preset without asking a question',
+      ] },
+    ] },
+  { v: '0.4.0', state: 'preview', date: '8 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'ADDED', tone: '#8EEE98', items: [
+        'presets/agents/, holding seven presets validated by a strict schema of only the fields the code reads. An invalid file is named with its failing field and skipped while the rest load, and one preset may carry both the ACP and CLI routes',
+        "A generic CLI driver: it spawns the preset's command in the session's workspace, parses json, jsonl, or text output, finds the agent-side session id, and cancels with SIGTERM then SIGKILL. The whole answer arrives as one text update",
+        "Driver selection per run: ACP when the preset's adapter resolves and survives initialize, the CLI route when it does not, otherwise an error naming the agent and the next step. A workspace can force one route",
+        "More than one workspace: an additive workspaces list in config, @slug in front of a message routes it and sticks as the chat's default, and a button chooser asks when several workspaces exist and none is sticky",
+        'One active run per workspace, the rest queued FIFO per workspace with the ack numbered. /stop cancels the run of the sender\u2019s workspace only',
+        '/switch moves a session to another loaded preset on its next task, and /ws lists workspaces, answering in General. Neither hardcodes any agent\u2019s mode names',
+        'Discovery scans PATH for the seven known binaries and caches the result for a day; init now needs any one agent found rather than Claude specifically',
+        "The repository's first CI workflow: the four gate commands, every preset through the loader's schema, and the recorded parser fixtures",
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'Live verification still covers Claude Code only. The codex flags are copied verbatim from the documented block but were never run here, and the gemini, cursor, goose, and amp ACP commands plus every aider flag are transcribed from research, marked unverified inside their files',
+        'CI runs no live smoke: the runners hold no agent binary and no credentials, so the workflow validates schemas and parser fixtures and says so instead of faking a matrix',
+        'The CLI route has no permission hook and no streaming. Approval on that route falls to the agent\u2019s own brakes — codex keeps its read-only sandbox, and aider\u2019s auto-approve flag was removed',
+        'A CLI session\u2019s agent-side thread id lives in process memory; after a gateway restart the next turn starts a fresh agent thread',
+        'The human half of the phase gate — someone adding an agent without asking a question — stays open, moved past the release by owner decision on 8 August 2026',
       ] },
     ] },
   { v: '0.3.0', state: 'preview', date: '8 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),

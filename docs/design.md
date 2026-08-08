@@ -92,30 +92,21 @@ Core **tidak pernah** bercabang berdasarkan `channel.id`. Ia hanya membaca `caps
 
 ```ts
 interface AgentDriver {
-  readonly kind: "acp" | "cli" | "mcp";
-  readonly caps: { streaming: boolean; permissions: boolean; images: boolean; cancel: boolean };
-
-  init(): Promise<void>;
-  newSession(workspace: Workspace): Promise<string>;   // → agentSessionId
-  loadSession?(agentSessionId: string): Promise<void>;
-  prompt(sid: string, text: string, files?: string[]): Promise<void>;
-  cancel(sid: string): Promise<void>;
-  dispose(): Promise<void>;
-
-  onUpdate(cb: (u: AgentUpdate) => void): void;
-  onPermission(cb: (p: PermissionRequest) => Promise<PermissionDecision>): void;
-  onDone(cb: (r: RunResult) => void): void;
+  start(): Promise<void>;
+  session(existing: string | null, cwd: string): Promise<string>;  // → agentSessionId
+  prompt(sessionId: string, prompt: string, route: DriverRoute): Promise<{ stopReason: string }>;
+  setMode(sessionId: string, modeId: string): Promise<unknown>;    // tanpa mode → resolve tanpa efek
+  cancel(sessionId: string): Promise<unknown>;
+  stop(): Promise<void>;
 }
 
-type AgentUpdate =
-  | { type: "text"; delta: string }
-  | { type: "thought"; delta: string }
-  | { type: "tool"; name: string; status: "start"|"ok"|"error"; detail?: string }
-  | { type: "diff"; path: string; added: number; removed: number; patch?: string }
-  | { type: "plan"; steps: { text: string; done: boolean }[] };
+type DriverRoute = {
+  update(notification: AgentUpdate): void | Promise<void>;
+  permission(request: PermissionRequest): Promise<PermissionResponse>;
+};
 ```
 
-`AgentUpdate` sengaja dibuat **superset kecil** dari `session/update` ACP — cukup untuk merender chat, tidak lebih. Driver CLI mensimulasikan sebagian (`text` + `done`) dan mengiklankan `caps.streaming=false`; UI menyesuaikan.
+Bagian ini dulu menggambar interface dengan `kind`, `caps`, `newSession`/`loadSession`, dan tiga callback `onUpdate`/`onPermission`/`onDone`, plus `AgentUpdate` berbentuk delta `text`/`thought`/`tool`/`diff`/`plan`. Gateway tidak pernah membutuhkan satu pun darinya. Interface di atas dinamai dari permukaan yang terbukti dipakai dan tinggal di `src/core/driver.ts`; bentuk `AgentUpdate` dan `PermissionRequest`-nya (subset wire ACP) ada di `api.md` §5. Diamendemen 8 Agustus 2026 oleh pekerjaan `driver-v04`, supaya dokumen berhenti menggambar driver yang tidak ada. Driver CLI memenuhi kontrak yang sama dengan memfabrikasi satu update teks per giliran; UI menyesuaikan.
 
 ---
 
@@ -147,44 +138,36 @@ session/cancel { sessionId }                   saat /stop
 ### Penemuan agent
 
 1. Baca `~/.caraka/config.yaml` → daftar eksplisit
-2. Pindai `PATH` untuk biner yang dikenal
-3. Ambil ACP Registry JSON untuk metadata versi & perintah distribusi
-4. Cache hasil selama 24 jam; `doctor` memaksa refresh
+2. Pindai `PATH` untuk biner yang dikenal, probe versinya lewat `--version`
+3. Cache hasil selama 24 jam di `~/.caraka/discovery.json`; `doctor` memaksa refresh
+
+Pembacaan ACP Registry JSON — dulu langkah tersendiri di sini — ditunda 8
+Agustus 2026 (`driver-v04`): metadata yang dibacanya tidak ditampilkan di mana
+pun, jadi pembacaannya adalah kode mati seharga satu fetch per first run. Ia
+kembali bersama baris `doctor` yang menampilkannya.
 
 ---
 
 ## 4. Driver CLI (fallback)
 
-Satu implementasi, dikendalikan tabel — mengikuti pola `cliBackends` yang sudah terbukti di produksi.
+Satu implementasi (`src/drivers/cli.ts`), dikendalikan tabel — preset YAML di `presets/agents/`, satu berkas per agent, skemanya di `api.md` §1. Blok inline yang dulu tertulis di sini memakai bentuk map `agents:` dan field yang tidak pernah dibaca kode; diamendemen 8 Agustus 2026 (`driver-v04`) menjadi bentuk berkas yang dikirim. Contoh yang membawa kedua jalur:
 
 ```yaml
-agents:
-  claude-code:
-    driver: cli
-    command: claude
-    args: ["-p", "--output-format", "json", "--session-id", "{sessionId}"]
-    resumeArgs: ["-p", "--output-format", "json", "--resume", "{sessionId}"]
-    output: json
-    sessionMode: always
-    systemPromptArg: "--append-system-prompt"
-    systemPromptWhen: first
-    modelArg: "--model"
-
-  codex:
-    driver: cli
-    command: codex
-    args: ["exec", "--json", "--color", "never", "--sandbox", "read-only", "--skip-git-repo-check"]
-    resumeArgs: ["exec", "resume", "{sessionId}", "--color", "never", "--sandbox", "read-only"]
-    output: jsonl
-    resumeOutput: text
-    sessionIdFields: ["thread_id", "session_id"]
-    sessionMode: existing
-    imageArg: "--image"
+# presets/agents/claude-code.yaml
+id: claude-code
+driver: acp
+acp:
+  command: claude-agent-acp
+  args: []
+command: claude
+args: ["-p", "--output-format", "json", "--session-id", "{sessionId}"]
+resumeArgs: ["-p", "--output-format", "json", "--resume", "{sessionId}"]
+output: json
 ```
 
 Parser: `json` → ambil field teks + session id; `jsonl` → baca aliran, ambil pesan agent terakhir + id thread; `text` → stdout apa adanya.
 
-Batasan yang dikomunikasikan jujur ke user: tanpa streaming, tanpa permission hook (approval jatuh ke kebijakan lokal kita: mode `assisted` menolak eksekusi berbahaya di level prompt, dan sandbox agent tetap berlaku).
+Batasan yang dikomunikasikan jujur ke user: tanpa streaming, dan tanpa permission hook — persetujuan di jalur ini jatuh ke rem agent-nya sendiri, seperti sandbox codex (`--sandbox read-only`) dan konfirmasi bawaan aider. Kebijakan lokal level prompt yang dulu dijanjikan kalimat ini belum dibangun (dicatat 8 Agustus 2026, `driver-v04`); field config yang tampak seperti gerbangnya dicabut sampai gerbang itu ada di jalur run.
 
 ---
 
@@ -274,10 +257,10 @@ Aturan keras:
 
 ## 8. Concurrency & lifecycle
 
-- **1 run aktif per workspace**; pesan berikutnya masuk antrean FIFO dengan ack "diantrekan (#n)".
-- Run punya timeout (default 30 mnt) dan dapat dibatalkan (`session/cancel` untuk ACP, `SIGTERM` → `SIGKILL` untuk CLI).
-- Proses agent dikelola pool: dimulai malas (lazy), dimatikan setelah idle (default 15 mnt), dan selalu dibersihkan saat shutdown.
-- Restart gateway memulihkan sesi dari SQLite; run yang terputus ditandai `interrupted` dan dilaporkan ke chat.
+- **1 run aktif per workspace**; pesan berikutnya masuk antrean FIFO per workspace dengan ack "diantrekan (#n)". Dibangun v0.4, di level aplikasi (satu slot per workspace dalam proses gateway).
+- Run punya timeout (default 30 mnt) dan dapat dibatalkan (`session/cancel` untuk ACP, `SIGTERM` → `SIGKILL` setelah 5 detik untuk CLI).
+- Pool proses ber-idle-shutdown yang dulu tertulis di sini belum dibangun (dicatat 8 Agustus 2026, `driver-v04`): proses CLI keluar sendiri di akhir giliran, dan adapter ACP tetap satu anak proses per driver yang dihentikan saat shutdown.
+- Restart gateway memulihkan sesi dari SQLite; penandaan run terputus sebagai `interrupted` juga belum dibangun — perilaku restart v0.3 bertahan.
 
 ---
 

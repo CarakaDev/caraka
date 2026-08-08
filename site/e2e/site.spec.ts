@@ -281,6 +281,9 @@ test.describe('the comps still decide the layout', () => {
     // /install +94, /security +371, /status +524. /status then took a further +317
     // when the 0.2.1 changelog card was added, and / a further +29 when the
     // sessions paragraph stopped claiming icons recolour and topics close.
+    // The 0.3.0 card moved nothing; the 0.4.0 card and the fifth open gate
+    // moved /status +628 (measured 8 August 2026, same viewport). The v0.4
+    // lines on / rode inside their existing chips and card, moving nothing.
     const EXPECTED: Record<string, number> = {
       // v0.2 copy — measured from the site (see above)
       '/': 6450,
@@ -288,7 +291,7 @@ test.describe('the comps still decide the layout', () => {
       '/compare': 5873,
       '/install': 5141,
       '/security': 4757,
-      '/status': 6160,
+      '/status': 6788,
       // still measured against the comp
       '/story': 5734,
       '/brand': 10177,

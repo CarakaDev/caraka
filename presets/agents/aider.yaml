@@ -1,0 +1,12 @@
+# Aider. ACP masih berjalan di sisi mereka (matriks riset baris 20), jadi
+# sementara lewat jalur CLI. Seluruh flag di bawah belum diverifikasi.
+id: aider
+driver: cli
+command: aider
+# belum diverifikasi — flag headless dari dokumentasi Aider; belum diuji di mesin ini.
+# Prompt dikirim sebagai argumen terakhir, jatuh setelah `--message`.
+# Tanpa `--yes-always`: jalur CLI tidak punya hook izin, jadi konfirmasi Aider
+# sendiri adalah satu-satunya rem — flag auto-setuju tanpa sandbox berarti
+# eksekusi tanpa persetujuan siapa pun (AGENTS.md aturan keras 2).
+args: ["--no-stream", "--message"]
+output: text

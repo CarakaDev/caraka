@@ -29,7 +29,8 @@
   },
   "files": [
     "bin",
-    "dist"
+    "dist",
+    "presets"
   ],
   "type": "module",
   "publishConfig": {

@@ -8,6 +8,18 @@ import type { Language } from "./i18n.js";
 
 const TITEN_ENDPOINT = "http://127.0.0.1:7717";
 
+// One entry per repository the gateway serves (`docs/erd.md` workspace table).
+// `driver` forces a route and `agent` names the preset new sessions start on;
+// both are written only by hand. A policy `mode` field is deliberately absent:
+// a config key that promises a safety gate belongs here only once the gate
+// exists in the run path.
+const workspaceEntry = z.object({
+  slug: z.string().min(1),
+  path: z.string().refine(isAbsolute, "workspaces[].path must be absolute"),
+  driver: z.enum(["acp", "cli"]).optional(),
+  agent: z.string().min(1).optional(),
+});
+
 const configSchema = z.object({
   version: z.literal(1),
   // Absent in every v0.1 file on disk. English is the answer when nobody chose.
@@ -15,7 +27,13 @@ const configSchema = z.object({
   workspace: z.object({
     name: z.string().min(1),
     path: z.string().refine(isAbsolute, "workspace.path must be absolute"),
+    // Absent means automatic selection: ACP when the preset's adapter resolves,
+    // the CLI route otherwise. Written only by hand (`docs/troubleshooting.md`).
+    driver: z.enum(["acp", "cli"]).optional(),
   }),
+  // Absent in every file the wizard wrote: the singular `workspace` above is
+  // then the whole list. Written only by hand, and additive — `version` stays 1.
+  workspaces: z.array(workspaceEntry).optional(),
   telegram: z.object({
     botUsername: z.string().min(1),
     allowFrom: z.array(z.string()).min(1),
@@ -40,6 +58,17 @@ const configSchema = z.object({
 });
 
 export type CarakaConfig = z.infer<typeof configSchema>;
+export type Workspace = z.infer<typeof workspaceEntry>;
+
+// The one reading of the two workspace fields: `workspaces[]` when the operator
+// wrote it, otherwise the singular `workspace` lifted into a one-element list —
+// `name` becomes the slug, and the file on disk is never rewritten.
+export function workspaces(config: CarakaConfig): [Workspace, ...Workspace[]] {
+  const [first, ...rest] = config.workspaces ?? [];
+  if (first) return [first, ...rest];
+  const { name, path, driver } = config.workspace;
+  return [{ slug: name, path, ...(driver ? { driver } : {}) }];
+}
 
 export function carakaPaths(root = process.env.CARAKA_HOME ?? join(homedir(), ".caraka")) {
   const base = resolve(root);

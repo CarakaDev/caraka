@@ -93,13 +93,15 @@ Gerbang A/B itu belum dijalankan saat `v0.3.0` dirilis; ia dipindah menjadi vali
 
 **Pertanyaan:** apakah lapisan driver benar-benar generik, atau cuma terlihat generik?
 
-- [ ] Driver CLI generik + preset: `codex`, `gemini`, `cursor`, `goose`, `amp`, `aider`
-- [ ] Multi-workspace + routing `@slug`
-- [ ] `/switch <agent>`
-- [ ] Antrean + concurrency 1 run/workspace
-- [ ] Smoke test CI per preset agent
+- [x] Driver CLI generik + preset: `codex`, `gemini`, `cursor`, `goose`, `amp`, `aider` (plus `claude-code`, yang membawa kedua jalur)
+- [x] Multi-workspace + routing `@slug`
+- [x] `/switch <agent>`
+- [x] Antrean + concurrency 1 run/workspace
+- [ ] Smoke test CI per preset agent — CI yang lahir fase ini memvalidasi setiap preset lewat loader + skema dan menguji parser terhadap fixture rekaman; smoke hidup per binari tidak dibangun karena runner CI tidak punya satu pun agent maupun kredensialnya (8 Agustus 2026, `done/driver-v04/plan.md` langkah 9). Smoke tetap `npm run smoke` per mesin.
 
 **Definition of done:** menambah agent baru = menambah **satu file YAML**, tanpa menyentuh kode inti. Bila ternyata butuh kode, abstraksinya salah — perbaiki sekarang.
+
+Separuh mesin DoD ini tercentang saat `v0.4.0` dirilis: test `one dummy preset YAML drives a full turn to the channel through the CLI driver` (`test/e2e.test.ts`) memuat sebuah preset dari satu berkas YAML dan membuktikan satu giliran penuh sampai ke channel lewat jalur produksi, tanpa berkas `src/core/` disentuh. Pengamatan manusianya — orang lain menambah agent tanpa bertanya — dipindah menjadi validasi pasca-rilis atas keputusan pemilik 8 Agustus 2026 (`spec/v10.md`), dan hasilnya dicatat di sini begitu ada.
 
 ---
 

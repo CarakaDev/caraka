@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { spawnSync } from "node:child_process";
+import { realpathSync } from "node:fs";
 import { chmod, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -7,18 +8,108 @@ import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 import { Telegram, TelegramError } from "./channels/telegram.js";
 import { carakaPaths, defaultConfig, loadConfig, privateFile, saveConfig } from "./config.js";
+import type { AgentDriver, DriverFor } from "./core/driver.js";
 import { Gateway } from "./core/gateway.js";
 import { createScrubber, parseDuration, trustLimitMinutes } from "./core/security.js";
 import { ClaudeAcp } from "./drivers/claude-acp.js";
+import { discoverAgents, type Discovery } from "./discovery.js";
+import { CliDriver } from "./drivers/cli.js";
+import { loadPresets, resolveCommand, type AgentPreset } from "./drivers/preset.js";
 import { defaultLanguage, translator, type Language, type Translate } from "./i18n.js";
 import { LocalMemory } from "./memory/local.js";
 import { TitenMemory } from "./memory/titen.js";
 import { isServiceKind, serviceUnit } from "./service.js";
 import { Store } from "./store/db.js";
 
-const VERSION = "0.3.0";
+const VERSION = "0.4.0";
+// The preset a session runs until `/switch` names another.
+const DEFAULT_AGENT = "claude-code";
 
 let t: Translate = translator(defaultLanguage());
+
+/**
+ * The construction seam FR-DRV-07 names: ACP when the preset's adapter
+ * resolves, the CLI route when it does not, an error that names the agent and
+ * both options otherwise. `workspace.driver` forces one route and never tries
+ * the other.
+ */
+export function buildDriver(
+  preset: AgentPreset | undefined,
+  forced: "acp" | "cli" | undefined,
+  language: Translate,
+  scrub: (input: unknown) => string,
+): AgentDriver {
+  // No preset on disk keeps the pre-preset behaviour: the Claude adapter from
+  // the locked dependency.
+  if (!preset) return new ClaudeAcp(language);
+  const acpCommand = forced === "cli" || !preset.acp ? null : resolveCommand(preset.acp.command);
+  if (acpCommand && preset.acp) {
+    // A resolved `.bin` shim is a script behind a symlink; spawning it through
+    // the running Node keeps working when PATH has no `node` (systemd).
+    const real = realpathSync(acpCommand);
+    const script = /\.[mc]?js$/.test(real);
+    return new ClaudeAcp(language, {
+      command: script ? process.execPath : acpCommand,
+      args: script ? [real, ...preset.acp.args] : preset.acp.args,
+      env: preset.acp.env,
+    });
+  }
+  if (forced === "acp")
+    throw new Error(
+      t("driver.acpMissing", { agent: preset.id, command: preset.acp?.command ?? "acp" }),
+    );
+  if (preset.command) return new CliDriver(preset, language, scrub);
+  if (forced === "cli") throw new Error(t("driver.cliMissing", { agent: preset.id }));
+  throw new Error(t("driver.none", { agent: preset.id }));
+}
+
+// The runtime half of FR-DRV-07: an adapter whose command resolves but whose
+// initialize fails (broken install, agent not authenticated) falls to the
+// preset's CLI route — when it has one and no route was forced (AC-5.2).
+async function startDriver(
+  preset: AgentPreset | undefined,
+  forced: "acp" | "cli" | undefined,
+  language: Translate,
+  scrub: (input: unknown) => string,
+): Promise<AgentDriver> {
+  const driver = buildDriver(preset, forced, language, scrub);
+  try {
+    await driver.start();
+  } catch (error) {
+    if (forced || !preset?.acp || !preset.command) throw error;
+    const cli = new CliDriver(preset, language, scrub);
+    await cli.start();
+    return cli;
+  }
+  return driver;
+}
+
+/**
+ * The production selection seam (plan driver-v04 step 5): one started driver
+ * per (preset, forced route) pair, built on first use from the session's agent
+ * id — `""` reads as the default. The gateway calls this and never learns
+ * which route answered.
+ */
+export function driverRegistry(
+  presets: Map<string, AgentPreset>,
+  defaultAgent: string,
+  language: Translate,
+  scrub: (input: unknown) => string,
+): DriverFor {
+  const built = new Map<string, Promise<AgentDriver>>();
+  return (agent, forced) => {
+    const preset = presets.get(agent || defaultAgent);
+    const key = `${preset?.id ?? ""}:${forced ?? "auto"}`;
+    let ready = built.get(key);
+    if (!ready) {
+      ready = startDriver(preset, forced, language, scrub);
+      built.set(key, ready);
+      // A start that failed is not kept; the next task tries again.
+      ready.catch(() => built.delete(key));
+    }
+    return ready;
+  };
+}
 
 function command(command: string, args: string[]) {
   return spawnSync(command, args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
@@ -132,12 +223,15 @@ async function init(args: string[]) {
   const workspace = workspaceArg(args);
   if (Number(process.versions.node.split(".")[0]) < 22) throw new Error(t("cli.nodeVersion"));
   if (command("git", ["--version"]).status !== 0) throw new Error(t("cli.gitMissing"));
-  if (command("claude", ["--version"]).status !== 0) throw new Error(t("cli.claudeMissing"));
-  if (!claudeAuthenticated()) throw new Error(t("cli.claudeLogin"));
+  // Any one discovered agent is enough; none is the only stop (FR-SETUP-02,
+  // `docs/troubleshooting.md` §Coding agent).
+  const found = await discoverAgents();
+  if (found.agents.length === 0) throw new Error(t("agents.none"));
   if ((await stat(workspace).catch(() => null))?.isDirectory() !== true)
     throw new Error(t("cli.workspaceMissing", { path: workspace }));
 
-  console.log(`\nꦕꦫꦏ  caraka v${VERSION}\nWorkspace: ${workspace}\nClaude: ready\n`);
+  const agentList = found.agents.map((agent) => agent.binary).join(", ");
+  console.log(`\nꦕꦫꦏ  caraka v${VERSION}\nWorkspace: ${workspace}\nAgents: ${agentList}\n`);
 
   // Asked once, written down, never inferred from a message later.
   const fallback = defaultLanguage();
@@ -230,16 +324,34 @@ async function init(args: string[]) {
   console.log("\n  npx caraka start\n");
 }
 
+/**
+ * The agent rows doctor prints: one per agent discovered, its version in the
+ * name, and a Claude login row only when `claude` is among them. An agent that
+ * is not installed is optional, so it draws no row and reddens nothing — the
+ * only failing row is no agent at all, and it carries the remedy.
+ */
+export function agentChecks(
+  found: Discovery,
+  claudeLogin: () => boolean,
+  language: Translate,
+): Array<[string, boolean, string]> {
+  if (found.agents.length === 0) return [["Coding agents", false, language("agents.none")]];
+  const rows: Array<[string, boolean, string]> = found.agents.map((agent) => [
+    `Agent ${agent.binary}${agent.version ? ` ${agent.version}` : ""}`,
+    true,
+    agent.path,
+  ]);
+  if (found.agents.some((agent) => agent.binary === "claude"))
+    rows.push(["Claude login", claudeLogin(), "run `claude auth login`"]);
+  return rows;
+}
+
 async function doctor() {
   const checks: Array<[string, boolean, string]> = [];
   checks.push(["Node.js", Number(process.versions.node.split(".")[0]) >= 22, process.version]);
   checks.push(["Git", command("git", ["--version"]).status === 0, "install Git"]);
-  checks.push([
-    "Claude Code",
-    command("claude", ["--version"]).status === 0,
-    "install Claude Code",
-  ]);
-  checks.push(["Claude login", claudeAuthenticated(), "run `claude auth login`"]);
+  // Doctor is the one caller that refreshes discovery past the cache's age.
+  checks.push(...agentChecks(await discoverAgents({ refresh: true }), claudeAuthenticated, t));
   let loaded: Awaited<ReturnType<typeof loadConfig>>;
   try {
     loaded = await loadConfig();
@@ -342,16 +454,20 @@ async function start() {
       : loaded.config.memory.provider === "local"
         ? new LocalMemory(store)
         : undefined;
+  const presetsFound = await loadPresets(undefined, language);
+  for (const problem of presetsFound.errors) console.error(problem);
   const gateway = new Gateway(
     loaded.config,
     loaded.approvalKey,
     new Telegram(loaded.token, fetch, undefined, language),
-    new ClaudeAcp(language),
+    driverRegistry(presetsFound.presets, DEFAULT_AGENT, language, scrub),
     store,
     scrub,
     VERSION,
     undefined,
     memory,
+    undefined,
+    [...presetsFound.presets.keys()],
   );
   console.log(
     t("cli.running", {

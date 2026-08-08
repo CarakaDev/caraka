@@ -2,17 +2,11 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { Readable, Writable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import * as acp from "@agentclientprotocol/sdk";
+import type { AgentDriver, AgentUpdate, DriverRoute } from "../core/driver.js";
 import { translator, type Translate } from "../i18n.js";
-import type {
-  RequestPermissionRequest,
-  RequestPermissionResponse,
-  SessionNotification,
-} from "@agentclientprotocol/sdk";
 
-export type ClaudeRoute = {
-  update(notification: SessionNotification): void | Promise<void>;
-  permission(request: RequestPermissionRequest): Promise<RequestPermissionResponse>;
-};
+/** How to spawn an ACP adapter, taken from a preset's `acp:` block. */
+export type AcpSpawn = { command: string; args: string[]; env: Record<string, string> };
 
 export function claudeEnvironment(source: NodeJS.ProcessEnv = process.env) {
   const env = { ...source };
@@ -20,21 +14,30 @@ export function claudeEnvironment(source: NodeJS.ProcessEnv = process.env) {
   return env;
 }
 
-export class ClaudeAcp {
+export class ClaudeAcp implements AgentDriver {
   private child: ChildProcessWithoutNullStreams | undefined;
   private connection: acp.ClientConnection | undefined;
-  private readonly routes = new Map<string, ClaudeRoute>();
+  private readonly routes = new Map<string, DriverRoute>();
 
-  constructor(private readonly t: Translate = translator()) {}
+  constructor(
+    private readonly t: Translate = translator(),
+    private readonly spawnSpec?: AcpSpawn,
+  ) {}
 
   async start() {
     if (this.connection) return;
-    const adapter = fileURLToPath(
-      import.meta.resolve("@agentclientprotocol/claude-agent-acp/dist/index.js"),
-    );
-    this.child = spawn(process.execPath, [adapter], {
+    // Without a preset block the adapter is the locked dependency, resolved the
+    // way it was before presets existed.
+    const spec = this.spawnSpec ?? {
+      command: process.execPath,
+      args: [
+        fileURLToPath(import.meta.resolve("@agentclientprotocol/claude-agent-acp/dist/index.js")),
+      ],
+      env: {},
+    };
+    this.child = spawn(spec.command, spec.args, {
       stdio: ["pipe", "pipe", "pipe"],
-      env: claudeEnvironment(),
+      env: { ...claudeEnvironment(), ...spec.env },
     });
     this.child.stderr.resume();
     const output = Writable.toWeb(this.child.stdin) as unknown as WritableStream<Uint8Array>;
@@ -47,7 +50,9 @@ export class ClaudeAcp {
         return route ? route.permission(params) : { outcome: { outcome: "cancelled" } };
       })
       .onNotification(acp.methods.client.session.update, ({ params }) =>
-        this.routes.get(params.sessionId)?.update(params),
+        // The wire union is wider than the core type; kinds the gateway does
+        // not read fall through its readers unread.
+        this.routes.get(params.sessionId)?.update(params as AgentUpdate),
       );
     this.connection = app.connect(stream);
     try {
@@ -80,7 +85,7 @@ export class ClaudeAcp {
     return created.sessionId;
   }
 
-  async prompt(sessionId: string, prompt: string, route: ClaudeRoute) {
+  async prompt(sessionId: string, prompt: string, route: DriverRoute) {
     const agent = this.connection?.agent;
     if (!agent) throw new Error(this.t("acp.notStarted"));
     this.routes.set(sessionId, route);

@@ -1,0 +1,8 @@
+# Cursor. ACP lewat binari `cursor-agent` per matriks riset baris 11
+# (cursor.com/docs/cli/acp).
+id: cursor
+driver: acp
+acp:
+  command: cursor-agent
+  # belum diverifikasi — subperintah dari cursor.com/docs/cli/acp; belum diuji di mesin ini
+  args: ["acp"]
