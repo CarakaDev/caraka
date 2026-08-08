@@ -13,11 +13,13 @@ import { r } from '../lib/anim'
 // three specification-era stats. The version is package.json's; the other three
 // were already replaced when v0.1 shipped.
 export const stats = [
-  { n: '0.5.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '0.6.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Closed beta', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Seven presets load; Claude Code is the one route ever run against a live
-  // agent here, and the channel count is what v0.5 added.
-  { n: '2', label: 'CHANNELS', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
+  // agent here. Three channels since v0.6 — Telegram, Discord, WhatsApp — and
+  // WhatsApp counts as shipped code, not as a linked number: none has ever been
+  // linked, which the 0.6.0 card below states in as many words.
+  { n: '3', label: 'CHANNELS', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
   { n: '1', label: 'PRIVATE OPERATOR', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
 ]
 
@@ -43,12 +45,13 @@ interface Phase {
 }
 
 // Leaves the comp at Caraka Status.dc.html:245,249,253, which pulses phase 0 and
-// plans phases 1 and 2. v0.5 is published, so the pulse marks phase 5; only one
-// phase pulses because the comp draws one. Phases 1-5 keep "in progress" rather
+// plans phases 1 and 2. v0.6 is published, so the pulse marks phase 6; only one
+// phase pulses because the comp draws one. Phases 1-6 keep "in progress" rather
 // than "done" because roadmap.md still holds a field gate open on each: the
 // dogfood week, the three-minute install, phase 3's A/B, phase 4's watch of
-// someone adding an agent without asking, and phase 5's twenty beta developers.
-// The last three moved past their releases by owner decision on 8 August 2026.
+// someone adding an agent without asking, phase 5's twenty beta developers, and
+// phase 6's fourteen days on a real number. The last four moved past their
+// releases by owner decision on 8 August 2026.
 export const phases: Phase[] = [
   { n: '0', title: 'Technical spike', dur: '1 week', ...done,
     q: 'Do the three foundations behave the way the documentation says?',
@@ -70,13 +73,13 @@ export const phases: Phase[] = [
     q: 'Is the driver layer genuinely generic, or only generic-looking?',
     gate: 'Adding a new agent is one YAML file with no core code touched. If it needs code, the abstraction is wrong and gets fixed now.',
     range: r(4, 3, 26) },
-  { n: '5', title: 'Closed beta · v0.5', dur: '3 weeks', live: true, ...now,
+  { n: '5', title: 'Closed beta · v0.5', dur: '3 weeks', ...now,
     q: "Does it survive in other people's hands?",
     gate: 'At least 60% of participants send a first message within 24 hours without asking anything, and there are zero incidents of execution without approval.',
     range: r(5, 3, 26) },
-  { n: '6', title: 'WhatsApp · v0.6', dur: '2 weeks', ...next,
+  { n: '6', title: 'WhatsApp · v0.6', dur: '2 weeks', live: true, ...now,
     q: "Can we ship WhatsApp without burning anyone's number?",
-    gate: 'Fourteen days of real use with no ban and no manual relink, or an honest finding that makes Cloud API the recommended default.',
+    gate: 'Fourteen days of real use with no ban and no manual relink, or an honest finding that makes Cloud API the recommended default. No number has been linked, so the answer is open.',
     range: r(6, 3, 26) },
   { n: '7', title: 'Public release · v1.0', dur: '2 weeks', ...next,
     q: 'Is it ready to be trusted by strangers?',
@@ -98,6 +101,35 @@ export const releases = [
         'Watch someone add an agent preset without asking a question',
         'Recruit twenty beta developers and answer both v0.5 gate numbers with their runs, not the author\u2019s',
         'Watch the dashboard swap a panel in a real browser with the CSP live',
+        'Run fourteen days on a real WhatsApp number with no ban and no manual relink, or publish the honest finding that makes Cloud API the default',
+      ] },
+    ] },
+  { v: '0.6.0', state: 'closed beta', date: '8 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'ADDED', tone: '#8EEE98', items: [
+        'WhatsApp as the third channel on the same Channel contract, both providers behind one id. No method was added to the interface, and core still holds no comparison against channel.id and no literal "whatsapp"',
+        'Linear mode cost nothing: the channel declares threads false and the header core already wrote does the rest. /status in a conversation without threads names every session it is holding, capped at the five most recent',
+        'caps gains a fourth field, edit, with its reader in the same change. Where it is false the progress path is off entirely — the first ack goes out and nothing follows until the result. The Cloud API has no edit endpoint, so cloud-api declares it false and baileys declares it true',
+        'Approval on a channel with no buttons. The card carries a four-character code from randomBytes over a 32-symbol alphabet, stored on the approval row and printed on the card and nowhere else — never in an audit row, a log line, or a prompt. Spending it takes the same single-use UPDATE as the button path with the same ten-minute TTL. A code-shaped message is never forwarded to the agent, matching or not, and a channel that has buttons is given no code at all',
+        'Two bounds around that code: five wrong codes from one principal close the code route for that session, said once rather than on every message; and five undecided approvals per session is now a ceiling rather than a plan, with the sixth request cancelled without a card and the refusal in the audit',
+        'The five ban mitigations as code that can fail. Every WhatsApp send passes one function no caller can reach around: a rolling ceiling of 12 messages per 60 seconds with the excess queued, a uniform random gap of 1,200–3,500 ms, and a refusal to write to any number that has not written first and is not on allowFrom',
+        'A bilingual WhatsApp risk page: what is known about bans, where each figure comes from, what its population actually was, which detection signal Caraka answers in code and which one it cannot answer at all. Choosing baileys without acknowledgeRisk: true stops start with a message linking it',
+        'Baileys as an exact-version optional peer dependency, not a dependency and not an optionalDependency, which npm would install by default. Direct runtime dependencies stay at four, one file names the module, and it is reached only through a lazy import. A missing module is one sentence with the exact install command in it',
+        'The Cloud API webhook receiver, bound to 127.0.0.1 unless start is given another address, which prints a warning and writes an audit row first. X-Hub-Signature-256 is mandatory and compared in constant time, loopback included, because another local process can knock as easily as Meta. Provider baileys opens no listener at all',
+        'The Baileys auth state is treated as a credential rather than session state: secrets/whatsapp/ at 0700 with files at 0600, beside the Cloud API token, verify token, and app secret. doctor reports all four, and every loaded token is seeded to the scrubber',
+        'Reconnect with a ceiling and an end: five seconds doubling with full jitter, capped at 300, six attempts before the channel stops and raises the operator’s sentence. The counter resets only after a connection holds 60 seconds. A logged-out or 401 answer is never retried once, and the message names the way back',
+        'Group messages are refused outright. On the linked-device protocol a group names itself as the sender, so every member would arrive as one principal and every member would read the approval code on the same card',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'No live WhatsApp number was ever linked on this machine, and no live Cloud API webhook was ever received. Every check answers a fake transport, an injected fetch, a stand-in for the Baileys module, or a real listener on port 0, so the real payload shapes, the real pairing flow, and the real ban behaviour are unproven',
+        'Because the Baileys peer is optional, CI never installs it. npm audit does not see it, and a breaking change in its API would not surface from this repository. What holds the line is the pinned exact version and an error message that names it',
+        'caraka init whatsapp is not built. A whatsapp: block and the Cloud API credentials are written by hand, with no verification call before they are used',
+        'The risk warning is unskippable but late. Start refuses baileys without acknowledgeRisk: true and prints the separate-number warning every time, so nobody runs it unwarned — but the warning arrives after the decision was written into the config, not before',
+        'Most numbers in this release are spec-set rather than measured: the outbound ceiling and jitter band, the code length and its attempt limit, the backoff base, ceiling, attempt count and stability window, the five sessions /status names, and maxChars 4096. Only the 30-second progress interval, the ten-minute TTL, and the five pending approvals trace to a document',
+        'Two flows core still sends with buttons — the workspace chooser and /yolo — are dead ends on WhatsApp. Core reads caps.buttons at the approval site and not at those two',
+        'Groups are unsupported and the block carries no room allowlist, because no room reaches this channel for a second list to gate. The MEDIA: attachment convention is still absent on every channel',
+        'src/ stands at 7,996 lines against the ~8,000 line ceiling. That is the line, not room below it',
+        'The field half of the phase 6 gate stays open: fourteen days on a real number with no ban and no manual relink cannot be answered from a repository. Moved past the release by owner decision on 8 August 2026',
       ] },
     ] },
   { v: '0.5.0', state: 'closed beta', date: '8 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),

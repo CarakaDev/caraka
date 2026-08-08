@@ -66,21 +66,22 @@ export const term = [
 ]
 
 // Comp lines 558-565 draw phase 0 in flight, which stopped being true when
-// v0.1 shipped and is five phases stale after v0.5. Names and marks follow
+// v0.1 shipped and is six phases stale after v0.6. Names and marks follow
 // src/data/status.ts through the generator's PHASES
 // (site/scripts/gen-assets.mjs); the ink shades are the comp's own. The bar is
 // binary — full where the release shipped, empty where the work has not started
 // — because the comp's 62% and 48% were a drawing and no document measures a
 // fraction of a phase. Phases 1 to 5 stay kesumba rather than green for the
-// reason status.ts gives: each keeps a field gate open in roadmap.md.
+// reason status.ts gives: each keeps a field gate open in roadmap.md, phase 6's
+// being fourteen days on a real WhatsApp number.
 export const phases = [
   { n: '0', glyph: '●', name: 'Spike', tone: '#8EEE98', ink: '#F6F9FC', fill: '100%' },
   { n: '1', glyph: '●', name: 'Dogfood', tone: '#E2452C', ink: '#F6F9FC', fill: '100%' },
   { n: '2', glyph: '●', name: 'Install', tone: '#E2452C', ink: '#F6F9FC', fill: '100%' },
   { n: '3', glyph: '●', name: 'Memory', tone: '#E2452C', ink: '#F6F9FC', fill: '100%' },
   { n: '4', glyph: '●', name: 'Abstraction', tone: '#E2452C', ink: '#F6F9FC', fill: '100%' },
-  { n: '5', glyph: '◐', name: 'Closed beta', tone: '#E2452C', ink: '#F6F9FC', fill: '100%' },
-  { n: '6', glyph: '○', name: 'WhatsApp', tone: '#414950', ink: '#5D666F', fill: '0%' },
+  { n: '5', glyph: '●', name: 'Closed beta', tone: '#E2452C', ink: '#F6F9FC', fill: '100%' },
+  { n: '6', glyph: '◐', name: 'WhatsApp', tone: '#E2452C', ink: '#F6F9FC', fill: '100%' },
   { n: '7', glyph: '○', name: 'Public 1.0', tone: '#414950', ink: '#5D666F', fill: '0%' },
 ]
 

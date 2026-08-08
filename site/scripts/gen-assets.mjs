@@ -500,8 +500,8 @@ const PHASES = [
   ['2', 'Install', KESUMBA_500, WHITE, '100%', false],
   ['3', 'Memory', KESUMBA_500, WHITE, '100%', false],
   ['4', 'Abstraction', KESUMBA_500, WHITE, '100%', false],
-  ['5', 'Closed beta', KESUMBA_500, WHITE, '100%', true],
-  ['6', 'WhatsApp', N_300, N_400, '0%', false],
+  ['5', 'Closed beta', KESUMBA_500, WHITE, '100%', false],
+  ['6', 'WhatsApp', KESUMBA_500, WHITE, '100%', true],
   ['7', 'Public 1.0', N_300, N_400, '0%', false],
 ]
 

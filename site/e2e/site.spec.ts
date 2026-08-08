@@ -271,10 +271,10 @@ test.describe('the comps still decide the layout', () => {
     // comp still decides how those six pages look; it stopped deciding what
     // they claim, so their numbers are now measured from the built site rather
     // than from design/mockups/*.dc.html, and a diff against the comp on those
-    // six is expected reading rather than a failure. The six below them kept
-    // their comp's height: /story only swapped a version string of identical
-    // length, and the stale-copy pass over the /brand boards — fixed-size OG
-    // cards, badges, one blockquote — moved no line count.
+    // six is expected reading rather than a failure. /brand/readme joined them
+    // at v0.6, when the repo card's one-line description grew a third channel;
+    // the four below it still keep their comp's height, and /story only swapped
+    // a version string of identical length.
     //
     // Measured 8 August 2026, Chromium at 1440x900, against the copy that
     // shipped with v0.2. Deltas from the v0.1 baselines: / +31, /docs +907,
@@ -288,21 +288,32 @@ test.describe('the comps still decide the layout', () => {
     // Measured 8 August 2026, Chromium, same 1440x900 viewport. The other six
     // routes hold — the Discord and dashboard rewrites on /, /docs, /compare,
     // /install and /security stayed inside rows and cards that already existed.
+    //
+    // v0.6 moved five, all re-measured 8 August 2026, Chromium, same viewport:
+    // /status +1064 to 8660 (the 0.6.0 card, the largest yet, plus a sixth open
+    // gate), /docs +625 (a code row on the approval table, three lines added to
+    // the config sample, and four rewritten rows that now wrap), /security +338
+    // (two more "what we do not claim" entries and four rewritten controls),
+    // /install +69 and / +65 (one rewritten listener claim on each), and
+    // /brand/readme +16 (a third channel in the repo card's description).
+    // /compare held: the channel count and the maturity chip changed inside
+    // cells that already existed, and 'topics, threads, or a header' is shorter
+    // than the line it replaced.
     const EXPECTED: Record<string, number> = {
       // v0.2 copy — measured from the site (see above)
-      '/': 6450,
-      '/docs': 5874,
+      '/': 6515,
+      '/docs': 6499,
       '/compare': 5873,
-      '/install': 5141,
-      '/security': 4757,
-      '/status': 7596,
+      '/install': 5210,
+      '/security': 5095,
+      '/status': 8660,
+      '/brand/readme': 5549,
       // still measured against the comp
       '/story': 5734,
       '/brand': 10177,
       '/brand/warna': 5264,
       '/brand/ui-kit': 9584,
       '/brand/og': 6821,
-      '/brand/readme': 5533,
     }
 
     await page.setViewportSize({ width: 1440, height: 900 })

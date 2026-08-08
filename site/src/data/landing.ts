@@ -143,8 +143,8 @@ export const mem = [
 export const safety = [
   'The allowlist is mandatory — the gateway refuses to start without one.',
   'The chat and the sender are separate allowlists, and a message must pass both.',
-  'Approvals are signed, single-use callbacks with a TTL. Chat text can never approve.',
-  'No channel listens: Telegram is polled, Discord is an outbound socket. The only listener is the dashboard, on 127.0.0.1, read-only, GET only.',
+  'Approvals are single-use secrets with a TTL — a signed callback where a channel has buttons, the code on the card where it has none. A plain word can never approve.',
+  'Nothing is opened to the internet: Telegram is polled, Discord and Baileys are outbound sockets, and both listeners — the dashboard and the WhatsApp Cloud API webhook — bind 127.0.0.1 unless you say otherwise.',
   'Secrets are scrubbed from outbound messages and append-only audit details.',
   'Model API keys are never touched — those belong to your coding agent.',
   'A trust window expires on the clock, and high-risk actions still ask for a tap.',
@@ -153,8 +153,8 @@ export const safety = [
 export const term = [
   { t: '$ npx caraka init', tone: '#5D666F', range: r(0, 2.4, 22) },
   { t: '', tone: '#5D666F', range: r(1, 2.4, 22) },
-  // comp:535 reads `caraka · v0.1.0`; `VERSION` in src/cli.ts is 0.5.0.
-  { t: 'caraka · v0.5.0', tone: '#F6F9FC', mark: 'ꦕꦫꦏ', markTone: '#E2452C', range: r(2, 2.4, 22) },
+  // comp:535 reads `caraka · v0.1.0`; `VERSION` in src/cli.ts is 0.6.0.
+  { t: 'caraka · v0.6.0', tone: '#F6F9FC', mark: 'ꦕꦫꦏ', markTone: '#E2452C', range: r(2, 2.4, 22) },
   { t: '', tone: '#5D666F', range: r(3, 2.4, 22) },
   { t: 'claude login · ready', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(4, 2.4, 22) },
   { t: 'telegram · paired', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(5, 2.4, 22) },
