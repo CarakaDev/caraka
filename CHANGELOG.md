@@ -4,6 +4,18 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] — 2026-08-10
+
+One preset was wrong in a way only running it could show.
+
+### Fixed
+
+- The Codex preset's resume line carried a flag the binary rejects and a sandbox it never applied. `codex exec resume` takes neither `--color` nor `--sandbox`: the first stopped the run outright, and the second meant every continued turn ran without the read-only sandbox the first line of that file calls a security control. It has been that way since the preset landed in v0.4, unseen, because the flags were transcribed from documentation and nobody had run them. The resume line carries the control as `-c sandbox_mode="read-only"` now, which Codex validates against the same three values `--sandbox` accepts — a wrong one is refused before the model is reached, so the control is enforced rather than merely accepted. A unit test pins both halves: the control must be present, and the flag that broke it must not return.
+
+### Changed
+
+- Two agents are proven against a live binary instead of one. Codex answered on 10 August 2026 through the real preset, the real loader, the real `CliDriver`, and the real binary — two turns and a resume that recalled a number from the first. `docs/roadmap.md`, the status page, the landing page, and the UI-kit copy stop saying Claude Code is the only route that has answered here. Five presets remain transcribed and unrun, and Codex having been wrong on two of its three resume flags is the argument for treating them that way.
+
 ## [1.1.0] — 2026-08-08
 
 Four boxes that had been open since the specification, closed with code rather than with prose. The largest is the policy-mode gate: `docs/security.md` §5 has described a `read-only` group since v0.2 and no release before this one enforced it, so a room on the allowlist ran with the rules of the direct message it was paired from. Three of the others are the install-flow work phase 2 asked for and never got.
