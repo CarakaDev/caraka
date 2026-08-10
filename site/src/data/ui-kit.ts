@@ -42,9 +42,10 @@ export const errorPages = [
   { route: 'caraka.dev/500', code: '500', title: 'The gate did not open', body: 'Something failed on our side. It has been logged, and nothing you did caused it.', cta: 'Try again', alt: 'Report it', dot: '#FF93B2', border: '#2B1612', ring: '#FF93B2', glyphInk: '#FF93B2', codeInk: '#FF93B2', glow: 'rgba(255,147,178,.12)', ringAnimL: '', ringAnimR: '', hint: null },
   { route: 'gateway · offline', code: '503', title: 'Gateway is not running', body: 'Caraka is installed but the process is not up. Start it and the topic list comes back.', cta: 'Retry', alt: 'View logs', dot: '#FFD67E', border: '#171C22', ring: '#FFD67E', glyphInk: '#FFD67E', codeInk: '#FFD67E', glow: 'rgba(255,214,126,.10)', ringAnimL: 'animation: ck-spin 3.4s linear infinite;', ringAnimR: 'animation: ck-spinRev 3.4s linear infinite;', hint: 'caraka start' },
   // Comp line 437 offers the Gemini free path. Since v0.4 init takes any one of
-  // the seven presets it finds on PATH, but Claude Code is the only route that
-  // has ever answered here, so the empty state names that one rather than
-  // listing seven a reader would have to choose between.
+  // the seven presets it finds on PATH, and two have answered here — Claude Code
+  // and Codex — so the empty state names the one with the shortest path to a
+  // first message rather than listing seven a reader would have to choose
+  // between.
   { route: 'agent · not found', code: '424', title: 'No coding agent installed', body: 'Caraka has no agent of its own. Install Claude Code, authenticate, then run init again.', cta: 'Install guide', alt: 'Compare agents', dot: '#E2452C', border: '#2B1612', ring: '#E2452C', glyphInk: '#F6F9FC', codeInk: '#FF7A5E', glow: 'rgba(226,69,44,.14)', ringAnimL: '', ringAnimR: '', hint: 'npm i -g @anthropic-ai/claude-code' },
 ] as { route: string; code: string; title: string; body: string; cta: string; alt: string; dot: string; border: string; ring: string; glyphInk: string; codeInk: string; glow: string; ringAnimL: string; ringAnimR: string; hint: string | null }[]
 

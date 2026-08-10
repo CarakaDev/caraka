@@ -1626,9 +1626,17 @@ test("the seven shipped presets load, and every unverified flag says so", async 
     assert.ok(preset?.acp?.command, id);
   }
   // AC-3.3: the codex sandbox is a security control (`docs/security.md` §7).
+  // The first live smoke against codex-cli 0.147.0, on 10 August 2026, found
+  // `codex exec resume` takes neither `--color` nor `--sandbox`, so the resume
+  // line had been carrying a flag the binary rejects and a control it never
+  // applied. It carries the control as a config override now — `sandbox_mode`
+  // is validated against the same three values, so a wrong one is refused
+  // before the model is reached. Both halves are pinned: the control must be
+  // there, and the flag that broke it must not come back.
   const codex = shipped.presets.get("codex");
   assert.deepEqual(codex?.args.slice(4, 6), ["--sandbox", "read-only"]);
-  assert.equal(codex?.resumeArgs?.includes("read-only"), true);
+  assert.equal(codex?.resumeArgs?.includes('sandbox_mode="read-only"'), true);
+  assert.equal(codex?.resumeArgs?.includes("--color"), false);
   // AC-3.5: aider is wholly unverified and says so in the file.
   const aider = await readFile(new URL("../presets/agents/aider.yaml", import.meta.url), "utf8");
   assert.match(aider, /belum diverifikasi/);

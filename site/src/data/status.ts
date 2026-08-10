@@ -97,7 +97,7 @@ export const phases: Phase[] = [
     range: r(6, 3, 26) },
   { n: '7', title: 'Public release · v1.0', dur: '2 weeks', live: true, ...shipped,
     q: 'Is it ready to be trusted by strangers?',
-    gate: 'Every goal in prd.md is met and measured. Fifteen agents are not covered: seven presets ship, Claude Code is the only one that has ever answered a live binary here, and the codex smoke added in 1.1.0 has so far only reached a spent quota. Taking the release to the Indonesian developer community and to the ACP ecosystem is the step nothing in a repository can perform.',
+    gate: 'Every goal in prd.md is met and measured. Fifteen agents are not covered: seven presets ship and two have answered a live binary here, Claude Code over ACP and Codex over the CLI route. Taking the release to the Indonesian developer community and to the ACP ecosystem is the step nothing in a repository can perform.',
     range: r(7, 3, 26) },
 ]
 
@@ -139,7 +139,7 @@ export const releases = [
       { label: 'LIMITED', tone: '#FFD67E', items: [
         'Titen was never contacted. It is not installed on this machine and nothing answers on 127.0.0.1:7717, so titen bootstrap, titen serve, and the compile-latency number in phase 0 have no source to be measured from',
         'The Rich Messages spike is still open. What ships is sendRichMessage with a plain-text fallback; structured blocks, sendRichMessageDraft, and the retest of editMessageText with rich_message all need a live bot and a person typing to it',
-        'One agent is proven against a live binary, not two. The codex smoke exists and reaches the real binary, and every run of it so far has come back on a spent usage quota, so the preset is reachable rather than proven',
+        'Two agents are proven against a live binary. Claude Code over ACP, and Codex over the CLI route since 10 August 2026 — two turns and a resume that recalled a number. The other five presets are transcribed and unrun',
         'Every field gate is still open, the same nine listed above. A gate on the run path is not a week of use, five recorded setup sessions, an A/B across twenty tasks, twenty beta developers, or fourteen days on a real WhatsApp number',
         'src/ stands at 8,422 lines against the ~8,000 line ceiling in AGENTS.md. The features were built and the fold that pays for them was not; that is over the budget, not near it',
         'Two cells of the assisted row are still design. The table writes ✗ for git push and deploy; what the code does is send a card for both, because the high-risk list applies first and is not differentiated by mode',
@@ -155,7 +155,7 @@ export const releases = [
       { label: 'LIMITED', tone: '#FFD67E', items: [
         'Nothing here was proven by anyone but the author. No dogfood week, no recorded setup session, no A/B across twenty tasks, no beta group, no fourteen days on a real WhatsApp number. A version number says the code landed; it says nothing about use',
         'The npm registry still holds 0.2.1. Every release since is tagged here and unpublished, and the publish command belongs to the owner',
-        'Six of the seven presets are transcribed rather than run. Claude Code is the only agent ever started against a live binary on this machine, and only through its ACP route, so the fifteen-agent goal in prd.md is not met',
+        'Five of the seven presets are transcribed rather than run. Claude Code and Codex have both answered a live binary here, one on each route, so the fifteen-agent goal in prd.md is still not met',
         'No live Discord credential and no live WhatsApp number has ever been used here. Every check on both answers a fake transport, so the real payload shapes and the real rate-limit behaviour stay unproven',
         'There has been no third-party security audit, and this line stays until there is one',
       ] },

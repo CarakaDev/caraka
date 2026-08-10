@@ -1,11 +1,21 @@
-# Codex CLI (OpenAI). Dari docs/api.md §1, dipangkas ke field yang dibaca
-# kode. `--sandbox read-only` adalah kontrol keamanan (docs/security.md §7),
-# bukan preferensi — jangan dilonggarkan lewat preset.
+# Codex CLI (OpenAI). Dari docs/api.md §1, dipangkas ke field yang dibaca kode.
+# `read-only` adalah kontrol keamanan (docs/security.md §7), bukan preferensi —
+# jangan dilonggarkan lewat preset.
+#
+# Baris `resumeArgs` dulu menyalin bentuk `args` dan salah di dua tempat, dan
+# smoke hidup pertama terhadap codex-cli 0.147.0 pada 10 Agustus 2026 yang
+# menemukannya: `codex exec resume` tidak menerima `--color` (ia berhenti dengan
+# "unexpected argument") dan tidak menerima `--sandbox` sama sekali. Yang kedua
+# yang berbahaya — giliran lanjutan berjalan tanpa sandbox yang diminta baris
+# pertama berkas ini. Resume menerima `-c <kunci>=<nilai>`, dan `sandbox_mode`
+# divalidasi terhadap tiga nilai yang sama dengan `--sandbox`: memberinya nilai
+# asal ditolak sebelum model dipanggil, jadi kontrolnya benar-benar tegak dan
+# bukan sekadar diterima.
 id: codex
 driver: cli
 command: codex
 args: ["exec", "--json", "--color", "never", "--sandbox", "read-only", "--skip-git-repo-check"]
-resumeArgs: ["exec", "resume", "{sessionId}", "--color", "never", "--sandbox", "read-only"]
+resumeArgs: ["exec", "resume", "{sessionId}", "--json", "--skip-git-repo-check", "-c", "sandbox_mode=\"read-only\""]
 output: jsonl
-resumeOutput: text
+resumeOutput: jsonl
 sessionIdFields: ["thread_id", "session_id"]

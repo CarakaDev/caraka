@@ -74,10 +74,12 @@ export const topics = [
   { glyph: '⊘', name: 'toko-api · restructure docs', id: '#a81', color: '#CB86DB', ink: '#5D666F', bg: '#0C1116', bar: 0, delay: '0s', range: r(5, 3.5, 30) },
 ]
 
-// comp:509 lists 13 agents plus "+ 15 more" with no status. Claude Code is the
-// one agent verified live. `presets/agents/` ships a preset for five of the
-// others since v0.4 — flags transcribed, marked unverified inside each file —
-// so their rows read "preset", a file that exists, not a claim it was run here.
+// comp:509 lists 13 agents plus "+ 15 more" with no status. Two agents are
+// verified live: Claude Code over ACP, and Codex over the CLI route since
+// 10 August 2026. `presets/agents/` ships a preset for five of the others since
+// v0.4 — flags transcribed, marked unverified inside each file — so their rows
+// read "preset", a file that exists, not a claim it was run here. Codex's own
+// transcription was wrong on two flags until a live run found them.
 //
 // Codex keeps that row after 1.1.0. `scripts/smoke-cli.mjs codex` drives the
 // real binary through the real preset, which is more than transcription, and
@@ -85,7 +87,7 @@ export const topics = [
 // turn. "verified" is a claim an agent earns by answering, so it stays "preset"
 // until one does.
 export const agents = [
-  'Claude Code · verified', 'Codex CLI · preset', 'Gemini CLI · preset', 'Cursor · preset',
+  'Claude Code · verified', 'Codex CLI · verified', 'Gemini CLI · preset', 'Cursor · preset',
   'Cline · roadmap', 'Goose · preset', 'Amp · preset', 'Copilot CLI · roadmap',
   'Devin · roadmap', 'Factory Droid · roadmap', 'Auggie · roadmap',
   'OpenHands · roadmap', 'Qwen Code · roadmap', 'ACP keeps the path open',
@@ -99,7 +101,7 @@ export const layers = [
     tag: 'ACP · PRIMARY',
     tone: '#FF7A5E',
     title: 'Claude first, one protocol',
-    body: 'ACP over stdio carries streaming updates, permission requests, cancellation, and persisted sessions. Claude Code is the one agent verified live on it.',
+    body: 'ACP over stdio carries streaming updates, permission requests, cancellation, and persisted sessions. Claude Code is the agent verified live on it; Codex answers on the CLI route.',
     bg: '#12100F',
     border: '#2B1612',
     delay: '0s',
