@@ -1,8 +1,20 @@
 # Cursor. ACP lewat binari `cursor-agent` per matriks riset baris 11
 # (cursor.com/docs/cli/acp).
+#
+# Dijalankan terhadap cursor-agent 2026.08.04-aaa8809 pada 10 Agustus 2026.
+# `cursor-agent --help` tidak lagi mencantumkan `acp` di daftar perintahnya,
+# tetapi perintah itu tetap ada dan menjawab: `initialize` dibalas
+# `protocolVersion: 1`, `loadSession: true`, dan satu `authMethod` bernama
+# `cursor_login`. Jadi baris di bawah tidak berubah — yang berubah hanya
+# statusnya, dari transkripsi dokumentasi menjadi handshake yang pernah
+# dilihat.
+#
+# belum diverifikasi — satu giliran penuh. `cursor-agent status` menjawab "Not
+# logged in" dan `scripts/smoke-cli.mjs cursor` berhenti di "Authentication
+# required". Login Cursor butuh peramban dan akun berbayar, dan mesin ini
+# tidak punya keduanya.
 id: cursor
 driver: acp
 acp:
   command: cursor-agent
-  # belum diverifikasi — subperintah dari cursor.com/docs/cli/acp; belum diuji di mesin ini
   args: ["acp"]

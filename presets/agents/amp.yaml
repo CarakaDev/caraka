@@ -1,8 +1,16 @@
 # Amp (Sourcegraph). ACP lewat wrapper `amp-acp` 0.9.0 per matriks riset
 # baris 14.
+#
+# Dijalankan terhadap amp-acp 0.9.0 pada 10 Agustus 2026. Nama binari dan
+# versinya cocok dengan matriks: `initialize` dibalas `protocolVersion: 1` dan
+# `agentInfo.version: "0.9.0"`. Baris di bawah tidak berubah.
+#
+# belum diverifikasi — satu giliran penuh. `scripts/smoke-cli.mjs amp` berhenti
+# di "Authentication required": satu-satunya `authMethod` yang ditawarkan
+# adalah setup interaktif untuk kunci API Amp, yang datang dari akun berbayar
+# ampcode.com. Mesin ini tidak punya satu pun.
 id: amp
 driver: acp
 acp:
-  # belum diverifikasi — nama binari wrapper dari matriks riset; belum diuji di mesin ini
   command: amp-acp
   args: []

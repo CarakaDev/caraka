@@ -1,13 +1,14 @@
 # The verification gate from `standards/ears.md`, run on every push and pull
 # request. That gate covers `site/` as well as the root package, so both are
-# here. Two commands are not: a live smoke against claude/codex/gemini needs
-# the binary and its credentials, and the site's Playwright suite needs
-# Chromium, Firefox, and WebKit. Both stay per-machine commands (`npm run
-# smoke`, `npm run e2e` inside `site/`) rather than a green light this
-# workflow could fake. What CI verifies is the rest: the root gate commands,
-# the site's lint, typecheck, and unit run, the schema over every shipped
-# preset, the parser fixtures recorded in `test/fixtures/`, and `npm audit`
-# over both trees a user can end up with.
+# here. Two commands are not: a live smoke needs an agent binary and the
+# account behind it, and the site's Playwright suite needs Chromium, Firefox,
+# and WebKit. Both stay per-machine commands (`npm run smoke`, `npm run e2e`
+# inside `site/`) rather than a green light this workflow could fake. The
+# `presets` job below carries the per-agent reasons. What CI verifies is the
+# rest: the root gate commands, the site's lint, typecheck, and unit run, the
+# schema and declared route over every shipped preset, the parser fixtures
+# recorded in `test/fixtures/`, and `npm audit` over both trees a user can end
+# up with.
 
 name: ci
 
@@ -51,6 +52,34 @@ jobs:
       # rather than whatever was committed.
       - run: npm run check
 
+  # Every shipped preset, as far as a runner can take one. What a runner cannot
+  # do is let any of them answer, and the seven fail that in three separate
+  # ways. The live smoke stays `node scripts/smoke-cli.mjs <id>` on a machine
+  # that has the agent, and this is the standing list of why it is not here:
+  #
+  #   claude-code, codex,  signed-in developer accounts. All three were proved
+  #   goose                that way, on 7 and 10 August 2026 — goose reaches a
+  #                        model through whatever `GOOSE_PROVIDER` names, and
+  #                        the run that passed named `claude-code`. Putting any
+  #                        of those accounts in a public repository's secrets
+  #                        hands a paid seat to every fork, and to every pull
+  #                        request that edits the workflow.
+  #   aider                no account needed: it passed on 10 August 2026
+  #                        against a model on the machine. A runner has no
+  #                        model, and the smallest useful one is a
+  #                        multi-gigabyte pull per job for two turns of work.
+  #                        The no-account path is what goose could not show —
+  #                        with `GOOSE_PROVIDER=ollama` and a local 7B it
+  #                        finished the handshake and the first turn, then
+  #                        failed to recall the number.
+  #   gemini               a Google login, a Gemini API key, or Vertex AI. The
+  #                        ACP handshake was proved without one; the turn needs
+  #                        one.
+  #   cursor, amp          a Cursor login and an Amp API key, both from paid
+  #                        accounts. Same handshake, same wall.
+  #
+  # So this job stops where honesty does: the loader, the schema, the route
+  # every preset declares, and the parsers, against files rather than agents.
   presets:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -65,7 +94,13 @@ jobs:
       # The loader collects invalid files instead of throwing, so the step
       # fails on the collected list, and a count mismatch catches a file the
       # loader never saw (a duplicated id overwrites its twin in the map).
-      - name: validate presets against the schema
+      #
+      # Then the one thing the schema cannot say: `command` and `acp` are both
+      # optional there, because `claude-code` carries both routes and a `mcp`
+      # preset will carry neither. A preset still has to name something for the
+      # route it declares, or `scripts/smoke-cli.mjs` and the gateway both
+      # reach it and find nothing to spawn.
+      - name: validate presets against the schema and their declared route
         run: |
           node --import tsx --input-type=module -e '
             import { readdir } from "node:fs/promises";
@@ -78,6 +113,14 @@ jobs:
               console.error(`${files.length} preset files, ${presets.size} loaded ids`);
               process.exit(1);
             }
+            let broken = 0;
+            for (const [id, preset] of presets) {
+              const spawns = preset.driver === "acp" ? preset.acp?.command : preset.command;
+              if (spawns) continue;
+              console.error(`preset ${id} declares driver ${preset.driver} and names no command for it`);
+              broken += 1;
+            }
+            if (broken > 0) process.exit(1);
             console.log(`${presets.size} presets valid: ${[...presets.keys()].join(", ")}`);
           '
       # The recorded output fixtures against the three parsers — the part of a

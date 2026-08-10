@@ -1,12 +1,60 @@
 # Aider. ACP masih berjalan di sisi mereka (matriks riset baris 20), jadi
-# sementara lewat jalur CLI. Seluruh flag di bawah belum diverifikasi.
+# sementara lewat jalur CLI.
+#
+# Diverifikasi terhadap aider 0.86.2 pada 10 Agustus 2026, dua giliran dan satu
+# resume lewat `scripts/smoke-cli.mjs aider`. Yang berubah setelah dijalankan:
+#
+# - `--no-pretty`. Tanpa itu Aider menulis jawabannya dengan kode warna ANSI,
+#   dan jalur `text` meneruskan stdout apa adanya ke chat.
+# - `--no-check-update`. Tiap proses baru menembak PyPI dulu; satu giliran
+#   berarti satu panggilan jaringan yang tidak ada hubungannya dengan tugas.
+# - `--no-auto-commits`. Jalur CLI tidak punya hook izin, dan Aider yang
+#   berjalan di repo pengguna melakukan commit sendiri setelah setiap edit.
+#   Commit tanpa persetujuan siapa pun adalah persis yang dilarang AGENTS.md
+#   aturan keras 2, jadi bendera ini kontrol keamanan, bukan preferensi.
+# - `resumeArgs` baru. Aider tidak punya id thread — tidak ada yang bisa
+#   diisi ke `sessionIdFields`. Riwayatnya tersimpan sebagai
+#   `.aider.chat.history.md` di direktori kerja, dan `--restore-chat-history`
+#   memuatnya kembali. Giliran kedua smoke menyebut angka giliran pertama
+#   lewat jalur itu, jadi resume benar-benar berjalan meski tanpa id.
+#
+# **Batasnya: resume Aider adalah per-workspace, bukan per-sesi.** Gateway
+# memberi cwd yang sama untuk setiap sesi di satu workspace
+# (`src/core/gateway.ts` `driver.session(agentId, workspace.path)`), dan
+# `.aider.chat.history.md` tinggal di cwd itu. Dua sesi Caraka pada workspace
+# yang sama — kejadian biasa, karena pesan tanpa `@workspace` dirutekan ke
+# workspace terakhir dan tiap tugas membuka topic baru
+# (`docs/session-model.md`) — berbagi satu berkas riwayat, jadi giliran kedua
+# sesi B memuat apa pun yang ditulis run Aider terakhir di direktori itu.
+# Smoke tidak pernah melihatnya: ia menjalankan satu sesi di `mkdtemp` kosong.
+# Yang menutupnya adalah `--chat-history-file <path>` per sesi, dan itu butuh
+# driver yang bisa mensubstitusi path — pekerjaan lain, dicatat di sini supaya
+# tidak ditemukan lagi lewat transcript yang tertukar.
+#
+# Tetap tanpa `--yes-always`: bendera auto-setuju tanpa sandbox berarti
+# eksekusi perintah tanpa persetujuan siapa pun. Tapi run hidup itu juga
+# membatalkan alasan lama berkas ini. `CliDriver` menutup stdin sebelum proses
+# menjawab, jadi setiap pertanyaan Aider bertemu EOF dan diambilkan
+# jawabannya sendiri: di direktori kosong smoke ia bertanya "create a git
+# repo? [Yes]" lalu membuatnya. Konfirmasi Aider bukan rem di jalur ini, dan
+# itulah kenapa `--no-auto-commits` yang jadi rem.
+#
+# Model tidak disebut di sini. Aider membacanya dari `.aider.conf.yml` atau
+# `AIDER_MODEL` milik mesin, dan preset yang memaksa satu model akan salah di
+# setiap mesin kecuali satu.
 id: aider
 driver: cli
 command: aider
-# belum diverifikasi — flag headless dari dokumentasi Aider; belum diuji di mesin ini.
 # Prompt dikirim sebagai argumen terakhir, jatuh setelah `--message`.
-# Tanpa `--yes-always`: jalur CLI tidak punya hook izin, jadi konfirmasi Aider
-# sendiri adalah satu-satunya rem — flag auto-setuju tanpa sandbox berarti
-# eksekusi tanpa persetujuan siapa pun (AGENTS.md aturan keras 2).
-args: ["--no-stream", "--message"]
+args: ["--no-stream", "--no-pretty", "--no-check-update", "--no-auto-commits", "--message"]
+resumeArgs:
+  [
+    "--no-stream",
+    "--no-pretty",
+    "--no-check-update",
+    "--no-auto-commits",
+    "--restore-chat-history",
+    "--message",
+  ]
 output: text
+resumeOutput: text

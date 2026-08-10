@@ -1,8 +1,19 @@
 # Gemini CLI (Google). ACP native per matriks riset
 # docs/research/coding-agents-matriks-integrasi-multi-sumber.md baris 3.
+#
+# Dijalankan terhadap gemini-cli 0.54.4 pada 10 Agustus 2026. `--experimental-acp`
+# masih diterima tetapi bendera itu sudah usang — `gemini --help` menandainya
+# "(deprecated, use --acp instead)" — jadi barisnya pindah ke `--acp`. Handshake
+# ACP-nya nyata: `initialize` dijawab `protocolVersion: 1` beserta daftar
+# `authMethods`, jadi perintah dan bendera di bawah benar.
+#
+# belum diverifikasi — satu giliran penuh. `scripts/smoke-cli.mjs gemini`
+# berhenti di "Gemini API key is missing or not configured": Gemini CLI hanya
+# menerima login Google, kunci Gemini Developer API, atau Vertex AI, dan mesin
+# ini tidak punya ketiganya. Yang belum terbukti adalah modelnya menjawab,
+# bukan cara memanggilnya.
 id: gemini
 driver: acp
 acp:
   command: gemini
-  # belum diverifikasi — flag ACP dari dokumentasi Gemini CLI; belum diuji di mesin ini
-  args: ["--experimental-acp"]
+  args: ["--acp"]
