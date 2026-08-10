@@ -107,7 +107,7 @@ import MobileToc from '../components/MobileToc.astro'
             <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">03</span>
             <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Claude Code and Telegram</h2>
           </div>
-          <p style="margin: 0 0 22px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Init takes any one of the seven presets it finds on PATH; Claude Code, through the official ACP adapter, is the route ever run here against a live binary. Telegram supplies transport and identity, and the agent keeps its runtime, tools, and model access.</p>
+          <p style="margin: 0 0 22px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Init takes any one of the seven presets it finds on PATH; four of them have been run here against a live binary, and Claude Code through the official ACP adapter is the shortest of the four. Telegram supplies transport and identity, and the agent keeps its runtime, tools, and model access.</p>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: 14px;">
             {agents.map((a) => (
               <div style={`padding: 24px 26px; background: ${a.bg}; border: 1px solid ${a.border}; border-radius: 14px; display: flex; flex-direction: column; gap: 12px; animation: ck-rise linear both; animation-timeline: view(); animation-range: ${a.range};`}>

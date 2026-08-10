@@ -74,21 +74,25 @@ export const topics = [
   { glyph: '⊘', name: 'toko-api · restructure docs', id: '#a81', color: '#CB86DB', ink: '#5D666F', bg: '#0C1116', bar: 0, delay: '0s', range: r(5, 3.5, 30) },
 ]
 
-// comp:509 lists 13 agents plus "+ 15 more" with no status. Two agents are
-// verified live: Claude Code over ACP, and Codex over the CLI route since
-// 10 August 2026. `presets/agents/` ships a preset for five of the others since
-// v0.4 — flags transcribed, marked unverified inside each file — so their rows
-// read "preset", a file that exists, not a claim it was run here. Codex's own
-// transcription was wrong on two flags until a live run found them.
+// comp:509 lists 13 agents plus "+ 15 more" with no status. Four agents are
+// verified live as of 10 August 2026, over five routes: Claude Code over ACP
+// and over its CLI route, Codex and aider on the CLI, goose over ACP. Each of
+// those runs is two turns and a resume that recalls a number from the first.
+// Only three of the four appear below: the comp draws thirteen names and aider
+// is not among them, and adding a fourteenth row would redraw a grid the comp
+// decided. `presets/agents/` is the list that is complete, and it holds seven.
 //
-// Codex keeps that row after 1.1.0. `scripts/smoke-cli.mjs codex` drives the
-// real binary through the real preset, which is more than transcription, and
-// every run of it so far has ended on a spent usage quota without completing a
-// turn. "verified" is a claim an agent earns by answering, so it stays "preset"
-// until one does.
+// The three that stay "preset" reached an ACP `initialize` on the same day and
+// stopped at "Authentication required" — a full turn on amp, cursor, or gemini
+// needs a paid account this machine does not have. "verified" is a claim an
+// agent earns by answering a turn, and a handshake is not one, so the row reads
+// "preset": a file that exists, not a claim it was run here. The reason to keep
+// reading those rows as unproven is that running an agent is what breaks its
+// preset — codex was wrong on two resume flags and aider on four, and only the
+// run showed it.
 export const agents = [
   'Claude Code · verified', 'Codex CLI · verified', 'Gemini CLI · preset', 'Cursor · preset',
-  'Cline · roadmap', 'Goose · preset', 'Amp · preset', 'Copilot CLI · roadmap',
+  'Cline · roadmap', 'Goose · verified', 'Amp · preset', 'Copilot CLI · roadmap',
   'Devin · roadmap', 'Factory Droid · roadmap', 'Auggie · roadmap',
   'OpenHands · roadmap', 'Qwen Code · roadmap', 'ACP keeps the path open',
 ].map((n, i) => ({ n, range: r(i, 1.6, 24) }))
@@ -101,7 +105,7 @@ export const layers = [
     tag: 'ACP · PRIMARY',
     tone: '#FF7A5E',
     title: 'Claude first, one protocol',
-    body: 'ACP over stdio carries streaming updates, permission requests, cancellation, and persisted sessions. Claude Code is the one agent verified live on it.',
+    body: 'ACP over stdio carries streaming updates, permission requests, cancellation, and persisted sessions. Claude Code and goose are verified live on it.',
     bg: '#12100F',
     border: '#2B1612',
     delay: '0s',
@@ -111,7 +115,7 @@ export const layers = [
     tag: 'CLI · FALLBACK',
     tone: '#7A848F',
     title: 'A YAML file, not code',
-    body: 'Agents without ACP are driven by a declarative preset, one file in presets/agents/. Codex is verified live on this route.',
+    body: 'Agents without ACP are driven by a declarative preset, one file in presets/agents/. Codex, aider, and Claude Code are verified here.',
     bg: '#0C1116',
     border: '#171C22',
     delay: '1.3s',

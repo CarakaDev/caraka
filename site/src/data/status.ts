@@ -20,15 +20,17 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.1.2', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.2.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
-  // Seven presets load; two routes have completed a turn against a live agent
-  // here. Claude Code over ACP, and Codex over the CLI route on 10 August 2026,
-  // which took two corrections to its preset to get there — the count of proven
-  // agents is two. Three channels since v0.6 — Telegram,
-  // Discord, WhatsApp — and WhatsApp counts as shipped code, not as a linked
-  // number: none has ever been linked, which the cards below state in as many
-  // words.
+  // Seven presets load; five routes across four agents have completed a turn
+  // against a live binary here, all on 10 August 2026 — Claude Code over ACP
+  // and over its CLI route, Codex and aider on the CLI, goose over ACP. Two of
+  // those presets were wrong until the run found them, so the count of proven
+  // agents is four and the argument for reading the other three as unproven is
+  // that running them is what breaks them. Three channels since v0.6 —
+  // Telegram, Discord, WhatsApp — and WhatsApp counts as shipped code, not as a
+  // linked number: none has ever been linked, which the cards below state in as
+  // many words.
   { n: '3', label: 'CHANNELS', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
   { n: '1', label: 'PRIVATE OPERATOR', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
 ]
@@ -69,7 +71,7 @@ interface Phase {
 export const phases: Phase[] = [
   { n: '0', title: 'Technical spike', dur: '1 week', ...shipped,
     q: 'Do the three foundations behave the way the documentation says?',
-    gate: 'ACP permission requests fire for writes on Claude Code, createForumTopic works in a private chat with no admin rights, and sendRichMessage renders as specified. The permission hook was answered by a live smoke run; the other two still wait on a bot someone is typing to.',
+    gate: 'ACP permission requests fire for writes on Claude Code, createForumTopic works in a private chat with no admin rights, sendRichMessage renders as specified, and the compile latency has a measured number. The permission hook was answered by a live smoke run and the compile latency by a live Titen; the other two still wait on a bot someone is typing to.',
     range: r(0, 3, 26) },
   { n: '1', title: 'MVP dogfood · v0.1', dur: '3 weeks', ...shipped,
     q: 'Is this actually useful in daily work?',
@@ -97,7 +99,7 @@ export const phases: Phase[] = [
     range: r(6, 3, 26) },
   { n: '7', title: 'Public release · v1.0', dur: '2 weeks', live: true, ...shipped,
     q: 'Is it ready to be trusted by strangers?',
-    gate: 'Every goal in prd.md is met and measured. Fifteen agents are not covered: seven presets ship and two have answered a live binary here, Claude Code over ACP and Codex over the CLI route. Taking the release to the Indonesian developer community and to the ACP ecosystem is the step nothing in a repository can perform.',
+    gate: 'Every goal in prd.md is met and measured. Fifteen agents are not covered: seven presets ship and four have answered a live binary here — Claude Code on both its routes, Codex and aider on the CLI, goose over ACP. Taking the release to the Indonesian developer community and to the ACP ecosystem is the step nothing in a repository can perform.',
     range: r(7, 3, 26) },
 ]
 
@@ -117,6 +119,28 @@ export const releases = [
         'Watch the dashboard swap a panel in a real browser with the CSP live',
         'Run fourteen days on a real WhatsApp number with no ban and no manual relink, or publish the honest finding that makes Cloud API the default',
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
+      ] },
+    ] },
+  { v: '1.2.0', state: 'unproven', date: '10 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'CHANGED', tone: '#6FB9F0', items: [
+        'The Titen adapter had never spoken to a Titen. It was written from the route table in docs/design.md and tested against a mock built from the same table, so the test agreed with the document and the document was wrong. A Titen 0.7.3 was installed on 10 August 2026 and refused every field: 7717 against the 8787 titen serve binds, scope and text where it reads subject_id and content, budgetTokens where it reads max_tokens, a free-string kind against a closed enum, a required source object left out, and no authorization header at all against a server that answers 401 everywhere memory goes',
+        'caraka doctor probed a port nothing was listening on and a path that answers 404 on the port Titen does listen on. Neither existed, so the memory row was red on every install where Titen was running correctly and green on none. It makes a credentialed call to a read-only /v1 route now, and a missing key is its own failing row with the command that fixes it',
+        'Four agents have answered a live binary, over five routes, instead of two: Claude Code over ACP and over its CLI route, Codex and aider 0.86.2 on the CLI, goose 1.45.0 over ACP. The aider preset gained --no-pretty, --no-check-update, --no-auto-commits and a resume line, and the gemini preset moved off the deprecated --experimental-acp — corrections that only running them could produce',
+        'Nine documents under docs/ have English pairs, up from seven. The other thirty-six say in their own header that they are Indonesian by decision: an accepted decision record is not rewritten, research is provenance for a decision already made, and a specification in two languages is two specifications that will disagree',
+      ] },
+      { label: 'ADDED', tone: '#8EEE98', items: [
+        'CARAKA_TITEN_API_KEY, deliberately not Titen’s own TITEN_API_KEY. claudeEnvironment() strips the CARAKA_ prefix and nothing else, so a key under Titen’s name would be inherited by every spawned coding agent along with the 18 MCP tools, 12 of which write or delete outside the scrubber',
+      ] },
+      { label: 'FIXED', tone: '#FFD67E', items: [
+        '/memori reported memory unreachable against a healthy Titen. It compiles with an empty task, which the local provider reads as "the newest rows" and Titen refuses outright; the adapter substitutes a listing task and the interface contract is unchanged',
+        'Which trust window is in force was decided at random when two of them opened inside the same millisecond. A workspace can hold two open trusted rows, and the query that picks one ordered by a timestamp alone — a tie the database is free to break either way, between rows that can differ in principal. It breaks toward the later insert now. Found by running the gate on a second machine, where the test failed on half its runs and here on none',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'Under Titen an observation never surfaces in a compile. compile returns consolidated claims, claims come from a consolidations route that demands the claims themselves, and nothing in Caraka calls it — so a subject with four stored observations compiles to zero items, which is the measured result rather than the feared one. The compile latency, 4.9 ms median over ten consecutive calls, is a floor for the same reason: the compile that produced it selected nothing',
+        'Three of the seven presets have never completed a turn here. amp, cursor, and gemini answered initialize over ACP and stopped at "Authentication required", because a full turn on each needs a paid account this machine does not have. All three still carry belum diverifikasi inside their own files, and a handshake is not a turn',
+        'src/ measures 8,498 lines against the ~8,000 line ceiling in AGENTS.md, up 149 in this release and 618 since v1.0. That is over the budget, not near it, and the fold that pays for it is work owed',
+        'Every field gate is still open, the same nine listed above. Four of them cannot be closed from a repository at all, because each needs other people or calendar time: five recorded setup sessions, twenty beta developers, fourteen days on a real WhatsApp number, and the launch. Phase 0’s two remaining spikes need a live Telegram bot and a person watching their own client',
       ] },
     ] },
   { v: '1.1.2', state: 'unproven', date: '10 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),

@@ -330,6 +330,17 @@ test.describe('the comps still decide the layout', () => {
     // 8 August 2026, Chromium at 1440x900, against `rm -rf dist && npm run
     // build`, twice, identical both times.
     //
+    // v1.2.0 moved four. /status +1071 to 13648 is the second-largest move this
+    // page has taken: the 1.2.0 card carries CHANGED, ADDED, FIXED, and LIMITED,
+    // and the CHANGED group alone runs four entries because the Titen adapter
+    // was wrong in four separate ways. /install +25 and / +15: the count of agents
+    // run against a live binary went from one to four on each, which is a
+    // longer clause than the one it replaced. /brand/readme +24: the repo
+    // card's status chip and the board's blockquote both took the same count.
+    // /docs and /compare held — their edits landed inside sentences that were
+    // already there. Measured 10 August 2026, Chromium at 1440x900, against
+    // `rm -rf dist && npm run build`, twice, identical both times.
+    //
     // v1.1.2 moved one: /status +203 to 12577, for a patch card carrying a
     // single FIXED group. Measured 10 August 2026, Chromium at 1440x900,
     // against `rm -rf dist && npm run build`, twice, identical both times.
@@ -354,15 +365,15 @@ test.describe('the comps still decide the layout', () => {
     // / and /compare held — their edits landed inside cells and chips that were
     // already there.
     const EXPECTED: Record<string, number> = {
-      // v1.1 copy — measured from the site (see above)
-      '/': 6580,
+      // v1.2 copy — measured from the site (see above)
+      '/': 6595,
       '/docs': 7314,
       '/compare': 5931,
-      '/install': 5440,
+      '/install': 5465,
       '/security': 6147,
       '/whatsapp-risk': 6857,
-      '/status': 12577,
-      '/brand/readme': 5557,
+      '/status': 13648,
+      '/brand/readme': 5581,
       // still measured against the comp
       '/story': 5734,
       '/brand': 10177,
