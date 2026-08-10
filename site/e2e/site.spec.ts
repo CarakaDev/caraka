@@ -330,6 +330,10 @@ test.describe('the comps still decide the layout', () => {
     // 8 August 2026, Chromium at 1440x900, against `rm -rf dist && npm run
     // build`, twice, identical both times.
     //
+    // v1.1.2 moved one: /status +203 to 12577, for a patch card carrying a
+    // single FIXED group. Measured 10 August 2026, Chromium at 1440x900,
+    // against `rm -rf dist && npm run build`, twice, identical both times.
+    //
     // v1.1.1 moved one: /status +339 to 12374, for the 1.1.1 card. It is a
     // patch card with two groups and no new open gate, which is why it costs a
     // quarter of what 1.1.0 did. / held: the sentence naming Codex moved off
@@ -357,7 +361,7 @@ test.describe('the comps still decide the layout', () => {
       '/install': 5440,
       '/security': 6147,
       '/whatsapp-risk': 6857,
-      '/status': 12374,
+      '/status': 12577,
       '/brand/readme': 5557,
       // still measured against the comp
       '/story': 5734,

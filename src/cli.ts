@@ -1,4 +1,5 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
+import { createRequire } from "node:module";
 import { spawnSync } from "node:child_process";
 import { existsSync, realpathSync } from "node:fs";
 import { chmod, mkdir, readFile, rm, rmdir, stat, writeFile } from "node:fs/promises";
@@ -31,7 +32,14 @@ import { TitenMemory } from "./memory/titen.js";
 import { isServiceKind, serviceUnit } from "./service.js";
 import { Store } from "./store/db.js";
 
-const VERSION = "1.1.0";
+// Read rather than repeated. This was `const VERSION = "1.1.0"` until 1.1.1
+// shipped to npm announcing itself as 1.1.0: `npm version` moves package.json
+// and nothing else, so a hand-kept copy drifts the moment a release does not
+// go through the hand that keeps it. `package.json` is in every tarball npm
+// builds regardless of `files`, and it sits one level above both `dist/cli.js`
+// and `src/cli.ts`, so the same path resolves in a published install and in a
+// checkout.
+const VERSION = createRequire(import.meta.url)("../package.json").version as string;
 // The preset a session runs until `/switch` names another.
 const DEFAULT_AGENT = "claude-code";
 

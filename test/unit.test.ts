@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { chmod, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { request as httpRequest } from "node:http";
@@ -2538,6 +2539,16 @@ test("whatsapp costs no dependency either, and baileys is one import deeper", as
   assert.match(manifest.peerDependencies["@whiskeysockets/baileys"] ?? "", /^\d+\.\d+\.\d+$/);
   assert.equal(manifest.peerDependenciesMeta["@whiskeysockets/baileys"]?.optional, true);
   assert.equal(manifest.peerDependencies["@whiskeysockets/baileys"], BAILEYS_VERSION);
+  // 1.1.1 went to npm announcing itself as 1.1.0, because the version was a
+  // second copy in `src/cli.ts` and `npm version` only moves the first. It is
+  // read from the manifest now; this asserts the reading, so a build that
+  // cannot find the file fails here rather than in a user's terminal.
+  const printed = execFileSync(
+    process.execPath,
+    [fileURLToPath(new URL("../bin/caraka.mjs", import.meta.url)), "--version"],
+    { encoding: "utf8" },
+  ).trim();
+  assert.equal(printed, manifest.version);
 
   const cli = await readFile(new URL("../src/cli.ts", import.meta.url), "utf8");
   assert.equal(cli.includes('from "./channels/whatsapp.js"'), false);
