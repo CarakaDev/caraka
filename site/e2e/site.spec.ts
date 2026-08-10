@@ -330,6 +330,14 @@ test.describe('the comps still decide the layout', () => {
     // 8 August 2026, Chromium at 1440x900, against `rm -rf dist && npm run
     // build`, twice, identical both times.
     //
+    // v1.1.1 moved one: /status +339 to 12374, for the 1.1.1 card. It is a
+    // patch card with two groups and no new open gate, which is why it costs a
+    // quarter of what 1.1.0 did. / held: the sentence naming Codex moved off
+    // the ACP card, where it had wrapped a line and put the page 22 past its
+    // comp, and onto the CLI card, which is the route Codex was verified on.
+    // Measured 10 August 2026, Chromium at 1440x900, against `rm -rf dist &&
+    // npm run build`, twice, identical both times.
+    //
     // v1.1 moved five, measured the same way and on the same viewport, twice,
     // identical both times. /status +1222 to 12035: the 1.1.0 card, which
     // carries three groups rather than two. /docs +509: a policy-mode row on
@@ -349,7 +357,7 @@ test.describe('the comps still decide the layout', () => {
       '/install': 5440,
       '/security': 6147,
       '/whatsapp-risk': 6857,
-      '/status': 12035,
+      '/status': 12374,
       '/brand/readme': 5557,
       // still measured against the comp
       '/story': 5734,
