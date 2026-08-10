@@ -1,5 +1,7 @@
 # Tech Stack
 
+**English:** this document is Indonesian only, and stays that way because it is internal specification. English documentation starts at [`../README.md`](../README.md).
+
 **Produk:** Caraka · **Versi:** 0.2 · **Tanggal:** 7 Agustus 2026
 
 Setiap pilihan di bawah punya alasan dan alternatif yang ditolak. Kriteria utama: **ukuran kecil, sedikit dependensi, mudah dipasang oleh developer awam, dan tidak menambah permukaan serangan.**

@@ -188,7 +188,7 @@ const en = {
   "cli.uninstallDone": "Removed {count} path(s). Caraka is gone from this machine.",
   "cli.languagePrompt": "Interface language [en/id] ({fallback}): ",
   "cli.memoryOffer":
-    "\nMemory. Titen keeps what Caraka learns between runs, served locally on 127.0.0.1:7717.\nInstall it now with `curl -fsSL https://titen.dev/install.sh | bash`? [y/N]: ",
+    "\nMemory. Titen runs locally on 127.0.0.1:8787 and stores what Caraka observes. Reading it back stays empty until Titen holds claims, and nothing here writes those yet. Its routes need a key: `titen bootstrap` prints one, and Caraka reads it from CARAKA_TITEN_API_KEY.\nInstall it now with `curl -fsSL https://titen.dev/install.sh | bash`? [y/N]: ",
   "cli.memoryLocal": "Memory provider: local (SQLite inside Caraka's own database).",
   "cli.memoryTiten": "Memory provider: titen.",
   "cli.memoryInstallFailed": "The Titen install did not finish. Memory falls back to local.",
@@ -472,7 +472,7 @@ const id: Record<MessageKey, string> = {
   "cli.uninstallDone": "{count} path dihapus. Caraka hilang dari mesin ini.",
   "cli.languagePrompt": "Bahasa antarmuka [en/id] ({fallback}): ",
   "cli.memoryOffer":
-    "\nMemori. Titen menyimpan apa yang Caraka pelajari antar-run, berjalan lokal di 127.0.0.1:7717.\nPasang sekarang dengan `curl -fsSL https://titen.dev/install.sh | bash`? [y/N]: ",
+    "\nMemori. Titen berjalan lokal di 127.0.0.1:8787 dan menyimpan apa yang Caraka amati. Pembacaan kembali masih kosong sampai Titen punya claim, dan di sini belum ada yang menulisnya. Rutenya butuh kunci: `titen bootstrap` mencetak satu, dan Caraka membacanya dari CARAKA_TITEN_API_KEY.\nPasang sekarang dengan `curl -fsSL https://titen.dev/install.sh | bash`? [y/N]: ",
   "cli.memoryLocal": "Provider memori: local (SQLite di database Caraka sendiri).",
   "cli.memoryTiten": "Provider memori: titen.",
   "cli.memoryInstallFailed": "Pemasangan Titen tidak selesai. Memori memakai local.",

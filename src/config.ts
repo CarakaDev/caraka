@@ -6,8 +6,9 @@ import { parse, stringify } from "yaml";
 import { z } from "zod";
 import { POLICY_MODES, type PolicyMode } from "./core/security.js";
 import type { Language } from "./i18n.js";
-
-const TITEN_ENDPOINT = "http://127.0.0.1:7717";
+// The adapter owns the number, because the adapter is what was run against a
+// live Titen. A second copy here is what shipped 7717 to every install.
+import { DEFAULT_ENDPOINT as TITEN_ENDPOINT } from "./memory/titen.js";
 
 // One entry per repository the gateway serves (`docs/erd.md` workspace table).
 // `driver` forces a route and `agent` names the preset new sessions start on;

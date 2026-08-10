@@ -46,9 +46,12 @@ import {
 export const LOOPBACK_HOSTS = ["127.0.0.1", "localhost", "[::1]", "::1"];
 
 /**
- * Chosen next to Titen on 127.0.0.1:7717 so the local Caraka services sit side
- * by side, and far below the ephemeral range Linux allocates from (32768 on the
- * machine this was measured on, 8 August 2026).
+ * Chosen to sit next to Titen, and far below the ephemeral range Linux
+ * allocates from (32768 on the machine this was measured on, 8 August 2026).
+ * The neighbour turned out not to be one: Titen's own default is 8787, and
+ * 7717 was a number this repository had written down rather than measured
+ * (`docs/roadmap.md`, phase 0). The port stays 7718 because it is what shipped
+ * and nothing about it was wrong — only the reason given for it was.
  */
 export const DEFAULT_PORT = 7718;
 

@@ -178,7 +178,10 @@ Also how it is. Force-push, `rm -rf`, database migrations, and deploys always as
 ## Memory
 
 **`memory_degraded` in the log**
-`recall` went past 500 ms and was skipped. Replies keep working. Check that Titen is alive: `curl 127.0.0.1:7717/health`.
+`recall` went past 500 ms and was skipped. Replies keep working. Check that Titen is alive: `curl 127.0.0.1:8787/healthz`. The `/health` path answers 404, and port 7717, which this line named through v1.1.2, was never one Titen served.
+
+**Titen answers and memory is still empty**
+`/healthz` needs no key; every other route answers `401 UNAUTHENTICATED` without one. Take the key `titen bootstrap` prints and export it as `CARAKA_TITEN_API_KEY` in the environment that runs Caraka — not `TITEN_API_KEY`, because the `CARAKA_` prefix is what keeps the key from being inherited by a spawned coding agent. `caraka doctor` probes a credentialed route, so a missing key shows as a failing row with the command on it.
 
 **Titen unreachable**
 Run `titen serve`. If you are not using it, change the provider:

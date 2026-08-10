@@ -1,5 +1,7 @@
 # API & Extension Contracts
 
+**English:** this document is Indonesian only, and stays that way because it is internal specification. English documentation starts at [`../README.md`](../README.md).
+
 **Produk:** Caraka · **Versi:** 1.0 · **Tanggal:** 7 Agustus 2026
 
 Kontrak yang dilihat kontributor. Arsitektur lengkapnya di `design.md`; dokumen ini fokus pada permukaan yang perlu diimplementasikan orang lain.

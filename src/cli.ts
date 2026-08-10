@@ -28,7 +28,7 @@ import { CliDriver } from "./drivers/cli.js";
 import { loadPresets, resolveCommand, type AgentPreset } from "./drivers/preset.js";
 import { defaultLanguage, translator, type Language, type Translate } from "./i18n.js";
 import { LocalMemory } from "./memory/local.js";
-import { TitenMemory } from "./memory/titen.js";
+import { TitenMemory, titenApiKey } from "./memory/titen.js";
 import { isServiceKind, serviceUnit } from "./service.js";
 import { Store } from "./store/db.js";
 
@@ -150,6 +150,9 @@ export function startupSecrets(loaded: {
     loaded.whatsappVerify ?? "",
     loaded.whatsappAppSecret ?? "",
     loaded.approvalKey.toString("base64url"),
+    // The memory key is a secret this process holds like any other: it must not
+    // reach a log line or a chat, whichever provider is configured.
+    titenApiKey(),
   ].filter((secret) => secret.length > 0);
 }
 
@@ -620,12 +623,25 @@ async function doctor(args: string[] = []) {
   // choice, not a fault, so its row can never turn the exit code red.
   const memory = loaded.config.memory;
   if (memory.provider === "titen") {
-    const healthy = await fetch(new URL("/health", memory.endpoint), {
+    // Not `/healthz`, which answers 200 without a key while every route memory
+    // actually uses answers 401 — a green row over an install where each
+    // observe and each compile fails. This route is read-only and needs no real
+    // claim: with the key it answers 404, without it 401 (Titen 0.7.3, 10
+    // August 2026). Nothing reachable is 0.
+    const key = titenApiKey();
+    const status = await fetch(new URL("/v1/claims/caraka-doctor/evidence", memory.endpoint), {
       signal: AbortSignal.timeout(2000),
+      headers: key ? { authorization: `Bearer ${key}` } : {},
     })
-      .then((response) => response.ok)
-      .catch(() => false);
-    check("Titen memory", healthy, "run `titen serve`");
+      .then((response) => response.status)
+      .catch(() => 0);
+    check(
+      "Titen memory",
+      status !== 0 && status !== 401,
+      status === 401
+        ? "export CARAKA_TITEN_API_KEY with the key `titen bootstrap` printed"
+        : "run `titen serve`",
+    );
     let loopback = false;
     try {
       loopback = LOOPBACK_HOSTS.includes(new URL(memory.endpoint).hostname);

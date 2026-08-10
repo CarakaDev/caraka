@@ -178,7 +178,10 @@ Juga memang begitu. Force-push, `rm -rf`, migrasi database, dan deploy selalu me
 ## Memori
 
 **`memory_degraded` di log**
-`recall` melewati 500 ms lalu dilewati. Balasan tetap jalan. Cek Titen hidup: `curl 127.0.0.1:7717/health`.
+`recall` melewati 500 ms lalu dilewati. Balasan tetap jalan. Cek Titen hidup: `curl 127.0.0.1:8787/healthz`. Jalur `/health` menjawab 404, dan port 7717 yang tertulis di sini sampai v1.1.2 tidak pernah dilayani Titen.
+
+**Titen menjawab tapi memori tetap kosong**
+`/healthz` tidak butuh kunci; setiap rute lain menjawab `401 UNAUTHENTICATED` tanpanya. Ambil kunci dari `titen bootstrap`, lalu ekspor sebagai `CARAKA_TITEN_API_KEY` di environment yang menjalankan Caraka — bukan `TITEN_API_KEY`, karena awalan `CARAKA_` yang membuat kunci itu tidak diwariskan ke coding agent yang di-spawn. `caraka doctor` menyelidik rute berkredensial, jadi kunci yang hilang muncul sebagai baris merah dengan perintahnya.
 
 **Titen tidak terjangkau**
 Jalankan `titen serve`. Bila tidak dipakai, ganti provider:

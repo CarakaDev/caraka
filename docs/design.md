@@ -1,5 +1,7 @@
 # Design — Arsitektur Teknis
 
+**English:** this document is Indonesian only, and stays that way because it is internal specification. English documentation starts at [`../README.md`](../README.md).
+
 **Produk:** Caraka · **Versi:** 0.2 · **Tanggal:** 7 Agustus 2026
 
 > **v0.2 menambahkan:** lapisan topic/thread (sesi ber-tab), rendering kaya, dan Titen sebagai provider memory default. Lihat §11–§13.
@@ -363,10 +365,12 @@ Pemetaan ke API Titen:
 | Operasi kita | Endpoint Titen |
 |---|---|
 | `observe` | `POST /v1/observations` (append-only, content hash) |
-| konsolidasi | `POST /v1/consolidations` — *rules first, model only if it must* |
 | `compile` | `POST /v1/context/compile` — scope dulu, lalu ranking ke dalam budget |
 | `feedback` | `POST /v1/context/:id/feedback` |
 | `trace` | `GET /v1/claims/:id/evidence` |
+| `forget` (per id) | `DELETE /v1/observations/:id` |
+
+Tabel ini dulu memuat satu baris lagi, *konsolidasi → `POST /v1/consolidations`*, dan baris itu membuat perjalanan observe→recall terbaca otomatis. Ia tidak pernah menjadi operasi Caraka: `MemoryProvider` tidak punya method konsolidasi dan adapter tidak pernah memanggil rutenya. **Di bawah Titen, sebuah observation hanya-tulis sampai ada yang memasok claim.** Diukur pada 10 Agustus 2026 terhadap Titen 0.7.3: `POST /v1/consolidations` menuntut `claims[].statement` beserta `claims[].sources[].relation` dari himpunan tertutup `supports`/`contradicts`/`qualifies`, dan sampai satu claim disuapkan dengan tangan, `compile` mengembalikan `items: []` untuk subject yang sudah menyimpan empat observation. `/ingat` tetap menjawab `Ingatan disimpan: {id}`, karena yang disimpan memang tersimpan; yang belum ada adalah jalan pulangnya.
 
 Apa yang **kita hapus** dari lingkup karena Titen sudah mengerjakannya: skoring hybrid BM25+vektor, dedup, TTL/decay, `superseded_by`, dan pemotongan budget injeksi. Semuanya menjadi parameter, bukan kode.
 
@@ -374,7 +378,7 @@ Apa yang **kita hapus** dari lingkup karena Titen sudah mengerjakannya: skoring 
 
 Provider `local` (fallback): SQLite + FTS5 saja, tanpa embedding, tanpa claim graph. Cukup untuk mengingat preferensi dasar bila Titen tidak terpasang.
 
-Opsional: coding agent user dapat disambungkan **langsung** ke MCP Titen di `/mcp` lewat daftar `mcpServers` yang kita teruskan saat `session/new` — agent membaca memori sendiri, tanpa perantara.
+Gateway **tidak** meneruskan `mcpServers` untuk memori. Rencana itu diukur lalu ditolak pada 10 Agustus 2026 (`done/mcp-titen-passthrough/spec.md`): MCP Titen membawa 18 tool, 12 di antaranya menulis atau menghapus, semuanya di luar scrubber dan di luar budget 6 item / 800 token yang menjadi alasan `compile` sisi gateway ada. Pemilik yang menginginkannya memasangnya sendiri, sekali, dengan `claude mcp add --transport http titen http://127.0.0.1:8787/mcp`, dan sesi ACP yang Caraka buka sesudahnya membawanya tanpa Caraka ikut memutuskan.
 
 ---
 

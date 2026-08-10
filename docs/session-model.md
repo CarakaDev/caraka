@@ -1,5 +1,7 @@
 # Session Model — "tab" untuk coding agent
 
+**English:** this document is Indonesian only, and stays that way because it is internal specification. English documentation starts at [`../README.md`](../README.md).
+
 **Produk:** Caraka · **Versi:** 0.1 · **Tanggal:** 7 Agustus 2026
 **Riset pendukung:** `docs/research/telegram-bot-api-2026-core-telegram-botnews.md`, `docs/research/sesi-topic-thread-telegram-discord.md`
 
@@ -101,6 +103,8 @@ Judul diperbarui **satu kali** setelah agent memberi respons pertama, bila agent
 | Perintah global (`/ws`, `/status`, `/memori`) | Selalu dijawab di General, dari topic mana pun ia dikirim. |
 
 **Prinsip:** *sesi tidak pernah berpindah topic, dan topic tidak pernah dipakai ulang oleh sesi lain.* Ini yang membuat riwayat dapat dipercaya.
+
+**Satu pengecualian, di sisi agent.** Isolasi di atas berlaku untuk apa yang Caraka simpan. Agent yang menyimpan riwayatnya sendiri di direktori kerja tidak ikut terisolasi, karena setiap sesi pada satu workspace dijalankan dengan cwd yang sama. Aider adalah kasusnya: ia tidak punya id thread, resume-nya `--restore-chat-history` membaca `.aider.chat.history.md` dari cwd, jadi dua sesi Caraka pada workspace yang sama berbagi satu berkas dan giliran lanjutan salah satunya bisa memuat transcript yang lain (`presets/agents/aider.yaml`). Preset dengan id thread — Codex, Claude Code — tidak punya masalah ini.
 
 ---
 
