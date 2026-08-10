@@ -1,5 +1,7 @@
 # Riset: Matriks integrasi per coding agent
 
+**English:** this document is Indonesian only, and stays that way because it is research kept as provenance for a decision already made. English documentation starts at [`../../README.md`](../../README.md).
+
 **Tanggal riset:** 7 Agustus 2026
 **Sumber:** ACP Registry (agentclientprotocol.com), OpenClaw `gateway/cli-backends` & `tools/acp-agents`, jetbrains.com/acp, morphllm.com/agent-client-protocol, byteiota.com, github.com/formulahendry/vscode-acp, ai-sdk.dev/providers/community-providers/acp, dokumentasi masing-masing vendor.
 

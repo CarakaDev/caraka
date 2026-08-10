@@ -1,5 +1,7 @@
 # ADR-0006 — Telegram sebagai channel pertama dan satu-satunya di v1.0
 
+**English:** this document is Indonesian only, and stays that way because an accepted decision record is never rewritten. English documentation starts at [`../../README.md`](../../README.md).
+
 **Status:** Diterima · **Tanggal:** 7 Agustus 2026
 **Sebagian digantikan:** keputusan "satu-satunya channel di v1.0" digantikan [ADR-0008](0008-discord-sebagai-channel-kedua.md) pada 8 Agustus 2026. Alasan memilih Telegram lebih dulu, dan seluruh konsekuensinya, tetap berlaku.
 

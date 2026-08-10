@@ -19,7 +19,7 @@
   <a href="README.id.md">🇮🇩 Bahasa Indonesia</a>
 </p>
 
-> **v1.0.** Telegram, Discord, and WhatsApp reach the coding agent on your machine over one contract, with seven agent presets, memory, more than one workspace, and a read-only dashboard on loopback. Claude Code is the only agent ever run here against a live binary, no Discord credential and no WhatsApp number has ever been used here, and not one field gate has been answered by anyone, the author included. Attachments are still absent. The npm registry holds 0.2.1 until the owner publishes.
+> **v1.0.** Telegram, Discord, and WhatsApp reach the coding agent on your machine over one contract, with seven agent presets, memory, more than one workspace, and a read-only dashboard on loopback. Four of the seven agents have been run here against a live binary, no Discord credential and no WhatsApp number has ever been used here, and not one field gate has been answered by anyone, the author included. Attachments are still absent. The npm registry holds 0.2.1 until the owner publishes.
 
 ---
 
@@ -56,7 +56,7 @@ It has **no agent loop, no tools, no model provider, and no plugin marketplace.*
 
 ## Install
 
-Node.js 22+, Git, and one of the seven coding agents Caraka has a preset for, signed in. Claude Code is the route verified here.
+Node.js 22+, Git, and one of the seven coding agents Caraka has a preset for, signed in. Claude Code, Codex, aider, and goose are the ones verified here.
 
 ```bash
 claude auth status
@@ -127,7 +127,7 @@ Permission requests arrive as **Allow once** and **Reject** buttons. Each callba
 
 ## Why it's small
 
-One protocol does the heavy lifting. [ACP](https://agentclientprotocol.com) is the LSP-equivalent for coding agents: JSON-RPC 2.0 over stdio, created by Zed, co-led by JetBrains, with 28+ agents in its registry. Writing **one** ACP client is what keeps the door open to the rest of them, and adding an agent on the CLI route is one YAML file in `presets/agents/` rather than a change to the core. Seven presets ship; six of them are transcribed from research and have never been run here.
+One protocol does the heavy lifting. [ACP](https://agentclientprotocol.com) is the LSP-equivalent for coding agents: JSON-RPC 2.0 over stdio, created by Zed, co-led by JetBrains, with 28+ agents in its registry. Writing **one** ACP client is what keeps the door open to the rest of them, and adding an agent on the CLI route is one YAML file in `presets/agents/` rather than a change to the core. Seven presets ship; three of them are transcribed from research and have never been run here.
 
 ACP also ships `session/request_permission`, so the approval system is not something Caraka invents. It renders the protocol's own permission requests as buttons in your chat.
 
@@ -170,11 +170,11 @@ That is why this project has approvals and an audit trail. See [docs/brand.md](d
 
 **Proof that it works for anyone else.** Every phase of [roadmap.md](docs/roadmap.md) carries shipped code, and every phase still holds a gate that no repository can answer: a week of daily use, five recorded setup sessions, an A/B across twenty tasks, twenty beta developers, fourteen days on a real WhatsApp number. Each one was moved past its release by the owner's decision, with the date written down, rather than ticked. Reaching 1.0 says the code landed; it says nothing about use.
 
-**Live verification of most of the surface.** Claude Code is the only agent ever started against a live binary here, and only through its ACP route. No live Discord credential and no WhatsApp number has ever been used: every check on both answers a fake transport. Six of the seven presets are transcribed rather than run. Five of them say `belum diverifikasi` inside their own files; the codex flags are copied from the documented block with no marker on them.
+**Live verification of most of the surface.** Four of the seven presets have answered a live binary here — Claude Code on both its routes, Codex and aider on the CLI, goose over ACP — and every one of the four needed the run: two of them shipped flags the binary rejects, and one shipped a security control that had silently stopped applying. The other three got as far as an ACP handshake here and no further, because a full turn needs a paid account nobody here has, and all three say `belum diverifikasi` inside their own files. No live Discord credential and no WhatsApp number has ever been used: every check on both answers a fake transport.
 
 **Attachments**, and an MCP inbox for IDE agents. Both are still specified and not built.
 
-**Memory** did ship, at v0.3, through [Titen](https://titen.dev) — agent memory that never flattens a conclusion into its evidence, with deterministic claim extraction and no model in the loop — or through a local SQLite provider, or not at all. Titen and Caraka are written by the same author: one remembers, one is sent. The Titen adapter here has only ever answered a mocked fetch.
+**Memory** did ship, at v0.3, through [Titen](https://titen.dev) — agent memory that never flattens a conclusion into its evidence, with deterministic claim extraction and no model in the loop — or through a local SQLite provider, or not at all. Titen and Caraka are written by the same author: one remembers, one is sent. The Titen adapter answered a live Titen 0.7.3 for the first time on 10 August 2026, and every field it sent was wrong: it had only ever been checked against a mock that agreed with the same wrong document. What it does today is write. Reading back needs claims, which nothing here creates, so a `provider: titen` install stores observations and recalls nothing.
 
 Three things that did ship carry a condition worth knowing.
 
@@ -194,7 +194,8 @@ npm run lint
 npm run typecheck
 npm test
 npm run e2e
-npm run smoke   # Claude Code signed in; the codex step skips when codex is absent
+npm run smoke   # five live runs: Claude Code over ACP and over its CLI route,
+                # codex, aider, goose. Each step skips when its binary is absent
 ```
 
 ## Documentation

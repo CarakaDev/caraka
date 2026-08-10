@@ -1,5 +1,7 @@
 # Ringkasan Riset & Rekomendasi
 
+**English:** this document is Indonesian only, and stays that way because it is research kept as provenance for a decision already made. English documentation starts at [`../../README.md`](../../README.md).
+
 **Tanggal:** 7 Agustus 2026
 **Dokumen ini merangkum 5 dokumen riset lain di folder ini dan menjadi dasar `docs/blueprint.md`.**
 

@@ -1,5 +1,7 @@
 # PRD — Caraka
 
+**English:** this document is Indonesian only, and stays that way because it is internal specification. English documentation starts at [`../README.md`](../README.md).
+
 **Versi:** 0.2 · **Tanggal:** 7 Agustus 2026 · **Pemilik produk:** —
 **Prasyarat baca:** `docs/blueprint.md`, `docs/research/ringkasan-temuan-dan-rekomendasi.md`
 

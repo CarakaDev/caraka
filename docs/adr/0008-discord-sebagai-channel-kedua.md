@@ -1,5 +1,7 @@
 # ADR-0008 — Discord sebagai channel kedua, di atas `fetch` dan `WebSocket`
 
+**English:** this document is Indonesian only, and stays that way because an accepted decision record is never rewritten. English documentation starts at [`../../README.md`](../../README.md).
+
 **Status:** Diterima · **Tanggal:** 8 Agustus 2026
 **Menggantikan:** kalimat "Telegram menjadi satu-satunya channel di v1.0" pada [ADR-0006](0006-telegram-sebagai-channel-pertama.md). Sisa ADR-0006 tetap berlaku.
 

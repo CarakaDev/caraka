@@ -1,5 +1,7 @@
 # Riset: Arsitektur OpenClaw (dan kenapa terasa "berat")
 
+**English:** this document is Indonesian only, and stays that way because it is research kept as provenance for a decision already made. English documentation starts at [`../../README.md`](../../README.md).
+
 **Tanggal riset:** 7 Agustus 2026
 **Sumber utama:**
 - https://github.com/openclaw/openclaw (README, repo tree)

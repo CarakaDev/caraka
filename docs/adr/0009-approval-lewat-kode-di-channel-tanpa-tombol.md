@@ -1,5 +1,7 @@
 # ADR-0009 — Approval lewat kode di channel tanpa tombol, dan dua provider WhatsApp
 
+**English:** this document is Indonesian only, and stays that way because an accepted decision record is never rewritten. English documentation starts at [`../../README.md`](../../README.md).
+
 **Status:** Diterima · **Tanggal:** 8 Agustus 2026
 **Melengkapi:** [ADR-0004](0004-approval-hanya-lewat-callback.md), yang sudah menyebut `ok A7F3` sebagai bentuk yang boleh dipakai bila sebuah channel tidak punya tombol. ADR-0004 tetap berlaku seluruhnya; ADR ini yang membangun bentuk itu.
 

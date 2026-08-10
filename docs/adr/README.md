@@ -1,5 +1,7 @@
 # Architecture Decision Records
 
+**English:** this index and the decision records under it are Indonesian only. English documentation starts at [`../../README.md`](../../README.md).
+
 Satu berkas per keputusan besar, dengan alternatif yang ditolak dan alasannya. Formatnya ringkas: konteks, keputusan, konsekuensi.
 
 ADR tidak pernah diedit setelah diterima. Kalau keputusannya berubah, tulis ADR baru yang menggantikannya dan tandai yang lama `Superseded by ADR-XXX`.

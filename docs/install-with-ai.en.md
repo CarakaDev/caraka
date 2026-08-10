@@ -1,10 +1,10 @@
-# Prompt instalasi untuk Codex atau Claude
+# Installation prompt for Codex or Claude
 
-**English:** [`install-with-ai.en.md`](install-with-ai.en.md)
+**Bahasa Indonesia:** [`install-with-ai.md`](install-with-ai.md)
 
-Prompt ini dapat ditempel ke coding agent yang berjalan di komputer tempat repository berada. Ia memisahkan pekerjaan instalasi dari input token Telegram.
+This prompt can be pasted into a coding agent running on the machine that holds the repository. It keeps the installation work separate from entering the Telegram token.
 
-Prompt berbahasa Indonesia di bawah juga muncul sebagai langkah pertama di [panduan instalasi](install-guide.md). Kalau salah satunya diubah, ubah keduanya.
+The English prompt below also appears as the first step of the [installation guide](install-guide.en.md). If one of them changes, change both.
 
 ## Bahasa Indonesia
 
@@ -52,8 +52,8 @@ check, and start it with `npx caraka start`. Do not enable a webhook, open a
 port, install a service, or modify Claude's model/provider configuration.
 ```
 
-## Kenapa token tidak diberikan ke agent
+## Why the token is not handed to the agent
 
-Transkrip chat, tool log, dan histori terminal bisa disimpan oleh klien coding agent. Wizard Caraka menyembunyikan input dan menulis token langsung ke `~/.caraka/secrets/telegram.token`. Memindahkan token melalui chat menghilangkan perlindungan itu.
+Chat transcripts, tool logs, and terminal history can be kept by the coding agent's client. The Caraka wizard hides the input and writes the token straight to `~/.caraka/secrets/telegram.token`. Moving the token through chat throws that protection away.
 
-Jika klien menyediakan terminal interaktif yang benar-benar dapat diambil alih user, agent boleh membuka `npx caraka init` lalu berhenti saat prompt token muncul. Agent tidak boleh membaca atau mengulang input tersebut.
+If the client offers an interactive terminal the user can genuinely take over, the agent may open `npx caraka init` and then stop when the token prompt appears. It must not read or repeat that input.

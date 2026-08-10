@@ -1,5 +1,7 @@
 # Riset: Model sesi sebagai topic/thread — Telegram vs Discord
 
+**English:** this document is Indonesian only, and stays that way because it is research kept as provenance for a decision already made. English documentation starts at [`../../README.md`](../../README.md).
+
 **Tanggal riset:** 7 Agustus 2026
 **Pertanyaan riset:** *"Di terminal kerjanya pakai tab. Bisakah Telegram/Discord membuat channel/topic baru per sesi supaya lebih tertata?"*
 **Jawaban singkat:** **Bisa — dan di Telegram bahkan lebih baik dari yang diharapkan.**

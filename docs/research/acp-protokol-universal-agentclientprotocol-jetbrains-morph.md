@@ -1,5 +1,7 @@
 # Riset: ACP (Agent Client Protocol) — jalur universal ke semua coding agent
 
+**English:** this document is Indonesian only, and stays that way because it is research kept as provenance for a decision already made. English documentation starts at [`../../README.md`](../../README.md).
+
 **Tanggal riset:** 7 Agustus 2026
 **Sumber utama:**
 - https://agentclientprotocol.com (Registry, protocol docs, SDK)

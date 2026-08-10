@@ -1,5 +1,7 @@
 # Riset: Titen (titen.dev) — memory layer yang dipilih
 
+**English:** this document is Indonesian only, and stays that way because it is research kept as provenance for a decision already made. English documentation starts at [`../../README.md`](../../README.md).
+
 **Tanggal riset:** 7 Agustus 2026
 **Sumber:** https://titen.dev · https://titen.dev/docs · https://titen.dev/docs/api · https://titen.dev/docs/install · https://titen.dev/docs/deploy-vps · https://titen.dev/benchmark · https://github.com/RamaAditya49/titen · npm `titen-memory`
 

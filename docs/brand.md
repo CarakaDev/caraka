@@ -1,5 +1,7 @@
 # Brand — Caraka
 
+**English:** this document is Indonesian only, and stays that way because it is internal specification. English documentation starts at [`../README.md`](../README.md).
+
 **Versi:** 1.0 · **Tanggal:** 7 Agustus 2026
 **Berkas pendamping:** `Caraka Brandkit.dc.html` — logo book lengkap (anatomi, animasi, invert, favicon, ruang aman, larangan, daftar aset) · `Caraka Sistem Warna.dc.html` — sistem warna lengkap (ramp OKLCH, token, uji diferensial).
 

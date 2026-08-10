@@ -1,5 +1,7 @@
 # Riset: Warna aksen untuk favicon & app icon
 
+**English:** this document is Indonesian only, and stays that way because it is research kept as provenance for a decision already made. English documentation starts at [`../../README.md`](../../README.md).
+
 **Tanggal riset:** 7 Agustus 2026
 **Pertanyaan:** *"Warna apa yang paling cocok, dan menonjol kalau dipasang di bookmark dan icon app?"*
 **Sumber:** opengraph-check.com/en/blog/favicon-size-browser-tab · ramotion.com/blog/what-is-favicon · think360studio.com · clickrank.ai · outreachmonks.com · weareaffective.com · amraandelma.com (Kantar BrandZ 2026, Interbrand 2026) · biznamelab.com/tech-brand-color-palette · tentackles.com · bynder.com/en/blog/the-most-and-least-used-colors-in-logos · desantisbreindel.com · createwithswift.com (WWDC24 app icon) · macrumors.com (iOS 18 dark icons)

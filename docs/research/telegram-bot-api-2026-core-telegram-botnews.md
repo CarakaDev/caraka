@@ -1,5 +1,7 @@
 # Riset: Telegram Bot API 2026 (9.5 → 10.2) — fitur yang mengubah desain kita
 
+**English:** this document is Indonesian only, and stays that way because it is research kept as provenance for a decision already made. English documentation starts at [`../../README.md`](../../README.md).
+
 **Tanggal riset:** 7 Agustus 2026
 **Sumber:**
 - https://core.telegram.org/bots/api-changelog (rilis 3 Apr, 8 Mei, 11 Jun, 14 Jul 2026)

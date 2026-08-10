@@ -2,7 +2,7 @@
 
 > A thin bridge from Telegram, Discord, or WhatsApp to the coding agent already installed on your machine. A task lives in its own topic or thread, like tabs in a terminal, and in a header where the chat app has neither. Caraka has no agent loop, no execution tools, and no plugin marketplace: the coding agent already has all of those.
 
-Caraka speaks [ACP](https://agentclientprotocol.com), the LSP-equivalent for coding agents. Seven agent presets ship, one YAML file each, and Claude Code is the only one ever run here against a live binary. Memory ships since v0.3 through [Titen](https://titen.dev), through a local SQLite provider, or not at all; Titen separates observation, claim, and context so a conclusion is never confused with the evidence behind it.
+Caraka speaks [ACP](https://agentclientprotocol.com), the LSP-equivalent for coding agents. Seven agent presets ship, one YAML file each, and four of them have been run here against a live binary: Claude Code on both its routes, Codex and aider on the CLI, goose over ACP. Memory ships since v0.3 through [Titen](https://titen.dev), through a local SQLite provider, or not at all; Titen separates observation, claim, and context so a conclusion is never confused with the evidence behind it.
 
 Status: v1.0, MIT, Node ≥ 22. Every phase of the roadmap carries shipped code and not one field gate has been answered by a person: no dogfood week, no recorded setup session, no beta group, no live Discord credential, and no WhatsApp number ever linked. The npm registry still holds 0.2.1, because publishing is the owner's command.
 

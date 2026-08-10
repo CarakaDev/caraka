@@ -1,5 +1,7 @@
 # UI/UX — Caraka
 
+**English:** this document is Indonesian only, and stays that way because it is internal specification. English documentation starts at [`../README.md`](../README.md).
+
 **Versi:** 0.2 · **Tanggal:** 7 Agustus 2026
 
 > Produk ini nyaris tidak punya UI. Permukaannya adalah **chat**, **terminal**, dan sejak v0.5 satu **dasbor lokal read-only** di `127.0.0.1`. Ini dokumen *interaction design*, bukan *visual design*.

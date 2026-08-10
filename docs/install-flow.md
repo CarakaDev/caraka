@@ -1,6 +1,6 @@
 # Alur instalasi v0.1
 
-**Tanggal:** 7 Agustus 2026
+**Tanggal:** 7 Agustus 2026 · **English:** [`install-flow.en.md`](install-flow.en.md)
 **Command:** `npx caraka init [--workspace PATH]`
 
 ## Kontrak wizard

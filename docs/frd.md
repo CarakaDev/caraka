@@ -1,5 +1,7 @@
 # FRD — Functional Requirements Document
 
+**English:** this document is Indonesian only, and stays that way because it is internal specification. English documentation starts at [`../README.md`](../README.md).
+
 **Produk:** Caraka · **Versi:** 0.2 · **Tanggal:** 7 Agustus 2026
 **Konvensi:** `FR-<modul>-<no>`. Prioritas: **P0** wajib v1.0 · **P1** sebaiknya · **P2** ditunda.
 

@@ -1,5 +1,7 @@
 # Riset: Keamanan — menaruh coding agent di ujung chat publik
 
+**English:** this document is Indonesian only, and stays that way because it is research kept as provenance for a decision already made. English documentation starts at [`../../README.md`](../../README.md).
+
 **Tanggal riset:** 7 Agustus 2026
 **Sumber:**
 - arXiv 2605.23330 — "Security, Privacy, and Ethical Risks in OpenClaw"

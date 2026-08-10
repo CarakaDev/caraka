@@ -1,5 +1,7 @@
 # BRD — Business Requirements Document
 
+**English:** this document is Indonesian only, and stays that way because it is internal specification. English documentation starts at [`../README.md`](../README.md).
+
 **Produk:** Caraka · **Versi:** 0.2 · **Tanggal:** 7 Agustus 2026
 
 > **Arah terkunci:** Telegram · Claude Code · Titen · **open source** · satu operator.

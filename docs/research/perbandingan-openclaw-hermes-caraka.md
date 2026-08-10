@@ -1,5 +1,7 @@
 # Riset: Caraka dibanding OpenClaw dan Hermes
 
+**English:** this document is Indonesian only, and stays that way because it is research kept as provenance for a decision already made. English documentation starts at [`../../README.md`](../../README.md).
+
 **Tanggal riset:** 7 Agustus 2026
 **Pertanyaan:** apakah benar OpenClaw dan Hermes adalah asisten pribadi yang *dipaksa* mengerjakan pembuatan aplikasi, sedangkan Caraka memang dibangun khusus untuk itu?
 **Jawaban singkat:** benar, dan sumber industri menyatakannya dengan kalimat yang hampir sama persis.

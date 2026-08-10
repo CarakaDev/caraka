@@ -1,5 +1,7 @@
 # Blueprint — Caraka
 
+**English:** this document is Indonesian only, and stays that way because it is internal specification. English documentation starts at [`../README.md`](../README.md).
+
 **Versi:** 0.2 · **Tanggal:** 7 Agustus 2026 · **Status:** keputusan arah sudah terkunci
 **Dasar:** semua dokumen di `docs/research/`
 

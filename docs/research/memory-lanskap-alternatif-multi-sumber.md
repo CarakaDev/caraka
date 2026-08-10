@@ -1,5 +1,7 @@
 # Riset: Lanskap memory layer — pembanding & prinsip desain
 
+**English:** this document is Indonesian only, and stays that way because it is research kept as provenance for a decision already made. English documentation starts at [`../../README.md`](../../README.md).
+
 **Tanggal riset:** 7 Agustus 2026
 **Sumber:**
 - research.google/blog/titans-miras-helping-ai-have-long-term-memory (paper Titans, arXiv 2501.00663)

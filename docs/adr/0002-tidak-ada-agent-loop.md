@@ -1,5 +1,7 @@
 # ADR-0002 — Tidak ada agent loop, tool, atau marketplace
 
+**English:** this document is Indonesian only, and stays that way because an accepted decision record is never rewritten. English documentation starts at [`../../README.md`](../../README.md).
+
 **Status:** Diterima · **Tanggal:** 7 Agustus 2026
 
 ## Konteks

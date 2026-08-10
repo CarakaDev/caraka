@@ -1,5 +1,7 @@
 # Riset: Prasyarat, biaya, dan jalur gratis
 
+**English:** this document is Indonesian only, and stays that way because it is research kept as provenance for a decision already made. English documentation starts at [`../../README.md`](../../README.md).
+
 **Tanggal riset:** 7 Agustus 2026
 **Pertanyaan:** apa yang terjadi kalau komputer pengguna belum punya Node, belum punya coding agent, atau tidak mau berlangganan?
 **Sumber:** claude.com/pricing via codeagentswarm.com dan suprmind.ai (diverifikasi Agustus 2026) · felloai.com/claude-code-pricing · inventivehq.com · ssdnodes.com · verdent.ai · codeagentswarm.com/en/guides/codex-plans-and-pricing
