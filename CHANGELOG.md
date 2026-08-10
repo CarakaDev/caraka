@@ -4,6 +4,12 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] — 2026-08-10
+
+### Fixed
+
+- `caraka --version` printed `1.1.0` on an installed `1.1.1`. The version was a second copy in `src/cli.ts`, and `npm version` moves `package.json` and nothing else, so the copy drifted the moment a release did not go through the hand that kept it. It is read from the manifest now — `package.json` is in every tarball npm builds regardless of `files`, and it sits one level above both `dist/cli.js` and `src/cli.ts`. A test runs the built binary and compares what it prints to the manifest, so the next drift fails the release instead of shipping.
+
 ## [1.1.1] — 2026-08-10
 
 One preset was wrong in a way only running it could show.
