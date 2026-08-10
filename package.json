@@ -43,8 +43,9 @@
     "lint": "oxlint src test scripts && oxfmt --check src test scripts bin package.json tsconfig.json",
     "test": "node --import tsx --test test/unit.test.ts",
     "e2e": "node --import tsx --test test/e2e.test.ts",
+    "scan:secrets": "bash scripts/scan-secrets.sh",
     "smoke": "npm run build && node scripts/smoke-claude.mjs && node scripts/smoke-cli.mjs claude-code cli && node scripts/smoke-cli.mjs codex && node scripts/smoke-cli.mjs aider && node scripts/smoke-cli.mjs goose",
-    "verify": "npm run lint && npm run typecheck && npm test && npm run e2e && npm run build",
+    "verify": "npm run scan:secrets && npm run lint && npm run typecheck && npm test && npm run e2e && npm run build",
     "prepublishOnly": "npm run verify"
   },
   "dependencies": {

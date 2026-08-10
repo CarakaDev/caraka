@@ -47,7 +47,7 @@ Dependency direction is one-way: `channels → core ← drivers`. A channel neve
 
 Every change follows [`standards/ears.md`](standards/ears.md): `spec/` → `plan/` → build → verify → publish → `done/`. Acceptance criteria are written in EARS, so each one names its trigger and can fail.
 
-Nothing is "done" because it looks done. The gate is `npm run lint`, `npm run typecheck`, `npm test`, `npm run e2e`, plus two checks no tool performs: no secrets in the diff, and prose that survives the *Writing style* section below. Paste the command output into the plan before moving it to `done/`.
+Nothing is "done" because it looks done. The gate is `npm run verify`, which runs `npm run scan:secrets` before `npm run lint`, `npm run typecheck`, `npm test`, `npm run e2e`, and the build. The scanner reads every tracked file against a fixed list of credential shapes, so a secret in a shape it does not carry still reaches the repository and the diff still has to be read. Prose has no tool at all and is checked against the *Writing style* section below. Paste the command output into the plan before moving it to `done/`.
 
 ## The website
 

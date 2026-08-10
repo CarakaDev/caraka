@@ -151,15 +151,19 @@ Kode ditulis mengikuti plan. Plan yang ternyata salah **diperbarui**, tidak diab
 Keempatnya harus hijau, dan buktinya ditempel di plan. Klaim "sudah lulus" tanpa keluaran perintah tidak dihitung.
 
 ```bash
+npm run scan:secrets  # scripts/scan-secrets.sh
 npm run lint          # oxlint
 npm run typecheck     # astro check
 npm test              # vitest
 npm run e2e           # playwright, lintas chromium/firefox/webkit
 ```
 
-Ditambah dua pemeriksaan yang tidak dilakukan alat:
+`npm run verify` menjalankan kelimanya berurut, dengan `scan:secrets` di depan: repositori ini publik dan satu commit yang salah tidak bisa ditarik kembali, jadi pemeriksaan itu tidak menunggu empat perintah lain lulus.
 
-- **Tanpa rahasia.** Tidak ada token, kunci, atau kata sandi di diff. Repositori ini publik; satu commit yang salah tidak bisa ditarik kembali.
+Yang dibaca pemindai adalah setiap berkas yang dilacak git, bukan diff-nya, terhadap daftar bentuk kredensial yang tetap. Rahasia berbentuk lain tetap lolos, jadi diff tetap dibaca orang.
+
+Ditambah satu pemeriksaan yang tidak dilakukan alat:
+
 - **Tanpa AI slop.** Prosa diperiksa terhadap bagian *Writing style* di `AGENTS.md`: tanpa daftar tiga hal, tanpa paralelisme negatif, tanpa kalimat yang mengulang judulnya sendiri, tanpa kosakata mesin (`seamless`, `robust`, `leverage`, `unlock`, `crucial`), tanpa spesifik yang dikarang.
 
 ### Tahap 5 — publikasi

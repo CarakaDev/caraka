@@ -28,6 +28,9 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      # First, because a credential that reaches a public repository is not
+      # undone by the four commands after it passing.
+      - run: npm run scan:secrets
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
