@@ -250,6 +250,12 @@ export class Store {
     return id;
   }
 
+  // `openGrant` does not close the window it supersedes, so a workspace can
+  // hold two open trusted rows, and `created_at` is a millisecond — two /yolo
+  // calls inside the same one tie. On a tie SQLite is free to return either,
+  // and the two rows can differ in `principal` and `agentMode`, so the window
+  // in force would be picked at random. `rowid` is monotonic per insert and
+  // breaks the tie the way the clock meant to: the later grant wins.
   activeGrant(workspace: string, now = Date.now()) {
     return this.db
       .prepare(
@@ -257,7 +263,7 @@ export class Store {
                 created_at AS createdAt, expires_at AS expiresAt, closed_at AS closedAt
          FROM policy_grant
          WHERE workspace = ? AND mode = 'trusted' AND closed_at IS NULL AND expires_at > ?
-         ORDER BY created_at DESC LIMIT 1`,
+         ORDER BY created_at DESC, rowid DESC LIMIT 1`,
       )
       .get(workspace, now) as PolicyGrant | undefined;
   }

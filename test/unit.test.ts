@@ -1301,6 +1301,25 @@ test("a trust grant must expire, and only three principals can write one", async
     expiresAt: Date.now() - 1,
   });
   assert.equal(store.activeGrant("/srv/late"), undefined);
+  // Two windows opened inside the same millisecond tie on created_at, and the
+  // row SQLite hands back on a tie is its choice, not ours — the two can differ
+  // in principal, so the window in force would be picked at random. Inserted
+  // directly because openGrant reads its own clock and cannot be made to tie on
+  // demand. Without the rowid tiebreak in activeGrant this fails on roughly
+  // half of the runs on a fast machine and on none of them on a slow one.
+  const tie = Date.now();
+  for (const [id, principal] of [
+    ["tie-a", "first"],
+    ["tie-b", "second"],
+  ] as const) {
+    store.db
+      .prepare(
+        `INSERT INTO policy_grant(id, workspace, mode, granted_by, principal, created_at, expires_at)
+         VALUES (?, '/srv/tie', 'trusted', 'chat', ?, ?, ?)`,
+      )
+      .run(id, principal, tie, expiresAt);
+  }
+  assert.equal(store.activeGrant("/srv/tie")?.principal, "second");
   assert.ok(store.closeGrants() >= 2);
   assert.equal(store.activeGrant("/srv/app"), undefined);
   store.close();
@@ -4235,8 +4254,15 @@ test("giving up raises the operator's sentence out of updates() instead of loopi
   const drained = (async () => {
     for await (const _update of channel.updates(abort.signal)) break;
   })();
+  // The handler goes on before the drops, not after them. Each drop starts a
+  // reconnect that yields, so several are in flight at once and the sixth can
+  // set the fatal while the loop below is still running — leaving `drained`
+  // rejected with nobody listening, which Node reports as an unhandled
+  // rejection and the runner attributes to this test. It fails about one run in
+  // five on a fast machine and none on a slow one.
+  const raised = assert.rejects(drained, /did not come back after 6 attempts/);
   for (let n = 0; n <= RECONNECT_ATTEMPTS; n += 1) await fake.drop();
-  await assert.rejects(drained, /did not come back after 6 attempts/);
+  await raised;
   abort.abort();
 });
 

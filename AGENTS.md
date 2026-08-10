@@ -16,7 +16,9 @@ Proposals that add an agent loop, execution tools, a model abstraction, or a plu
 
 Two more constraints shape every review:
 
-- **Complexity budget.** A new feature must either remove something or keep the core under ~8,000 lines. v1.1 broke this rule and the number is recorded rather than the ceiling moved: `src/` measures 8,349 lines on 8 August 2026, against 7,880 at v1.0. A simplification pass returned 73 lines and stopped where a normalised block scan stopped finding repetition. Raising the ceiling because we crossed it is how a budget stops being one, so the next feature pays this back or removes something.
+- **Complexity budget.** A new feature must either remove something or keep the core under ~8,000 lines. v1.1 broke this rule and the number is recorded rather than the ceiling moved: `src/` measured 8,349 lines on 8 August 2026, against 7,880 at v1.0. A simplification pass returned 73 lines and stopped where a normalised block scan stopped finding repetition. Raising the ceiling because we crossed it is how a budget stops being one.
+
+  The debt grew again rather than being paid. On 10 August 2026 `src/` measures **8,498 lines**, +149 from rewriting `src/memory/titen.ts` against a live Titen, making `caraka doctor` prove a credentialed call, and breaking a tie in `activeGrant` that let two trust windows opened in the same millisecond be chosen between at random. Most of it is not logic: the adapter's header block records the exact rejection each wrong field caused, because the previous version was 111 lines that agreed with a document and with nothing the server accepts, and six of the six lines the tie-break cost are the comment explaining why one word of SQL is there. Comments that stop a wrong shape from being written a second time are the last thing this budget should buy back. What it should buy back is the next feature, which still owes 498 lines or a removal.
 - **Graceful degradation.** Nothing hard-fails when a capability is missing. Topics unavailable falls back to linear mode. Memory down still replies. ACP absent falls back to the CLI driver. A rejected rich message falls back to MarkdownV2.
 
 ## Repository map
