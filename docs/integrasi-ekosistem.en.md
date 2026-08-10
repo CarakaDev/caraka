@@ -1,10 +1,10 @@
 # Integration notes: ACP and Titen
 
-**Product:** Caraka `1.0.0` · **Date:** 8 August 2026 · **Bahasa Indonesia:** [`integrasi-ekosistem.md`](integrasi-ekosistem.md)
+**Product:** Caraka `1.2.0` · **Date:** 10 August 2026 · **Bahasa Indonesia:** [`integrasi-ekosistem.md`](integrasi-ekosistem.md)
 **Supporting research:** `docs/research/acp-protokol-universal-agentclientprotocol-jetbrains-morph.md`, `docs/research/titen-memory-titen-dev-github.md`
 **Who this is for:** the maintainers of ACP and the maintainers of Titen.
 
-Phase 7 in `docs/roadmap.md` asks for contributions back to the two upstream projects Caraka uses. These notes collect what was found up to release `1.0.0`. Files and symbols are named rather than cited by line number, so the references do not rot as the code moves.
+Phase 7 in `docs/roadmap.md` asks for contributions back to the two upstream projects Caraka uses. These notes collect what was found up to release `1.2.0`. Files and symbols are named rather than cited by line number, so the references do not rot as the code moves.
 
 Titen is written by the same person as Caraka (`docs/research/titen-memory-titen-dev-github.md` §2). The second half therefore comes from a party who is not neutral, and is better read with that in mind.
 
@@ -103,13 +103,48 @@ The five-operation table names no way to delete anything. Both routes below were
 
 **What a fix would look like.** First option: a delete route accepting the same scope and kind compile already understands, returning the number of records deleted, and stating what happens to claims citing a deleted observation. Second option: if bulk deletion is genuinely unwanted on append-only storage, the API page states that as a decision, so a client can refuse the request honestly instead of returning zero. Either one closes this; what cannot continue is the present state, where the only way to find out is to read the source.
 
+### An issue for upstream: an MCP bridge with no environment answers empty without naming the store it opened
+
+**What was expected.** One subject, one task, two routes, one answer. The MCP tool `titen_compile` passes its arguments through to the `POST /v1/context/compile` handler (`toolCompile` in `src/core/mcp.ts`), so a claim `curl` finds has to be found by the coding agent calling the tool.
+
+**What happens.** On 10 August 2026, against Titen 0.7.3 at `127.0.0.1:8787`, one active claim reading `The caraka repo formats code with oxfmt; prettier is never used.` stood under the subject `caraka`. `POST /v1/context/compile` with `{"subject_id":"caraka","task":"oxfmt prettier","max_tokens":800}` returned one item. Claude Code called `titen_compile` with exactly the same subject and task and received zero items. `claude mcp list` called that bridge Connected with 18 tools visible, and writes through MCP were landing in a store, so the read side is what was suspected for hours.
+
+**How to reproduce.** Titen serves a database holding one claim under the subject `caraka`. Send four JSON-RPC lines to the stdio bridge run without either variable:
+
+```bash
+printf '%s\n' \
+  '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"probe","version":"0"}}}' \
+  '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+  '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+  '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"titen_compile","arguments":{"subject_id":"caraka","task":"oxfmt prettier","max_tokens":800}}}' \
+| env -u TITEN_MCP_URL -u TITEN_API_KEY titen mcp
+```
+
+`tools/list` answers 18 tools, `titen_compile` answers zero items with the right `scope.subject_id`, stderr is empty, and the exit code is 0. `curl` to `/v1/context/compile` on the running server answers one item in the same minute.
+
+**How far it has been narrowed.** The server's handler is not involved: `POST /mcp` with `tools/call titen_compile`, the same subject, task, and key, returns one item. Only the stdio process answers empty. `runMcpStdio` (`src/runtime/bun/mcp-stdio.ts`) calls `runLocalMcpStdio` when neither `TITEN_MCP_URL` nor `TITEN_API_KEY` is in the process environment, and that local store is `~/.titen/memory.db`, not the database being served. On the test machine that local store held one observation with the subject `caraka` under `org_local` and zero claims, while the claim being looked for stood in the served database. That session's reads and writes hit a different file from the one `curl` was checking, and no line on either stream said so.
+
+The trigger is host configuration, not Titen. `~/.claude.json` holds a project-scope registration for `/home/ramaaditya/Project/caraka` that runs `titen mcp` with an empty `env`, and it shadows the user-scope registration carrying both variables. The environment was not lost; the narrower entry won. Titen cannot fix that file, but a bridge that names the store it opened makes such layering visible in seconds rather than hours.
+
+**The fix.** Written upstream and on Titen's `main` as `ec7060d`, in no release yet, so the 0.7.3 used above still falls back in silence. It has three parts. `runLocalMcpStdio` prints one line to stderr naming the store it opened along with the two missing variables. The same sentence is appended to `instructions` in the `initialize` result, because stderr ends up in the host's log file and the reader who needs it is the model holding the empty pack. And the bridge's `catch` names the endpoint and the reason, so a revoked key stops reading the same as a dead port. What remains is a design decision rather than a defect: local mode is chosen by the absence of two variables, so a client that means to bridge has no way to ask for a failure instead of a fallback.
+
+### Two installation traps that cost time before the issue above was visible
+
+**Which database is in use is named by one command only.** `titen serve` prints `titen listening on … (database …)` on its first line. `titen bootstrap`, `titen migrate`, and `titen key create` take `--db`, which defaults to a `titen.db` relative to the working directory (`src/runtime/bun/cli.ts`), and nothing warns that the working directory is part of choosing a database. A key created from one directory therefore belongs to a different database from the one being served, and what the client sees is a `401`. This test machine holds 14 `titen.db` files in 14 directories, one from today's work and the other 13 in backup, canary, and benchmark directories from 1–4 August, plus the `~/.titen/memory.db` the environment-less bridge opens.
+
+**`TITEN_MCP_URL` must end in `/mcp` and must carry no credentials.** `endpointFrom` rejects a URL holding a username, password, query, or fragment, and rejects a path not ending in `/mcp`, with the message `TITEN_MCP_URL must be a credential-free HTTP /mcp endpoint`. Setting only one of the two is rejected as well: `set both TITEN_MCP_URL and TITEN_API_KEY to bridge to a served instance, or neither to use the local store`. Both are the right errors, but both happen inside a process the MCP host started, where stderr is not always shown, so what is visible is a bridge entry that fails for no readable reason.
+
+### `compile` selects lexically
+
+Against the same claim on the same server, the task `oxfmt` returns one item, `prettier` one, `oxfmt prettier` one, `formatter` zero, and `which formatter` zero. The claim reads `formats code with oxfmt`, so a word that does not appear in it does not retrieve it. This is not a bug: `/readyz` on that instance reports `fts` `enabled` with `vector` and `embedding` `disabled`, and vector retrieval is configured through the environment. What a client needs to know: Caraka sends the user's message through as the `task` (`compileMemory` in `src/core/gateway.ts`), so a question phrased in words other than the claim's receives empty memory on an instance without embeddings. That a `compile` result depends on the retrieval configuration deserves a line on the `compile` page, not only in `/readyz`.
+
 ### The limits of these notes
 
-Everything in the Titen half comes from code talking to a mocked fetch. The sentence in the `0.3.0` release notes still holds as written, and no release since has changed it:
+The Titen half is one day old as field notes. Up to `1.1.2` the adapter had only ever answered a mocked fetch, and the sentence in the `0.3.0` release notes held as written for that whole time:
 
 > The `titen` adapter has only ever answered a mocked fetch; no check in this repository talks to a live Titen. Its routes were read from the Titen v0.7.0 source, a pre-1.0 surface that can move, and `local` keeps working without it.
 
-v0.7.0 is a pre-1.0 surface (`docs/research/titen-memory-titen-dev-github.md` §2), and the risk of its API moving has been recorded since the research (§8). The routes in the table above are therefore the record of one check on one date, and they do not bind Titen. The first check that talks to a live Titen could well overturn part of these notes, and that would be fair.
+On 10 August 2026 the adapter was rewritten against a live Titen 0.7.3, and that exercise is what produced the three sections above. The tests in this repository still use a mocked fetch; what changed is that the shape being mocked is now the shape the real server accepts, rather than the shape a document agreed with. One day of contact is not operating experience. 0.7.x is still a pre-1.0 surface (`docs/research/titen-memory-titen-dev-github.md` §2) whose risk of moving has been recorded since the research (§8), so the routes and figures above are the record of one date on one machine, and they do not bind Titen.
 
 The author's closeness cuts both ways. The undocumented routes were found by reading the source, which another integrator would not do, and that means Titen's documentation has not yet been tested by a user who has to survive on its API page alone.
 
@@ -117,7 +152,8 @@ The author's closeness cuts both ways. The undocumented routes were found by rea
 
 ## What is not written here, for want of a source
 
-- Any figure from a live Titen. No check in this repository touches a real Titen server.
+- Titen's behaviour beyond one subject on one machine. Every figure above comes from one test host on 10 August 2026, with `vector` and `embedding` off.
+- Whether MCP hosts other than Claude Code layer registrations the same way. Only `~/.claude.json` on one machine was inspected.
 - The shape of the ACP registry JSON. The research describes it in prose; there is no example file in this repository.
 - Whether ACP upstream has already discussed a "client stores no permission" flag. No file here records a search of upstream issues.
 - Whether Titen v0.7.0 has bulk deletion under another name. Only its absence is recorded.

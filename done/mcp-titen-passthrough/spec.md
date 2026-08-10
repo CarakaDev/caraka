@@ -32,14 +32,31 @@ Claude Code hidup di mesin pengembangan.
 | `tools/list` | 18 tool: 9 `titen_*` dan 9 tool knowledge-graph |
 | `/mcp` tanpa kredensial | `401` |
 | `POST /v1/observations` tanpa kredensial | `401 UNAUTHENTICATED` |
-| Sesi ACP lewat `ClaudeAcp` **tanpa perubahan** (`mcpServers: []`) | agent menyebut ke-18 tool sebagai `mcp__titen__*` dan memanggil `mcp__titen__titen_project_resolve`, `stopReason: end_turn` |
+| Sesi ACP lewat `ClaudeAcp` **tanpa perubahan** (`mcpServers: []`) | agent menyebut ke-18 tool sebagai `mcp__titen__*` dan memanggil `mcp__titen__titen_project_resolve`, `stopReason: end_turn`. Yang terukur kehadiran tool dan satu panggilan, bukan pembacaan dari database yang dilayani — lihat koreksi di bawah tabel |
 
 Baris terakhir adalah inti keputusan ini. Driver yang dipakai adalah
 `dist/drivers/claude-acp.js` apa adanya, yang mengirim `mcpServers: []` di
-`session/new`; Titen tercantum di `.mcp.json` milik direktori kerja, cara yang
-ditulis `claude mcp add --transport http`. Adapter `claude-agent-acp` 0.63.0
-tidak pernah menyetel `strictMcpConfig`, jadi konfigurasi MCP milik pengguna
-tetap terbaca.
+`session/new`. Adapter `claude-agent-acp` 0.63.0 tidak pernah menyetel
+`strictMcpConfig`, jadi konfigurasi MCP milik pengguna tetap terbaca.
+
+Koreksi pada 10 Agustus 2026, setelah mesin uji diperiksa lagi. Kalimat pertama
+versi ini menyebut `.mcp.json` milik direktori kerja dan `claude mcp add
+--transport http`; keduanya salah. Tidak ada `.mcp.json` di direktori kerja
+mana pun yang dipakai sesi itu. Yang ada dua entri stdio di `~/.claude.json`,
+keduanya menjalankan `~/.bun/bin/titen mcp`: satu scope-pengguna dengan
+`TITEN_MCP_URL` dan `TITEN_API_KEY`, satu scope-proyek untuk
+`/home/ramaaditya/Project/caraka` dengan `env` kosong dan tanpa header. Yang
+kedua menutupi yang pertama, dan `titen mcp` tanpa kedua variabel itu melayani
+`~/.titen/memory.db`, bukan instans di `127.0.0.1:8787`.
+
+Itu membatasi apa yang baris terakhir tabel membuktikan. Yang teramati adalah
+ke-18 tool hadir di sesi dan satu `titen_project_resolve` dipanggil; tool itu
+dijawab store mana pun, termasuk store lokal yang baru diprovisi hari itu juga,
+jadi ia tidak bisa membedakan keduanya. Bahwa passthrough membaca memori
+pemilik yang sesungguhnya belum pernah ditunjukkan.
+
+Keputusan tidak berubah. Alasannya di bawah adalah permukaan tulis, dan itu
+berdiri tanpa bantuan baris terakhir tabel.
 
 ## Kenapa ditolak
 

@@ -1,10 +1,10 @@
 # Catatan integrasi: ACP dan Titen
 
-**Produk:** Caraka `1.0.0` · **Tanggal:** 8 Agustus 2026 · **English:** [`integrasi-ekosistem.en.md`](integrasi-ekosistem.en.md)
+**Produk:** Caraka `1.2.0` · **Tanggal:** 10 Agustus 2026 · **English:** [`integrasi-ekosistem.en.md`](integrasi-ekosistem.en.md)
 **Riset pendukung:** `docs/research/acp-protokol-universal-agentclientprotocol-jetbrains-morph.md`, `docs/research/titen-memory-titen-dev-github.md`
 **Untuk siapa:** maintainer ACP dan maintainer Titen.
 
-Fase 7 di `docs/roadmap.md` meminta kontribusi balik ke dua proyek hulu yang dipakai Caraka. Catatan ini mengumpulkan apa yang ditemukan sampai rilis `1.0.0`. Berkas dan simbol disebut dengan namanya, bukan dengan nomor baris, supaya rujukannya tidak busuk saat kodenya bergeser.
+Fase 7 di `docs/roadmap.md` meminta kontribusi balik ke dua proyek hulu yang dipakai Caraka. Catatan ini mengumpulkan apa yang ditemukan sampai rilis `1.2.0`. Berkas dan simbol disebut dengan namanya, bukan dengan nomor baris, supaya rujukannya tidak busuk saat kodenya bergeser.
 
 Titen ditulis oleh orang yang sama dengan Caraka (`docs/research/titen-memory-titen-dev-github.md` §2). Bagian kedua karena itu datang dari pihak yang tidak netral dan sebaiknya dibaca dengan sadar begitu.
 
@@ -103,13 +103,48 @@ Tabel lima operasi tidak menyebut cara menghapus apa pun. Kedua rute berikut dit
 
 **Bentuk perbaikannya.** Pilihan pertama, rute penghapusan yang menerima scope dan kind yang sama dengan yang sudah dipahami compile, mengembalikan jumlah rekaman terhapus, dan menyatakan apa yang terjadi pada claim yang mengutip observation yang dihapus. Pilihan kedua, bila penghapusan massal memang tidak diinginkan pada penyimpanan append-only, halaman API menyatakannya sebagai keputusan sehingga klien bisa menolak permintaan itu dengan jujur alih-alih mengembalikan nol. Keduanya menutup isu ini; yang tidak bisa diteruskan adalah keadaan sekarang, ketika satu-satunya cara mengetahuinya adalah membaca sumber.
 
+### Isu untuk hulu: jembatan MCP tanpa environment menjawab kosong tanpa menyebut store yang dibukanya
+
+**Yang diharapkan.** Satu subject, satu task, dua jalur, satu jawaban. Tool MCP `titen_compile` meneruskan argumennya apa adanya ke handler `POST /v1/context/compile` (`toolCompile` di `src/core/mcp.ts`), jadi claim yang ditemukan `curl` harus ditemukan juga oleh coding agent yang memanggil tool itu.
+
+**Yang terjadi.** Pada 10 Agustus 2026, terhadap Titen 0.7.3 di `127.0.0.1:8787`, satu claim aktif berbunyi `The caraka repo formats code with oxfmt; prettier is never used.` berdiri di bawah subject `caraka`. `POST /v1/context/compile` dengan `{"subject_id":"caraka","task":"oxfmt prettier","max_tokens":800}` mengembalikan satu item. Claude Code memanggil `titen_compile` dengan subject dan task yang sama persis dan menerima nol item. `claude mcp list` menyebut jembatan itu Connected dengan 18 tool terlihat, dan tulisan lewat MCP mendarat di sebuah store, jadi yang dicurigai berjam-jam adalah sisi bacanya.
+
+**Cara mereproduksi.** Titen melayani sebuah database yang memuat satu claim di bawah subject `caraka`. Kirim empat baris JSON-RPC ke jembatan stdio yang dijalankan tanpa kedua variabelnya:
+
+```bash
+printf '%s\n' \
+  '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"probe","version":"0"}}}' \
+  '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+  '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+  '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"titen_compile","arguments":{"subject_id":"caraka","task":"oxfmt prettier","max_tokens":800}}}' \
+| env -u TITEN_MCP_URL -u TITEN_API_KEY titen mcp
+```
+
+`tools/list` menjawab 18 tool, `titen_compile` menjawab nol item dengan `scope.subject_id` yang benar, stderr kosong, dan exit code 0. `curl` ke `/v1/context/compile` pada server yang sedang berjalan menjawab satu item di menit yang sama.
+
+**Seberapa jauh sudah dipersempit.** Handler di server tidak terlibat: `POST /mcp` dengan `tools/call titen_compile`, subject, task, dan kunci yang sama, mengembalikan satu item. Yang menjawab kosong hanya proses stdio-nya. `runMcpStdio` (`src/runtime/bun/mcp-stdio.ts`) memanggil `runLocalMcpStdio` ketika `TITEN_MCP_URL` dan `TITEN_API_KEY` sama-sama tidak ada di environment proses, dan store lokal itu `~/.titen/memory.db`, bukan database yang sedang dilayani. Di mesin uji, store lokal itu memuat satu observation bersubject `caraka` di bawah `org_local` dan nol claim, sementara claim yang dicari berdiri di database yang dilayani. Baca dan tulis sesi itu mengenai berkas yang berbeda dari yang diperiksa `curl`, dan tidak ada satu baris pun di kedua aliran yang menyebutkannya.
+
+Pemicunya konfigurasi host, bukan Titen. `~/.claude.json` memuat registrasi scope-proyek untuk `/home/ramaaditya/Project/caraka` yang menjalankan `titen mcp` dengan `env` kosong, dan registrasi itu menutupi registrasi scope-pengguna yang membawa kedua variabel. Environment-nya tidak hilang; entri yang lebih sempit yang menang. Titen tidak bisa memperbaiki berkas itu, tetapi jembatan yang menyebut store yang dibukanya membuat pelapisan seperti itu terlihat dalam hitungan detik alih-alih jam.
+
+**Perbaikannya.** Sudah ditulis di hulu dan sudah masuk `main` Titen sebagai `ec7060d`, belum masuk rilis mana pun, jadi 0.7.3 yang dipakai di atas masih jatuh dalam diam. Isinya tiga hal. `runLocalMcpStdio` mencetak satu baris ke stderr yang menyebut store yang dibuka beserta dua variabel yang hilang. Kalimat yang sama ditempelkan ke `instructions` di hasil `initialize`, karena stderr berakhir di berkas log milik host dan yang perlu tahu adalah model yang sedang memegang pack kosong. Dan `catch` di sisi jembatan menyebut endpoint beserta sebabnya, sehingga kunci yang dicabut tidak lagi terbaca sama dengan port yang mati. Yang tersisa adalah keputusan desain, bukan cacat: mode lokal dipilih oleh ketiadaan dua variabel, sehingga klien yang memang bermaksud menjembatani tidak punya cara meminta kegagalan alih-alih fallback.
+
+### Dua jebakan pemasangan yang memakan waktu sebelum isu di atas terlihat
+
+**Database mana yang dipakai hanya disebut oleh satu perintah.** `titen serve` mencetak `titen listening on … (database …)` di baris pertamanya. `titen bootstrap`, `titen migrate`, dan `titen key create` memakai `--db` yang standarnya `titen.db` relatif direktori kerja (`src/runtime/bun/cli.ts`), dan tidak ada yang mengingatkan bahwa direktori kerja ikut memilih database. Kunci yang dibuat dari satu direktori karena itu milik database lain daripada yang dilayani, dan yang terlihat di klien adalah `401`. Mesin uji ini memuat 14 berkas `titen.db` di 14 direktori, satu dari kerja hari ini dan 13 sisanya dari direktori backup, canary, dan benchmark 1–4 Agustus; ditambah `~/.titen/memory.db` yang dibuka jembatan tanpa environment.
+
+**`TITEN_MCP_URL` wajib berakhir `/mcp` dan tidak boleh membawa kredensial.** `endpointFrom` menolak URL yang memuat username, password, query, atau fragment, dan menolak path yang tidak berakhir `/mcp`, dengan pesan `TITEN_MCP_URL must be a credential-free HTTP /mcp endpoint`. Menyetel satu variabel saja juga ditolak: `set both TITEN_MCP_URL and TITEN_API_KEY to bridge to a served instance, or neither to use the local store`. Keduanya galat yang benar, tetapi keduanya terjadi di dalam proses yang dijalankan host MCP, tempat stderr tidak selalu ditampilkan, sehingga yang terlihat adalah entri jembatan yang gagal tanpa alasan yang terbaca.
+
+### `compile` memilih secara leksikal
+
+Terhadap claim yang sama di server yang sama, task `oxfmt` mengembalikan satu item, `prettier` satu, `oxfmt prettier` satu, `formatter` nol, dan `which formatter` nol. Claim itu berbunyi `formats code with oxfmt`, jadi kata yang tidak muncul di dalamnya tidak mengambilnya. Ini bukan bug: `/readyz` pada instans itu melaporkan `fts` `enabled` dengan `vector` dan `embedding` `disabled`, dan retrieval vektor memang dikonfigurasi lewat environment. Yang perlu diketahui klien: Caraka mengirim pesan pengguna apa adanya sebagai `task` (`compileMemory` di `src/core/gateway.ts`), jadi pertanyaan yang memakai kata lain dari claim-nya menerima memori kosong pada instans tanpa embedding. Bahwa hasil `compile` bergantung pada konfigurasi retrieval pantas disebut di halaman `compile`, bukan hanya di `/readyz`.
+
 ### Batas keberlakuan catatan ini
 
-Semua yang ditulis di bagian Titen berasal dari kode yang berbicara dengan fetch tiruan. Kalimat di catatan rilis `0.3.0` masih berlaku apa adanya, dan tidak ada rilis sesudahnya yang mengubahnya:
+Bagian Titen berumur satu hari sebagai catatan lapangan. Sampai `1.1.2` adapter hanya pernah menjawab fetch tiruan, dan kalimat di catatan rilis `0.3.0` berlaku apa adanya selama itu:
 
 > The `titen` adapter has only ever answered a mocked fetch; no check in this repository talks to a live Titen. Its routes were read from the Titen v0.7.0 source, a pre-1.0 surface that can move, and `local` keeps working without it.
 
-v0.7.0 adalah permukaan pra-1.0 (`docs/research/titen-memory-titen-dev-github.md` §2), dan risiko bahwa API-nya bergerak sudah dicatat sejak riset (§8). Rute di tabel atas karena itu adalah rekaman satu pemeriksaan pada satu tanggal, dan tidak mengikat Titen. Pemeriksaan pertama yang berbicara dengan Titen yang hidup bisa saja menggugurkan sebagian isi catatan ini, dan itu wajar.
+Pada 10 Agustus 2026 adapter ditulis ulang terhadap Titen 0.7.3 yang hidup, dan pemeriksaan itulah yang menghasilkan tiga bagian di atas. Test di repositori ini tetap memakai fetch tiruan; yang berubah adalah bentuk yang ditiru sekarang bentuk yang diterima server sungguhan, bukan bentuk yang disepakati sebuah dokumen. Satu hari kontak bukan pengalaman operasi. 0.7.x tetap permukaan pra-1.0 (`docs/research/titen-memory-titen-dev-github.md` §2) yang risiko bergeraknya sudah dicatat sejak riset (§8), jadi rute dan angka di atas adalah rekaman satu tanggal pada satu mesin, dan tidak mengikat Titen.
 
 Kedekatan penulis memotong ke dua arah. Rute yang tidak ada di dokumentasi ditemukan dengan membaca sumber, yang tidak akan dilakukan integrator lain, dan itu berarti dokumentasi Titen belum diuji oleh pemakai yang harus bertahan hanya dengan halaman API-nya.
 
@@ -117,7 +152,8 @@ Kedekatan penulis memotong ke dua arah. Rute yang tidak ada di dokumentasi ditem
 
 ## Yang tidak ditulis di sini, karena tidak ada sumbernya
 
-- Angka apa pun dari Titen yang hidup. Tidak ada satu pemeriksaan pun di repositori ini yang menyentuh server Titen sungguhan.
+- Perilaku Titen di luar satu subject pada satu mesin. Setiap angka di atas berasal dari satu host uji pada 10 Agustus 2026, dengan `vector` dan `embedding` mati.
+- Apakah host MCP selain Claude Code punya pelapisan registrasi yang sama. Yang diperiksa hanya `~/.claude.json` di satu mesin.
 - Bentuk JSON registry ACP. Riset menyebutnya sebagai prosa; tidak ada contoh berkasnya di repositori ini.
 - Apakah hulu ACP sudah pernah membahas penanda "klien tidak menyimpan izin". Tidak ada berkas di repositori ini yang merekam pencarian isu hulu.
 - Apakah Titen v0.7.0 punya hapus massal dengan nama lain. Yang tercatat hanya ketiadaannya.
