@@ -42,7 +42,10 @@ One route has no mockup: `/whatsapp-risk` renders `../docs/whatsapp-risiko.en.md
 
 **Scroll-driven animations must survive an engine that lacks them.** An element carrying `animation: ck-rise linear both` with no duration is invisible until its timeline advances. Where `animation-timeline` is unsupported the declaration is dropped, the animation runs for 0s, and `both` leaves the element on its final frame — visible. The e2e suite asserts this in Firefox and WebKit, not just Chromium. If you add a scroll-driven animation, add it to that assertion.
 
-## The one place the port leaves the mockup
+## Where the port leaves the mockup
+
+Two places, and both are written down here because a deviation nobody recorded
+is a diff someone finds six months later and "fixes" back.
 
 `Caraka Landing.dc.html` labels the opening veil `MEMBUKA GERBANG`. The port
 reads `OPENING THE GATE` (`VEIL_LABEL` in `src/data/landing.ts`), because `/`
@@ -59,6 +62,17 @@ silently:** the site ships no CSP and no `_headers` today, and the day one lands
 that script needs its hash in `script-src` and the one-line `<style is:inline>`
 beside it needs its own in `style-src`. Without them the veil replays on every
 visit and nothing turns red.
+
+`Caraka Install.dc.html` runs the AI prompt section sixth of seven, behind
+Node, Claude Code, the init-check table, and the install-path list. `/install`
+runs it first. The prompt verifies Node, Git, Claude Code, and `claude auth
+status` itself, so the five sections it used to sit behind are the manual
+route rather than a precondition for the fast one, and
+`../docs/install-guide.md` already reads in that order — §2 is the coding-agent
+path, §3 the manual one. The section markup, its styles, and its
+`animation-range` values are the comp's, unedited; only its position and the
+numbers 01–07 moved, along with one chip that used to say "the prompt below".
+Every other section of that comp is in the comp's own order.
 
 ## Content
 

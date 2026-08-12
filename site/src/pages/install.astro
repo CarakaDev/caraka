@@ -1,7 +1,8 @@
 ---
 // Ported from design/mockups/Caraka Install.dc.html. Markup and inline styles are
 // transcribed as-is; see site/AGENTS.md for the substitutions that replace the
-// design-comp runtime.
+// design-comp runtime. One thing is not transcribed as-is: the comp orders the
+// AI prompt section sixth, and it is first here. See site/AGENTS.md.
 import Base from '../layouts/Base.astro'
 import '../styles/pages/install.css'
 import { toc, chain, notNeeded, nodeRows, agents, prices, costNotes, paths, agentPrompt, scriptRules, verifyLines } from '../data/install'
@@ -58,9 +59,31 @@ import MobileToc from '../components/MobileToc.astro'
       <main style="flex: 1; min-width: 0;">
         <MobileToc chapters={toc} breakpoint={1080} />
 
-        <section id="chain" style="margin-bottom: clamp(46px, 8vh, 78px); scroll-margin-top: 90px;">
+        <section id="script" style="margin-bottom: clamp(46px, 8vh, 78px); scroll-margin-top: 90px;">
           <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
             <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">01</span>
+            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Ask Codex or Claude to install it</h2>
+          </div>
+          <p style="margin: 0 0 20px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Paste this into either coding agent. It lets the agent handle checks while keeping the Telegram token out of the conversation transcript.</p>
+          <div style="background: #05070A; border: 1px solid #171C22; border-radius: 13px; padding: clamp(18px, 2.6vw, 26px); margin-bottom: 18px; font-family: 'JetBrains Mono', monospace; font-size: clamp(11.5px, 1.5vw, 13px); line-height: 1.7; overflow-x: auto; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">
+            <pre style="margin: 0 0 18px; color: #B2BCC6; white-space: pre-wrap; word-break: break-word; font: inherit;">{agentPrompt}</pre>
+            <button type="button" data-copy={agentPrompt} class="hv-ring-tint" style="padding: 10px 16px; background: #0C1116; border: 1px solid #292E35; border-radius: 8px; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #E9EDF2;">
+              <span data-copy-label="COPY PROMPT" data-copied="COPIED" data-tone="#E9EDF2">COPY PROMPT</span>
+            </button>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px;">
+            {scriptRules.map((s) => (
+              <div style={`padding: 18px 20px; background: #0C1116; border: 1px solid #171C22; border-radius: 12px; display: flex; gap: 12px; align-items: flex-start; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: ${s.range};`}>
+                <span style="color: #8EEE98; font-family: 'JetBrains Mono', monospace; font-size: 12px; flex-shrink: 0; padding-top: 2px;">✓</span>
+                <span style="font-size: 13.5px; line-height: 1.55; color: #95A0AB; text-wrap: pretty;">{s.t}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="chain" style="margin-bottom: clamp(46px, 8vh, 78px); scroll-margin-top: 90px;">
+          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">02</span>
             <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">What must be there</h2>
           </div>
           <p style="margin: 0 0 24px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">The wizard checks local prerequisites before it asks for the value it cannot discover: your Telegram bot token.</p>
@@ -88,7 +111,7 @@ import MobileToc from '../components/MobileToc.astro'
 
         <section id="node" style="margin-bottom: clamp(46px, 8vh, 78px); scroll-margin-top: 90px;">
           <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
-            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">02</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">03</span>
             <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">No Node.js yet</h2>
           </div>
           <p style="margin: 0 0 20px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">npx ships with Node, so without it the first command does not exist. This is the only thing to solve before touching Caraka. Version 22 or newer, for the built-in fetch and test runner.</p>
@@ -104,7 +127,7 @@ import MobileToc from '../components/MobileToc.astro'
 
         <section id="agent" style="margin-bottom: clamp(46px, 8vh, 78px); scroll-margin-top: 90px;">
           <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
-            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">03</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">04</span>
             <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Claude Code and Telegram</h2>
           </div>
           <p style="margin: 0 0 22px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Init takes any one of the seven presets it finds on PATH; four of them have been run here against a live binary, and Claude Code through the official ACP adapter is the shortest of the four. Telegram supplies transport and identity, and the agent keeps its runtime, tools, and model access.</p>
@@ -128,7 +151,7 @@ import MobileToc from '../components/MobileToc.astro'
 
         <section id="cost" style="margin-bottom: clamp(46px, 8vh, 78px); scroll-margin-top: 90px;">
           <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
-            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">04</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">05</span>
             <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">What init checks</h2>
           </div>
           <p style="margin: 0 0 22px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Every check happens before config is written. A rejected token or unconfirmed pairing leaves no new credential behind.</p>
@@ -160,7 +183,7 @@ import MobileToc from '../components/MobileToc.astro'
 
         <section id="which" style="margin-bottom: clamp(46px, 8vh, 78px); scroll-margin-top: 90px;">
           <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 18px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
-            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">05</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">06</span>
             <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Choose an install path</h2>
           </div>
           <div style="display: flex; flex-direction: column; gap: 11px;">
@@ -168,28 +191,6 @@ import MobileToc from '../components/MobileToc.astro'
               <div class="hv-ring-soft" style={`display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; padding: 18px 22px; background: #0C1116; border: 1px solid ${p.border}; border-radius: 13px; transition: border-color .25s; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: ${p.range};`}>
                 <span style="flex: 1; min-width: 220px; font-size: 14.5px; line-height: 1.55; color: #B2BCC6; text-wrap: pretty;">{p.you}</span>
                 <span style={`padding: 7px 15px; border-radius: 100px; background: ${p.chipBg}; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: ${p.chipInk}; white-space: nowrap;`}>{p.use}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section id="script" style="margin-bottom: clamp(46px, 8vh, 78px); scroll-margin-top: 90px;">
-          <div style="display: flex; align-items: baseline; gap: 13px; margin-bottom: 10px; animation: ck-slideL linear both; animation-timeline: view(); animation-range: entry 0% entry 80%;">
-            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">06</span>
-            <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Ask Codex or Claude to install it</h2>
-          </div>
-          <p style="margin: 0 0 20px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Paste this into either coding agent. It lets the agent handle checks while keeping the Telegram token out of the conversation transcript.</p>
-          <div style="background: #05070A; border: 1px solid #171C22; border-radius: 13px; padding: clamp(18px, 2.6vw, 26px); margin-bottom: 18px; font-family: 'JetBrains Mono', monospace; font-size: clamp(11.5px, 1.5vw, 13px); line-height: 1.7; overflow-x: auto; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">
-            <pre style="margin: 0 0 18px; color: #B2BCC6; white-space: pre-wrap; word-break: break-word; font: inherit;">{agentPrompt}</pre>
-            <button type="button" data-copy={agentPrompt} class="hv-ring-tint" style="padding: 10px 16px; background: #0C1116; border: 1px solid #292E35; border-radius: 8px; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #E9EDF2;">
-              <span data-copy-label="COPY PROMPT" data-copied="COPIED" data-tone="#E9EDF2">COPY PROMPT</span>
-            </button>
-          </div>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px;">
-            {scriptRules.map((s) => (
-              <div style={`padding: 18px 20px; background: #0C1116; border: 1px solid #171C22; border-radius: 12px; display: flex; gap: 12px; align-items: flex-start; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: ${s.range};`}>
-                <span style="color: #8EEE98; font-family: 'JetBrains Mono', monospace; font-size: 12px; flex-shrink: 0; padding-top: 2px;">✓</span>
-                <span style="font-size: 13.5px; line-height: 1.55; color: #95A0AB; text-wrap: pretty;">{s.t}</span>
               </div>
             ))}
           </div>

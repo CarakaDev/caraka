@@ -10,13 +10,19 @@ const g = '#7A848F',
   d = '#5D666F',
   ok = '#8EEE98'
 
+// The comp runs the AI prompt last but one, after five sections of
+// prerequisites. docs/install-guide.md §2 puts that prompt ahead of the manual
+// path, because the prompt checks Node, Git, Claude Code, and `claude auth
+// status` itself (agentPrompt below) — the five sections are the manual route,
+// not a precondition for the fast one. The page now reads in the guide's order;
+// site/AGENTS.md records the deviation.
 export const toc = [
-  { no: '01', id: 'chain', href: '#chain', title: 'Requirements' },
-  { no: '02', id: 'node', href: '#node', title: 'Node.js' },
-  { no: '03', id: 'agent', href: '#agent', title: 'Claude & Telegram' },
-  { no: '04', id: 'cost', href: '#cost', title: 'Init checks' },
-  { no: '05', id: 'which', href: '#which', title: 'Install path' },
-  { no: '06', id: 'script', href: '#script', title: 'AI install prompt' },
+  { no: '01', id: 'script', href: '#script', title: 'AI install prompt' },
+  { no: '02', id: 'chain', href: '#chain', title: 'Requirements' },
+  { no: '03', id: 'node', href: '#node', title: 'Node.js' },
+  { no: '04', id: 'agent', href: '#agent', title: 'Claude & Telegram' },
+  { no: '05', id: 'cost', href: '#cost', title: 'Init checks' },
+  { no: '06', id: 'which', href: '#which', title: 'Install path' },
   { no: '07', id: 'verify', href: '#verify', title: 'Verify & run' },
 ]
 
@@ -71,7 +77,7 @@ export const costNotes = [
 export const paths = [
   { you: 'Fastest path, no global package', use: 'npx caraka init', chipBg: '#2B1612', chipInk: '#FF7A5E', border: '#2B1612', range: r(0, 2.4, 24) },
   { you: 'Use Caraka every day from PATH', use: 'npm i -g caraka', chipBg: '#171C22', chipInk: '#B2BCC6', border: '#171C22', range: r(1, 2.4, 24) },
-  { you: 'Want Codex or Claude to help', use: 'copy the prompt below', chipBg: '#171C22', chipInk: '#B2BCC6', border: '#171C22', range: r(2, 2.4, 24) },
+  { you: 'Want Codex or Claude to help', use: 'copy the prompt above', chipBg: '#171C22', chipInk: '#B2BCC6', border: '#171C22', range: r(2, 2.4, 24) },
   { you: 'Choose a different repository', use: '--workspace PATH', chipBg: '#171C22', chipInk: '#B2BCC6', border: '#171C22', range: r(3, 2.4, 24) },
   { you: 'Already paired', use: 'npx caraka doctor', chipBg: '#171C22', chipInk: '#B2BCC6', border: '#171C22', range: r(4, 2.4, 24) },
 ]
