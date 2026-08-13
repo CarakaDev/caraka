@@ -4,6 +4,22 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.3] — 2026-08-13
+
+`@~/Project/Coret` answered that no workspace had that name.
+
+The path form that landed in 1.3.1 takes an absolute path, and `~/` is not one. A chat message never passes through a shell, so nothing expands the tilde before Caraka sees it, and `isAbsolute("~/Project/Coret")` is `false` — the token fell through to the slug list and got a sentence about workspaces instead of a sentence about paths. The request that asked for this feature wrote its example exactly that way, so what shipped accepted the long spelling and refused the one the person asking for it used.
+
+### Fixed
+
+- **A leading `~/` is read as a path rooted in the home directory of the user running Caraka.** `~` on its own is that directory. Only the path branch sees the expansion: the slug lookup keeps the token as typed, so an unknown slug still quotes what was written. `~user/` is deliberately left alone — another person's home is a guess about the machine's layout, and a wrong guess names somebody else's directory.
+- Who may use the path form does not change. It is still the operator's own direct message, the decision recorded in `docs/adr/0010-workspace-dari-chat.md`, and a tilde is not a way around it. What `~/x` reaches was already reachable by typing the long path in the same conversation, so this translates a spelling rather than opening a door.
+
+### Limited
+
+- **One test is flaky under load and it is not this one.** On the first full gate run of this change, `a session already holding five questions is refused the sixth` failed once. It passed three of three runs on its own, two of two full runs afterwards, and on the second machine. This change is a pure string function and one guard in the router, neither of which touches the approval queue. It is written down rather than passed over, because a test that fails one run in six will one day fail on somebody else's machine and be read as a regression. It deserves work of its own; v1.2.0 recorded the same class of thing in `activeGrant`.
+- `src/` measures **9,620 lines**, up 22 against an estimate of 12. The difference is the comment on a second guard the plan did not predict: `workspaceForPath` had already answered, and the guard below it still read the unexpanded token, so a tilde path drew two replies and the one that arrived last was the wrong one.
+
 ## [1.3.2] — 2026-08-13
 
 Answering `y` to the memory offer left a config pointing at a service that could not be started by name.

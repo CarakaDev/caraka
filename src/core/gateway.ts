@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { statSync } from "node:fs";
 import { mkdir, readFile, rm } from "node:fs/promises";
-import { hostname } from "node:os";
+import { homedir, hostname } from "node:os";
 import { basename, isAbsolute, join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import {
@@ -79,6 +79,19 @@ const MEMORY_BUDGET_TOKENS = 800;
 const MEMORY_MAX_ITEMS = 6;
 // FR-MEM-07: recall that passes 500 ms is skipped, never waited out.
 const MEMORY_TIMEOUT_MS = 500;
+
+/**
+ * A leading `~/` read as a path. A chat message never passes through a shell, so
+ * nothing expands the tilde before core sees it and `isAbsolute("~/x")` is
+ * false — the token fell through to the slug list and answered that no workspace
+ * was called `~/Project/Coret`, which is the one spelling the request for this
+ * feature used. `~user/` is left alone on purpose: another person's home is a
+ * guess about the machine, and a wrong guess names somebody else's directory.
+ */
+export function expandHome(token: string, home = homedir()) {
+  if (token === "~") return home;
+  return token.startsWith("~/") ? join(home, token.slice(2)) : token;
+}
 
 export class Gateway {
   private readonly abort = new AbortController();
@@ -535,13 +548,22 @@ export class Gateway {
     if (at) {
       const token = at[1] ?? "";
       const rest = text.slice(at[0].length).trim();
-      const chosen = isAbsolute(token)
-        ? this.workspaceForPath(message, token, rest)
+      // The slug lookup keeps the token as typed — a slug never starts with a
+      // tilde, and `ws.unknown` should quote what the person wrote. Only the
+      // path branch sees the expansion, so `resolve`, the directory check, the
+      // `basename` the card offers as a slug, and the audit line all agree on
+      // one spelling.
+      const target = expandHome(token);
+      const chosen = isAbsolute(target)
+        ? this.workspaceForPath(message, target, rest)
         : this.workspaceBySlug(token);
       if (!chosen) {
         // The path branch has answered already: the refusal, the missing
         // directory, or the card that offers to write the entry.
-        if (!isAbsolute(token)) this.respond(message, this.unknownWorkspace(message, token));
+        // `target`, not `token`: a tilde path has already been answered by the
+        // branch above, and asking the unexpanded spelling here sent a second
+        // reply saying no workspace had that name.
+        if (!isAbsolute(target)) this.respond(message, this.unknownWorkspace(message, token));
         return;
       }
       this.store.setMeta(`ws.last.${chatId}`, chosen.slug);

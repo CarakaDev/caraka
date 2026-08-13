@@ -35,7 +35,7 @@ import {
   type InboundEvent,
   type InboundMessage,
 } from "../src/core/channel.js";
-import { Gateway } from "../src/core/gateway.js";
+import { expandHome, Gateway } from "../src/core/gateway.js";
 import {
   agentChecks,
   buildDriver,
@@ -5952,4 +5952,19 @@ test("every sentence the Titen setup can print is in both catalogs", async () =>
     for (const token of catalogs.en[key].match(/\{[a-z]+\}/g) ?? [])
       assert.ok(catalogs.id[key].includes(token), `${key} id is missing ${token}`);
   }
+});
+
+test("a leading tilde is a home path, and a tilde anywhere else is not", () => {
+  // spec/path-tilde. AC-1, AC-2, AC-4, AC-6, AC-8. `homedir()` is a parameter so
+  // this asserts the rule rather than this machine's layout.
+  const home = "/home/rama";
+  assert.equal(expandHome("~/Project/Coret", home), "/home/rama/Project/Coret");
+  assert.equal(expandHome("~", home), home);
+  // AC-6: the slug the card offers comes off the expanded path, not the tilde.
+  assert.equal(basename(expandHome("~/Project/Coret", home)), "Coret");
+
+  // AC-4 and AC-8: another person's home is a guess about the machine, and a
+  // tilde in the middle of a token is an ordinary character.
+  for (const token of ["~coret", "~root/x", "/srv/~/x", "a~/b", "alpha", "/abs/path"])
+    assert.equal(expandHome(token, home), token, token);
 });

@@ -69,7 +69,7 @@
 | ID | P | Kebutuhan |
 |---|---|---|
 | FR-SESS-01 | P0 | Satu sesi = `(principal, channel, chat, workspace, agent)`. Sesi persisten lintas restart. |
-| FR-SESS-02 | P0 | Prefiks `@<workspace>` di awal pesan memindahkan/route ke workspace tersebut dan menjadi default untuk pesan berikutnya di chat itu. Bentuk `@<path absolut>` hanya dibaca di percakapan pribadi dengan operator channel itu, dan path yang tidak dinamai config menaikkan kartu bertanda tangan yang menulis entrinya ke `config.yaml` (ADR-0010). |
+| FR-SESS-02 | P0 | Prefiks `@<workspace>` di awal pesan memindahkan/route ke workspace tersebut dan menjadi default untuk pesan berikutnya di chat itu. Bentuk `@<path absolut>`, dan sejak 1.3.3 `@~/<path>` yang dibaca sebagai path berakar di rumah pengguna yang menjalankan proses ini, hanya dibaca di percakapan pribadi dengan operator channel itu, dan path yang tidak dinamai config menaikkan kartu bertanda tangan yang menulis entrinya ke `config.yaml` (ADR-0010). |
 | FR-SESS-03 | P0 | Perintah: `/new [judul]` (sesi baru, judul opsional), `/stop` (batalkan run), `/status`, `/switch <agent>`, `/ws` (daftar workspace), `/mode <read-only\|assisted>`, `/help`. |
 | FR-SESS-04 | P0 | **Satu run aktif per workspace.** Pesan baru saat run berjalan masuk antrean, dengan konfirmasi "diantrekan (#n)". `/stop` membatalkan run aktif via `session/cancel`. |
 | FR-SESS-05 | P0 | Sesi idle direset otomatis sesuai konfigurasi (default: idle 7 hari atau harian pukul 04:00 — dapat dimatikan). |

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, mkdtempSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import test, { after } from "node:test";
@@ -2776,6 +2776,50 @@ test("the path form is read in the operator's DM and refused everywhere else", a
     assert.match(h.sent.at(-1)?.text ?? "", /No workspace is called/);
   }
   assert.deepEqual(d.prompts, ["agent-alpha:do the thing"]);
+  await h.finish();
+});
+
+test("a path written with ~ reaches the path branch, not the slug list", async () => {
+  // spec/path-tilde. A chat message never passes through a shell, so nothing
+  // expands the tilde before Caraka sees it and `isAbsolute("~/x")` is false —
+  // the token fell through to the slug list and answered "No workspace is
+  // called ~/Project/Coret". Issue #2 asked for this feature writing the example
+  // exactly that way.
+  const root = await mkdtemp(join(tmpdir(), "caraka-tilde-"));
+  const d = heldDriver();
+  const h = await harness({
+    root,
+    driver: d.driver,
+    allowFrom: ["42", "77"],
+    allowChats: [String(PAIRED_ROOM), "42", "77"],
+  });
+  const absent = `~/caraka-tilde-nothing-is-here-${process.pid}`;
+
+  // AC-3 and AC-7: the path branch answers, and it answers with the expanded
+  // path rather than echoing the tilde back.
+  h.feed.push(message(42, 42, `${"@"}${absent} do the thing`));
+  await h.settle(150);
+  const answered = h.sent.at(-1)?.text ?? "";
+  assert.equal(answered.includes("No workspace is called"), false, answered);
+  assert.ok(answered.includes(homedir()), answered);
+  assert.equal(answered.includes("~"), false, answered);
+
+  // AC-5: the room refuses it the same way it refuses an absolute path, and
+  // leaves the same audit line. A tilde is not a way around the DM rule.
+  h.feed.push(message(PAIRED_ROOM, 42, `${"@"}${absent} do the thing`, "supergroup"));
+  await h.settle(150);
+  assert.match(h.sent.at(-1)?.text ?? "", /direct message with the bot/);
+  assert.deepEqual(
+    audits(h.store, "ws.path").map((row) => row.result),
+    ["denied"],
+  );
+
+  // AC-4: `~` followed by anything but a slash is a slug, not a home directory.
+  h.feed.push(message(42, 42, `${"@"}~coret do the thing`));
+  await h.settle(150);
+  assert.match(h.sent.at(-1)?.text ?? "", /No workspace is called/);
+
+  assert.deepEqual(d.prompts, []);
   await h.finish();
 });
 

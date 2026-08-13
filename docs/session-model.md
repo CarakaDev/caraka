@@ -105,9 +105,11 @@ Judul diperbarui **satu kali** setelah agent memberi respons pertama, bila agent
 | Pesan di topic sesi **yang sudah `done`** | Lanjutkan sesi yang sama (ACP `session/load`) dan kembalikan penanda state lewat `editForumTopic`. Topic di DM tidak pernah ditutup, jadi tidak ada yang perlu dibuka kembali. |
 | Pesan saat sesi `running` | Masuk antrean sesi tersebut, balas "diantrekan (#n)". |
 | Perintah global (`/ws`, `/status`, `/memori`) | Selalu dijawab di General, dari topic mana pun ia dikirim. |
-| Pesan dengan `@<path absolut>` di percakapan pribadi operator | Rutekan ke workspace ber-path itu. Path yang tidak dinamai config menaikkan kartu bertanda tangan sekali pakai yang menulis entrinya ke `config.yaml` (ADR-0010). |
-| Pesan dengan `@<path absolut>` di tempat lain | Tolak, sebutkan bahwa bentuk itu hanya berlaku di DM operator, dan catat satu baris audit. Anggota ruangan menyebut workspace lewat slug. |
+| Pesan dengan `@<path absolut>` atau `@~/<path>` di percakapan pribadi operator | Rutekan ke workspace ber-path itu. Path yang tidak dinamai config menaikkan kartu bertanda tangan sekali pakai yang menulis entrinya ke `config.yaml` (ADR-0010). |
+| Pesan dengan `@<path absolut>` atau `@~/<path>` di tempat lain | Tolak, sebutkan bahwa bentuk itu hanya berlaku di DM operator, dan catat satu baris audit. Anggota ruangan menyebut workspace lewat slug. |
 | Baris sesi yang slug-nya tidak ada di config | Jangan jalankan apa pun; jawab dengan daftar workspace. Slug kosong, yaitu setiap baris sebelum v0.4, tetap berarti workspace pertama. |
+
+Sejak 1.3.3 `~/` di depan token dibaca sebagai path yang berakar di direktori rumah pengguna yang menjalankan Caraka. Sebuah pesan chat tidak pernah melewati shell, jadi tidak ada yang mengembangkan tilde sebelum Caraka melihatnya, dan sebelum itu `@~/Project/Coret` dijawab sebagai nama workspace yang tidak dikenal. `~user/` sengaja tidak dikembangkan: rumah orang lain adalah tebakan tentang tata letak mesin. Aturan siapa yang boleh memakai bentuk path tidak berubah — tetap DM operator saja.
 
 **Prinsip:** *sesi tidak pernah berpindah topic, dan topic tidak pernah dipakai ulang oleh sesi lain.* Ini yang membuat riwayat dapat dipercaya.
 
