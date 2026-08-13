@@ -20,7 +20,7 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.3.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.3.1', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Seven presets load; five routes across four agents have completed a turn
   // against a live binary here, all on 10 August 2026 — Claude Code over ACP
@@ -119,6 +119,20 @@ export const releases = [
         'Watch the dashboard swap a panel in a real browser with the CSP live',
         'Run fourteen days on a real WhatsApp number with no ban and no manual relink, or publish the honest finding that makes Cloud API the default',
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
+      ] },
+    ] },
+  { v: '1.3.1', state: 'unproven', date: '13 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'FIXED', tone: '#FFD67E', items: [
+        'Caraka renamed threads it did not open, and on a channel that can archive one it archived them too. A session can be born inside a topic that already exists — the thread arrives on the incoming message, and a topic is only created when there is none — so a message sent inside a topic a human made and named gave that session the human’s thread, with nothing recording who made it. The first state change then renamed it to the first line of whoever’s message started the task',
+        'The half the report did not reach: the archive call runs on done, failed and cancelled, so one task run inside someone else’s thread renamed it and then archived it. The issue described a rename on Telegram; the hole was in core, and one guard closes both because the rename and the archive sit behind the same check',
+        'Caraka records the threads it opens and mutates only those. A thread it does not own gets neither call, one audit line naming the chat and the thread, and a session that runs and answers exactly as before — the guard costs a glyph, never a name. Ownership is keyed by thread rather than by session, so a second session opened in the same topic through /new inherits it',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'A name already overwritten cannot be restored. It was never stored, and the Bot API has no method that returns a forum topic’s name — which is also why the stored record is a bit and never a name',
+        'After upgrading, a session that already had a topic stops updating its glyph. No audit row records a topic’s creation and no name can be read back, so ownership of a thread that predates this release cannot be proven from anything on disk, and the guard fails closed rather than guessing. Guessing the other way is what renames someone else’s topic',
+        'Half of the acceptance criteria in the report are deliberately not built. They ask for an explicit target name and a current-to-target confirmation, which assume a product that offers renaming to its users; Caraka has no rename command, and its only topic mutation is the automatic state glyph. What it needed was a provenance condition',
+        'src/ measures 9,438 lines against the ~8,000 ceiling, up 26, of which eleven are the comment recording why ownership sits beside the route and why the guard sits below the glyph check',
       ] },
     ] },
   { v: '1.3.0', state: 'unproven', date: '13 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),

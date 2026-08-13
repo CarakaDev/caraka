@@ -12,10 +12,12 @@ export const badges = [
   // tracks what is published, not package.json. Bump it only after `npm publish`
   // has run — the owner's command and nobody else's — and only to what the
   // registry says. Read from the registry rather than from `npm view`, which
-  // served the previous version for about a minute after a successful publish:
-  // `curl -s https://registry.npmjs.org/caraka` gave `dist-tags.latest` 1.3.0 on
-  // 13 August 2026, which is the number below.
-  { k: 'npm', v: 'v1.3.0', tone: '#E2452C', ink: '#FFEDE7' },
+  // served the previous version for about a minute after a successful publish —
+  // and the registry itself lagged too on 13 August 2026, answering 1.3.0 for
+  // roughly a minute after `npm publish` printed `+ caraka@1.3.1`. Wait for
+  // `curl -s https://registry.npmjs.org/caraka` to name the new one before
+  // touching this line. It gave `dist-tags.latest` 1.3.1 on 13 August 2026.
+  { k: 'npm', v: 'v1.3.1', tone: '#E2452C', ink: '#FFEDE7' },
   { k: 'license', v: 'MIT', tone: '#8EEE98', ink: '#05300C' },
   { k: 'node', v: '≥22', tone: '#E2452C', ink: '#FFEDE7' },
   { k: 'protocol', v: 'ACP', tone: '#FF7A5E', ink: '#2B0D06' },

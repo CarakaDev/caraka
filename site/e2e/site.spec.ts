@@ -373,6 +373,10 @@ test.describe('the comps still decide the layout', () => {
     // The other four hold: the mention gate and the attachment refusal are
     // behaviour, and nothing on /, /compare, /install or /security describes them
     // yet.
+    //
+    // 1.3.1 moved one: /status +663 to 15984, the 1.3.1 card. /brand/readme held
+    // because the npm chip went from v1.3.0 to v1.3.1 — same width, no reflow.
+    // Measured 13 August 2026, Chromium at 1440x900.
     const EXPECTED: Record<string, number> = {
       // v1.2 copy, except the two v1.3 moved — measured from the site (see above)
       '/': 6595,
@@ -381,7 +385,7 @@ test.describe('the comps still decide the layout', () => {
       '/install': 5465,
       '/security': 6147,
       '/whatsapp-risk': 6857,
-      '/status': 15321,
+      '/status': 15984,
       '/brand/readme': 5581,
       // still measured against the comp
       '/story': 5734,
