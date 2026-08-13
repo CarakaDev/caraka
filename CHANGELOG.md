@@ -4,6 +4,27 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] — 2026-08-13
+
+Caraka renamed threads it did not create, and on a channel that can archive one, it archived them too.
+
+A session can be born inside a topic that already exists. `createSession` reads `message_thread_id` off the incoming message and only calls `createForumTopic` when there is none, so a message sent inside a topic a human made and named gives that session the human's thread. Nothing recorded who created it. Then the first state change renamed it to the first line of whoever's message started the task, and the old name was stored nowhere, so nothing could put it back.
+
+Reported as #7 from an incident on a different product, which made it easy to dismiss as somebody else's bug. It was not: the same path exists here, and the report was more conservative than the code deserved. On Discord `finishThread` sends `{ archived: true }`, and it runs on `done`, `failed`, and `cancelled` — so one task run inside someone else's thread renamed it and then archived it. The issue described a rename on Telegram. The hole is in core, and the archive is the half nobody had noticed.
+
+The mention gate that shipped hours earlier in 1.3.0 narrows this and does not close it: an unaddressed message in a human's topic no longer starts a session. Address Caraka there once and the rename still happened.
+
+### Fixed
+
+- **Topic mutation is refused for any thread Caraka did not open.** Caraka records the threads it creates, and `setState` renames or archives only those. A thread it does not own gets neither call, one `topic.skip` audit line naming the chat and the thread, and a session that otherwise runs and answers exactly as before — the guard costs a glyph, never a name. Ownership is recorded per thread rather than per session, so a second session opened in the same topic through `/new` inherits it. The stored value is a bit, never a name: the Bot API has no method that returns a forum topic's name, so there is no name Caraka could honestly claim to know.
+
+### Limited
+
+- **A name already overwritten cannot be restored.** It was never stored and it cannot be read back from Telegram. If a topic of yours was renamed by 1.3.0 or earlier, the name has to be set by hand.
+- **After upgrading, a session that already had a topic stops updating its glyph.** There is no audit row recording a topic's creation and no way to read a topic's name, so ownership of a thread that predates 1.3.1 cannot be proven from anything on disk, and the guard fails closed rather than guessing. Topics opened after the upgrade behave as they always did. Guessing the other way is what renames someone else's topic, so the direction is deliberate.
+- **Half of the acceptance criteria in #7 are not built, and will not be until they apply.** They ask for an explicit target name, a `current → target` confirmation, and a refusal to infer a name from conversation — all of which assume a product that offers renaming to its users. Caraka has no rename command; its only topic mutation is the automatic state glyph. What it needed was a provenance condition, not a confirmation dialogue. If a rename command is ever added, the confirmation belongs to it, and `spec/topic-provenance.md` records why it is absent now.
+- `src/` measures **9,438 lines**, up 26. Eleven of those are the comment recording why ownership lives beside the route instead of on the session row, and why the guard sits below the glyph check where it covers the rename and the archive with one condition.
+
 ## [1.3.0] — 2026-08-13
 
 Six issues were filed against a released 1.2.0. The two most expensive things in this release are in none of them, and both were found by reading the code the issues pointed at.

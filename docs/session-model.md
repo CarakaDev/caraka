@@ -73,6 +73,10 @@ berdokumentasi untuk ditutup. Alasan lengkapnya di `telegram-integration.md` §2
 
 Warna diperbarui lewat `editForumTopic` di setiap transisi. **Daftar topic menjadi papan status yang bisa dibaca sekilas** — tanpa membuka satu pun percakapan.
 
+**Hanya untuk thread yang Caraka buat sendiri.** Sebuah sesi bisa lahir di topic yang sudah ada: `createSession` mengambil `message_thread_id` dari pesan yang masuk dan hanya memanggil `createForumTopic` kalau tidak ada. Topic seperti itu dibuat dan dinamai orang lain, jadi sejak 1.3.1 Caraka mencatat thread yang dibukanya sendiri dan menolak mengubah yang lain — tidak ada `editForumTopic`, dan di channel yang punya `finishThread` tidak ada pengarsipan. Sesi tetap berjalan penuh di sana dan tetap menjawab di thread itu; yang hilang cuma glifnya, dan satu baris audit `topic.skip` menyebut kenapa.
+
+Kepemilikan disimpan per thread, bukan per sesi, sehingga sesi kedua yang lahir di topic yang sama lewat `/new` mewarisinya. Nama topic tidak pernah ikut disimpan: Bot API tidak punya method yang mengembalikannya, jadi tidak ada nama lama yang bisa Caraka klaim tahu — dan itu juga sebabnya nama yang sudah tertimpa oleh versi sebelum 1.3.1 tidak bisa dipulihkan. Basis data yang lahir sebelum rilis itu tidak memuat catatan kepemilikan sama sekali, jadi setiap thread di dalamnya terbaca bukan milik Caraka: sesi yang sudah punya topic berhenti memperbarui glifnya, dan topic yang dibuat sesudahnya berjalan seperti biasa.
+
 > Catatan: `icon_color` hanya menerima 6 nilai integer yang telah ditentukan. Lima state di atas memakai lima di antaranya; **merah `16478047` sengaja dikosongkan** karena terlalu dekat dengan warna merek kesumba (ΔE 9,9) — lihat `brand.md` §6.
 
 ---

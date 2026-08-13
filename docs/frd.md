@@ -95,6 +95,7 @@
 | FR-TOPIC-09 | P0 | **Deteksi kemampuan wajib.** `createForumTopic` di supergroup **gagal diam-diam** bila forum mode mati. Sistem mendeteksi sekali saat startup, menyimpan `container.supports_threads`, dan jatuh ke **mode linear** (header `[ws · #id]` di setiap balasan) tanpa gagal keras. |
 | FR-TOPIC-10 | P1 | Discord memetakan konsep yang sama ke thread dengan `auto_archive_duration: 10080`. Terpasang di v0.5. Batas ±50 thread aktif per channel / 1.000 per guild tidak ditegakkan dengan menutup sesi lama secara proaktif: thread yang diarsipkan tetap dihitung Discord, jadi sapuan tidak membeli kuota. Sesi yang selesai diarsipkan saat itu juga, dan batasnya tiba sebagai error pembuatan thread yang jatuh ke mode linear (FR-TOPIC-09). |
 | FR-TOPIC-11 | P0 | WhatsApp dan channel tanpa thread memakai mode linear — fungsi identik, hanya lebih padat. |
+| FR-TOPIC-12 | P0 | **Mutasi topic hanya untuk thread yang Caraka buat sendiri.** Sebuah sesi bisa lahir di topic yang sudah ada, karena `createSession` membaca `message_thread_id` dari pesan masuk dan hanya memanggil `createForumTopic` bila tidak ada. Caraka mencatat thread yang dibukanya, dan bila catatan itu tidak ada ia tidak memanggil `editForumTopic` maupun `finishThread`, menulis satu baris audit `topic.skip`, dan menjalankan sesinya seperti biasa. Kepemilikan disimpan per thread sehingga sesi berikutnya di topic yang sama mewarisinya; nama topic tidak pernah disimpan karena Bot API tidak menyediakan cara membacanya (isu #7). |
 
 ---
 

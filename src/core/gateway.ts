@@ -986,6 +986,19 @@ export class Gateway {
     void this.tell(chatId, this.t("session.threadsOff"), principal);
   }
 
+  /**
+   * Which threads Caraka opened itself. A thread that arrived on a message was
+   * made and named by someone else, and `setState` refuses to rename or archive
+   * one of those (issue #7). It lives in `meta` rather than on the session row
+   * because ownership belongs to the thread: a second session born in the same
+   * topic through `/new` inherits it with no code. The value is `1` and never a
+   * name — the Bot API has no method returning a topic's name, so there is no
+   * honest name to keep.
+   */
+  private static ownKey(chatId: string, threadId: string) {
+    return `topic.own.${chatId}.${threadId}`;
+  }
+
   private async createSession(
     message: InboundMessage,
     title: string,
@@ -999,6 +1012,7 @@ export class Gateway {
         threadId = String(
           (await this.channelOf(chatId).createTopic(chatId, title)).message_thread_id,
         );
+        this.store.setMeta(Gateway.ownKey(chatId, threadId), "1");
       } catch {
         threadId = "";
         this.noteThreadsOff(chatId, String(message.from?.id));
@@ -1247,6 +1261,18 @@ export class Gateway {
     if (!session.threadId) return;
     const glyph = STATE_GLYPH[state];
     if (!glyph) return;
+    // Below the state write, so a thread nobody owns still moves the session
+    // (issue #7 asks for a guardrail, not a stalled run), and below the glyph
+    // check, so this one condition covers the rename and the archive both —
+    // `finishThread` already sits under it, and a guard that covered only the
+    // rename would still archive a thread someone else opened.
+    if (this.store.meta(Gateway.ownKey(session.chatId, session.threadId)) !== "1") {
+      this.note(session, "topic.skip", "unowned", {
+        chatId: session.chatId,
+        threadId: session.threadId,
+      });
+      return;
+    }
     const channel = this.channelOf(session.chatId);
     await channel
       .editTopic(session.chatId, session.threadId, `${glyph} ${session.title}`)

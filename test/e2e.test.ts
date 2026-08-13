@@ -273,6 +273,13 @@ async function harness(
     /** The one container id whose command menu Telegram refuses to publish. */
     commandsFailFor?: string;
     editTopicFails?: boolean;
+    /**
+     * Whether this channel can archive a finished thread. Telegram cannot, so the
+     * stub leaves the method out by default. Core reads the capability rather than
+     * the channel (hard rule 1), so the archive guard is tested by turning the
+     * capability on here instead of borrowing an adapter that has it.
+     */
+    archives?: boolean;
     onPrompt?: (prompt: string, route: DriverRoute) => Promise<{ stopReason: string }>;
     driver?: AgentDriver;
     driverFor?: DriverFor;
@@ -350,6 +357,14 @@ async function harness(
       if (options.editTopicFails) throw new Error("TOPIC_NOT_MODIFIED");
       return true;
     },
+    ...(options.archives
+      ? {
+          finishThread: async (_chatId: string, threadId: string) => {
+            calls.push(`finishThread:${threadId}`);
+            return true;
+          },
+        }
+      : {}),
     answerCallback: async (_id: string, text: string) => {
       sent.push({ chatId: "callback", text });
       return true;
@@ -1493,6 +1508,128 @@ test("the startup notice names the machine once an hour", async () => {
     false,
   );
   await second.finish();
+});
+
+// ---- spec/topic-provenance (issue #7) ----------------------------------
+
+test("a thread that arrived with the message is never renamed, and the session still runs", async () => {
+  // Issue #7. `createSession` takes `message_thread_id` when a message arrives in
+  // a topic that already exists, so a session attaches to a topic a human created
+  // and named. Before this guard, the first state change renamed it to the first
+  // line of whoever's message started the task, and the old name was stored
+  // nowhere — so nothing could put it back. AC-2, AC-4, AC-6, AC-7, AC-11, AC-12.
+  const h = await harness({ topics: true });
+  h.feed.push(message(42, 42, "ship it", "private", undefined, 900));
+  await h.settle(150);
+
+  // AC-4: not renamed, not once. This is the assertion that fails without the
+  // guard, and it fails with two calls — the two in the report.
+  assert.deepEqual(
+    h.calls.filter((call) => call.startsWith("editForumTopic:")),
+    [],
+  );
+  // AC-2: and the thread was never claimed.
+  assert.equal(h.store.meta("topic.own.42.900"), undefined);
+  // AC-6: the run still happened and the state still moved.
+  assert.equal(
+    (h.store.db.prepare("SELECT state FROM sessions").get() as { state: string }).state,
+    "done",
+  );
+  // AC-12: and the answer still went to that thread.
+  assert.ok(h.sent.some((item) => item.thread === "900"));
+  // AC-7: with a line saying why the rename did not happen.
+  const skipped = h.store.db
+    .prepare("SELECT result, details FROM audit WHERE action = 'topic.skip'")
+    .all() as Array<{ result: string; details: string }>;
+  assert.ok(skipped.length >= 1);
+  assert.equal(skipped[0]?.result, "unowned");
+  assert.match(skipped[0]?.details ?? "", /900/);
+  // AC-11: nothing that looks like a name was stored for a thread.
+  const owned = h.store.db
+    .prepare("SELECT value FROM meta WHERE key LIKE 'topic.own.%'")
+    .all() as Array<{ value: string }>;
+  for (const row of owned) assert.equal(row.value, "1");
+  await h.finish();
+});
+
+test("Caraka marks the thread it created, and keeps it for the next session", async () => {
+  // AC-1, AC-9, AC-10. Ownership is a property of the thread rather than of the
+  // session, which is the whole reason it lives in `meta` under the route: a
+  // second session born in the same topic through /new inherits it with no code.
+  const h = await harness({ topics: true });
+  h.feed.push(message(42, 42, "ship it"));
+  await h.settle(150);
+  // AC-1
+  assert.equal(h.store.meta("topic.own.42.7001"), "1");
+
+  // AC-9: /new inside the topic Caraka made forces a second session at the same
+  // route, and that session's state still reaches the name. The task after it is
+  // what moves the state — `/new` only opens the session, so a rename asserted
+  // straight after it would be asserting nothing.
+  h.calls.length = 0;
+  h.feed.push(message(42, 42, "/new second pass", "private", undefined, 7001));
+  await h.settle(150);
+  h.feed.push(message(42, 42, "carry on", "private", undefined, 7001));
+  await h.settle(150);
+  assert.deepEqual(
+    h.calls.filter((call) => call.startsWith("editForumTopic:")),
+    ["editForumTopic:▸ second pass", "editForumTopic:✓ second pass"],
+  );
+  // AC-10: and the record did not change under a message carrying the same thread.
+  assert.equal(h.store.meta("topic.own.42.7001"), "1");
+  await h.finish();
+});
+
+test("a thread that is not Caraka's is not archived either", async () => {
+  // AC-5. Telegram has no archive call, so the capability is turned on in the
+  // stub. One guard covers both mutations because `editTopic` and `finishThread`
+  // sit behind the same glyph check — the pair here is what proves it, since a
+  // guard that only covered the rename would still archive someone's thread.
+  const h = await harness({ topics: true, archives: true });
+  h.feed.push(message(42, 42, "ship it", "private", undefined, 900));
+  await h.settle(150);
+  assert.deepEqual(
+    h.calls.filter((call) => call.startsWith("finishThread:")),
+    [],
+  );
+
+  // The other half, and the reason this test carries both: a guard that read the
+  // record wrongly would archive nothing at all, and a test that only checked the
+  // refusal would pass for that too. Same sender — the allowlist holds one
+  // principal, so a second id would be rejected before any of this.
+  h.calls.length = 0;
+  h.feed.push(message(42, 42, "ship it too"));
+  await h.settle(150);
+  assert.ok(h.calls.some((call) => call === "finishThread:7001"));
+  await h.finish();
+});
+
+test("a database from before this release treats every thread as not its own", async () => {
+  // AC-8. There is no audit row recording a topic being created and no Bot API
+  // method returning a topic's name, so ownership of a thread that predates this
+  // release cannot be proven from anything stored. The guard fails closed, which
+  // costs a glyph and never costs someone else's topic name.
+  //
+  // The upgrade is modelled by letting Caraka open the topic and then dropping the
+  // ownership row: a session and its thread exist, and nothing records who made
+  // it, which is exactly the shape a database written by 1.3.0 has. Writing a
+  // session row by hand instead would need the harness's workspace slug, which is
+  // a temp-directory basename — and a slug the config does not name never reaches
+  // a run at all (`routeTask`), so that test would pass without proving anything.
+  const h = await harness({ topics: true });
+  h.feed.push(message(42, 42, "ship it"));
+  await h.settle(150);
+  assert.equal(h.store.meta("topic.own.42.7001"), "1");
+  h.store.db.prepare("DELETE FROM meta WHERE key LIKE 'topic.own.%'").run();
+
+  h.calls.length = 0;
+  h.feed.push(message(42, 42, "carry on", "private", undefined, 7001));
+  await h.settle(150);
+  assert.deepEqual(
+    h.calls.filter((call) => call.startsWith("editForumTopic:")),
+    [],
+  );
+  await h.finish();
 });
 
 test("a topic gets its colour once and carries its state in the name", async () => {
