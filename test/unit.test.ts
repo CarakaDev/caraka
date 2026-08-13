@@ -48,6 +48,8 @@ import {
   pairingConfirmed,
   processAlive,
   readPid,
+  resolveTitenBinary,
+  setUpTiten,
   startupSecrets,
   trustCommand,
   trustWorkspace,
@@ -5715,4 +5717,239 @@ test("a WhatsApp caption is the text of its message, on both transports", async 
     { text: "ordinary" },
   ]);
   transport.stop?.();
+});
+
+// ---- spec/titen-siap-pakai: the memory offer finishes what it starts --------
+
+// One harness for the whole chain. Every seam the real one reaches for is faked
+// except the key write, which is real against a temp root: the 0600 it has to
+// leave behind belongs to `atomicSecret`, and a fake would prove the fake.
+async function titenSetup(
+  options: {
+    installStatus?: number | null;
+    binary?: string | null;
+    bootstrapStdout?: string;
+    dbExists?: boolean;
+    keyExists?: boolean;
+    live?: boolean;
+  } = {},
+) {
+  const root = await mkdtemp(join(tmpdir(), "caraka-titen-"));
+  await mkdir(join(root, "secrets"), { recursive: true, mode: 0o700 });
+  const paths = carakaPaths(root);
+  const calls: string[] = [];
+  const setup = await setUpTiten({
+    paths,
+    org: "probe-workspace",
+    t: translator("en"),
+    install: () => {
+      calls.push("install");
+      return options.installStatus ?? 0;
+    },
+    binary: () => {
+      calls.push("binary");
+      return options.binary === undefined ? "/fake/bin/titen" : options.binary;
+    },
+    exists: (path: string) =>
+      path === paths.titenDb ? options.dbExists === true : options.keyExists === true,
+    bootstrap: (bin, args) => {
+      calls.push(`bootstrap:${bin} ${args.join(" ")}`);
+      return {
+        status: 0,
+        stdout:
+          options.bootstrapStdout ??
+          "organization: org_abc (probe)\napi_key: titen_sk_notarealkeywrittenoutofwords00\n",
+      };
+    },
+    probe: async () => options.live === true,
+    endpoint: "http://127.0.0.1:8787",
+  });
+  return { setup, paths, calls, root, output: setup.lines.join("\n") };
+}
+
+test("the memory offer installs, resolves, bootstraps once, and stores the key", async () => {
+  // AC-1, AC-2, AC-4, AC-5, AC-7, AC-8, AC-10, AC-14.
+  const { setup, paths, calls, output } = await titenSetup();
+  assert.equal(setup.provider, "titen");
+  assert.ok(calls.includes("install"));
+
+  // AC-5: the store is named on the command line, because `--db` otherwise
+  // defaults to the working directory and `serve` elsewhere is a second store.
+  const bootstrap = calls.find((call) => call.startsWith("bootstrap:"));
+  assert.ok(bootstrap?.includes(`--db ${paths.titenDb}`), bootstrap);
+  assert.ok(bootstrap?.includes("--org probe-workspace"));
+
+  // AC-7: written, and written 0600 by the real writer.
+  const stored = await readFile(paths.titenKey, "utf8");
+  assert.equal(stored, "titen_sk_notarealkeywrittenoutofwords00");
+  assert.equal((await stat(paths.titenKey)).mode & 0o077, 0);
+
+  // AC-8: nothing Caraka prints carries the key.
+  assert.equal(output.includes("titen_sk_"), false);
+  // AC-14: the command left to run names the same store.
+  assert.match(output, /titen serve --db /);
+  assert.ok(output.includes(paths.titenDb));
+});
+
+test("a store that already exists is never bootstrapped again", async () => {
+  // AC-6. A second `titen bootstrap` on one store throws `UNIQUE constraint
+  // failed: operator_accounts.username` and still exits 0 (Titen 0.7.4, 13
+  // August 2026), so its status cannot tell success from already-done. The file
+  // is the check, and the command is not run at all.
+  const withKey = await titenSetup({ dbExists: true, keyExists: true });
+  assert.equal(withKey.setup.provider, "titen");
+  assert.equal(
+    withKey.calls.some((call) => call.startsWith("bootstrap:")),
+    false,
+  );
+
+  // AC-6 again, and the honest half: a store with no key Caraka can read is not
+  // guessed at. It names one command and falls back.
+  const orphan = await titenSetup({ dbExists: true, keyExists: false });
+  assert.equal(orphan.setup.provider, "local");
+  assert.equal(
+    orphan.calls.some((call) => call.startsWith("bootstrap:")),
+    false,
+  );
+  assert.match(orphan.output, /titen key create/);
+});
+
+test("every link that does not hold ends at local, and says which one", async () => {
+  // AC-3, AC-9, AC-16, and AC-10 from the other side. The installer exiting
+  // non-zero, the binary not resolving, and a bootstrap that printed no key are
+  // three different failures and three different sentences.
+  const failed = await titenSetup({ installStatus: 1 });
+  assert.equal(failed.setup.provider, "local");
+  // AC-16: nothing is resolved after an install that did not finish.
+  assert.equal(failed.calls.includes("binary"), false);
+
+  const missing = await titenSetup({ binary: null });
+  assert.equal(missing.setup.provider, "local");
+  assert.match(missing.output, /PATH/);
+
+  const keyless = await titenSetup({ bootstrapStdout: "organization: org_abc (probe)\n" });
+  assert.equal(keyless.setup.provider, "local");
+  assert.match(keyless.output, /bootstrap/);
+
+  // Each sentence is different, so the reader can tell the three apart.
+  const said = new Set([failed.output, missing.output, keyless.output]);
+  assert.equal(said.size, 3);
+});
+
+test("a Titen already answering is said so, and asks for no command", async () => {
+  // AC-15.
+  const { setup, output } = await titenSetup({ live: true });
+  assert.equal(setup.provider, "titen");
+  assert.equal(output.includes("titen serve"), false);
+  assert.match(output, /answering/);
+});
+
+test("the Titen binary is found without PATH naming it", async () => {
+  // AC-2. `bun add -g` puts it in a directory the installer itself warns is not
+  // on PATH, so PATH is the last place this looks rather than the only one.
+  const root = await mkdtemp(join(tmpdir(), "caraka-bun-"));
+  await mkdir(join(root, "bin"), { recursive: true });
+  const binary = join(root, "bin", "titen");
+  await writeFile(binary, "#!/bin/sh\n", { mode: 0o755 });
+  assert.equal(
+    resolveTitenBinary({ env: { BUN_INSTALL: root, PATH: "" }, isFile: existsSync }),
+    binary,
+  );
+  // Nothing anywhere is null rather than a guess.
+  assert.equal(resolveTitenBinary({ env: { BUN_INSTALL: join(root, "empty"), PATH: "" } }), null);
+});
+
+test("the Titen key is a secret in every place Caraka keeps one", async () => {
+  // AC-12, AC-13, and the pinned store's home. The key reaches the scrubber from
+  // either source, and it sits under `secrets/`, which uninstall already removes.
+  const paths = carakaPaths("/home/rama/.caraka");
+  assert.equal(paths.titenKey.startsWith(paths.secrets), true);
+  assert.ok(uninstallTargets(paths).includes(paths.secrets));
+  assert.equal(paths.titenDb.startsWith(paths.root), true);
+
+  const key = "titen_sk_notarealkeywrittenoutofwords00";
+  const secrets = startupSecrets({
+    token: "t".repeat(40),
+    titenKey: key,
+    approvalKey: Buffer.alloc(32),
+  });
+  assert.ok(secrets.includes(key));
+  assert.equal(createScrubber(secrets)(`sent ${key} out`).includes(key), false);
+});
+
+test("the Titen key is read from the environment first and the secret file second", async () => {
+  // AC-11. Nobody should have to export a key for a provider `init` just set up,
+  // and an operator who does export one should still win.
+  const oldHome = process.env.CARAKA_HOME;
+  const oldKey = process.env.CARAKA_TITEN_API_KEY;
+  const root = await mkdtemp(join(tmpdir(), "caraka-titenkey-"));
+  process.env.CARAKA_HOME = root;
+  delete process.env.CARAKA_TITEN_API_KEY;
+  try {
+    const config = defaultConfig(root, BOT, "42", true, "en", "titen");
+    const paths = await saveConfig(config, "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi");
+    await writeFile(paths.titenKey, "titen_sk_fromthefilewrittenoutofwords0", { mode: 0o600 });
+
+    // The file alone is enough.
+    assert.equal((await loadConfig()).titenKey, "titen_sk_fromthefilewrittenoutofwords0");
+
+    // With both, the environment decides.
+    process.env.CARAKA_TITEN_API_KEY = "titen_sk_fromtheenvironmentoutofwords0";
+    assert.equal((await loadConfig()).titenKey, "titen_sk_fromtheenvironmentoutofwords0");
+  } finally {
+    if (oldHome === undefined) delete process.env.CARAKA_HOME;
+    else process.env.CARAKA_HOME = oldHome;
+    if (oldKey === undefined) delete process.env.CARAKA_TITEN_API_KEY;
+    else process.env.CARAKA_TITEN_API_KEY = oldKey;
+  }
+});
+
+test("a provider other than titen reads no memory key at all", async () => {
+  // The other half of AC-11: `local` is a choice, not an install with a missing
+  // credential, so it never looks for one.
+  const oldHome = process.env.CARAKA_HOME;
+  const root = await mkdtemp(join(tmpdir(), "caraka-titenlocal-"));
+  process.env.CARAKA_HOME = root;
+  try {
+    const paths = await saveConfig(
+      defaultConfig(root, BOT, "42", true, "en", "local"),
+      "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi",
+    );
+    await writeFile(paths.titenKey, "titen_sk_shouldnotbereadoutofwords000", { mode: 0o600 });
+    assert.equal((await loadConfig()).titenKey, "");
+  } finally {
+    if (oldHome === undefined) delete process.env.CARAKA_HOME;
+    else process.env.CARAKA_HOME = oldHome;
+  }
+});
+
+test("doctor's memory remedy names the store it pinned", async () => {
+  // AC-17. Read from the source the way the Indonesian-literal and the bound-SQL
+  // tests read it: the remedy is built inline from `loaded.paths.titenDb`, and a
+  // `titen serve` without `--db` is the advice that produced the 401 in the first
+  // place.
+  const source = await readFile(new URL("../src/cli.ts", import.meta.url), "utf8");
+  assert.match(source, /titen serve --db \$\{loaded\.paths\.titenDb\}/);
+  assert.equal(/run `titen serve`/.test(source), false);
+});
+
+test("every sentence the Titen setup can print is in both catalogs", async () => {
+  // AC-18. `tsc` catches a key missing from `id`, and catches nothing about a key
+  // left in English or a placeholder that only one side interpolates.
+  const keys = [
+    "cli.titenMissing",
+    "cli.titenStoreNoKey",
+    "cli.titenNoKey",
+    "cli.titenServe",
+    "cli.titenLive",
+  ] as const;
+  for (const key of keys) {
+    assert.ok(catalogs.en[key]?.length > 0, `${key} en`);
+    assert.ok(catalogs.id[key]?.length > 0, `${key} id`);
+    assert.notEqual(catalogs.en[key], catalogs.id[key], `${key} is untranslated`);
+    // A placeholder named on one side and absent on the other is a sentence that
+    // prints `{db}` at somebody.
+    for (const token of catalogs.en[key].match(/\{[a-z]+\}/g) ?? [])
+      assert.ok(catalogs.id[key].includes(token), `${key} id is missing ${token}`);
+  }
 });

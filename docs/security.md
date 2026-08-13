@@ -222,7 +222,7 @@ penjaga itu, opsi tersebut akan menjadi tombol satu ketukan di chat pribadi.
 
 **Yang tidak pernah kami sentuh:** API key model. Itu milik coding agent. Caraka tidak punya, tidak meminta, tidak menyimpan.
 
-**Yang kami simpan:** kredensial channel (bot token Telegram; sejak v0.5 bot token Discord; sejak v0.6 auth state Baileys, access token Cloud API, verify token, dan app secret) → keychain OS bila tersedia; fallback file `chmod 600` di `~/.caraka/secrets/`. Tidak pernah masuk repo, tidak pernah ke log, tidak pernah ke chat, **tidak pernah ditulis ke `config.yaml`**.
+**Yang kami simpan:** kredensial channel (bot token Telegram; sejak v0.5 bot token Discord; sejak v0.6 auth state Baileys, access token Cloud API, verify token, dan app secret) dan sejak 1.3.2 kunci API Titen di `secrets/titen.key` bila `init` yang memasangnya → keychain OS bila tersedia; fallback file `chmod 600` di `~/.caraka/secrets/`. Tidak pernah masuk repo, tidak pernah ke log, tidak pernah ke chat, **tidak pernah ditulis ke `config.yaml`**.
 
 Auth state Baileys tinggal di `~/.caraka/secrets/whatsapp/` pada mode direktori 0700, bukan di `sessions/`. Ia memuat noise key dan identity key yang ditandatangani: siapa pun yang memegang direktori itu memegang sesi WhatsApp nomor tersebut, jadi ia kredensial dan bukan state sesi agent. `caraka doctor` memeriksa mode direktori dan mode berkasnya sebagai baris tersendiri.
 

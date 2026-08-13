@@ -20,7 +20,7 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.3.1', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.3.2', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Seven presets load; five routes across four agents have completed a turn
   // against a live binary here, all on 10 August 2026 — Claude Code over ACP
@@ -119,6 +119,19 @@ export const releases = [
         'Watch the dashboard swap a panel in a real browser with the CSP live',
         'Run fourteen days on a real WhatsApp number with no ban and no manual relink, or publish the honest finding that makes Cloud API the default',
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
+      ] },
+    ] },
+  { v: '1.3.2', state: 'unproven', date: '13 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'FIXED', tone: '#FFD67E', items: [
+        'Answering yes to the memory offer left a config pointing at a service that could not be started by name. init read the installer\u2019s exit status as proof the provider worked; it is not. The installer finished with status 0, installed into a bun directory, and printed itself that the command would not resolve because that directory is not on PATH \u2014 four things were missing and Caraka claimed none of them were',
+        'Three of the four are Caraka\u2019s to do and it does them: the binary is resolved as an absolute path instead of looked up on PATH, bootstrap runs against one pinned store, and the key it prints is stored at 0600. provider: titen is written only when a key is actually held; every other outcome falls back to local and names the step that did not hold',
+        'The fourth is the server, which stays the operator\u2019s to run because Caraka installs no background service. What it prints is that one command with the pinned store already in it \u2014 the store matters, because both bootstrap and serve default it to the working directory, so a key made in one place answers 401 from another',
+        'The key no longer has to be exported by hand. It is read the way every channel token is: the environment first, the secret file when the environment is silent. caraka doctor reads the same two sources, so its memory row stopped going red on an install that works, and its remedy names the store rather than suggesting the command that produces the 401',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'Recall is still empty under Titen and this release does not change it. An observation is accepted and stored; a compile selects claims, claims come only from a consolidation route, and nothing in Caraka calls it. Verified again with two curl calls: the observation is accepted, and a compile of the same subject answers with an empty list where selected, omitted and deduplicated are all zero \u2014 it was never a candidate. This makes Titen reachable and /ingat genuinely store; it does not make /memori return rows',
+        'src/ measures 9,598 lines against the ~8,000 ceiling, up 160 against an estimate of 55 \u2014 the third estimate in this release to come in low, for the same reason each time. About 35 lines are injected seams with their types and defaults, carrying no decision but making the ones that exist reachable from a test; without them none of the ten new tests can run without a real installer on whatever machine runs the gate',
       ] },
     ] },
   { v: '1.3.1', state: 'unproven', date: '13 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),

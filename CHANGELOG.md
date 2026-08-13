@@ -4,6 +4,33 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.2] — 2026-08-13
+
+Answering `y` to the memory offer left a config pointing at a service that could not be started by name.
+
+`caraka init` offers to install Titen, and anyone who says yes there has said they want Titen. What the offer left behind was `provider: titen` and four things missing: the command was not on `PATH`, no store had been bootstrapped, no API key existed, and nothing was listening. The cause is one line — the installer's exit status was read as proof the provider worked:
+
+```ts
+if (install.status === 0) memoryProvider = "titen";
+```
+
+It is not proof. Measured here on 13 August 2026: the installer finished with status `0`, installed through `bun add` into `~/.bun/bin`, and **printed itself** that `titen` would not resolve because that directory is not on `PATH`. Caraka read the status and not the sentence.
+
+Three properties of Titen 0.7.4 shape the fix, and none of them is worked around by changing Titen — they are reported in its own repository and this release stands against 0.7.4 as it is: the installer exits `0` with the binary unresolvable; `bootstrap` and `serve` both default `--db` to the working directory, so a key made in one place answers `401` from another; and a second `bootstrap` on one store throws `UNIQUE constraint failed` while still exiting `0`, so its status cannot tell success from already-done either.
+
+### Fixed
+
+- **The memory offer finishes what it starts, or says which step did not.** Three of the four missing things are Caraka's to do and it does them now: the binary is resolved as an absolute path rather than looked up on `PATH`, `titen bootstrap` runs against one pinned store at `~/.caraka/titen.db`, and the API key it prints is stored at `~/.caraka/secrets/titen.key` at 0600. `provider: titen` is written only when a key is actually held; every other outcome writes `provider: local` and names the step — an installer that did not finish, a binary that did not resolve, or a bootstrap that printed no key. The fourth thing is `titen serve`, which stays the operator's to run because Caraka installs no background service, so what it prints is that one command with the pinned store already in it.
+- **The key no longer has to be exported by hand.** It is read the way every channel token is: `CARAKA_TITEN_API_KEY` first, the secret file when the variable is empty. The variable keeps its `CARAKA_` prefix, which is what `claudeEnvironment()` strips before a coding agent is spawned. `caraka doctor` reads the same two sources, so its memory row no longer goes red on an install that works.
+- **An existing store is never bootstrapped a second time**, because the exit status cannot distinguish that case and running it prints a stack trace for nothing. A store with no key Caraka can read is not guessed at either: it names `titen key list` and `titen key create` and falls back to `local`.
+- **`caraka doctor`'s memory remedy names the store.** It said `run titen serve`, which is the advice that produces the `401` — without `--db` that command opens whatever the working directory holds.
+
+### Limited
+
+- **Recall is still empty under Titen, and this release does not change that.** An observation is accepted and stored; `compile` selects claims, claims come only from `POST /v1/consolidations`, and nothing in Caraka calls it. Verified again against 0.7.4 with two `curl` calls: the observation is accepted, and a compile of the same subject one second later answers `items: []` with `selected_items`, `omitted_items` and `deduplicated_items` all `0` — it was never a candidate. So this makes Titen reachable and `/ingat` genuinely store; it does not make `/memori` return rows. The memory offer says so before anyone answers it, and that sentence is unchanged. `local` returns rows today.
+- **The bun install directory is a guess, and a good one rather than a certainty.** `$BUN_INSTALL/bin` then `~/.bun/bin` then `PATH` covers the installer's current behaviour; an install that lands somewhere else falls to `local` with the directory named rather than silently claiming Titen.
+- `src/` measures **9,598 lines**, up 160 against an estimate of 55 — the third estimate in this release to come in low, and the same reason each time. About 35 lines are six injected seams with their option type and defaults, carrying no decision but making the ones that exist reachable from a test; about 20 more record which Titen behaviour forced which branch and how it was measured. Without them the figure lands near the estimate and none of the ten new tests can run without a real installer on whatever machine runs the gate.
+
 ## [1.3.1] — 2026-08-13
 
 Caraka renamed threads it did not create, and on a channel that can archive one, it archived them too.

@@ -3,12 +3,14 @@ import { createRequire } from "node:module";
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { chmod, mkdir, readFile, rm, rmdir, stat, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createInterface } from "node:readline/promises";
+import { homedir } from "node:os";
 import { stdin, stdout } from "node:process";
 import { Telegram, TelegramError } from "./channels/telegram.js";
 import {
+  atomicSecret,
   carakaPaths,
   channelBlocks,
   defaultConfig,
@@ -27,9 +29,15 @@ import { ClaudeAcp } from "./drivers/claude-acp.js";
 import { discoverAgents, type Discovery } from "./discovery.js";
 import { CliDriver } from "./drivers/cli.js";
 import { loadPresets, resolveCommand, type AgentPreset } from "./drivers/preset.js";
-import { defaultLanguage, translator, type Language, type Translate } from "./i18n.js";
+import {
+  defaultLanguage,
+  translator,
+  type Language,
+  type MessageKey,
+  type Translate,
+} from "./i18n.js";
 import { LocalMemory } from "./memory/local.js";
-import { TitenMemory, titenApiKey } from "./memory/titen.js";
+import { DEFAULT_ENDPOINT as TITEN_ENDPOINT, TitenMemory, titenApiKey } from "./memory/titen.js";
 import { isServiceKind, serviceUnit } from "./service.js";
 import { Store } from "./store/db.js";
 
@@ -141,6 +149,7 @@ export function startupSecrets(loaded: {
   whatsappToken?: string;
   whatsappVerify?: string;
   whatsappAppSecret?: string;
+  titenKey?: string;
   approvalKey: Buffer;
 }) {
   return [
@@ -151,7 +160,9 @@ export function startupSecrets(loaded: {
     loaded.whatsappAppSecret ?? "",
     loaded.approvalKey.toString("base64url"),
     // The memory key is a secret this process holds like any other: it must not
-    // reach a log line or a chat, whichever provider is configured.
+    // reach a log line or a chat, whichever provider is configured. Either source
+    // counts: the environment, or the secret file `init` wrote.
+    loaded.titenKey ?? "",
     titenApiKey(),
   ].filter((secret) => secret.length > 0);
 }
@@ -431,18 +442,16 @@ async function init(args: string[]) {
   await telegram.deleteWebhook(true);
 
   // The memory step (FR-SETUP-01e): one offer, after pairing and before the
-  // config is written. Declining, or an install that does not finish, falls
-  // back to `local` and init completes either way.
+  // config is written. Declining, or any link in the chain that does not hold,
+  // falls back to `local` and init completes either way.
   const rlMemory = createInterface({ input: stdin, output: stdout });
   const memoryAnswer = await rlMemory.question(t("cli.memoryOffer"));
   rlMemory.close();
   let memoryProvider: "titen" | "local" = "local";
   if (pairingConfirmed(memoryAnswer)) {
-    const install = spawnSync("bash", ["-c", "curl -fsSL https://titen.dev/install.sh | bash"], {
-      stdio: "inherit",
-    });
-    if (install.status === 0) memoryProvider = "titen";
-    else console.log(t("cli.memoryInstallFailed"));
+    const setup = await setUpTiten({ paths: carakaPaths(), org: basename(resolve(workspace)), t });
+    memoryProvider = setup.provider;
+    for (const line of setup.lines) console.log(line);
   }
   console.log(t(memoryProvider === "titen" ? "cli.memoryTiten" : "cli.memoryLocal"));
 
@@ -458,6 +467,107 @@ async function init(args: string[]) {
   console.log(t("cli.ready", { path: paths.config }));
   console.log(`Bot: @${bot.username}`);
   console.log("\n  npx caraka start\n");
+}
+
+/** Where `bun add -g` puts a binary, which is the one directory `PATH` may not name. */
+function bunBinDir(env: NodeJS.ProcessEnv = process.env) {
+  return join(env.BUN_INSTALL ?? join(homedir(), ".bun"), "bin");
+}
+
+/**
+ * Titen's binary as an absolute path. Caraka does not need `titen` on anyone's
+ * `PATH` — it needs to know where it is, and asking someone to edit their shell
+ * profile before the tool works is a step this can do without. The bun directory
+ * is tried first because that is where the current installer puts it and also
+ * the directory it warns is not on `PATH`; `resolveCommand` covers an install
+ * that arrived some other way.
+ */
+export function resolveTitenBinary({
+  env = process.env,
+  isFile = existsSync,
+}: { env?: NodeJS.ProcessEnv; isFile?: (p: string) => boolean } = {}) {
+  const candidate = join(bunBinDir(env), "titen");
+  return isFile(candidate) ? candidate : resolveCommand("titen", { path: env.PATH ?? "" });
+}
+
+export type TitenSetup = { provider: "titen" | "local"; lines: string[] };
+
+/**
+ * Everything between "yes, install it" and a memory provider that is actually
+ * reachable. Each link can fail, and every failure ends at `local` with a
+ * sentence naming which one — writing `provider: titen` on the strength of the
+ * installer's exit status alone is what left a config pointing at a service that
+ * could not be started by name.
+ *
+ * Three properties of Titen 0.7.4 shape this and none of them are worked around
+ * by changing Titen (they are reported in its own repository):
+ *   - the installer exits 0 with the binary off `PATH`, so the binary is resolved
+ *     rather than assumed;
+ *   - `--db` defaults to the working directory, so every command passes the one
+ *     pinned path and the printed `serve` line carries it too;
+ *   - a second `bootstrap` on an existing store throws and still exits 0, so an
+ *     existing store is never bootstrapped again.
+ *
+ * The seams are parameters so a test drives the whole chain without a network,
+ * an installer, or a real Titen.
+ */
+export async function setUpTiten({
+  paths,
+  org,
+  t: translate,
+  install = () =>
+    spawnSync("bash", ["-c", "curl -fsSL https://titen.dev/install.sh | bash"], {
+      stdio: "inherit",
+    }).status,
+  binary = () => resolveTitenBinary(),
+  exists = existsSync,
+  bootstrap = (bin: string, args: string[]) =>
+    spawnSync(bin, args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }),
+  probe = async (url: string) => {
+    try {
+      const answer = await fetch(url, { signal: AbortSignal.timeout(2000) });
+      return answer.ok;
+    } catch {
+      return false;
+    }
+  },
+  endpoint = TITEN_ENDPOINT,
+}: {
+  paths: ReturnType<typeof carakaPaths>;
+  org: string;
+  t: Translate;
+  install?: () => number | null;
+  binary?: () => string | null;
+  exists?: (path: string) => boolean;
+  bootstrap?: (bin: string, args: string[]) => { status: number | null; stdout?: string };
+  probe?: (url: string) => Promise<boolean>;
+  endpoint?: string;
+}): Promise<TitenSetup> {
+  const local = (key: MessageKey, values?: Record<string, string>): TitenSetup => ({
+    provider: "local",
+    lines: [translate(key, values)],
+  });
+  if (install() !== 0) return local("cli.memoryInstallFailed");
+  const bin = binary();
+  if (!bin) return local("cli.titenMissing", { dir: bunBinDir() });
+  const held = exists(paths.titenKey);
+  if (exists(paths.titenDb) && !held) return local("cli.titenStoreNoKey", { db: paths.titenDb });
+  if (!held) {
+    // Captured, not inherited: this is the one command whose output carries the
+    // API key and a temporary dashboard password, and neither belongs in a
+    // terminal's scrollback.
+    const run = bootstrap(bin, ["bootstrap", "--db", paths.titenDb, "--org", org]);
+    const key = /titen_sk_[A-Za-z0-9_-]+/.exec(run.stdout ?? "")?.[0];
+    if (!key) return local("cli.titenNoKey");
+    // Real even under test, against an injected root: the 0600 is
+    // `atomicSecret`'s to produce, and a fake here would prove the fake.
+    await atomicSecret(paths.titenKey, key);
+  }
+  const live = await probe(`${endpoint}/healthz`);
+  return {
+    provider: "titen",
+    lines: [live ? translate("cli.titenLive") : translate("cli.titenServe", { db: paths.titenDb })],
+  };
 }
 
 /**
@@ -628,7 +738,10 @@ async function doctor(args: string[] = []) {
     // observe and each compile fails. This route is read-only and needs no real
     // claim: with the key it answers 404, without it 401 (Titen 0.7.3, 10
     // August 2026). Nothing reachable is 0.
-    const key = titenApiKey();
+    // Either source, the same as the running gateway reads it: the environment,
+    // or the secret file `init` wrote. A row that ignored the file would go red
+    // on an install that works.
+    const key = loaded.titenKey || titenApiKey();
     const status = await fetch(new URL("/v1/claims/caraka-doctor/evidence", memory.endpoint), {
       signal: AbortSignal.timeout(2000),
       headers: key ? { authorization: `Bearer ${key}` } : {},
@@ -640,7 +753,10 @@ async function doctor(args: string[] = []) {
       status !== 0 && status !== 401,
       status === 401
         ? "export CARAKA_TITEN_API_KEY with the key `titen bootstrap` printed"
-        : "run `titen serve`",
+        : // The store is pinned, so the command that starts it names the store.
+          // Without `--db` it defaults to the working directory, which is how a
+          // key made in one place answers 401 from another.
+          `run \`titen serve --db ${loaded.paths.titenDb}\``,
     );
     let loopback = false;
     try {
@@ -722,7 +838,10 @@ async function start(args: string[] = []) {
   // provider.
   const memory =
     loaded.config.memory.provider === "titen"
-      ? new TitenMemory(scrub, loaded.config.memory.endpoint)
+      ? // The key is passed rather than read from the environment inside the
+        // adapter, because `loadConfig` already resolved it from either source.
+        // The two middle arguments keep their defaults.
+        new TitenMemory(scrub, loaded.config.memory.endpoint, undefined, undefined, loaded.titenKey)
       : loaded.config.memory.provider === "local"
         ? new LocalMemory(store)
         : undefined;

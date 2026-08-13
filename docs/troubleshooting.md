@@ -184,10 +184,10 @@ Juga memang begitu. Force-push, `rm -rf`, migrasi database, dan deploy selalu me
 `recall` melewati 500 ms lalu dilewati. Balasan tetap jalan. Cek Titen hidup: `curl 127.0.0.1:8787/healthz`. Jalur `/health` menjawab 404, dan port 7717 yang tertulis di sini sampai v1.1.2 tidak pernah dilayani Titen.
 
 **Titen menjawab tapi memori tetap kosong**
-`/healthz` tidak butuh kunci; setiap rute lain menjawab `401 UNAUTHENTICATED` tanpanya. Ambil kunci dari `titen bootstrap`, lalu ekspor sebagai `CARAKA_TITEN_API_KEY` di environment yang menjalankan Caraka — bukan `TITEN_API_KEY`, karena awalan `CARAKA_` yang membuat kunci itu tidak diwariskan ke coding agent yang di-spawn. `caraka doctor` menyelidik rute berkredensial, jadi kunci yang hilang muncul sebagai baris merah dengan perintahnya.
+`/healthz` tidak butuh kunci; setiap rute lain menjawab `401 UNAUTHENTICATED` tanpanya. Kalau `caraka init` yang memasang Titen, kuncinya sudah tersimpan di `~/.caraka/secrets/titen.key` dan dibaca baik oleh gateway maupun `caraka doctor`, jadi biasanya tidak ada yang perlu diekspor. Kalau tidak, ambil kunci dari `titen bootstrap`, lalu ekspor sebagai `CARAKA_TITEN_API_KEY` di environment yang menjalankan Caraka — bukan `TITEN_API_KEY`, karena awalan `CARAKA_` yang membuat kunci itu tidak diwariskan ke coding agent yang di-spawn. `caraka doctor` menyelidik rute berkredensial, jadi kunci yang hilang muncul sebagai baris merah dengan perintahnya.
 
 **Titen tidak terjangkau**
-Jalankan `titen serve`. Bila tidak dipakai, ganti provider:
+Jalankan `titen serve --db ~/.caraka/titen.db`. Bagian `--db` itu penting: `titen serve` default ke store di direktori kerja, jadi menjalankannya dari tempat lain membuka database lain yang kosong dan setiap rute berkunci menjawab `401` — yang terbaca persis seperti kunci salah. `caraka init` bootstrap ke jalur yang dipin itu, dan `caraka doctor` mencetak perintahnya lengkap. Bila Titen tidak dipakai, ganti provider:
 ```yaml
 memory:
   provider: local   # atau none

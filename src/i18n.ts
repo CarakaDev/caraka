@@ -225,6 +225,18 @@ const en = {
   "cli.memoryLocal": "Memory provider: local (SQLite inside Caraka's own database).",
   "cli.memoryTiten": "Memory provider: titen.",
   "cli.memoryInstallFailed": "The Titen install did not finish. Memory falls back to local.",
+  // Each of these ends the same way on purpose: memory falls back to local and
+  // init finishes. A step that cannot be completed says which one it was, so the
+  // reader knows what to repair rather than that something went wrong.
+  "cli.titenMissing":
+    "Titen installed but its command was not found in {dir} or on PATH. Memory falls back to local.",
+  "cli.titenStoreNoKey":
+    "A Titen store already exists at {db} and Caraka holds no key for it. Make one with `titen key list --db {db}` to find the org, then `titen key create --db {db} --org-id <id>`, and put it in CARAKA_TITEN_API_KEY. Memory falls back to local until then.",
+  "cli.titenNoKey":
+    "Titen was installed but `titen bootstrap` printed no API key, so there is nothing to authenticate with. Memory falls back to local.",
+  "cli.titenServe":
+    "Titen is installed and its key is stored. One command left, and it needs that database:\n\n  titen serve --db {db}\n",
+  "cli.titenLive": "Titen is installed, its key is stored, and it is already answering.",
   "cli.ready": "\nReady. Configuration: {path}",
   "cli.stopped": "\nCaraka stopped: {message}\n",
   "cli.unknownError": "unknown error",
@@ -529,6 +541,15 @@ const id: Record<MessageKey, string> = {
   "cli.memoryLocal": "Provider memori: local (SQLite di database Caraka sendiri).",
   "cli.memoryTiten": "Provider memori: titen.",
   "cli.memoryInstallFailed": "Pemasangan Titen tidak selesai. Memori memakai local.",
+  "cli.titenMissing":
+    "Titen terpasang tetapi perintahnya tidak ditemukan di {dir} maupun di PATH. Memori memakai local.",
+  "cli.titenStoreNoKey":
+    "Store Titen sudah ada di {db} dan Caraka tidak memegang kuncinya. Buat satu dengan `titen key list --db {db}` untuk menemukan org-nya, lalu `titen key create --db {db} --org-id <id>`, dan taruh di CARAKA_TITEN_API_KEY. Sampai itu, memori memakai local.",
+  "cli.titenNoKey":
+    "Titen terpasang tetapi `titen bootstrap` tidak mencetak kunci API, jadi tidak ada yang bisa dipakai untuk autentikasi. Memori memakai local.",
+  "cli.titenServe":
+    "Titen terpasang dan kuncinya tersimpan. Tinggal satu perintah, dan ia butuh database itu:\n\n  titen serve --db {db}\n",
+  "cli.titenLive": "Titen terpasang, kuncinya tersimpan, dan ia sudah menjawab.",
   "cli.ready": "\nSiap. Konfigurasi: {path}",
   "cli.stopped": "\nCaraka berhenti: {message}\n",
   "cli.unknownError": "kesalahan tidak dikenal",

@@ -184,10 +184,10 @@ Also how it is. Force-push, `rm -rf`, database migrations, and deploys always as
 `recall` went past 500 ms and was skipped. Replies keep working. Check that Titen is alive: `curl 127.0.0.1:8787/healthz`. The `/health` path answers 404, and port 7717, which this line named through v1.1.2, was never one Titen served.
 
 **Titen answers and memory is still empty**
-`/healthz` needs no key; every other route answers `401 UNAUTHENTICATED` without one. Take the key `titen bootstrap` prints and export it as `CARAKA_TITEN_API_KEY` in the environment that runs Caraka — not `TITEN_API_KEY`, because the `CARAKA_` prefix is what keeps the key from being inherited by a spawned coding agent. `caraka doctor` probes a credentialed route, so a missing key shows as a failing row with the command on it.
+`/healthz` needs no key; every other route answers `401 UNAUTHENTICATED` without one. When `caraka init` installed Titen it already stored the key in `~/.caraka/secrets/titen.key`, and both the gateway and `caraka doctor` read that file, so there is usually nothing to export. Otherwise take the key `titen bootstrap` prints and export it as `CARAKA_TITEN_API_KEY` in the environment that runs Caraka — not `TITEN_API_KEY`, because the `CARAKA_` prefix is what keeps the key from being inherited by a spawned coding agent. `caraka doctor` probes a credentialed route, so a missing key shows as a failing row with the command on it.
 
 **Titen unreachable**
-Run `titen serve`. If you are not using it, change the provider:
+Run `titen serve --db ~/.caraka/titen.db`. The `--db` matters: `titen serve` defaults its store to the working directory, so starting it somewhere else opens a different, empty database and every keyed route answers `401` — which reads exactly like a wrong key. `caraka init` bootstraps into that pinned path, and `caraka doctor` prints the command with it. If you are not using Titen, change the provider:
 ```yaml
 memory:
   provider: local   # or none

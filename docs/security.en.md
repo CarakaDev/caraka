@@ -219,7 +219,7 @@ Without that guard, that option would be a one-tap button in a private chat.
 
 **What we never touch:** the model API key. That belongs to the coding agent. Caraka does not have one, does not ask for one, does not store one.
 
-**What we do store:** channel credentials (the Telegram bot token; since v0.5 the Discord bot token; since v0.6 the Baileys auth state, the Cloud API access token, the verify token, and the app secret) → the OS keychain when available; falling back to a `chmod 600` file in `~/.caraka/secrets/`. Never into the repo, never into a log, never into chat, **never written to `config.yaml`**.
+**What we do store:** channel credentials (the Telegram bot token; since v0.5 the Discord bot token; since v0.6 the Baileys auth state, the Cloud API access token, the verify token, and the app secret) and, since 1.3.2, the Titen API key in `secrets/titen.key` when `init` installed it → the OS keychain when available; falling back to a `chmod 600` file in `~/.caraka/secrets/`. Never into the repo, never into a log, never into chat, **never written to `config.yaml`**.
 
 The Baileys auth state lives in `~/.caraka/secrets/whatsapp/` at directory mode 0700, not in `sessions/`. It holds the noise key and the signed identity key: whoever holds that directory holds that number's WhatsApp session, so it is a credential and not agent session state. `caraka doctor` checks its directory mode and file mode as a line of its own.
 

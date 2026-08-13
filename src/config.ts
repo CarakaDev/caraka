@@ -257,6 +257,16 @@ export function carakaPaths(root = process.env.CARAKA_HOME ?? join(homedir(), ".
     // verify token, which only answers the GET handshake.
     whatsappAppSecret: join(base, "secrets", "whatsapp.appsecret"),
     approvalKey: join(base, "secrets", "approval.key"),
+    // Titen's own store, pinned here rather than left to `--db`'s default. That
+    // default is `titen.db` relative to the working directory, so a `bootstrap`
+    // run from one place and a `serve` run from another are two databases: the
+    // second is created empty, and every keyed route then answers 401 — which
+    // reads exactly like a wrong key. One fixed path means the command Caraka
+    // prints and the command Caraka ran cannot disagree.
+    titenDb: join(base, "titen.db"),
+    // The key `titen bootstrap` prints once and never shows again. It lives under
+    // `secrets/`, so `uninstallTargets` already removes it with that directory.
+    titenKey: join(base, "secrets", "titen.key"),
     database: join(base, "caraka.db"),
     pid: join(base, "caraka.pid"),
   };
@@ -332,6 +342,15 @@ export async function loadConfig() {
   const whatsappToken = await read("CARAKA_WHATSAPP_TOKEN", paths.whatsappToken);
   const whatsappVerify = await read("CARAKA_WHATSAPP_VERIFY_TOKEN", paths.whatsappVerify);
   const whatsappAppSecret = await read("CARAKA_WHATSAPP_APP_SECRET", paths.whatsappAppSecret);
+  // The memory key, read the way every channel token above is read: the
+  // environment first, the secret file when the environment is silent. `init`
+  // writes that file, so nobody has to export anything by hand for the provider
+  // it just set up. The variable keeps its `CARAKA_` prefix, and that prefix is
+  // what `claudeEnvironment()` strips before any coding agent is spawned.
+  const titenKey =
+    config.memory.provider === "titen"
+      ? await channelToken("CARAKA_TITEN_API_KEY", paths.titenKey).catch(() => "")
+      : "";
   const approvalKey = Buffer.from((await readFile(paths.approvalKey, "utf8")).trim(), "base64url");
   if ((config.telegram && !token) || (config.discord && !discordToken) || approvalKey.length < 32)
     throw new Error("Caraka secrets are incomplete. Run `caraka init` again.");
@@ -346,6 +365,7 @@ export async function loadConfig() {
     whatsappToken,
     whatsappVerify,
     whatsappAppSecret,
+    titenKey,
     approvalKey,
     paths,
   };
