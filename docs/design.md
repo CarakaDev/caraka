@@ -55,7 +55,9 @@ type InboundMessage = {
   chatId: string;
   senderId: string;                 // id mentah dari channel
   text: string;
-  attachments: Attachment[];        // {kind, path, mime, size}
+  attachments?: Attachment[];       // {kind, mime?, size?, tooBig?} — tanpa path:
+                                    // berkasnya diunduh di jalur run, bukan
+                                    // dibawa oleh pesannya (lampiran-chat)
   replyTo?: string;
   isGroup: boolean;
   mentionedBot: boolean;

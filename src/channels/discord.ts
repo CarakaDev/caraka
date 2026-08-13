@@ -10,8 +10,10 @@
  */
 import { setTimeout as delay } from "node:timers/promises";
 import {
+  containerOf,
   drainInbox,
   evict,
+  routeOf,
   splitMarkdown,
   type Channel,
   type ChannelCaps,
@@ -88,7 +90,30 @@ type WireMessage = {
   guild_id?: string;
   content?: string;
   author?: WireUser;
+  /**
+   * Who the message pinged. The list of fields MESSAGE_CONTENT truncates names
+   * `content`, `embeds`, `attachments`, `components` and `poll`, and does not
+   * name this one — a conclusion drawn from that list, not a quotation. If the
+   * conclusion is wrong the field is simply absent, `addressed` goes unset, and
+   * core answers the way it does today. That dies the day someone adds `1 << 15`
+   * to `INTENTS` above and starts reading `content` too.
+   */
+  mentions?: WireUser[];
+  /**
+   * What came with the message. `attachments` is named verbatim in the
+   * MESSAGE_CONTENT redaction list, so in a guild channel this arrives empty and
+   * an entry built from it would be a claim about a file nobody can see. Read for
+   * direct messages only (AC-1.8).
+   */
+  attachments?: Array<{ content_type?: string; size?: number }>;
 };
+
+// The neutral word for a mime. Discord reports a mime and nothing else about
+// what a file is, and core reads the word rather than the type.
+function kindOf(mime: string) {
+  const top = mime.split("/")[0] ?? "";
+  return top === "image" || top === "audio" || top === "video" ? top : "document";
+}
 
 type WireInteraction = {
   id: string;
@@ -235,24 +260,13 @@ export class Discord implements Channel {
     }
   }
 
-  // A stored route carries the channel in front of the container id. Discord
-  // ids are snowflakes, so the prefix comes off before any of them go on the
-  // wire, and goes back on before core ever sees one.
-  private target(chatId: string) {
-    return chatId.startsWith(`${this.id}:`) ? chatId.slice(this.id.length + 1) : chatId;
-  }
-
-  private route(containerId: string) {
-    return `${this.id}:${containerId}`;
-  }
-
   private remember(messageId: string, channel: string, markup?: Record<string, unknown>) {
     evict(this.sentIn, REMEMBERED);
     this.sentIn.set(messageId, { channel, ...(markup ? { markup } : {}) });
   }
 
   private channelOfMessage(chatId: string, messageId: number | string) {
-    return this.sentIn.get(String(messageId))?.channel ?? this.target(chatId);
+    return this.sentIn.get(String(messageId))?.channel ?? containerOf(this.id, chatId);
   }
 
   async sendText(
@@ -261,7 +275,7 @@ export class Discord implements Channel {
     threadId = "",
     replyMarkup?: Record<string, unknown>,
   ): Promise<MessageRef> {
-    const channel = threadId || this.target(chatId);
+    const channel = threadId || containerOf(this.id, chatId);
     const sent = await this.call<{ id: string }>("POST", `/channels/${channel}/messages`, {
       content: text.slice(0, MESSAGE_LIMIT),
       // The one sanitiser Discord actually needs: an agent that writes
@@ -274,7 +288,7 @@ export class Discord implements Channel {
   }
 
   async sendResult(chatId: string, markdown: string, threadId = ""): Promise<MessageRef[]> {
-    const channel = threadId || this.target(chatId);
+    const channel = threadId || containerOf(this.id, chatId);
     const chunks = splitMarkdown(markdown, MESSAGE_LIMIT, this.t("channel.empty"));
     if (chunks.length > FILE_AFTER_CHUNKS) return [await this.sendFile(channel, markdown)];
     const sent: MessageRef[] = [];
@@ -324,7 +338,7 @@ export class Discord implements Channel {
     const known = this.sentIn.get(String(messageId));
     return this.call(
       "PATCH",
-      `/channels/${known?.channel ?? this.target(chatId)}/messages/${messageId}`,
+      `/channels/${known?.channel ?? containerOf(this.id, chatId)}/messages/${messageId}`,
       { components: known?.markup ? actionRows(known.markup, true) : [] },
     );
   }
@@ -339,7 +353,7 @@ export class Discord implements Channel {
   async createTopic(chatId: string, name: string): Promise<ThreadRef> {
     const thread = await this.call<{ id: string }>(
       "POST",
-      `/channels/${this.target(chatId)}/threads`,
+      `/channels/${containerOf(this.id, chatId)}/threads`,
       {
         name: threadName(name, this.t("session.untitled")),
         type: PUBLIC_THREAD,
@@ -371,12 +385,12 @@ export class Discord implements Channel {
 
   async direct(principal: string) {
     const known = this.dms.get(principal);
-    if (known) return this.route(known);
+    if (known) return routeOf(this.id, known);
     const channel = await this.call<{ id: string }>("POST", "/users/@me/channels", {
       recipient_id: principal,
     });
     this.dms.set(principal, channel.id);
-    return this.route(channel.id);
+    return routeOf(this.id, channel.id);
   }
 
   // Core registers per chat, which is what Telegram scopes by. Discord scopes
@@ -417,7 +431,7 @@ export class Discord implements Channel {
   }
 
   pairingText(title: string, containerId: string) {
-    return this.t("discord.pairing", { title, chatId: this.target(containerId) });
+    return this.t("discord.pairing", { title, chatId: containerOf(this.id, containerId) });
   }
 
   async readiness(threads: boolean) {
@@ -622,7 +636,7 @@ export class Discord implements Channel {
     this.emit({
       my_chat_member: {
         chat: {
-          id: this.route(containerId),
+          id: routeOf(this.id, containerId),
           type: "guild",
           title: title ?? containerId,
           is_forum: true,
@@ -638,7 +652,7 @@ export class Discord implements Channel {
 
   private container(containerId: string, guildId?: string) {
     return {
-      id: this.route(containerId),
+      id: routeOf(this.id, containerId),
       type: guildId ? "guild" : "private",
       // A guild channel holds threads; a direct message does not.
       is_forum: Boolean(guildId),
@@ -649,8 +663,12 @@ export class Discord implements Channel {
     if (message.author?.bot) return;
     // Without MESSAGE_CONTENT the text of an ordinary message arrives empty.
     // That is the intent Caraka did not ask for, so the message is left alone —
-    // no reply, no error (`readiness()` says so out loud).
-    if (!message.content) return;
+    // no reply, no error (`readiness()` says so out loud). `attachments` is on the
+    // same redaction list, so it is read in a direct message and nowhere else: a
+    // DM carrying only a file is not empty, and a guild message is never answered
+    // on the strength of a field Caraka refuses to read (AC-1.8).
+    const files = message.guild_id ? [] : (message.attachments ?? []);
+    if (!message.content && files.length === 0) return;
     if (message.guild_id)
       this.announce(message.channel_id, message.guild_id, message.author ?? { id: "" });
     this.emit({
@@ -658,7 +676,19 @@ export class Discord implements Channel {
         message_id: message.id,
         chat: this.container(message.channel_id, message.guild_id),
         ...(message.author ? { from: { id: message.author.id } } : {}),
-        text: message.content,
+        ...(message.mentions
+          ? { addressed: message.mentions.some((user) => user.id === this.appId) }
+          : {}),
+        ...(files.length
+          ? {
+              attachments: files.map((file) => ({
+                kind: kindOf(file.content_type ?? ""),
+                ...(file.content_type ? { mime: file.content_type } : {}),
+                ...(file.size === undefined ? {} : { size: file.size }),
+              })),
+            }
+          : {}),
+        text: message.content ?? "",
       },
     });
   }
@@ -712,6 +742,10 @@ export class Discord implements Channel {
         chat: this.container(parent || containerId, interaction.guild_id),
         from: { id: user.id, ...(user.username ? { username: user.username } : {}) },
         ...(parent ? { message_thread_id: containerId } : {}),
+        // A slash command is the one Discord message that provably named Caraka.
+        // Letting it through as "the channel cannot tell" would spend the
+        // degradation path on something already certain.
+        addressed: true,
         text,
       },
     });

@@ -117,7 +117,7 @@ npx caraka stop
 Di Telegram:
 
 ```text
-/new         mulai sesi baru
+/new [judul] mulai sesi baru, judul opsional
 /status      lihat keadaan sesi
 /stop        batalkan tugas aktif
 /commands    daftar perintah yang dilaporkan Claude

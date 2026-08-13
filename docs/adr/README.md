@@ -17,3 +17,4 @@ ADR tidak pernah diedit setelah diterima. Kalau keputusannya berubah, tulis ADR 
 | [0007](0007-kesumba-sebagai-warna-merek.md) | Kesumba sebagai satu-satunya hue merek | Diterima |
 | [0008](0008-discord-sebagai-channel-kedua.md) | Discord sebagai channel kedua, di atas `fetch` dan `WebSocket` | Diterima |
 | [0009](0009-approval-lewat-kode-di-channel-tanpa-tombol.md) | Approval lewat kode di channel tanpa tombol, dan dua provider WhatsApp | Diterima |
+| [0010](0010-workspace-dari-chat.md) | Workspace baru dari chat: bentuk path hanya di DM operator, di belakang kartu bertanda tangan | Diterima |

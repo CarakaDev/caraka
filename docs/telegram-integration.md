@@ -150,12 +150,24 @@ Kolom scope dulu berisi `private`. Tidak ada scope bernama itu. Bot API punya tu
 `BotCommandScopeDefault`, `BotCommandScopeAllPrivateChats`, `BotCommandScopeAllGroupChats`,
 `BotCommandScopeAllChatAdministrators`, `BotCommandScopeChat`, `BotCommandScopeChatAdministrators`,
 `BotCommandScopeChatMember`. v0.2 memakai `BotCommandScopeChat` sekali per id di
-`telegram.allowFrom`, karena menu perintah hanya perlu terlihat oleh operator.
+`telegram.allowFrom`.
+
+Sumber id itu berubah pada 13 Agustus 2026: yang punya menu adalah container,
+bukan pengirim, jadi yang diulang sekarang adalah allowlist container —
+`telegram.allowChats` ∪ `telegram.allowFrom`, gabungan yang sudah dipegang
+`Gateway` sejak v0.4 karena id DM Telegram adalah id pengirimnya sendiri. Alasan
+lama, bahwa menu perintah hanya perlu terlihat oleh operator, ditulis sebelum
+pairing grup ada. `BotCommandScopeChat` adalah scope yang mencakup seluruh
+anggota sebuah chat, jadi menerbitkan ke id grup menaruh ketiga belas entri
+beserta deskripsinya di menu setiap anggota; kartu pairing menyebutnya, dan
+`docs/security.md` §4 butir 6 mencatatnya sebagai bagian dari pengungkapan.
 
 Sampai v0.1, `setMyCommands` tidak dipanggil di mana pun di `src/` dan menu
 perintah bot kosong meski dokumen ini menyatakan sebaliknya. v0.2 memanggilnya
 saat gateway mulai; penolakan dari Telegram dicatat satu baris audit dan tidak
-menghentikan gateway.
+menghentikan gateway. Sejak 13 Agustus 2026 pemanggilan itu juga terjadi saat
+pairing sebuah grup dikonfirmasi, jadi grup yang dipasangkan sambil proses
+berjalan tidak menunggu restart untuk punya menu.
 
 ---
 

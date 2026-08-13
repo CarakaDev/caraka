@@ -1,6 +1,6 @@
 {
   "name": "caraka",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Send the task. Caraka runs it. — a thin bridge from Telegram to the coding agent already installed on your machine.",
   "keywords": [
     "acp",
@@ -45,7 +45,7 @@
     "e2e": "node --import tsx --test test/e2e.test.ts",
     "scan:secrets": "bash scripts/scan-secrets.sh",
     "smoke": "npm run build && node scripts/smoke-claude.mjs && node scripts/smoke-cli.mjs claude-code cli && node scripts/smoke-cli.mjs codex && node scripts/smoke-cli.mjs aider && node scripts/smoke-cli.mjs goose",
-    "verify": "npm run scan:secrets && npm run lint && npm run typecheck && npm test && npm run e2e && npm run build",
+    "verify": "npm run scan:secrets && npm run lint && npm run typecheck && npm run build && npm test && npm run e2e",
     "prepublishOnly": "npm run verify"
   },
   "dependencies": {

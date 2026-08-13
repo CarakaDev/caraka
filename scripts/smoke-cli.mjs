@@ -17,9 +17,9 @@ import assert from "node:assert/strict";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ClaudeAcp } from "../dist/drivers/claude-acp.js";
-import { CliDriver } from "../dist/drivers/cli.js";
+import { buildDriver } from "../dist/cli.js";
 import { loadPresets, resolveCommand } from "../dist/drivers/preset.js";
+import { translator } from "../dist/i18n.js";
 
 // The second argument names the route, for the one preset that declares both.
 // Without it `claude-code` takes its `driver: acp` and repeats what
@@ -51,9 +51,10 @@ if (!binary) {
 const token = String(Math.floor(Math.random() * 9000) + 1000);
 
 const cwd = await mkdtemp(join(tmpdir(), `caraka-${id}-smoke-`));
-// The absolute path, because an ACP adapter is spawned by name and the smoke
-// already resolved which name on this machine answered.
-const driver = acp ? new ClaudeAcp(undefined, { ...acp, command: binary }) : new CliDriver(preset);
+// The same seam `caraka start` builds through, so what the smoke spawns is what
+// production spawns — including the Node indirection a hand-built `ClaudeAcp`
+// here used to skip.
+const driver = buildDriver(preset, taken, translator(), (input) => String(input));
 let sessionId;
 
 async function turn(prompt) {

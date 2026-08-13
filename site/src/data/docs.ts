@@ -73,7 +73,7 @@ export const chapters: Chapter[] = [
     // reported its own, and forwarded before then.
     rows: [
       { k: '(ordinary message)', v: 'Creates or resumes the session for this thread or conversation and sends the text to the agent unchanged.' },
-      { k: '/new', v: 'Create a fresh local session and, where topics are available, a new topic for it.' },
+      { k: '/new [title] [@slug]', v: 'Create a fresh local session and, where topics are available, a new topic of the same name. Both parts are optional: the text becomes the session title, and @slug picks the workspace and sticks for the chat.' },
       { k: '/stop', v: 'Cancel the running task in the sender’s workspace.' },
       { k: '/status', v: 'Show idle, running, awaiting_approval, done, failed, or cancelled.' },
       { k: '/ws', v: 'List the configured workspaces and their paths, answering in General.' },
@@ -91,7 +91,7 @@ export const chapters: Chapter[] = [
     // comp:233 has no equivalent; the v0.1 note it replaced said groups were
     // outside the release. The chat allowlist admits them now, and v0.4 made
     // the multi-workspace sentence false.
-    note: 'One run at a time per workspace and the rest queued FIFO; past 20 messages a minute the sender waits, and a run is cancelled at 30 minutes. A group or guild channel is served once its id reaches the chat allowlist. More than one workspace is supported, and @slug in front of a message picks which.',
+    note: 'One run at a time per workspace and the rest queued FIFO; past 20 messages a minute the sender waits, and a run is cancelled at 30 minutes. A group or guild channel is served once its id reaches the chat allowlist, and since v1.3 a message there becomes a task only when it addresses Caraka — a mention, a reply to one of its own messages, or a command. A channel that cannot report addressing is answered rather than left silent. More than one workspace is supported, and @slug in front of a message picks which.',
   },
   {
     no: '03', id: 'agent', href: '#agent', label: 'Agent', title: 'Claude over ACP',

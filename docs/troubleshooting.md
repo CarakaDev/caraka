@@ -37,7 +37,10 @@ Jalankan dengan `--dry-run` untuk melihat rencananya, atau baca dulu: `curl -fsS
 ## Coding agent
 
 **`Tidak ada coding agent yang ditemukan`**
-Belum terpasang, atau tidak ada di `PATH`. Pasang salah satu (`install-guide.md` §4), lalu `caraka doctor` untuk memastikan terdeteksi.
+Belum terpasang, tidak ada di `PATH`, atau yang ada di `PATH` tidak bisa dijalankan dari sini. Pasang salah satu (`install-guide.md` §4), lalu `caraka doctor` untuk memastikan terdeteksi.
+
+**Agent dipasang lewat `npm -g` tapi tidak terdeteksi di Windows native**
+npm menulis tiga berkas per bin di Windows: `agent.ps1`, `agent.cmd`, dan satu skrip `#!/bin/sh` yang namanya persis nama bin-nya. `CreateProcessW` hanya mencoba `.com` dan `.exe`, jadi nama telanjangnya berakhir sebagai `-4058` (UV_ENOENT), dan yang `.cmd` ditolak Node dengan `EINVAL` sejak CVE-2024-27980. Caraka tidak menjalankannya lewat shell: isi pesan chat masuk sebagai argumen, dan argumen batch tidak bisa di-escape dengan pasti. Dua jalan keluarnya: pasang agent-nya sebagai `.exe` lewat installer Windows-nya, atau jalankan Caraka di WSL2 (`docs/frd.md` NFR-06). `caraka doctor` tidak mencetak baris hijau untuk shim itu.
 
 **Agent terdeteksi tapi setiap run gagal seketika**
 Belum terautentikasi. Jalankan `claude login`, `codex login`, atau `gemini` sesuai agent-nya.
@@ -189,6 +192,13 @@ Jalankan `titen serve`. Bila tidak dipakai, ganti provider:
 memory:
   provider: local   # atau none
 ```
+
+**Memori workspace tiba-tiba kosong sesudah upgrade**
+Scope memori adalah `workspace:<path>`, dan sejak v1.3 path itu dikanonikalisasi lewat `resolve()`. Pemasangan yang menulis `path: /srv/app/` atau `path: /srv/app/../app` di `config.yaml` karena itu berpindah kunci sekali, dan baris lama tetap di ejaan lamanya. Satu `UPDATE` memindahkannya:
+```sql
+UPDATE memory_local SET scope = 'workspace:/srv/app' WHERE scope = 'workspace:/srv/app/';
+```
+Jalankan `caraka stop` dulu, lalu `sqlite3 ~/.caraka/caraka.db` dengan ejaan lama yang ada di `SELECT DISTINCT scope FROM memory_local`.
 
 **Agent mengingat sesuatu yang salah**
 Runut dulu, jangan langsung hapus: `/memori` untuk melihat, lalu id claim-nya bisa dirunut ke bukti asalnya. `/lupakan <id>` bila memang salah.

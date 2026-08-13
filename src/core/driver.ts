@@ -54,10 +54,22 @@ export interface AgentDriver {
    */
   readonly asksPermission?: boolean;
 
+  /**
+   * Whether this route can put a file in front of the agent. Left unset means it
+   * cannot, and core answers the sender with one sentence rather than downloading
+   * bytes nothing will read (AC-2.4).
+   */
+  readonly acceptsFiles?: boolean;
+
   start(): Promise<void>;
   /** Returns the agent-side session id, loading `existing` when it still resolves. */
   session(existing: string | null, cwd: string): Promise<string>;
-  prompt(sessionId: string, prompt: string, route: DriverRoute): Promise<{ stopReason: string }>;
+  prompt(
+    sessionId: string,
+    prompt: string,
+    route: DriverRoute,
+    files?: string[],
+  ): Promise<{ stopReason: string }>;
   /** A driver without modes resolves without effect (the CLI path). */
   setMode(sessionId: string, modeId: string): Promise<unknown>;
   cancel(sessionId: string): Promise<unknown>;

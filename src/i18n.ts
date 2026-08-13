@@ -10,6 +10,16 @@ const en = {
   "run.cancelled": "Task cancelled.",
   "run.noOutput": "Claude finished without text output.",
   "run.timeout": "Run passed {minutes} minutes and was cancelled.",
+  // What a sender is told when an attachment cannot reach the agent this session
+  // runs on. It names the kind rather than the file, because the file has no name
+  // Caraka is willing to repeat, and it names the way in that does work.
+  "attach.unsupported":
+    "Caraka cannot hand a {kind} to this agent; send the task as text, or put the file in the workspace and name its path.",
+  // 20 MB is the getFile ceiling (`docs/security.md` §9). It is written into the
+  // sentence rather than passed in, because the ceiling belongs to the adapter
+  // that reported the file as too big and core stores no channel's number.
+  "attach.tooBig":
+    "That attachment is {size} MB and Caraka fetches at most 20 MB; send a smaller one, or put the file in the workspace and name its path.",
   "permission.header": "⏸ Claude asks for permission",
   "permission.fallbackTitle": "Tool operation",
   "permission.ttl": "Valid for 10 minutes",
@@ -42,6 +52,17 @@ const en = {
   "ws.unknown": "No workspace is called {slug}. These exist:\n{list}",
   "ws.list": "Workspaces:\n{list}",
   "ws.sticky": "Tasks in this chat now go to {slug}.",
+  // A path names a workspace nobody has approved yet, so the sentence says where
+  // that approval is given rather than only that this is the wrong room.
+  "ws.pathDmOnly":
+    "A path names a workspace only in your own direct message with the bot, and only from the first sender on the allowlist. Here a workspace is named by its slug:\n{list}",
+  "ws.pathMissing":
+    "{path} is not a directory Caraka can find. Create it first, or check the spelling, then send the path again.",
+  "ws.slugTaken":
+    "The slug {slug} already points at {path}. Give this one a slug of its own in config.yaml, then restart.",
+  "ws.addCard":
+    "Add {path} as workspace {slug}?\nYes writes the entry into config.yaml, where it stays until you remove it by hand. Every task sent to {slug} then runs in that directory, and a trust window opened on it covers that directory.",
+  "ws.added": "{slug} now points at {path}. Tasks in this chat go there.",
   "switch.unknown": "That is not a loaded preset. Loaded: {list}",
   "switch.done": "This session switches to {agent} on its next task.",
   "help.commandsEmpty": "Claude has not sent its command list for this session yet.",
@@ -81,15 +102,23 @@ const en = {
     "Open a Caraka trust window for {minutes} minutes on {workspace}?\nCaraka still receives every permission request, still stops at the high-risk list, and still records each action. Press the button to confirm; chat text cannot open it.",
   "trust.opened": "Trust window open for {minutes} minutes. Close it any time with /lock.",
   "trust.closed": "Trust window closed.",
+  // The honest answer where the old one said no window was open while every
+  // window stayed open.
+  "trust.closedAll":
+    "This chat names no single workspace, so every open trust window was closed ({n}). A window is opened again with /yolo from a conversation that names its workspace, or from the terminal with `caraka trust`.",
   "trust.notOpen": "No trust window is open.",
   "group.pairing":
-    "Caraka was added to the Telegram group {title} ({chatId}). Adding a group to the allowlist means choosing to show that work to its members: every member sees the approval cards, file paths, diffs, and command output. Press the button to allow it.",
+    "Caraka was added to the Telegram group {title} ({chatId}). Adding a group to the allowlist means choosing to show that work to its members: every member sees the approval cards, file paths, diffs, and command output, and Caraka's command menu with its descriptions appears for every one of them. Press the button to allow it.",
   "group.paired": "{title} is on the chat allowlist.",
   // Read straight after pairing, which is the one moment the operator is
   // looking. Privacy mode is on — Telegram simply does not deliver ordinary
   // group messages to the bot, so silence would otherwise look like a fault.
   "group.ready":
     "How it works here\n\nTelegram only delivers three kinds of message to me in a group, because privacy mode is on:\n· a command addressed to me, like /new@{bot}\n· a reply to one of my own messages\n· service messages\n\nAn ordinary message in this group never reaches me. That is Telegram, not a fault.\n\nTopics: {topics}\n\nTo let me read every message you would turn privacy mode off in @BotFather, or make me an admin — an admin bot receives all messages either way. Caraka never asks for that.",
+  // The other half of the same reading: privacy mode is off, so everything
+  // arrives and the gate is Caraka's rather than Telegram's.
+  "group.readyAll":
+    "How it works here\n\nPrivacy mode is off for me here, so Telegram delivers every message in this group to me. I answer the ones aimed at me:\n· a message that names @{bot}, a command like /new@{bot} included\n· a reply to one of my own messages\n\nEverything else is read and left alone: no session is opened, and nothing reaches the coding agent.\n\nTopics: {topics}\n\nTo have Telegram deliver less, turn privacy mode back on in @BotFather and take my admin rights away.",
   "group.topicsOn": "on. Each session gets its own topic here.",
   "group.topicsOff":
     "off. This group is not a forum, or I am not an admin with can_manage_topics — sessions run linear with a header. Granting that right makes me an admin, and an admin bot reads every message in the group. That is the trade.",
@@ -107,7 +136,10 @@ const en = {
   "discord.threadsOff":
     "off. This is a direct message, and a direct message holds no threads, so sessions run linear with a header.",
   "discord.asFile": "The answer was longer than Discord carries in a message, so it is attached.",
-  "discord.acknowledged": "Caraka has it.",
+  // The ack is ephemeral and Discord closes the reply window in seconds, so it
+  // cannot wait for core to decide. What it can do is say what silence means.
+  "discord.acknowledged":
+    "Caraka has it. If nothing follows this, your account or this channel is not on Caraka's allowlist. Ask whoever runs it to add you.",
   "discord.fatalClose":
     "Discord closed the gateway with code {code} and would close it again, so Caraka stopped instead of retrying. Check the bot token and the invite in the Discord developer portal, then start again.",
   "whatsapp.noGroups":
@@ -133,7 +165,8 @@ const en = {
     "\n════════════════════════════════════════════════════════════\n⚠  The WhatsApp webhook will listen on {host}:{port}, not on\n   127.0.0.1. Every request is still checked against\n   X-Hub-Signature-256, and nothing else about that address is\n   protected. Put a reverse proxy with TLS in front of it.\n════════════════════════════════════════════════════════════\n",
   "whatsapp.riskNotice":
     "\n⚠  WhatsApp provider: baileys. This logs in as a linked device on a real\n   account, and the account can be banned for it. Use a number kept apart\n   from the personal one, and read what is known about how often it happens:\n   https://github.com/CarakaDev/caraka/blob/main/docs/whatsapp-risiko.en.md\n",
-  "acp.start": "Claude could not start over ACP. Run `claude auth login`, then try again.",
+  "acp.start":
+    "The ACP adapter did not start: its command failed to run, or the agent did not answer. Run `claude auth login` if it is signed out, then start Caraka again.",
   "acp.notStarted": "Claude ACP has not started.",
   "preset.invalid": "Preset {file} is invalid at `{field}` and was skipped.",
   "driver.noSession": "The CLI driver does not know that session. Send /new to start over.",
@@ -145,7 +178,7 @@ const en = {
   "driver.none":
     "Agent {agent}: neither the ACP adapter nor a CLI command was found. Install the agent, then run `npx caraka doctor`.",
   "agents.none":
-    "No coding agent was found: none is installed, or none is on PATH. Install one (claude, codex, gemini, cline, cursor-agent, goose, amp), then run `caraka doctor` to confirm it is detected.",
+    "No coding agent was found: none is installed, none is on PATH, or the one on PATH cannot be started from here. Install one (claude, codex, gemini, cline, cursor-agent, goose, amp), then run `caraka doctor` to confirm it is detected. On native Windows an agent installed with `npm -g` cannot be started this way: install its `.exe`, or run Caraka under WSL2.",
   "cli.nodeVersion": "Node.js 22 or newer is required.",
   "cli.gitMissing": "Git was not found. Install Git, then run init again.",
   "cli.workspaceMissing": "Workspace not found: {path}",
@@ -203,6 +236,8 @@ const en = {
   "cli.statusRunning": "Running · PID {pid} · workspace {workspace} · channels {channels}",
   "cli.statusStopped": "Stopped · workspace {workspace} · channels {channels}",
   "cli.trustUsage": "Write a workspace and a duration: caraka trust <workspace> --for 30m",
+  "cli.trustNotWorkspace":
+    "{path} is not a workspace in config.yaml, so no window was opened. A workspace is named in config.yaml, and this command only opens a window on one of these:\n{list}",
   "cli.trustTooLong": "The longest trust window is 60 minutes.",
   "cli.trustOpened": "Trust window open on {workspace} until {until}.",
   "cli.bypassOpened":
@@ -299,6 +334,10 @@ const id: Record<MessageKey, string> = {
   "run.cancelled": "Tugas dibatalkan.",
   "run.noOutput": "Claude selesai tanpa keluaran teks.",
   "run.timeout": "Run melewati {minutes} menit dan dibatalkan.",
+  "attach.unsupported":
+    "Caraka tidak bisa menyerahkan {kind} ke agent ini; kirim tugasnya sebagai teks, atau taruh berkasnya di workspace lalu sebut path-nya.",
+  "attach.tooBig":
+    "Lampiran itu {size} MB dan Caraka mengunduh paling banyak 20 MB; kirim yang lebih kecil, atau taruh berkasnya di workspace lalu sebut path-nya.",
   "permission.header": "⏸ Claude meminta izin",
   "permission.fallbackTitle": "Operasi tool",
   "permission.ttl": "Berlaku 10 menit",
@@ -329,6 +368,15 @@ const id: Record<MessageKey, string> = {
   "ws.unknown": "Tidak ada workspace bernama {slug}. Yang ada:\n{list}",
   "ws.list": "Daftar workspace:\n{list}",
   "ws.sticky": "Tugas di chat ini sekarang masuk ke {slug}.",
+  "ws.pathDmOnly":
+    "Bentuk path menamai workspace hanya di pesan langsungmu sendiri dengan bot, dan hanya dari pengirim pertama di allowlist. Di sini workspace disebut lewat slug-nya:\n{list}",
+  "ws.pathMissing":
+    "{path} bukan direktori yang bisa Caraka temukan. Buat dulu direktorinya, atau periksa ejaannya, lalu kirim path-nya lagi.",
+  "ws.slugTaken":
+    "Slug {slug} sudah menunjuk {path}. Beri yang ini slug sendiri di config.yaml, lalu mulai ulang.",
+  "ws.addCard":
+    "Tambahkan {path} sebagai workspace {slug}?\nYa menulis entrinya ke config.yaml, dan entri itu tinggal di sana sampai kamu menghapusnya sendiri. Setiap tugas ke {slug} lalu berjalan di direktori itu, dan jendela trust yang dibuka padanya berlaku untuk direktori itu.",
+  "ws.added": "{slug} sekarang menunjuk {path}. Tugas di chat ini masuk ke sana.",
   "switch.unknown": "Itu bukan preset yang termuat. Yang termuat: {list}",
   "switch.done": "Sesi ini beralih ke {agent} pada tugas berikutnya.",
   "help.commandsEmpty": "Claude belum mengirim daftar perintah untuk sesi ini.",
@@ -367,12 +415,16 @@ const id: Record<MessageKey, string> = {
     "Buka jendela trust Caraka selama {minutes} menit di {workspace}?\nCaraka tetap menerima setiap permintaan izin, tetap berhenti pada daftar berisiko tinggi, dan tetap mencatat tiap aksi. Tekan tombol untuk konfirmasi; teks chat tidak bisa membukanya.",
   "trust.opened": "Jendela trust terbuka {minutes} menit. Tutup kapan saja dengan /lock.",
   "trust.closed": "Jendela trust ditutup.",
+  "trust.closedAll":
+    "Chat ini tidak menyebut satu workspace, jadi setiap jendela trust yang terbuka ditutup ({n}). Jendela dibuka lagi dengan /yolo dari percakapan yang menyebut workspace-nya, atau dari terminal dengan `caraka trust`.",
   "trust.notOpen": "Tidak ada jendela trust yang terbuka.",
   "group.pairing":
-    "Caraka ditambahkan ke grup Telegram {title} ({chatId}). Memasukkan grup ke allowlist berarti memilih untuk memperlihatkan pekerjaan itu kepada anggotanya: setiap anggota melihat kartu approval, path berkas, diff, dan keluaran perintah. Tekan tombol untuk mengizinkannya.",
+    "Caraka ditambahkan ke grup Telegram {title} ({chatId}). Memasukkan grup ke allowlist berarti memilih untuk memperlihatkan pekerjaan itu kepada anggotanya: setiap anggota melihat kartu approval, path berkas, diff, dan keluaran perintah, dan menu perintah Caraka beserta deskripsinya muncul di menu tiap anggota. Tekan tombol untuk mengizinkannya.",
   "group.paired": "{title} masuk allowlist chat.",
   "group.ready":
     "Cara kerjanya di sini\n\nDi grup, Telegram hanya mengirimkan tiga jenis pesan kepada saya, karena privacy mode menyala:\n· perintah yang ditujukan ke saya, seperti /new@{bot}\n· balasan atas pesan saya sendiri\n· service message\n\nPesan biasa di grup ini tidak pernah sampai ke saya. Itu Telegram, bukan kerusakan.\n\nTopic: {topics}\n\nAgar saya membaca semua pesan, matikan privacy mode di @BotFather, atau jadikan saya admin — bot admin menerima semua pesan. Caraka tidak pernah memintanya.",
+  "group.readyAll":
+    "Cara kerjanya di sini\n\nPrivacy mode saya di grup ini tidak aktif, jadi Telegram mengirimkan setiap pesan di grup ini kepada saya. Saya menjawab yang ditujukan ke saya:\n· pesan yang menyebut @{bot}, termasuk perintah seperti /new@{bot}\n· balasan atas pesan saya sendiri\n\nSisanya saya baca lalu biarkan: tidak ada sesi yang dibuka, dan tidak ada yang sampai ke coding agent.\n\nTopic: {topics}\n\nAgar Telegram mengirim lebih sedikit, aktifkan lagi privacy mode di @BotFather dan lepas hak admin saya.",
   "group.topicsOn": "aktif. Tiap sesi mendapat topic sendiri di sini.",
   "group.topicsOff":
     "tidak aktif. Grup ini bukan forum, atau saya bukan admin dengan can_manage_topics — sesi berjalan linear dengan header. Memberi hak itu menjadikan saya admin, dan bot admin membaca setiap pesan di grup. Itu pertukarannya.",
@@ -391,7 +443,8 @@ const id: Record<MessageKey, string> = {
     "tidak aktif. Ini pesan langsung, dan pesan langsung tidak punya thread, jadi sesi berjalan linear dengan header.",
   "discord.asFile":
     "Jawabannya lebih panjang daripada yang bisa dibawa satu pesan Discord, jadi dilampirkan.",
-  "discord.acknowledged": "Caraka sudah menerimanya.",
+  "discord.acknowledged":
+    "Caraka sudah menerimanya. Kalau tidak ada balasan sesudah ini, akunmu atau channel ini tidak ada di allowlist Caraka. Minta yang menjalankannya untuk menambahkanmu.",
   "discord.fatalClose":
     "Discord menutup gateway dengan kode {code} dan akan menutupnya lagi, jadi Caraka berhenti alih-alih mencoba ulang. Periksa token bot dan undangannya di Discord developer portal, lalu jalankan lagi.",
   "whatsapp.noGroups":
@@ -419,7 +472,7 @@ const id: Record<MessageKey, string> = {
   "whatsapp.riskNotice":
     "\n⚠  Provider WhatsApp: baileys. Ini masuk sebagai perangkat tertaut pada akun\n   sungguhan, dan akun itu bisa diblokir karenanya. Pakai nomor yang terpisah\n   dari nomor pribadi, dan baca apa yang diketahui tentang seberapa seringnya:\n   https://github.com/CarakaDev/caraka/blob/main/docs/whatsapp-risiko.md\n",
   "acp.start":
-    "Claude tidak dapat dimulai lewat ACP. Jalankan `claude auth login`, lalu coba lagi.",
+    "Adapter ACP tidak dapat dimulai: perintahnya gagal dijalankan, atau agent-nya tidak menjawab. Jalankan `claude auth login` kalau belum masuk, lalu jalankan Caraka lagi.",
   "acp.notStarted": "Claude ACP belum dimulai.",
   "preset.invalid": "Preset {file} tidak sah pada `{field}` dan dilewati.",
   "driver.noSession": "Driver CLI tidak mengenal sesi itu. Kirim /new untuk memulai lagi.",
@@ -431,7 +484,7 @@ const id: Record<MessageKey, string> = {
   "driver.none":
     "Agent {agent}: adapter ACP maupun perintah CLI tidak ditemukan. Pasang agent-nya, lalu jalankan `npx caraka doctor`.",
   "agents.none":
-    "Tidak ada coding agent yang ditemukan: belum terpasang, atau tidak ada di PATH. Pasang salah satu (claude, codex, gemini, cline, cursor-agent, goose, amp), lalu jalankan `caraka doctor` untuk memastikan terdeteksi.",
+    "Tidak ada coding agent yang ditemukan: belum terpasang, tidak ada di PATH, atau yang ada di PATH tidak bisa dijalankan dari sini. Pasang salah satu (claude, codex, gemini, cline, cursor-agent, goose, amp), lalu jalankan `caraka doctor` untuk memastikan terdeteksi. Di Windows native, agent yang dipasang lewat `npm -g` tidak bisa dijalankan begini: pasang `.exe`-nya, atau jalankan Caraka lewat WSL2.",
   "cli.nodeVersion": "Node.js 22 atau lebih baru diperlukan.",
   "cli.gitMissing": "Git tidak ditemukan. Pasang Git, lalu jalankan init lagi.",
   "cli.workspaceMissing": "Workspace tidak ditemukan: {path}",
@@ -487,6 +540,8 @@ const id: Record<MessageKey, string> = {
   "cli.statusRunning": "Berjalan · PID {pid} · workspace {workspace} · channel {channels}",
   "cli.statusStopped": "Berhenti · workspace {workspace} · channel {channels}",
   "cli.trustUsage": "Tulis workspace dan durasi: caraka trust <workspace> --for 30m",
+  "cli.trustNotWorkspace":
+    "{path} bukan workspace di config.yaml, jadi tidak ada jendela yang dibuka. Workspace ditulis di config.yaml, dan perintah ini hanya membuka jendela pada salah satu dari:\n{list}",
   "cli.trustTooLong": "Jendela trust paling lama 60 menit.",
   "cli.trustOpened": "Jendela trust terbuka di {workspace} sampai {until}.",
   "cli.bypassOpened":

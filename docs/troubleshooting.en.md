@@ -37,7 +37,10 @@ Run it with `--dry-run` to see the plan, or read it first: `curl -fsSL https://c
 ## Coding agent
 
 **`No coding agent found`**
-None is installed, or none is on `PATH`. Install one (`install-guide.md` §4), then run `caraka doctor` to confirm it is detected.
+None is installed, none is on `PATH`, or the one on `PATH` cannot be started from here. Install one (`install-guide.md` §4), then run `caraka doctor` to confirm it is detected.
+
+**The agent was installed with `npm -g` but is not detected on native Windows**
+npm writes three files per bin on Windows: `agent.ps1`, `agent.cmd`, and a `#!/bin/sh` script named exactly like the bin. `CreateProcessW` tries only `.com` and `.exe`, so the bare name ends as `-4058` (UV_ENOENT), and the `.cmd` is refused by Node with `EINVAL` since CVE-2024-27980. Caraka does not run it through a shell: the chat message goes in as an argument, and a batch argument cannot be escaped with certainty. Two ways out: install the agent as an `.exe` through its own Windows installer, or run Caraka under WSL2 (`docs/frd.md` NFR-06). `caraka doctor` does not print a green row for the shim.
 
 **The agent is detected but every run fails instantly**
 It is not authenticated. Run `claude login`, `codex login`, or `gemini` depending on the agent.
@@ -189,6 +192,13 @@ Run `titen serve`. If you are not using it, change the provider:
 memory:
   provider: local   # or none
 ```
+
+**A workspace's memory looks empty after an upgrade**
+The memory scope is `workspace:<path>`, and since v1.3 that path is canonicalised through `resolve()`. An installation whose `config.yaml` says `path: /srv/app/` or `path: /srv/app/../app` therefore changes key once, and the old rows stay under the old spelling. One `UPDATE` moves them:
+```sql
+UPDATE memory_local SET scope = 'workspace:/srv/app' WHERE scope = 'workspace:/srv/app/';
+```
+Run `caraka stop` first, then `sqlite3 ~/.caraka/caraka.db` with the old spelling `SELECT DISTINCT scope FROM memory_local` reports.
 
 **The agent remembers something wrong**
 Trace it before deleting: `/memori` to look, then the claim id can be traced back to the evidence it came from. `/lupakan <id>` if it really is wrong.

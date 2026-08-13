@@ -38,7 +38,7 @@ Caraka menghubungkan **input tak tepercaya** (chat) ke **eksekusi kode di mesin 
 | T4 | Eksfiltrasi rahasia lewat balasan | **Outbound scrubber** wajib sebelum kirim & sebelum tulis disk | Deny-list path (`~/.ssh`, `~/.aws`, `*.env`, keychain) |
 | T5 | Aksi destruktif | Daftar aksi berisiko tinggi (force push, `rm -rf`, migrasi, deploy) selalu butuh approval | Timeout run + `/stop` |
 | T6 | Persetujuan tak berwenang di grup | Callback approval terikat principal; penekan di luar allowlist tidak menyetujui apa pun | Allowlist chat dan allowlist pengirim dievaluasi terpisah |
-| T6b | Pengungkapan di grup | Dinyatakan saat pairing, bukan dikontrol — §4 butir 6. Berlaku sama untuk guild channel Discord: kartu approval, path, diff, dan keluaran perintah terbaca setiap anggota yang bisa melihat channel itu | Grup default `read-only`, ditegakkan di jalur run sejak gerbang mode (§5); kalau terlalu sensitif untuk dilihat anggota, tempatnya bukan di grup |
+| T6b | Pengungkapan di grup | Dinyatakan saat pairing, bukan dikontrol — §4 butir 6. Berlaku sama untuk guild channel Discord: kartu approval, path, diff, keluaran perintah, dan menu perintah Caraka beserta deskripsinya terbaca setiap anggota yang bisa melihat channel itu | Grup default `read-only`, ditegakkan di jalur run sejak gerbang mode (§5); kalau terlalu sensitif untuk dilihat anggota, tempatnya bukan di grup |
 | T7 | Gateway terekspos internet | Bind `127.0.0.1` saja; membuka butuh flag eksplisit + peringatan. Telegram menarik lewat long-poll dan Discord memegang koneksi WebSocket keluar; sejak v0.6 provider `cloud-api` WhatsApp punya penerima webhook, dan ia bind loopback dengan aturan `--bind` yang sama | Akses jauh hanya lewat Tailscale/WireGuard/SSH |
 | T8 | Supply chain plugin | **Tidak ada marketplace, tidak ada dynamic loading** | Dependensi ≤ 25 **runtime langsung** |
 | T9 | Ban akun WhatsApp | Dua provider; `allowFrom` wajib; rate limit + jitter; tanpa first-contact — keempatnya kode sejak v0.6, lewat satu fungsi kirim | Cloud API sebagai jalan keluar: config yang sama, `provider` yang berbeda, dan tidak ada kelas risiko ini sama sekali |
@@ -76,7 +76,7 @@ Ini adalah kontrol yang **tidak** punya opsi konfigurasi untuk dinonaktifkan:
 3. **Jendela `trusted` wajib kedaluwarsa** (CHECK constraint level database) dan tidak pernah dibuka oleh teks chat. Rinciannya di §5.
 4. **Outbound scrubber** selalu aktif.
 5. **Audit log** selalu aktif untuk keputusan otorisasi.
-6. **Grup tidak pernah mendapat izin tulis/eksekusi** tanpa opt-in eksplisit, dan pengungkapan di grup dinyatakan, bukan dikontrol. Sejak 8 Agustus 2026 kalimat pertama itu gerbang di kode, bukan niat: sebuah ruang yang tidak disebut di peta `modes` blok channel-nya berjalan `read-only`, dan permintaan izin yang bukan bacaan ditolak sebelum kartu digambar (§5). Pesan ephemeral **tidak** dipakai sebagai kontrol keamanan di mana pun. Sejak v0.5 kalimat itu berlaku untuk dua platform: ephemeral Discord punya syarat yang berbeda dari Telegram dan sama tidak bisa diandalkannya, jadi kartu approval tidak pernah dikirim ephemeral di channel mana pun, dan tidak ada satu pun jalur yang berubah perilaku ketika ephemeral tidak tersedia.
+6. **Grup tidak pernah mendapat izin tulis/eksekusi** tanpa opt-in eksplisit, dan pengungkapan di grup dinyatakan, bukan dikontrol. Sejak 8 Agustus 2026 kalimat pertama itu gerbang di kode, bukan niat: sebuah ruang yang tidak disebut di peta `modes` blok channel-nya berjalan `read-only`, dan permintaan izin yang bukan bacaan ditolak sebelum kartu digambar (§5). Pesan ephemeral **tidak** dipakai sebagai kontrol keamanan di mana pun. Sejak v0.5 kalimat itu berlaku untuk dua platform: ephemeral Discord punya syarat yang berbeda dari Telegram dan sama tidak bisa diandalkannya, jadi kartu approval tidak pernah dikirim ephemeral di channel mana pun, dan tidak ada satu pun jalur yang berubah perilaku ketika ephemeral tidak tersedia. Sejak 13 Agustus 2026 yang diungkapkan sebuah ruang terpasang juga memuat menu perintah: `setMyCommands` diterbitkan sekali per id di allowlist container, jadi ketiga belas entri `gatewayCommands` beserta deskripsinya muncul di menu tiap anggota ruang itu. Kartu pairing menyebutnya sebelum operator menekan tombol, dan menu tidak memberi wewenang apa pun — perintah dari orang di luar allowlist pengirim tetap dijatuhkan tanpa balasan.
 7. **Bind default `127.0.0.1`.**
 8. **Payload callback tidak pernah dipercaya apa adanya** — selalu id + HMAC + nonce yang tervalidasi di server.
 
@@ -146,7 +146,7 @@ Sejak 8 Agustus 2026 gerbang itu ada. Mode dibaca sekali per pesan, dari peta `m
 Dua sel di baris `assisted` masih desain. Tabel menuliskan ❌ untuk `git push` dan deploy; yang dilakukan kode adalah mengirim kartu untuk keduanya, karena daftar berisiko tinggi berlaku lebih dulu dan tidak dibedakan per mode. Pemetaan role Discord → mode kebijakan (FR-AUTH-06) juga belum dibangun: kunci peta `modes` adalah id container, atau id principal di percakapan pribadi, bukan role — sebuah guild channel dipilih satu per satu. Sebuah role Discord tidak pernah, dalam keadaan apa pun, memberi otoritas approval (ADR-0008).
 
 **Daftar aksi berisiko tinggi** (selalu approval, apa pun modenya):
-`git push --force*` · `git reset --hard` · `rm -rf` · penghapusan direktori · migrasi database · `terraform apply` · `kubectl apply/delete` · perintah deploy · menulis ke `~/.ssh`, `~/.aws`, `~/.config`, `*.env`, `*.pem`, `id_*` · perintah dengan pipe ke `sh`/`bash` · `curl`/`wget` ke domain tidak dikenal.
+`git push --force*` · `git reset --hard` · `rm -rf` · penghapusan direktori · migrasi database · `terraform apply` · `kubectl apply/delete` · perintah deploy · menulis ke `~/.ssh`, `~/.aws`, `~/.config`, `*.env`, `*.pem`, `id_*` · perintah dengan pipe ke `sh`/`bash` · `curl`/`wget` ke domain tidak dikenal · path yang berada di luar root workspace sesi itu (§7).
 
 ### Dua hal berbeda yang sama-sama berarti "tidak perlu menekan setuju"
 
@@ -245,6 +245,8 @@ paling murah dengan dampak terbesar** — pasang sejak commit pertama.
 
 Sejak v0.5 daftar itu bertambah satu bentuk: tiga segmen base64url berpisah titik yang **tidak** diawali `eyJ`, yaitu bentuk bot token Discord. Pola JWT di atas mensyaratkan awalan itu, jadi sampai v0.4 token Discord lolos kedua pola dan yang menutupinya hanya seeding exact — dan seeding hanya menutup token yang proses ini kebetulan muat.
 
+Bentuk Telegram di baris pertama tabel hanya diredaksi pada batas kata sampai 13 Agustus 2026. Pola itu dibuka dengan `\b`, dan endpoint unduhan Telegram menempelkan token pada kata `bot` — `https://api.telegram.org/file/bot<token>/<path>` — sehingga tidak ada batas kata di depan digit pertama dan seluruh URL lolos utuh. Yang membuatnya mahal adalah tabel `audit`: `store.audit` menjalankan scrubber ini pada setiap baris, dan tabel itu punya trigger yang menolak UPDATE dan DELETE, jadi satu token yang mendarat di sana tidak bisa dihapus lagi. Batas itu dilepas; empat pola lain menahannya, dan alasan masing-masing ada di komentar di atas polanya.
+
 Baris terakhir tabel itu adalah **nama variabel**, bukan berkas: sebuah baris
 `.env` diredaksi kalau namanya berakhir pada salah satu dari lima kata itu, dan
 `DATABASE_URL=postgres://user:sandi@host/db` tidak. Rahasia yang tidak punya
@@ -263,7 +265,7 @@ Prinsip: **warisi, jangan bangun ulang.**
 | Lapisan | Sumber |
 |---|---|
 | Sandbox eksekusi | Bawaan agent (mis. preset Codex kami memakai `--sandbox read-only` secara default) |
-| Batas direktori | `cwd` dikunci ke root workspace; path di luar workspace dianggap aksi berisiko tinggi |
+| Batas direktori | `cwd` dikunci ke root workspace, dan path di luar root itu adalah aksi berisiko tinggi: ia mempertahankan tombolnya di dalam jendela trust. Pemeriksaannya berjalan atas keluaran `resolve()`, bukan `realpath`, karena tool call yang membuat berkas menamai path yang belum ada dan `realpathSync` melempar ENOENT untuk path seperti itu. Symlink dan bind mount di bawah root karena itu tidak terlihat olehnya |
 | Deny-list path | Kebijakan kami, diterapkan sebelum approval ditawarkan |
 | Isolasi kuat (opsional) | Jalankan agent di container/VM per workspace — didokumentasikan, tidak diwajibkan |
 
@@ -289,7 +291,7 @@ Prinsip: **warisi, jangan bangun ulang.**
 | Approval pending | 5 per sesi |
 | Outbound WhatsApp | 12 pesan / 60 detik bergulir, + jeda acak 1.200–3.500 md |
 | Outbound Telegram & Discord | reaktif: tunggu `retry_after` pada 429, lalu ulangi |
-| Ukuran lampiran masuk | 25 MB |
+| Ukuran lampiran masuk | 20 MB |
 
 Melebihi batas → pesan jelas + antrean, bukan diam-diam dibuang.
 
@@ -330,8 +332,23 @@ membedakan WhatsApp bukan trafiknya melainkan hukumannya: di dua channel lain
 melewati batas berarti 429, di sini ia salah satu sinyal yang dilaporkan memicu
 ban (`docs/whatsapp-risiko.md`).
 
-Satu baris tersisa, ukuran lampiran masuk, tetap **dispesifikasikan, belum
-dibangun**.
+Baris terakhir, ukuran lampiran masuk, **terbangun 13 Agustus 2026** dan
+angkanya turun dari 25 MB ke 20 MB. Sumbernya dokumentasi `getFile`: "bots can
+download files of up to 20MB in size", jadi 25 MB adalah batas yang meloloskan
+berkas 24 MB yang tetap tidak bisa diunduh. Yang menegakkannya ada di dua
+tempat, karena yang pertama mempercayai angka dari pengirim: adapter Telegram
+menandai `file_size` di atas 20 MB sebagai `tooBig` dan core menolaknya sebelum
+satu byte diminta, lalu unduhan yang tidak melaporkan ukuran dihitung saat
+dibaca dan dibatalkan di byte yang melewati plafon, tanpa menulis apa pun ke
+disk. Keduanya menjawab dengan satu kalimat yang menyebut ukurannya dan
+batasnya — pesan jelas, bukan diam-diam dibuang.
+
+Lampiran yang diunduh duduk di `~/.caraka/inbox/<run>/` dengan mode 0700, satu
+subdirektori per run, dihapus saat run selesai dan disapu lagi saat gateway
+mulai. Nama berkasnya dibangkitkan Caraka, tidak satu karakter pun dari
+`file_name` kiriman pengirim, dan hanya empat mime gambar yang punya ekstensi di
+daftar izin (`src/core/security.ts`). Lampiran jenis lain diklasifikasi,
+diaudit, dan dijawab satu kalimat.
 
 ---
 
@@ -372,6 +389,7 @@ Kejujuran adalah bagian dari postur keamanan:
 - Kami **tidak** melihat satu pun keputusan izin selama jendela `--bypass` terbuka, jadi kami tidak mengaudit isinya. Yang tercatat hanya jendelanya.
 - Kami **tidak** bisa menyembunyikan pekerjaan dari anggota grup yang kamu masukkan ke allowlist.
 - Kami **tidak** memasang autentikasi pada dasbor lokal. Selama `caraka dashboard` berjalan, siapa pun di mesin itu yang dapat mencapai `127.0.0.1` dapat membacanya, termasuk pengguna lokal lain yang tidak punya izin baca atas `~/.caraka/caraka.db`. Batas yang sebenarnya adalah izin berkas database itu, dan dasbor melebarkannya selama ia hidup. Yang **tidak** termasuk dalam batas itu adalah peramban: dasbor hanya menjawab request yang datang dengan literal alamat atau `localhost` di header `Host`, sehingga halaman web yang mengarahkan namanya sendiri ke 127.0.0.1 tidak bisa membaca panel mana pun sebagai origin-nya sendiri.
+- Kami **tidak** bisa memberi label pada gambar. Kontrol utama T3 adalah label "data, bukan instruksi", dan implementasinya pembungkus teks — piksel tidak bisa membawanya, dan instruksi di dalam gambar bisa dirender begitu samar sehingga manusia yang meneruskan tangkapan layar itu tidak membacanya sementara model tetap membacanya. Untuk run yang membawa lampiran, T3 karena itu turun ke kontrol cadangannya sendirian, yaitu daftar risiko tinggi ditambah kartu approval: run seperti itu tidak pernah memakai jalur auto-approve jendela trust, jadi setiap permintaan izin yang bisa disetujui tetap butuh satu ketukan. Tingkat keberhasilan injeksi lewat gambar tidak diukur di mesin ini, jadi tidak ada angkanya di sini.
 - Kami **tidak** mengklaim scrubber melihat setiap rahasia. Ia mengenali bentuk yang ada di daftar §6 dan nilai yang di-seed saat proses mulai. Yang di luar daftar itu lewat kalau proses ini tidak memuatnya: AWS secret access key yang hanya empat puluh karakter base64, kunci OpenAI lama yang hanya `sk-` lalu apa saja, baris `.env` yang namanya berakhir di luar lima kata itu. Yang lolos ditulis sebagai baris test di `test/unit.test.ts`, bukan disimpan sebagai asumsi.
 - Kami **tidak** melakukan audit keamanan pihak ketiga (belum); status ini akan dinyatakan terbuka sampai berubah.
 
@@ -388,7 +406,7 @@ tertutup. Kotak yang tidak bisa ditutup jujur tetap `deferred`.
 
 | Butir | Status | Bukti atau alasan |
 |---|---|---|
-| Scrubber punya test dengan corpus rahasia sintetis | met | unit: *the scrubber redacts every shape it claims, and leaves ordinary text byte-identical* — lima belas bentuk (AWS, GitHub klasik dan fine-grained, OpenAI, Anthropic, Slack, SSH, Telegram, Discord, JWT, baris `.env`), delapan teks biasa yang harus kembali byte demi byte (UUID, sha git, semver, domain, path berkas), dan empat rahasia yang tidak dikenali daftar bentuk itu, dicatat sebagai lolos alih-alih diasumsikan tertutup |
+| Scrubber punya test dengan corpus rahasia sintetis | met | unit: *the scrubber redacts every shape it claims, and leaves ordinary text byte-identical* — enam belas bentuk (AWS, GitHub klasik dan fine-grained, OpenAI, Anthropic, Slack, SSH, Telegram telanjang dan Telegram di dalam URL unduhan, Discord, JWT, baris `.env`), sebelas teks biasa yang harus kembali byte demi byte (UUID, sha git, semver, domain, path berkas, dan tiga identifier yang menahan batas kata pola lain), dan empat rahasia yang tidak dikenali daftar bentuk itu, dicatat sebagai lolos alih-alih diasumsikan tertutup |
 | Nonce approval diuji terhadap replay & cross-session | met | unit: *approval is principal-bound, session-bound, expiring, and single-use*; e2e: *a press from outside the sender allowlist decides nothing in a DM either* memutar ulang payload yang baru saja berhasil dan mendapat penolakan |
 | Fuzzing parser pesan masuk (teks aneh, unicode, panjang ekstrem) | met (8 Agustus 2026) | unit: *a seeded corpus of hostile text breaks none of the seven parsers*. Corpus berseed yang sama kini mengemudikan empat pembaca teks masuk selain tiga seam lama itu: `Gateway.parseCommand` (nama perintah dan pemotong argumennya, satu pembaca sejak corpus ini menuntut keduanya sepakat di mana perintah berakhir), regex rute `@slug`, `APPROVAL_CODE_REPLY` berikut jalurnya sampai ke baris approval, dan pembacaan badan webhook WhatsApp Cloud. 240 putaran di atas materi lama — emoji empat byte, tanda RTL, karakter lebar nol, surrogate tanpa pasangan, string seratus ribu karakter — ditambah yang khusus dibawa teks masuk: spasi di kedua ujung, baris baru di tengah perintah, sufiks mention bot, garis miring ganda, karakter kontrol, dan kembaran NFKC (`ｓｔｏｐ`, `ＡＢＣＤ`, huruf Sirilik, tanda Kelvin, s panjang). Yang dituntut bukan "tidak melempar": perintah hanya boleh terbaca dari kata di awal pesan dan argumennya mulai di spasi pertama, `@slug` hanya boleh mendarat di slug yang ditulis operator, dan keputusan tidak boleh terbaca dari prosa, dari kembaran glyph, atau dari kode benar milik sesi lain — sementara kode yang memang milik kartu itu tetap menjawabnya, jadi yang dibuktikan penolakan dan bukan pembaca yang menolak semua. Corpus ini menemukan tiga bug, ketiganya di pembaca badan webhook dan ketiganya fatal: `from` berupa angka menabrak `String.prototype.includes` dan keluar sebagai unhandled rejection dari handler POST, `text` berupa angka menabrak `trim` di core dan menghentikan kanal, dan badan `null` terurai menjadi nilai tanpa `entry` untuk dibaca. Ditutup di `src/channels/whatsapp.ts` — satu gerbang tipe di `receive`, tempat kedua provider masuk, dan penjagaan nilai kosong di sepanjang penelusuran `ingest` |
 | Potongan pesan keluar tidak pernah melewati batas channel | met (8 Agustus 2026) | Dulu bisa melewatinya, dan corpus berseed di atas yang menabraknya — 133 karakter untuk batas 80, pada masukan berpagar. `splitMarkdown` menganggarkan fence yang ditinggalkan sebuah baris, bukan fence yang ia datangi, jadi baris yang membuka blok membeli penutup yang tak pernah dihitung; Discord dan WhatsApp memanggil splitter dengan batas channel yang persis lalu memotong kelebihannya di `sendText`, sehingga yang hilang adalah isi pesan. `src/core/channel.ts` kini menganggarkan keduanya dan membatasi panjang marker yang dibuka ulang, dan corpus itu sekarang menuntut batas datar, bukan batas longgar yang dulu ditulis mengelilingi bug ini |

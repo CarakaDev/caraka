@@ -19,3 +19,7 @@ resumeArgs: ["exec", "resume", "{sessionId}", "--json", "--skip-git-repo-check",
 output: jsonl
 resumeOutput: jsonl
 sessionIdFields: ["thread_id", "session_id"]
+# openai/codex#2085: codex tidak membaca gambar dari path yang ditulis di dalam
+# prompt, ia butuh `--image/-i`. Flag itu boleh diulang, jadi `repeat`.
+imageArg: "-i"
+imageMode: repeat

@@ -109,7 +109,7 @@ Send ordinary text to give the agent a task. Thirteen commands cover the rest:
 
 | | |
 |---|---|
-| `/new` | start a fresh session in this conversation |
+| `/new [title]` | start a fresh session in this conversation, title optional |
 | `/status` | report the state of this conversation's session |
 | `/stop` | cancel the running task |
 | `/ws` | list the workspaces and their paths |

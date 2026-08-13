@@ -1,11 +1,18 @@
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+import { isAbsolute, relative, resolve } from "node:path";
 
 const fixedSecretPatterns: Array<[RegExp, string]> = [
   [
     /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/g,
     "[REDACTED]",
   ],
-  [/\b\d{6,12}:[A-Za-z0-9_-]{30,}\b/g, "[REDACTED]"],
+  // No leading `\b`: nothing separates the `t` of `bot` from the first digit, so
+  // `…/file/bot<token>/<path>` passed through whole until 13 August 2026. The four
+  // patterns below keep theirs: drop the JWT one's and it eats
+  // `apiKeyJsonSchemaLoader.helperUtils.serializerFunctions`, drop the vendor one's
+  // and it eats any SCREAMING_CASE name carrying `AKIA`, and the last one's boundary
+  // only decides which `.env` names match at all, which is a different change.
+  [/\d{6,12}:[A-Za-z0-9_-]{30,}\b/g, "[REDACTED]"],
   [/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g, "[REDACTED]"],
   // A Discord bot token is three base64url parts joined by dots — the bot's own
   // id, a timestamp, and a signature — and it does not start with `eyJ`, so the
@@ -39,6 +46,34 @@ export function createScrubber(secrets: string[] = []) {
   };
 }
 
+// The mime allowlist, and the extension each entry is written under. Four image
+// mimes and nothing else, because an image is the only attachment with a reader
+// on every agent route this repository has (`spec/lampiran-chat.md`).
+const ATTACHMENT_EXTENSIONS: Record<string, string> = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/gif": ".gif",
+  "image/webp": ".webp",
+};
+
+/**
+ * The name a downloaded attachment is written under. Generated here, so not one
+ * character of it comes from the sender: the Bot API defines both `file_name` and
+ * `mime_type` as "as defined by the sender", `../../.ssh/authorized_keys` is a
+ * name a sender may write, and `highRiskPaths` above guards a path inside a tool
+ * call rather than a path Caraka writes itself. The only inputs are the mime and
+ * the neutral kind word.
+ *
+ * Null means the mime is outside the allowlist, and core answers with one
+ * sentence rather than storing the bytes. A Telegram compressed photo carries no
+ * mime at all and the compression is JPEG, so `image` without one falls to
+ * `.jpg`; a compressed PNG would land under a wrong extension with right bytes.
+ */
+export function attachmentName(kind: string, mime?: string) {
+  const extension = mime ? ATTACHMENT_EXTENSIONS[mime] : kind === "image" ? ".jpg" : undefined;
+  return extension ? `${randomUUID()}${extension}` : null;
+}
+
 function signature(key: Buffer, prefix: string, id: string, decision: "allow" | "reject") {
   return createHmac("sha256", key)
     .update(`${prefix}.${id}.${decision}`)
@@ -46,10 +81,11 @@ function signature(key: Buffer, prefix: string, id: string, decision: "allow" | 
     .slice(0, 16);
 }
 
-// `c` signs approvals, `t` a trust window, `g` a group joining the chat allowlist.
-// The prefix is inside the HMAC, so a callback signed for one purpose cannot be
-// replayed as another.
-export type CallbackPurpose = "c" | "t" | "g";
+// `c` signs approvals, `t` a trust window, `g` a room joining the chat allowlist,
+// `w` a workspace the sender picked off a card, `a` a workspace entry being added
+// to config.yaml. The prefix is inside the HMAC, so a callback signed for one
+// purpose cannot be replayed as another.
+export type CallbackPurpose = "c" | "t" | "g" | "w" | "a";
 
 export function approvalCallbacks(key: Buffer, prefix: CallbackPurpose = "c") {
   const id = randomBytes(9).toString("base64url");
@@ -107,7 +143,7 @@ export function shortCode() {
 
 export function callbackPurpose(callback: string): CallbackPurpose | null {
   const head = callback.slice(0, 2);
-  return head === "c:" || head === "t:" || head === "g:" ? (head[0] as CallbackPurpose) : null;
+  return /^[ctgwa]:$/.test(head) ? (head[0] as CallbackPurpose) : null;
 }
 
 /** `docs/security.md` §5 names these three, and nothing names a fourth. */
@@ -234,18 +270,44 @@ const highRiskPaths = [
 ];
 
 /**
+ * Whether a target path stays under a workspace root. `relative()` rather than
+ * `startsWith(root + sep)`, because one expression then answers the root itself
+ * and its sibling: `'/home/r/Project-secret/x'.startsWith('/home/r/Project')` is
+ * true while `relative` returns `../Project-secret/x`. A relative target is
+ * resolved against the root first, which is what a tool call's `src/index.ts`
+ * means.
+ *
+ * It runs on `resolve()` output, so a symlink or a bind mount under the root is
+ * invisible to it (`docs/security.md` §7). `realpathSync` cannot stand in: a
+ * tool call that creates a file names a path that does not exist yet, and
+ * `realpathSync` throws ENOENT for exactly that.
+ */
+export function insideWorkspace(root: string, target: string) {
+  const rel = relative(root, resolve(root, target));
+  return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+}
+
+/**
  * True when the request must keep its buttons even inside a trust window. It
  * reads the command string and the paths, so a tool call that carries neither
  * is judged ordinary — the list is a floor under the trust window, not a
  * complete model of danger.
+ *
+ * `workspaceRoot` is what `docs/security.md` §7 promised since v1.0 and no rule
+ * here implemented: a path outside it is high risk. It is optional because a
+ * caller that cannot name a root has no containment to check, and undefined then
+ * reads as the absent capability rather than as a root of `/`.
  */
-export function isHighRisk(request: {
-  toolCall?: {
-    kind?: string | null;
-    rawInput?: unknown;
-    locations?: Array<{ path?: string | null }> | null;
-  };
-}): boolean {
+export function isHighRisk(
+  request: {
+    toolCall?: {
+      kind?: string | null;
+      rawInput?: unknown;
+      locations?: Array<{ path?: string | null }> | null;
+    };
+  },
+  workspaceRoot?: string,
+): boolean {
   const call = request.toolCall;
   const raw = call?.rawInput;
   const input = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
@@ -257,5 +319,9 @@ export function isHighRisk(request: {
       typeof input[key] === "string" ? input[key] : undefined,
     ),
   ].filter((value): value is string => typeof value === "string");
-  return paths.some((path) => highRiskPaths.some((pattern) => pattern.test(path)));
+  return paths.some(
+    (path) =>
+      highRiskPaths.some((pattern) => pattern.test(path)) ||
+      (workspaceRoot !== undefined && !insideWorkspace(workspaceRoot, path)),
+  );
 }

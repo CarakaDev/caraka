@@ -20,7 +20,7 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.2.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.3.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Seven presets load; five routes across four agents have completed a turn
   // against a live binary here, all on 10 August 2026 — Claude Code over ACP
@@ -119,6 +119,39 @@ export const releases = [
         'Watch the dashboard swap a panel in a real browser with the CSP live',
         'Run fourteen days on a real WhatsApp number with no ban and no manual relink, or publish the honest finding that makes Cloud API the default',
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
+      ] },
+    ] },
+  { v: '1.3.0', state: 'unproven', date: '13 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'FIXED', tone: '#FFD67E', items: [
+        'The outbound scrubber did not redact a bot token in the one shape a bot token travels in. Its pattern opened with a word boundary, and Telegram’s download endpoint writes …/file/bot<token>/<path>, where nothing separates the t of bot from the first digit. Measured: the bare token redacts, the token in a sentence redacts, the token in either API URL passed through whole. store.audit runs that scrubber over every row and the audit table refuses an UPDATE and a DELETE, so what lands there cannot be taken out',
+        'caraka trust /tmp --for 60 --bypass wrote a trusted grant with bypassPermissions for a path no config.yaml names, and printed success. Nothing between reading the argument and writing the row asked whether it was a configured workspace. It was inert only because an unknown session slug resolved to the first workspace instead of to nothing, and both halves of that accident are closed',
+        'caraka start died on any operating system when the ACP adapter could not be spawned. It held the one spawn in the tree with no error listener, and Node throws an unhandled one, so the documented fall back to the CLI driver was unreachable through that path. The Windows report that surfaced it was a way in rather than the cause',
+        '/lock told the operator no trust window was open while windows were open, on a multi-workspace install in a chat with no session and no sticky workspace',
+        'caraka trust did nothing at all for a config path spelled with a trailing slash or a .., and still printed success: it resolved its argument while the gateway keyed on the raw config string, so the grant it wrote could never be matched by the lookup that reads one',
+        'A photo, a voice note, a video, a sticker, a document and a location all vanished without a word. The inbound path read "if there is no text, return" — a nullability check standing in for a content-kind check — and it sat before the audit line, so the message was authorised and then left no row',
+        '/newsletter was titled sletter, because the titler stripped a leading /new from text routing had already stripped the command from',
+        'The verification gate ran the build after the tests, so a test that runs the shipped binary to catch a wrong version number failed in CI on a missing module, and passed on a developer machine only because a previous build was still lying in the directory',
+      ] },
+      { label: 'ADDED', tone: '#8EEE98', items: [
+        'A paired room answers when it is spoken to. One optional tri-state field on the inbound contract: set when the channel saw a mention, a reply to one of the bot’s own messages, or a command it routed, and left unset when the channel cannot tell — which core reads as answer anyway rather than go quiet. No fifth capability field and no stored mode. Two clauses an earlier design carried were cut before any code: a bare thread id reports every message in every forum topic as addressed, including topics humans opened for themselves',
+        'The gate sits below the approval-code check and below the whole command router, so /stop, /lock and a code reply keep working in a room that never addressed the bot. A test pins that placement, because hoisting it would kill /stop in every group and nothing would have noticed',
+        'Native commands reach a paired group. Registration read the sender allowlist, which on Telegram is the direct messages, so a group menu was empty at startup and stayed empty after pairing. Publishing a menu into a group is new disclosure — the chat scope covers every member, so all thirteen commands and their descriptions become visible to people outside the allowlist — and the pairing card says so',
+        '/new keeps its title and can choose its workspace: /new Kerjaan Dummy @dummy opens a session and a topic of that name in that workspace. The path the issue did not mention needed the test — a /new that has to ask which workspace used to lose both its title and its create intent by the time the button was pressed',
+        'A workspace can be named by path from the operator’s direct message, confirmed on the signed single-use card pairing already uses, and written to config.yaml on yes. From a group a path is refused and the workspace list is the answer. It arrived behind four things that had to be true first, including a containment check docs/security.md §7 had promised since v1.0 with nothing behind it',
+        'An attachment is carried: image bytes over ACP, or -i <path> where a preset names the flag. Generated names only, a fixed mime allowlist, refused past Telegram’s documented 20 MB before a byte is fetched, written under the Caraka home at 0700 and never into the workspace, and the token-bearing URL is built and spent inside the adapter so no part of it crosses into core',
+      ] },
+      { label: 'CHANGED', tone: '#6FB9F0', items: [
+        'The group readiness sentence stopped asserting something false. It told the operator "an ordinary message in this group never reaches me" at the moment they decide whether to pair, and that is false in exactly the configuration Caraka’s own topic feature requires: a per-session topic needs the manage-topics right, an admin bot has privacy mode off, and an admin bot receives everything. getMe answers this in a field the adapter did not declare',
+        'A Discord slash command from a stranger no longer says it was received. The adapter acknowledged the interaction before handing anything to core, so a guild member outside the allowlist was told Caraka had it and then got silence',
+        'Command resolution answers whether something can be spawned rather than whether a file exists. On Windows npm writes three files per package binary and the one matching the bare name is a shell script; libuv appends only .com and .exe, so the path that check returned was guaranteed to fail. A shell is refused as the fix, and the refusal is written down against CVE-2024-27980',
+        'Hard rule 3 in AGENTS.md was rewritten. It claimed trusted mode was terminal-only and enforced by a database constraint; the expiry half is enforced and the terminal-only half has been enforced by nothing since /yolo shipped, because the constraint lists chat explicitly',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'Nothing here was run on Windows. The reported crash has two causes, one platform-independent and fixed and tested; the Windows half is proved through a platform parameter rather than against a real win32. Whether the reporter’s error is gone is unproven and the issue stays open',
+        'The attachment path is unproven on Claude Code’s CLI route. Its Read tool is reported to refuse a path outside the project directory, and the bytes deliberately do not land in the workspace, so that combination degrades to the refusal sentence. It works over ACP, where the adapter takes image content blocks',
+        'src/ measures 9,412 lines against the ~8,000 ceiling, up 914 in this release, which is 1,412 over rather than near. Each item records its own number, its estimate and the gap; the two largest gaps are four channel wire shapes that had to be declared before an attachment could be read off any of them, and four security preconditions that turned out to live under a one-line feature. One removal paid part of it. The ceiling stays where it is',
+        'Every field gate is still open, the same nine as at 1.0.0. Nothing in this release closes one',
       ] },
     ] },
   { v: '1.2.0', state: 'unproven', date: '10 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),

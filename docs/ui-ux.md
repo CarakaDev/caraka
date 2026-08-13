@@ -63,7 +63,7 @@ Ketik biasa. Tidak perlu prefiks, tidak perlu perintah. **Topic adalah konteksny
 ### Perintah
 | Perintah | Di mana | Fungsi | Status |
 |---|---|---|---|
-| `/new` | topic sesi | mulai sesi baru (topic baru) | terpasang |
+| `/new [judul]` | topic sesi | mulai sesi baru (topic baru), judul opsional | terpasang |
 | `/stop` | topic sesi | batalkan run | terpasang |
 | `/status` | mana saja | ringkasan semua sesi aktif | terpasang |
 | `/help` | mana saja | bantuan singkat | terpasang |

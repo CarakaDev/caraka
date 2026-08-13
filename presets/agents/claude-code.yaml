@@ -11,6 +11,12 @@ acp:
   # lain masih bertanda `belum diverifikasi`, jadi tidak menulis baris ini, dan
   # run read-only menolak route yang belum pernah terlihat bertanya.
   asksPermission: true
+# Tidak ada `imageArg` di sini, dan itu keputusan, bukan kelalaian. Jalur ACP di
+# atas menerima gambar sebagai blok konten, jadi tidak ada berkas yang perlu
+# dibaca agent. Di jalur CLI, Read dilaporkan menjawab EPERM untuk path di luar
+# direktori proyek dan `additionalDirectories` dilaporkan tidak menutupnya
+# (anthropics/claude-code#29013), sehingga memberi flag di sini berarti mengirim
+# path yang akan ditolak. Pemakai jalur CLI mendapat kalimat degradasi.
 command: claude
 args: ["-p", "--output-format", "json", "--session-id", "{sessionId}"]
 resumeArgs: ["-p", "--output-format", "json", "--resume", "{sessionId}"]

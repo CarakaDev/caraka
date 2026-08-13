@@ -44,7 +44,7 @@ The evidence that three fields are enough comes from another implementation: vsc
 
 What is asked for: that the ACP specification name a standard shape for describing how to run a local adapter, even one as small as those three fields. Every client that offers a list of agents today reinvents the same shape, and each reinvention makes an agent configuration file non-portable between clients. Two small things belong with it, because we decided both ourselves with nothing to refer to:
 
-- **Resolving `command`.** An adapter installed as an npm dependency is only found if `node_modules/.bin` is searched alongside `PATH`; that is what `resolveCommand` in `src/drivers/preset.ts` does.
+- **Resolving `command`.** An adapter installed as an npm dependency is resolved as a module rather than through what npm writes for it in `node_modules/.bin`: on Windows what is written there is a shim that cannot be spawned. Any other command is looked up on `PATH`, and on Windows only a candidate ending `.exe` or `.com` is accepted, because those are the only extensions libuv appends while walking `PATH`. `resolveCommand` in `src/drivers/preset.ts` does both.
 - **The semantics of `env`.** In Caraka the `env` map is layered over the parent environment rather than replacing it, and that parent environment is first stripped of every variable beginning `CARAKA_` (`claudeEnvironment` in `src/drivers/claude-acp.ts`). A specification that says which of the two applies saves the next client one guess.
 
 ### The registry JSON as a source for auto-discovery

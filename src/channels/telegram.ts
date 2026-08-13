@@ -1,9 +1,11 @@
+import { writeFile } from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
 import {
   splitMarkdown,
   type Channel,
   type ChannelCaps,
   type ChannelCommand,
+  type InboundMessage,
   type ThreadRef,
 } from "../core/channel.js";
 import { translator, type Translate } from "../i18n.js";
@@ -15,6 +17,8 @@ export type TelegramUser = {
   is_bot: boolean;
   has_topics_enabled?: boolean;
   allows_users_to_create_topics?: boolean;
+  /** `getMe` only: "True, if privacy mode is disabled for the bot." */
+  can_read_all_group_messages?: boolean;
 };
 
 export type TelegramChat = {
@@ -24,12 +28,53 @@ export type TelegramChat = {
   is_forum?: boolean;
 };
 
+/**
+ * One file on the wire, in the shape eight of the nine media slots share.
+ * `file_name` and `mime_type` are "as defined by the sender" per the Bot API, so
+ * neither ever names a file on this machine; `file_name` is not declared here at
+ * all, because nothing may read it (`docs/api.md` §5).
+ */
+export type TelegramFile = {
+  file_id: string;
+  file_size?: number;
+  mime_type?: string;
+  width?: number;
+  height?: number;
+};
+
 export type TelegramMessage = {
   message_id: number;
   message_thread_id?: number;
   from?: TelegramUser;
   chat: TelegramChat;
   text?: string;
+  /** What a photo, a video, or a document was sent with. Never both with `text`. */
+  caption?: string;
+  /** Offset and length are counted in UTF-16 code units, per the Bot API. */
+  entities?: Array<{ type: string; offset: number; length: number }>;
+  /** The same list for a caption, which is a separate field on the wire. */
+  caption_entities?: Array<{ type: string; offset: number; length: number }>;
+  photo?: TelegramFile[];
+  document?: TelegramFile;
+  voice?: TelegramFile;
+  audio?: TelegramFile;
+  video?: TelegramFile;
+  video_note?: TelegramFile;
+  animation?: TelegramFile;
+  sticker?: TelegramFile;
+  /** The ninth slot, and the one with no file behind it at all. */
+  location?: { latitude: number; longitude: number };
+  reply_to_message?: TelegramMessage;
+  /**
+   * The service message that opened a topic. `is_topic_message` would answer the
+   * same question and has no reader here, and a field nothing reads is a promise
+   * nobody checks (`docs/api.md` §4).
+   */
+  forum_topic_created?: { name: string };
+  /** Filled in by this adapter, not by Telegram; core reads it (FR-CHAN-09). */
+  addressed?: boolean;
+  /** Filled in by this adapter from the slots above; core reads the neutral words. */
+  attachments?: NonNullable<InboundMessage["attachments"]>;
 };
 
 export type TelegramChatMember = {
@@ -76,9 +121,52 @@ function topicName(name: string, fallback: string) {
   return name.replace(/\s+/g, " ").trim().slice(0, 128) || fallback;
 }
 
+// getFile: "bots can download files of up to 20MB in size". A file that reports
+// more is refused before the request, and the count below catches one that
+// reported nothing.
+const DOWNLOAD_LIMIT = 20 * 1024 * 1024;
+
+// Slot → the neutral word core reads. Seven of the eight file slots pair one to
+// one; `photo` is the eighth and is read below, because it arrives as a list.
+const MEDIA_SLOTS = [
+  ["document", "document"],
+  ["voice", "audio"],
+  ["audio", "audio"],
+  ["video", "video"],
+  ["video_note", "video"],
+  ["animation", "video"],
+  ["sticker", "sticker"],
+] as const;
+
+// The Bot API promises no order for `photo[]`, so the biggest is the one with
+// the most pixels rather than the last element.
+function largest(sizes: TelegramFile[]) {
+  return sizes.reduce((best, next) =>
+    (next.width ?? 0) * (next.height ?? 0) > (best.width ?? 0) * (best.height ?? 0) ? next : best,
+  );
+}
+
+/**
+ * What this message carries that is not text, one entry per filled slot. The
+ * wire file rides along so `fetchAttachment` can re-read it by index; core is
+ * handed the neutral fields only. `location` has no file at all, so it is
+ * classified, audited, and answered with one sentence.
+ */
+function mediaOf(message: TelegramMessage) {
+  const found: Array<{ kind: string; file?: TelegramFile }> = [];
+  if (message.photo?.length) found.push({ kind: "image", file: largest(message.photo) });
+  for (const [slot, kind] of MEDIA_SLOTS) {
+    const file = message[slot];
+    if (file) found.push({ kind, file });
+  }
+  if (message.location) found.push({ kind: "location" });
+  return found;
+}
+
 export class Telegram implements Channel {
   private offset = 0;
   private botName = "";
+  private readsEverything = false;
 
   readonly id = "telegram";
   // Whether a given chat has threads is a per-chat matter Telegram answers with
@@ -133,6 +221,13 @@ export class Telegram implements Channel {
   // in the contract.
   async start(signal?: AbortSignal) {
     await this.deleteWebhook(false, signal);
+    // One `getMe`, two answers: the name a mention has to spell, and whether
+    // privacy mode is off, which decides which readiness sentence is true. A
+    // failure here does not stop the start — with no name nothing is reported
+    // about who was addressed, and core answers.
+    const me = await this.getMe(signal).catch(() => undefined);
+    this.botName = me?.username ?? "";
+    this.readsEverything = me?.can_read_all_group_messages === true;
   }
 
   getMe(signal?: AbortSignal) {
@@ -182,9 +277,96 @@ export class Telegram implements Channel {
       }
       for (const update of updates) {
         this.offset = Math.max(this.offset, update.update_id + 1);
+        const message = update.message;
+        // A caption is the text of the message that carried it, and the media
+        // slots become the neutral entries core reads. Both happen before
+        // `addressed` below, because a caption is where a room's mention is.
+        if (message) this.classify(message);
+        // Only a room asks the question. A private conversation is aimed here by
+        // definition, and core reads `chat.type` for that; two answers to one
+        // question would be two places to be wrong.
+        if (message && message.chat.type !== "private") {
+          const aimed = this.addressed(message);
+          if (aimed !== undefined) message.addressed = aimed;
+        }
         yield update;
       }
     }
+  }
+
+  /**
+   * The caption becomes the text and the media slots become attachment entries.
+   * Nothing is dropped for want of a reader: a slot with no route to an agent is
+   * still an entry, and core answers it with one sentence.
+   */
+  private classify(message: TelegramMessage) {
+    if (!message.text && message.caption) message.text = message.caption;
+    const media = mediaOf(message);
+    if (media.length === 0) return;
+    message.attachments = media.map(({ kind, file }) => ({
+      kind,
+      ...(file?.mime_type ? { mime: file.mime_type } : {}),
+      ...(file?.file_size === undefined ? {} : { size: file.file_size }),
+      // The ceiling belongs to whoever downloads, so core is told the answer
+      // rather than the number (`src/core/channel.ts`).
+      ...((file?.file_size ?? 0) > DOWNLOAD_LIMIT ? { tooBig: true } : {}),
+    }));
+  }
+
+  /**
+   * Whether a room message was aimed at this bot. Undefined is the honest answer
+   * while the bot's own name is unknown: there is nothing to compare a mention
+   * against, and core answers rather than going quiet.
+   */
+  private addressed(message: TelegramMessage): boolean | undefined {
+    if (!this.botName) return undefined;
+    const suffix = `@${this.botName.toLowerCase()}`;
+    const text = message.text ?? "";
+    // A caption's entities arrive in a field of their own, and `classify` above
+    // already moved the caption into `text`, so the offsets line up.
+    for (const entity of message.entities ?? message.caption_entities ?? []) {
+      if (entity.type !== "mention" && entity.type !== "bot_command") continue;
+      // The Bot API counts an entity in UTF-16 code units, which is what a
+      // JavaScript string is indexed in, so the slice needs no conversion. A
+      // byte-based one would miss every entity behind an emoji.
+      const slice = text.slice(entity.offset, entity.offset + entity.length);
+      if (slice.toLowerCase().endsWith(suffix)) return true;
+    }
+    // A reply to one of the bot's own messages is aimed at it, except for the one
+    // that opened a topic: inside a topic Caraka created, every first-level
+    // message is a reply to that service message, and that message is Caraka's.
+    const replied = message.reply_to_message;
+    if (replied && !replied.forum_topic_created)
+      return replied.from?.username?.toLowerCase() === this.botName.toLowerCase();
+    return false;
+  }
+
+  /**
+   * The one downloader in this repository. `getFile` is called here rather than
+   * at classification, because a file path is documented to hold for at least an
+   * hour and a run can queue for longer than that. The URL is
+   * `…/file/bot<token>/<path>`, so it is built and spent inside this method: what
+   * leaves is the path written or null (AC-2.3).
+   */
+  async fetchAttachment(message: InboundMessage, index: number, target: string) {
+    const fileId = mediaOf(message as TelegramMessage)[index]?.file?.file_id;
+    if (!fileId) return null;
+    const file = await this.call<{ file_path?: string }>("getFile", { file_id: fileId });
+    if (!file.file_path) return null;
+    const response = await this.fetcher(`${this.base}/file/bot${this.token}/${file.file_path}`);
+    if (!response.ok || !response.body) return null;
+    const chunks: Uint8Array[] = [];
+    let bytes = 0;
+    for await (const chunk of response.body as unknown as AsyncIterable<Uint8Array>) {
+      bytes += chunk.byteLength;
+      // The reported size is a number the sender wrote, so the bytes are counted
+      // again here. Past the ceiling the read stops and nothing is written at
+      // all, so there is no half file to clean up (AC-4.3).
+      if (bytes > DOWNLOAD_LIMIT) return null;
+      chunks.push(chunk);
+    }
+    await writeFile(target, Buffer.concat(chunks), { mode: 0o600 });
+    return target;
   }
 
   sendText(chatId: string, text: string, threadId = "", replyMarkup?: Record<string, unknown>) {
@@ -278,15 +460,13 @@ export class Telegram implements Channel {
     return this.t("group.pairing", { title, chatId: containerId });
   }
 
-  // Pairing is the one moment the operator is watching, and privacy mode means
-  // an ordinary group message never reaches the bot at all. Saying so here is
-  // the difference between a documented boundary and a bot that looks broken.
+  // Pairing is the one moment the operator is watching, and which sentence is
+  // true here depends on privacy mode: with it on, an ordinary group message
+  // never reaches the bot; with it off, every message does and Caraka answers
+  // only the ones that name it. `getMe` in `start()` decided which, so the
+  // sentence is read off an answer rather than off an assumption.
   async readiness(threads: boolean) {
-    if (!this.botName)
-      this.botName = await this.getMe()
-        .then((me) => me.username ?? "")
-        .catch(() => "");
-    return this.t("group.ready", {
+    return this.t(this.readsEverything ? "group.readyAll" : "group.ready", {
       bot: this.botName || "caraka",
       topics: this.t(threads ? "group.topicsOn" : "group.topicsOff"),
     });

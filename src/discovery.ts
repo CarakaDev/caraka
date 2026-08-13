@@ -6,10 +6,10 @@
 // worth a network call on first run.
 
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { delimiter, dirname, join } from "node:path";
+import { dirname, join } from "node:path";
 import { carakaPaths } from "./config.js";
+import { resolveCommand } from "./drivers/preset.js";
 
 // The binaries FR-SETUP-02 (`docs/frd.md`) names.
 export const knownBinaries = [
@@ -36,6 +36,7 @@ export async function discoverAgents(
   options: {
     refresh?: boolean;
     path?: string;
+    platform?: string;
     now?: number;
     cacheFile?: string;
   } = {},
@@ -46,7 +47,7 @@ export async function discoverAgents(
   if (!options.refresh && cached && now - cached.at < CACHE_MAX_AGE_MS) return cached;
   const found: Discovery = {
     at: now,
-    agents: scanPath(options.path ?? process.env.PATH ?? ""),
+    agents: scanPath(options.path ?? process.env.PATH ?? "", options.platform),
   };
   // Best effort: a home directory that cannot be written does not break
   // discovery, it only forgets it between runs.
@@ -69,15 +70,15 @@ async function readCache(cacheFile: string): Promise<Discovery | undefined> {
   }
 }
 
-function scanPath(pathValue: string) {
+// Doctor used to print a green row for a path that cannot be started, because
+// this walk asked whether a name exists rather than whether it can be spawned —
+// the same wrong question the driver route asked, one file away. One resolver
+// answers both, so a row here and a spawn there cannot disagree.
+function scanPath(pathValue: string, platform: string = process.platform) {
   const agents: DiscoveredAgent[] = [];
   for (const binary of knownBinaries) {
-    for (const dir of pathValue.split(delimiter)) {
-      if (!dir || !existsSync(join(dir, binary))) continue;
-      const path = join(dir, binary);
-      agents.push({ binary, path, version: probeVersion(path) });
-      break;
-    }
+    const path = resolveCommand(binary, { platform, path: pathValue });
+    if (path) agents.push({ binary, path, version: probeVersion(path) });
   }
   return agents;
 }

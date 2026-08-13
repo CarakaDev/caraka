@@ -1,7 +1,7 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { createRequire } from "node:module";
 import { spawnSync } from "node:child_process";
-import { existsSync, realpathSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { chmod, mkdir, readFile, rm, rmdir, stat, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,6 +15,7 @@ import {
   loadConfig,
   privateFile,
   saveConfig,
+  workspaces,
   type CarakaConfig,
 } from "./config.js";
 import type { Channel } from "./core/channel.js";
@@ -62,13 +63,12 @@ export function buildDriver(
   if (!preset) return new ClaudeAcp(language);
   const acpCommand = forced === "cli" || !preset.acp ? null : resolveCommand(preset.acp.command);
   if (acpCommand && preset.acp) {
-    // A resolved `.bin` shim is a script behind a symlink; spawning it through
-    // the running Node keeps working when PATH has no `node` (systemd).
-    const real = realpathSync(acpCommand);
-    const script = /\.[mc]?js$/.test(real);
+    // A JS entry file is run through the Node already running, which keeps
+    // working when PATH has no `node` (systemd).
+    const script = /\.[mc]?js$/.test(acpCommand);
     return new ClaudeAcp(language, {
       command: script ? process.execPath : acpCommand,
-      args: script ? [real, ...preset.acp.args] : preset.acp.args,
+      args: script ? [acpCommand, ...preset.acp.args] : preset.acp.args,
       env: preset.acp.env,
       asksPermission: preset.acp.asksPermission,
     });
@@ -799,10 +799,21 @@ async function statusCommand() {
  * `session/request_permission` at all — Caraka has nothing left to enforce, and
  * the decision to put its own guard down belongs in front of the machine.
  */
-async function trustCommand(args: string[]) {
+export async function trustCommand(args: string[]) {
   const loaded = await loadConfig();
   t = translator(loaded.config.language ?? "en");
   const workspace = trustWorkspace(args);
+  // A path the config does not name is not a workspace, and a window on it was
+  // a row nothing would ever read: `caraka trust /tmp --for 60 --bypass` wrote
+  // `bypassPermissions` for `/tmp` and printed that the window was open. It also
+  // ran the other way — this command resolved its argument while the gateway
+  // read the config string as written, so a `path: /srv/app/` entry got a window
+  // under `/srv/app` that `activeGrant('/srv/app/')` never found. Both sides are
+  // `resolve()` output now. The check sits in front of `--bypass` below, so the
+  // one comparison is what closes the bypass path too.
+  const known = workspaces(loaded.config).map((entry) => entry.path);
+  if (!known.includes(workspace))
+    throw new Error(t("cli.trustNotWorkspace", { path: workspace, list: known.join("\n") }));
   const minutes = parseDuration(flagValue(args, "--for"));
   if (!minutes) throw new Error(t("cli.trustUsage"));
   if (minutes > trustLimitMinutes) throw new Error(t("cli.trustTooLong"));
@@ -889,6 +900,7 @@ export function uninstallTargets(paths: ReturnType<typeof carakaPaths>) {
     `${paths.database}-wal`,
     `${paths.database}-shm`,
     paths.discovery,
+    paths.inbox,
     paths.pid,
     paths.secrets,
   ];

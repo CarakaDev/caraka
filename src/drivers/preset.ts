@@ -4,7 +4,7 @@
 // driver starts reading it. YAML with Zod, never executable config
 // (`docs/techstack.md`).
 
-import { existsSync } from "node:fs";
+import { statSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { delimiter, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,6 +26,13 @@ export const presetSchema = z
     output: outputFormat.optional(),
     resumeOutput: outputFormat.optional(),
     sessionIdFields: z.array(z.string()).default([]),
+    // The flag that puts an image path in front of a CLI agent, and how more than
+    // one of them is arranged. Absent means this route takes no file at all, which
+    // is what core answers the sender with. The two words are the ones
+    // `docs/research/coding-agents-matriks-integrasi-multi-sumber.md` already
+    // recorded, not two new ones.
+    imageArg: z.string().min(1).optional(),
+    imageMode: z.enum(["repeat", "join"]).default("repeat"),
     env: z.record(z.string(), z.string()).default({}),
     acp: z
       .object({
@@ -46,7 +53,10 @@ export const presetSchema = z
 export type AgentPreset = z.infer<typeof presetSchema>;
 
 const packagePresets = fileURLToPath(new URL("../../presets/agents/", import.meta.url));
-const packageBin = fileURLToPath(new URL("../../node_modules/.bin/", import.meta.url));
+
+// The adapter name `config.ts` pins, so the copy this package ships.
+export const lockedAdapter = "claude-agent-acp";
+const resolveModule = (specifier: string) => fileURLToPath(import.meta.resolve(specifier));
 
 /**
  * Reads every preset in the directory. A file that fails validation is named
@@ -75,18 +85,47 @@ export async function loadPresets(directory = packagePresets, t: Translate = tra
   return { presets, errors };
 }
 
+// `existsSync` says yes to a directory too, and a directory is not a command.
+const isFile = (file: string) => statSync(file, { throwIfNoEntry: false })?.isFile() === true;
+
+// What `spawn` accepts for the name a preset writes. libuv appends only `.com`
+// and `.exe` while walking PATH (`path_search_walk_ext`, `libuv/src/win/process.c`),
+// and npm writes three files per bin on Windows — the `.ps1`, the `.cmd`, and a
+// `#!/bin/sh` script named like the bin — so a bare name resolves to the sh script
+// and spawning it answers `-4058`, UV_ENOENT. The `.cmd` is no way out: Node
+// refuses it without `shell` since CVE-2024-27980, and a test sweeps `src/` to
+// keep `shell` out.
+function spawnable(base: string, platform: string) {
+  if (platform !== "win32" || /\.(exe|com)$/i.test(base)) return isFile(base) ? base : null;
+  return [`${base}.exe`, `${base}.com`].find(isFile) ?? null;
+}
+
 /**
- * Finds a command as an absolute path: the package's own `node_modules/.bin`
- * first (where the locked ACP adapter lives), then `PATH`. Null when nowhere.
+ * Finds a command as an absolute path that can be spawned, or null. The locked
+ * adapter is resolved as a module, because what npm writes for it on Windows is
+ * a shim nothing can spawn, and a resolver that throws is an adapter nobody
+ * installed. Every seam has a default, so the win32 branch is provable here.
  */
-// ponytail: no PATHEXT handling — a Windows preset names its `.cmd` shim
-// explicitly; add the suffix scan if a Windows install ever needs it.
-export function resolveCommand(command: string) {
-  if (isAbsolute(command)) return existsSync(command) ? command : null;
-  const local = join(packageBin, command);
-  if (existsSync(local)) return local;
-  for (const dir of (process.env.PATH ?? "").split(delimiter)) {
-    if (dir && existsSync(join(dir, command))) return join(dir, command);
+export function resolveCommand(
+  command: string,
+  {
+    platform = process.platform,
+    path = process.env.PATH ?? "",
+    resolve = resolveModule,
+  }: { platform?: string; path?: string; resolve?: (specifier: string) => string } = {},
+) {
+  if (command === lockedAdapter) {
+    try {
+      const entry = resolve("@agentclientprotocol/claude-agent-acp/dist/index.js");
+      return isFile(entry) ? entry : null;
+    } catch {
+      return null;
+    }
+  }
+  if (isAbsolute(command)) return spawnable(command, platform);
+  for (const dir of path.split(delimiter)) {
+    const found = dir ? spawnable(join(dir, command), platform) : null;
+    if (found) return found;
   }
   return null;
 }

@@ -37,9 +37,20 @@ const LOGGED_OUT = new Set([401, 403, 428]);
 
 type WireKey = { id?: string; remoteJid?: string; fromMe?: boolean };
 
+/** A media slot in a Baileys message. `caption` is the message's own text. */
+type WireMedia = { mimetype?: string; caption?: string };
+
 type WireMessage = {
   key?: WireKey;
-  message?: { conversation?: string; extendedTextMessage?: { text?: string } };
+  message?: {
+    conversation?: string;
+    extendedTextMessage?: { text?: string };
+    imageMessage?: WireMedia;
+    videoMessage?: WireMedia;
+    audioMessage?: WireMedia;
+    documentMessage?: WireMedia;
+    stickerMessage?: WireMedia;
+  };
 };
 
 type Socket = {
@@ -67,7 +78,12 @@ export type BaileysOptions = {
   /** The number this device links as. Empty means pairing cannot be offered. */
   number?: string;
   t: Translate;
-  receive: (from: string, id: string, text: string) => void;
+  receive: (
+    from: string,
+    id: string,
+    text: string,
+    attachments?: Array<{ kind: string; mime?: string }>,
+  ) => void;
   /** Called once when reconnecting stops. `updates()` raises what it is given. */
   giveUp: (error: Error) => void;
   random: () => number;
@@ -87,6 +103,25 @@ function numberOf(jid: string) {
 
 function textOf(message: WireMessage) {
   return message.message?.conversation ?? message.message?.extendedTextMessage?.text ?? "";
+}
+
+// The five media slots a linked device reports, and the neutral word each one
+// becomes. Nothing is decrypted here: the kind and the caption are what cross
+// the seam, and `whatsapp.ts` declares no downloader.
+const MEDIA_SLOTS = [
+  ["imageMessage", "image"],
+  ["videoMessage", "video"],
+  ["audioMessage", "audio"],
+  ["documentMessage", "document"],
+  ["stickerMessage", "sticker"],
+] as const;
+
+function mediaOf(message: WireMessage) {
+  for (const [slot, kind] of MEDIA_SLOTS) {
+    const media = message.message?.[slot];
+    if (media) return { kind, mime: media.mimetype, caption: media.caption };
+  }
+  return undefined;
 }
 
 /**
@@ -171,10 +206,12 @@ export async function connectBaileys(options: BaileysOptions): Promise<WhatsAppT
       const batch = (payload as { messages?: WireMessage[] } | undefined)?.messages ?? [];
       for (const message of batch) {
         if (message.key?.fromMe) continue;
+        const media = mediaOf(message);
         options.receive(
           numberOf(message.key?.remoteJid ?? ""),
           message.key?.id ?? "",
-          textOf(message),
+          textOf(message) || (media?.caption ?? ""),
+          media ? [{ kind: media.kind, ...(media.mime ? { mime: media.mime } : {}) }] : undefined,
         );
       }
     });

@@ -16,12 +16,15 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { setTimeout as delay } from "node:timers/promises";
 import {
+  containerOf,
   drainInbox,
+  routeOf,
   splitMarkdown,
   type Channel,
   type ChannelCaps,
   type ChannelCommand,
   type InboundEvent,
+  type InboundMessage,
   type MessageRef,
   type ThreadRef,
 } from "../core/channel.js";
@@ -115,13 +118,45 @@ export type WhatsAppOptions = {
   transport?: WhatsAppTransport;
 };
 
-type CloudPayload = {
-  entry?: Array<{
-    changes?: Array<{
-      value?: { messages?: Array<{ from?: string; id?: string; text?: { body?: string } }> };
-    }>;
-  }>;
+/** A media slot on the Cloud API webhook. `caption` is the message's own text. */
+type CloudMedia = { mime_type?: string; caption?: string };
+
+type CloudMessage = {
+  from?: string;
+  id?: string;
+  text?: { body?: string };
+  image?: CloudMedia;
+  video?: CloudMedia;
+  audio?: CloudMedia;
+  document?: CloudMedia;
+  sticker?: CloudMedia;
 };
+
+type CloudPayload = {
+  entry?: Array<{ changes?: Array<{ value?: { messages?: CloudMessage[] } }> }>;
+};
+
+// The five slots the Cloud API fills, and the neutral word each one becomes.
+const CLOUD_SLOTS = [
+  ["image", "image"],
+  ["video", "video"],
+  ["audio", "audio"],
+  ["document", "document"],
+  ["sticker", "sticker"],
+] as const;
+
+/**
+ * The media slot a webhook message filled. The slot is read rather than `type`
+ * beside it: the caption and the mime live in the slot anyway, so one read
+ * answers all three questions and there is no second field to disagree with.
+ */
+function cloudMedia(message: CloudMessage) {
+  for (const [slot, kind] of CLOUD_SLOTS) {
+    const media = message[slot];
+    if (media) return { kind, mime: media.mime_type, caption: media.caption };
+  }
+  return undefined;
+}
 
 export class WhatsApp implements Channel {
   readonly id = "whatsapp";
@@ -178,16 +213,6 @@ export class WhatsApp implements Channel {
 
   // ---- routing ----------------------------------------------------------
 
-  // A stored route carries the channel in front of the number, the way Discord
-  // does. The prefix comes off before anything goes on the wire.
-  private target(chatId: string) {
-    return chatId.startsWith(`${this.id}:`) ? chatId.slice(this.id.length + 1) : chatId;
-  }
-
-  private route(from: string) {
-    return `${this.id}:${from}`;
-  }
-
   private wire() {
     if (!this.transport) throw new WhatsAppError(this.t("whatsapp.notStarted"));
     return this.transport;
@@ -241,7 +266,7 @@ export class WhatsApp implements Channel {
     // with. Two cards core still sends with buttons — the workspace chooser and
     // `/yolo` — are dead ends here until core reads `caps.buttons` at those two
     // sites the way it reads it for approval.
-    const sent = await this.emit(this.target(chatId), (to) =>
+    const sent = await this.emit(containerOf(this.id, chatId), (to) =>
       this.wire().send(to, text.slice(0, MESSAGE_LIMIT)),
     );
     return { message_id: sent.id };
@@ -251,7 +276,7 @@ export class WhatsApp implements Channel {
     const chunks = splitMarkdown(markdown, MESSAGE_LIMIT, this.t("channel.empty"));
     const sendFile = this.wire().sendFile;
     if (chunks.length > FILE_AFTER_CHUNKS && sendFile) {
-      const sent = await this.emit(this.target(chatId), (to) =>
+      const sent = await this.emit(containerOf(this.id, chatId), (to) =>
         sendFile(to, "caraka-output.md", markdown),
       );
       return [{ message_id: sent.id }];
@@ -270,7 +295,9 @@ export class WhatsApp implements Channel {
     const now = this.now();
     if (now - (this.lastEdit.get(key) ?? 0) < EDIT_INTERVAL_MS) return undefined;
     this.lastEdit.set(key, now);
-    return this.emit(this.target(chatId), (to) => edit(to, key, text.slice(-MESSAGE_LIMIT)));
+    return this.emit(containerOf(this.id, chatId), (to) =>
+      edit(to, key, text.slice(-MESSAGE_LIMIT)),
+    );
   }
 
   // Nothing is deleted and nothing is answered: WhatsApp has no ephemeral reply
@@ -301,13 +328,9 @@ export class WhatsApp implements Channel {
     return Promise.reject(new WhatsAppError(this.t("whatsapp.noThreads")));
   }
 
-  async getMe() {
-    return { username: this.options.phoneNumberId ?? "caraka" };
-  }
-
   // A WhatsApp direct message is keyed by the number itself.
   async direct(principal: string) {
-    return this.route(principal);
+    return routeOf(this.id, principal);
   }
 
   // Nothing pairs a room here, because nothing but a one-to-one conversation
@@ -354,7 +377,7 @@ export class WhatsApp implements Channel {
       sessionDir: this.options.sessionDir ?? "",
       number: this.options.number ?? "",
       t: this.t,
-      receive: (from, id, text) => this.receive(from, id, text),
+      receive: (from, id, text, attachments) => this.receive(from, id, text, attachments),
       giveUp: (error) => {
         this.fatal = error;
       },
@@ -372,7 +395,7 @@ export class WhatsApp implements Channel {
    * the sender is remembered because this process heard from them, never
    * because WhatsApp lists them as a contact (AC-8.9).
    */
-  receive(from: string, id: string, text: string) {
+  receive(from: string, id: string, text: string, attachments?: InboundMessage["attachments"]) {
     if (this.stopped) return;
     // The three parameter types are a promise the wire cannot keep. Both
     // providers hand over whatever a JSON payload held, and JSON holds a number
@@ -381,11 +404,18 @@ export class WhatsApp implements Channel {
     // out of the POST handler; a number in `text` reached core's `trim` and
     // stopped the channel. The check sits here because this is the one door
     // both providers come through.
-    if (typeof from !== "string" || typeof id !== "string" || typeof text !== "string") {
+    if (
+      typeof from !== "string" ||
+      typeof id !== "string" ||
+      typeof text !== "string" ||
+      (attachments !== undefined && !Array.isArray(attachments))
+    ) {
       this.log?.("msg.reject", "malformed", { channel: this.id });
       return;
     }
-    if (!from || !text) return;
+    // A message with no text and no attachment is nothing to answer. One with an
+    // attachment and no text is a photo, and it used to stop here.
+    if (!from || (!text && !attachments?.length)) return;
     // A one-to-one conversation and nothing else. Baileys hands the container's
     // own jid over as the sender, so a group (`…@g.us`), a broadcast, and a
     // newsletter all arrive as one principal that is not a person: every member
@@ -400,9 +430,10 @@ export class WhatsApp implements Channel {
     this.inbox.push({
       message: {
         message_id: id,
-        chat: { id: this.route(from), type: "private" },
+        chat: { id: routeOf(this.id, from), type: "private" },
         from: { id: from },
         text,
+        ...(attachments?.length ? { attachments } : {}),
       },
     });
   }
@@ -581,7 +612,14 @@ export class WhatsApp implements Channel {
     // between a signed one and a read on nothing.
     for (const entry of body.entry ?? [])
       for (const change of entry?.changes ?? [])
-        for (const message of change?.value?.messages ?? [])
-          this.receive(message?.from ?? "", message?.id ?? "", message?.text?.body ?? "");
+        for (const message of change?.value?.messages ?? []) {
+          const media = message ? cloudMedia(message) : undefined;
+          this.receive(
+            message?.from ?? "",
+            message?.id ?? "",
+            media?.caption ?? message?.text?.body ?? "",
+            media ? [{ kind: media.kind, ...(media.mime ? { mime: media.mime } : {}) }] : undefined,
+          );
+        }
   }
 }

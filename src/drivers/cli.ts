@@ -93,6 +93,8 @@ type CliSession = { cwd: string; external: string | null; turns: number };
 export class CliDriver implements AgentDriver {
   /** No permission hook on this route: the process runs, and then it is over. */
   readonly asksPermission = false;
+  /** A file reaches this agent only if its preset names the flag that carries one. */
+  readonly acceptsFiles: boolean;
   private readonly command: string;
   private readonly sessions = new Map<string, CliSession>();
   private readonly children = new Map<string, ChildProcessWithoutNullStreams>();
@@ -106,6 +108,7 @@ export class CliDriver implements AgentDriver {
   ) {
     if (!preset.command) throw new Error(this.t("driver.cliMissing", { agent: preset.id }));
     this.command = preset.command;
+    this.acceptsFiles = Boolean(preset.imageArg);
   }
 
   async start() {}
@@ -122,7 +125,7 @@ export class CliDriver implements AgentDriver {
     return id;
   }
 
-  async prompt(sessionId: string, prompt: string, route: DriverRoute) {
+  async prompt(sessionId: string, prompt: string, route: DriverRoute, files?: string[]) {
     const state = this.sessions.get(sessionId);
     if (!state) throw new Error(this.t("driver.noSession"));
     const resume = state.turns > 0 && (this.preset.resumeArgs?.length ?? 0) > 0;
@@ -131,6 +134,14 @@ export class CliDriver implements AgentDriver {
     const viaArg =
       this.preset.input === "arg" &&
       prompt.length <= (this.preset.maxPromptArgChars ?? Number.POSITIVE_INFINITY);
+    // Ahead of the prompt, because the prompt is positional and goes last.
+    // `repeat` writes the flag once per path, `join` writes it once with the
+    // paths joined by a comma (AC-7.2).
+    const image = this.preset.imageArg;
+    if (image && files?.length) {
+      if (this.preset.imageMode === "join") argv.push(image, files.join(","));
+      else for (const file of files) argv.push(image, file);
+    }
     if (viaArg) argv.push(prompt);
     const child = spawn(this.command, argv, {
       cwd: state.cwd,

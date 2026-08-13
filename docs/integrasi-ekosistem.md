@@ -44,7 +44,7 @@ Alasan tiga field itu cukup datang dari implementasi lain: vscode-acp berbicara 
 
 Yang diminta: spesifikasi ACP menyebutkan bentuk baku untuk mendeskripsikan cara menjalankan adapter lokal, sekecil tiga field itu. Setiap klien yang menawarkan daftar agent hari ini menemukan ulang bentuk yang sama, dan setiap penemuan ulang membuat berkas konfigurasi agent tidak bisa dipindahkan antar klien. Dua hal kecil yang ikut perlu dinyatakan, karena keduanya kami putuskan sendiri tanpa rujukan:
 
-- **Resolusi `command`.** Adapter yang dipasang sebagai dependency npm hanya ditemukan bila `node_modules/.bin` ikut dicari di samping `PATH`; itulah yang dikerjakan `resolveCommand` di `src/drivers/preset.ts`.
+- **Resolusi `command`.** Adapter yang dipasang sebagai dependency npm diselesaikan sebagai modul, bukan lewat berkas yang ditulis npm di `node_modules/.bin`: yang ditulis di sana pada Windows adalah shim yang tidak bisa di-spawn. Perintah lain dicari di `PATH`, dan di Windows hanya kandidat berakhiran `.exe` atau `.com` yang diterima, karena hanya itu yang ditambahkan libuv saat menelusuri `PATH`. Keduanya dikerjakan `resolveCommand` di `src/drivers/preset.ts`.
 - **Semantik `env`.** Di Caraka isi `env` ditimpakan di atas environment induk, bukan menggantikannya, dan environment induk itu lebih dulu dibersihkan dari setiap variabel berawalan `CARAKA_` (`claudeEnvironment` di `src/drivers/claude-acp.ts`). Spesifikasi yang menyebutkan mana dari keduanya yang berlaku akan menghemat satu tebakan bagi klien berikutnya.
 
 ### Registry JSON sebagai sumber auto-discovery

@@ -364,15 +364,24 @@ test.describe('the comps still decide the layout', () => {
     // commands exist. /brand/readme +24: the repo card gained the mode gate.
     // / and /compare held — their edits landed inside cells and chips that were
     // already there.
+    // v1.3 moved two of the six. /status +1673 to 15321: the 1.3.0 card, which is
+    // the longest one yet because it carries two findings that were not in any
+    // issue — a bot token the scrubber missed inside a URL, and a `caraka trust`
+    // that granted a scope no config named. /docs +89: the `/new` row gained its
+    // optional title and slug, and the run note gained the sentence saying a room
+    // answers only when addressed. Measured 13 August 2026, Chromium at 1440x900.
+    // The other four hold: the mention gate and the attachment refusal are
+    // behaviour, and nothing on /, /compare, /install or /security describes them
+    // yet.
     const EXPECTED: Record<string, number> = {
-      // v1.2 copy — measured from the site (see above)
+      // v1.2 copy, except the two v1.3 moved — measured from the site (see above)
       '/': 6595,
-      '/docs': 7314,
+      '/docs': 7403,
       '/compare': 5931,
       '/install': 5465,
       '/security': 6147,
       '/whatsapp-risk': 6857,
-      '/status': 13648,
+      '/status': 15321,
       '/brand/readme': 5581,
       // still measured against the comp
       '/story': 5734,

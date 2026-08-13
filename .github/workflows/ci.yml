@@ -33,6 +33,13 @@ jobs:
       - run: npm run scan:secrets
       - run: npm run lint
       - run: npm run typecheck
+      # Before the tests, not after them. `bin/caraka.mjs` imports `dist/cli.js`,
+      # and the test that reads the printed version runs that real entry point —
+      # the check that caught 1.1.1 announcing itself as 1.1.0. `dist/` is
+      # gitignored, so a runner that has not built has nothing to import, and the
+      # test failed on a missing module rather than on a wrong version. It passed
+      # on a developer machine only because a previous build was still lying there.
+      - run: npm run build
       - run: npm test
       - run: npm run e2e
 

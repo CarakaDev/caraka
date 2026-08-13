@@ -270,12 +270,14 @@ export class Store {
 
   /** Every open window, or only one workspace's when it is named. */
   closeGrants(workspace?: string) {
-    return this.db
-      .prepare(
-        `UPDATE policy_grant SET closed_at = ?
+    return Number(
+      this.db
+        .prepare(
+          `UPDATE policy_grant SET closed_at = ?
          WHERE closed_at IS NULL AND (?2 IS NULL OR workspace = ?2)`,
-      )
-      .run(Date.now(), workspace ?? null).changes;
+        )
+        .run(Date.now(), workspace ?? null).changes,
+    );
   }
 
   meta(key: string) {

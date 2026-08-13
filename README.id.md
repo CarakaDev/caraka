@@ -111,7 +111,7 @@ Kirim teks biasa untuk memberi agent tugas. Sisanya tiga belas perintah:
 
 | | |
 |---|---|
-| `/new` | memulai sesi baru di percakapan ini |
+| `/new [judul]` | memulai sesi baru di percakapan ini, judul opsional |
 | `/status` | menampilkan keadaan sesi percakapan ini |
 | `/stop` | membatalkan tugas yang berjalan |
 | `/ws` | mendaftar workspace beserta path-nya |

@@ -34,7 +34,7 @@ export type ChannelCaps = {
   maxChars: number;
 };
 
-/** Whoever sent an event. Core reads the id, and the bot's own username once. */
+/** Whoever sent an event. Core reads the id; the bot's own name is the adapter's. */
 export type ChannelUser = { id: number | string; username?: string };
 
 /**
@@ -61,6 +61,24 @@ export type InboundMessage = {
   from?: ChannelUser;
   chat: ChannelContainer;
   text?: string;
+  /**
+   * Whether this message was aimed at the bot: a mention, a reply to one of the
+   * bot's own messages, or a command the channel routes to it. Left unset means
+   * the channel cannot tell, and core answers rather than going quiet — the
+   * absent half of that capability (`AGENTS.md`, graceful degradation).
+   */
+  addressed?: boolean;
+  /**
+   * What arrived that is not text. `kind` is a neutral word — `image`,
+   * `document`, `audio`, `video`, `sticker`, `location` — and never a channel's
+   * own field name; `docs/design.md` already chose those words. There is no slot
+   * for a file identifier: a Telegram download URL carries the bot token, so
+   * whatever names the bytes stays inside the adapter that read them.
+   *
+   * `tooBig` is set by the adapter that knows its own download ceiling, so core
+   * refuses before a byte is asked for without storing any channel's ceiling.
+   */
+  attachments?: Array<{ kind: string; mime?: string; size?: number; tooBig?: boolean }>;
 };
 
 /** A button press. The payload in `data` is signed; see `security.ts`. */
@@ -93,6 +111,20 @@ export type ThreadRef = { message_thread_id: number | string };
 
 /** One entry of the command list core asks a channel to publish. */
 export type ChannelCommand = { command: string; description: string };
+
+/**
+ * A stored route carries the channel in front of the container id, so the prefix
+ * comes off before anything goes on the wire and goes back on before core sees
+ * one. Telegram keys a DM by the sender's own id and needs neither; Discord and
+ * WhatsApp both wrote this pair out, identical but for the class around it.
+ */
+export function containerOf(id: ChannelId, chatId: string) {
+  return chatId.startsWith(`${id}:`) ? chatId.slice(id.length + 1) : chatId;
+}
+
+export function routeOf(id: ChannelId, containerId: string) {
+  return `${id}:${containerId}`;
+}
 
 // ponytail: a poll, because the alternative is a condition variable and a
 // wake-up to leak; swap it if 20 ms of latency ever shows up in a run.
@@ -189,7 +221,7 @@ export function splitMarkdown(input: string, limit = 3900, empty = "(Claude sent
 // A name is 1–32 characters of lowercase a-z, digits, and underscores; a
 // description is 1–256 characters. Telegram rejects the whole call otherwise.
 export const gatewayCommands: ChannelCommand[] = [
-  { command: "new", description: "Start a fresh session in this conversation" },
+  { command: "new", description: "Start a fresh session in this conversation, title optional" },
   { command: "status", description: "Report the state of this conversation's session" },
   { command: "stop", description: "Cancel the running task" },
   { command: "ws", description: "List the workspaces and their paths" },
@@ -215,6 +247,16 @@ export interface Channel {
 
   /** Whatever the channel has to do before its first update. */
   start?(signal?: AbortSignal): Promise<void>;
+
+  /**
+   * Write attachment `index` of this message to `target`. Optional, the way
+   * `finishThread?` and `direct?` declare a capability. The adapter downloads,
+   * because a Telegram download URL carries the bot token. The argument is the
+   * message object this adapter emitted, so it re-reads its own fields and no
+   * file identifier crosses into core. Null means the adapter refused, and core
+   * answers with one sentence.
+   */
+  fetchAttachment?(message: InboundMessage, index: number, target: string): Promise<string | null>;
 
   updates(signal: AbortSignal): AsyncGenerator<InboundEvent>;
 
@@ -249,8 +291,6 @@ export interface Channel {
   answerCallback(id: string, text: string, alert?: boolean): Promise<unknown>;
 
   clearKeyboard(chatId: string, messageId: number | string): Promise<unknown>;
-
-  getMe(): Promise<{ username?: string }>;
 
   /**
    * Where a private message to this principal lands. A Telegram DM is keyed by

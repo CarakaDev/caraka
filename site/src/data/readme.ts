@@ -9,13 +9,13 @@ export const showChrome = true
 
 export const badges = [
   // Comp line 256 reads v0.0.0. This chip is the npm registry badge, so it
-  // tracks what is published, not package.json. `npm view caraka version` read
-  // 1.1.2 on 10 August 2026, which is the number below. 1.2.0 is the release in
-  // this tree and is not on the registry, so the chip lags the release on
-  // purpose and will keep lagging until `npm publish` runs again — the owner's
-  // command and nobody else's. Bump this only after that has happened, and only
-  // to what the registry says.
-  { k: 'npm', v: 'v1.1.2', tone: '#E2452C', ink: '#FFEDE7' },
+  // tracks what is published, not package.json. Bump it only after `npm publish`
+  // has run — the owner's command and nobody else's — and only to what the
+  // registry says. Read from the registry rather than from `npm view`, which
+  // served the previous version for about a minute after a successful publish:
+  // `curl -s https://registry.npmjs.org/caraka` gave `dist-tags.latest` 1.3.0 on
+  // 13 August 2026, which is the number below.
+  { k: 'npm', v: 'v1.3.0', tone: '#E2452C', ink: '#FFEDE7' },
   { k: 'license', v: 'MIT', tone: '#8EEE98', ink: '#05300C' },
   { k: 'node', v: '≥22', tone: '#E2452C', ink: '#FFEDE7' },
   { k: 'protocol', v: 'ACP', tone: '#FF7A5E', ink: '#2B0D06' },
@@ -38,9 +38,9 @@ export const projects = [
   {
     name: 'caraka',
     desc: 'The envoy. A thin bridge from Telegram, Discord, or WhatsApp to the coding agent already on your machine — sessions as topics, threads, or a header, approval before every write, nothing executed without a human in between.',
-    // Comp line 271 says pre-alpha. 1.2.0 is the release in the CHANGELOG;
-    // 1.1.2 is the last one on npm, which is what the chip above shows.
-    status: 'v1.2, unproven',
+    // Comp line 271 says pre-alpha. 1.3.0 is the release in the CHANGELOG, and
+    // the chip above shows the registry instead, which is what it lags behind.
+    status: 'v1.3, unproven',
     tone: '#FFD67E',
   },
   {

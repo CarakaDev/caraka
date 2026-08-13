@@ -198,10 +198,31 @@ export function channelBlocks(config: CarakaConfig): Record<string, ChannelBlock
 // wrote it, otherwise the singular `workspace` lifted into a one-element list —
 // `name` becomes the slug, and the file on disk is never rewritten.
 export function workspaces(config: CarakaConfig): [Workspace, ...Workspace[]] {
+  // `resolve()` where the path becomes a key, and the `isAbsolute` refines above
+  // stay because they are what names the field in the error. Node's own
+  // documentation calls `isAbsolute` "not safe for mitigating path traversals",
+  // and nothing here ever called `resolve`: `isAbsolute('/srv/app/../../etc')` is
+  // true, and `/srv/app/` and `/srv/app` were two `policy_grant.workspace` keys,
+  // two `workspace:<path>` memory scopes, and one directory.
+  const canonical = (entry: Workspace): Workspace => ({ ...entry, path: resolve(entry.path) });
   const [first, ...rest] = config.workspaces ?? [];
-  if (first) return [first, ...rest];
+  if (first) return [canonical(first), ...rest.map(canonical)];
   const { name, path, driver } = config.workspace;
-  return [{ slug: name, path, ...(driver ? { driver } : {}) }];
+  return [{ slug: name, path: resolve(path), ...(driver ? { driver } : {}) }];
+}
+
+/**
+ * The workspace entry a signed card asked for, appended to `config.yaml`. The
+ * list it joins is the lifted one: `workspaces()` picks `workspaces[]` and
+ * ignores the singular `workspace` entirely, so writing a one-element list to a
+ * file the wizard wrote would take the original workspace away. `version` is
+ * untouched, the way `workspaces[]` has been additive since v0.4, and
+ * `atomicSecret` writes 0600.
+ */
+export async function addAllowedWorkspace(config: CarakaConfig, entry: Workspace) {
+  const next: CarakaConfig = { ...config, workspaces: [...workspaces(config), entry] };
+  await atomicSecret(carakaPaths().config, stringify(next));
+  return next;
 }
 
 export function carakaPaths(root = process.env.CARAKA_HOME ?? join(homedir(), ".caraka")) {
@@ -217,6 +238,11 @@ export function carakaPaths(root = process.env.CARAKA_HOME ?? join(homedir(), ".
     // It is listed here because uninstall removes what Caraka created, and a
     // path nobody wrote down is a path uninstall leaves behind.
     discovery: join(base, "discovery.json"),
+    // Where a chat attachment lands while a run reads it, one subdirectory per
+    // run, at 0700. Not under `secrets/`, which holds credentials, and named
+    // here for the same reason `discovery` is: uninstall removes what it can
+    // name.
+    inbox: join(base, "inbox"),
     // `token` keeps its name: renaming it to `telegramToken` touches four call
     // sites and changes nothing.
     token: join(base, "secrets", "telegram.token"),

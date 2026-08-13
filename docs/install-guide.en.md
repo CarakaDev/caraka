@@ -115,7 +115,7 @@ npx caraka stop
 In Telegram:
 
 ```text
-/new         start a new session
+/new [title] start a new session, title optional
 /status      see the state of the session
 /stop        cancel the running task
 /commands    the commands Claude reports
