@@ -83,6 +83,12 @@ const en = {
     "{path} overlaps the workspace {slug} at {existing}, so one trust window would cover both. Name a directory that holds neither the other, or add it in config.yaml by hand.",
   "ws.addCard":
     "Add {path} as workspace {slug}?\nYes writes the entry into config.yaml, where it stays until you remove it by hand. Every task sent to {slug} then runs in that directory, and a trust window opened on it covers that directory.",
+  // Nesting is allowed because the outer workspace already reaches the inner
+  // directory, so the inner one is a narrower key rather than a wider one. What
+  // it does cost is two scopes over one directory, and the card says so rather
+  // than letting the operator find out at `/lock`.
+  "ws.addCardNested":
+    "Add {path} as workspace {slug}?\nIt sits inside {outer}, which already reaches it. Adding it gives that directory a second scope of its own: a trust window on one is not closed by /lock on the other, and memory saved under one does not surface under the other.\nYes writes the entry into config.yaml, where it stays until you remove it by hand.",
   "ws.added": "{slug} now points at {path}. Tasks in this chat go there.",
   "switch.unknown": "That is not a loaded preset. Loaded: {list}",
   "switch.done": "This session switches to {agent} on its next task.",
@@ -420,6 +426,8 @@ const id: Record<MessageKey, string> = {
     "{path} tumpang-tindih dengan workspace {slug} di {existing}, jadi satu jendela trust akan berlaku untuk keduanya. Sebut direktori yang tidak memuat yang lain, atau tambahkan di config.yaml sendiri.",
   "ws.addCard":
     "Tambahkan {path} sebagai workspace {slug}?\nYa menulis entrinya ke config.yaml, dan entri itu tinggal di sana sampai kamu menghapusnya sendiri. Setiap tugas ke {slug} lalu berjalan di direktori itu, dan jendela trust yang dibuka padanya berlaku untuk direktori itu.",
+  "ws.addCardNested":
+    "Tambahkan {path} sebagai workspace {slug}?\nIa berada di dalam {outer}, yang sudah menjangkaunya. Menambahkannya memberi direktori itu scope kedua miliknya sendiri: jendela trust pada salah satunya tidak ditutup oleh /lock pada yang lain, dan memori yang disimpan di bawah satu tidak muncul di bawah yang lain.\nYa menulis entrinya ke config.yaml, dan ia tinggal di sana sampai kamu menghapusnya sendiri.",
   "ws.added": "{slug} sekarang menunjuk {path}. Tugas di chat ini masuk ke sana.",
   "switch.unknown": "Itu bukan preset yang termuat. Yang termuat: {list}",
   "switch.done": "Sesi ini beralih ke {agent} pada tugas berikutnya.",

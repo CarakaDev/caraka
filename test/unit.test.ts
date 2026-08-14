@@ -6157,6 +6157,11 @@ test("a proposed workspace is refused before its card, and the card is the opera
       workspaces: [
         { slug: "utama", path: configured },
         { slug: "kotak", path: join(root, "MIXEDcase") },
+        // Deeper than its parent and spelled in another case, so a proposal for
+        // that parent contains it only once case is folded. `kotak` above is at
+        // the parent itself, which the path clash catches first, so the folded
+        // containment needs a workspace nobody's basename collides with.
+        { slug: "lipat", path: join(root, "FOLD", "inner") },
       ],
     },
     Buffer.alloc(32, 9),
@@ -6207,16 +6212,24 @@ test("a proposed workspace is refused before its card, and the card is the opera
   await mkdir(twinPath, { recursive: true });
   assert.match(offer(twinPath).text, /already points at/);
 
-  // AC-4.3: a parent of a workspace, a child of one, and one that is it.
-  // `~/Project` holds 89 repositories on the machine ADR-0010 measured, so
-  // approving it is not a smaller grant than approving the disk.
+  // AC-4.3, the half that widens: a path that CONTAINS a workspace. `~/Project`
+  // holds 89 repositories on the machine ADR-0010 measured, so approving it is
+  // not a smaller grant than approving the disk.
+  const parent = offer(root);
+  assert.match(parent.text, /overlaps the workspace utama/);
+  assert.equal(parent.markup, undefined);
+
+  // The half that does NOT widen, and refusing it was a design error: a path
+  // INSIDE a workspace grants nothing new, because the outer one already reaches
+  // it. It draws a card, and the card names the nesting rather than hiding it —
+  // an operator whose workspace is `~/Project` would otherwise never be able to
+  // name a folder inside it, which is every folder they work in.
   const child = join(configured, "src");
   await mkdir(child, { recursive: true });
-  for (const path of [root, child]) {
-    const answer = offer(path);
-    assert.match(answer.text, /overlaps the workspace utama/, path);
-    assert.equal(answer.markup, undefined, path);
-  }
+  const nested = offer(child);
+  assert.ok(nested.markup, "a nested path still draws a card");
+  assert.match(nested.text, /sits inside utama/);
+  assert.match(nested.text, /second scope/);
   // A proposal that is the workspace is refused by the clause above it, which
   // names the same workspace and its path. Both refusals name what it collided
   // with, and neither draws a card.
@@ -6231,8 +6244,17 @@ test("a proposed workspace is refused before its card, and the card is the opera
   // `isHighRisk` reads in the direction where folding would accept more.
   const folded = join(root, "mixedcase", "inner");
   await mkdir(folded, { recursive: true });
-  const cased = offer(folded);
-  assert.match(cased.text, /overlaps the workspace kotak/);
+  // Folding still matters in the widening direction: a proposal that CONTAINS a
+  // workspace spelled in another case was accepted before, and the parent became
+  // a trust window over it.
+  // `root` itself contains the `MIXEDcase` workspace, but it is refused by the
+  // first workspace it meets. Use a directory between them, spelled differently
+  // from the config: it exists, it contains nothing, and it CONTAINS `kotak`
+  // only under folding.
+  const outerCased = join(root, "fold");
+  await mkdir(outerCased, { recursive: true });
+  const cased = offer(outerCased);
+  assert.match(cased.text, /overlaps the workspace lipat/);
   assert.equal(cased.markup, undefined);
 
   // The card that does go out, and the two fields the four defects were about.
@@ -6241,7 +6263,9 @@ test("a proposed workspace is refused before its card, and the card is the opera
   const card = offer(fresh, "77", true);
   assert.match(card.text, /workspace kelinci/);
   assert.ok(card.markup, "a path that passes every refusal draws a card");
-  const [entry] = [...inner.pendingWorkspaces.values()];
+  // By path, not by position: a nested proposal now draws a card too, so the map
+  // holds more than one entry and the first is not this one.
+  const entry = [...inner.pendingWorkspaces.values()].find((e) => e.path === fresh);
   // AC-2.7: the operator, read from the channel. With `message.from` here, a card
   // a non-operator triggered would be decidable by that non-operator, because
   // `confirmed()` compares the presser against this field.
@@ -6259,10 +6283,11 @@ test("a proposed workspace is refused before its card, and the card is the opera
   await mkdir(join(away, "kedua"));
   offer(join(away, "kedua"));
   Date.now = realNow;
-  assert.equal(inner.pendingWorkspaces.size, 3, "two stale entries and the live one");
+  // Two live entries now, not one: the nested proposal above draws a card too.
+  assert.equal(inner.pendingWorkspaces.size, 4, "two stale entries and the two live ones");
   await mkdir(join(away, "ketiga"));
   offer(join(away, "ketiga"));
-  assert.equal(inner.pendingWorkspaces.size, 2, "the stale pair went, the live pair stayed");
+  assert.equal(inner.pendingWorkspaces.size, 3, "the stale pair went, the live ones stayed");
   store.close();
 });
 

@@ -4,6 +4,29 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] — 2026-08-14
+
+The folder form refused the only layout most people have.
+
+1.5.0 refused a proposed folder that overlapped an existing workspace in either direction. Only one of those directions is dangerous. A path that **contains** a workspace widens a grant — that is the rooted allowlist ADR 0010 rejected with measurements, one trust window away from every repository beneath it. A path **inside** a workspace grants nothing new: the outer one already reaches it, so the inner one is a narrower key rather than a wider one.
+
+Refusing the inner direction made the feature useless for the commonest setup. `caraka init --workspace "$PWD"` writes one workspace at the directory it was run in, and on the first installation to try this that was `~/Project` — so every folder its owner works in sits inside it. What they got, verbatim:
+
+```
+/home/ramaaditya/Project/coret overlaps the workspace Project at
+/home/ramaaditya/Project, so one trust window would cover both.
+```
+
+### Fixed
+
+- **A folder inside an existing workspace draws a card instead of a refusal.** A folder that contains one is still refused, still with case folded, and still re-checked when the card is pressed.
+- **The card says what nesting costs**, rather than the rule deciding on the operator's behalf: one directory with two scopes means `/lock` on one does not close the other's trust window, and memory saved under one does not surface under the other. That is a consequence worth reading before pressing yes, and it was never a reason to refuse.
+
+### Limited
+
+- `/lock` still closes only the workspace it resolves, so a window open on the outer workspace survives a `/lock` in the inner one. That is its own concern and its own fix.
+- Merging two scopes over one directory is not attempted. Nested workspaces stay two keys: two trust windows, two memory scopes.
+
 ## [1.5.0] — 2026-08-14
 
 Working in a group stopped meaning shouting into it.

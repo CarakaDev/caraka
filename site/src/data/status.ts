@@ -20,7 +20,7 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.5.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.5.1', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Seven presets load; five routes across four agents have completed a turn
   // against a live binary here, all on 10 August 2026 — Claude Code over ACP
@@ -130,6 +130,18 @@ export const releases = [
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
       ] },
     ] },
+  { v: '1.5.1', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'FIXED', tone: '#FFD67E', items: [
+        'The folder form refused the only layout most people have. 1.5.0 refused a proposed folder that overlapped an existing workspace in either direction, and only one of those directions is dangerous. A path that CONTAINS a workspace widens a grant \u2014 that is the rooted allowlist an earlier decision rejected with measurements, one trust window away from every repository beneath it. A path INSIDE a workspace grants nothing new: the outer one already reaches it, so the inner one is a narrower key rather than a wider one',
+        'Refusing the inner direction made the feature useless for the commonest setup, because init writes one workspace at the directory it was run in \u2014 and on the first installation to try this, that was the parent of every folder its owner works in. A folder inside a workspace draws a card now; a folder that contains one is still refused, still with case folded, and still re-checked when the card is pressed',
+        'The card says what nesting costs rather than the rule deciding on the operator\u2019s behalf: one directory with two scopes means /lock on one does not close the other\u2019s trust window, and memory saved under one does not surface under the other. That is worth reading before pressing yes, and it was never a reason to refuse',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        '/lock still closes only the workspace it resolves, so a window open on the outer workspace survives a /lock in the inner one. Its own concern and its own fix',
+        'Merging two scopes over one directory is not attempted. Nested workspaces stay two keys: two trust windows, two memory scopes',
+      ] },
+    ] },
   { v: '1.5.0', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
     groups: [
       { label: 'ADDED', tone: '#8EEE98', items: [
@@ -198,24 +210,13 @@ export const releases = [
         'Gemini CLI was retired for individual Pro and Ultra users on 18 June 2026, and Google names Antigravity as its replacement. That date is two months past. The gemini preset is left in place because nothing depends on it, but the fact is now written inside the preset with its date and a pointer to the successor',
       ] },
     ] },
-  { v: '1.3.3', state: 'unproven', date: '13 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
-    groups: [
-      { label: 'FIXED', tone: '#FFD67E', items: [
-        'A workspace written as @~/Project/Coret answered that no workspace had that name. A chat message never passes through a shell, so nothing expands the tilde before Caraka sees it and the token is not an absolute path \u2014 it fell through to the slug list and got a sentence about workspaces instead of one about paths. The request that asked for this feature wrote its example exactly that way, so what shipped accepted the long spelling and refused the one the person asking for it used',
-        'A leading ~/ is read as a path rooted in the home of the user running Caraka, and ~ alone is that directory. Only the path branch sees the expansion, so an unknown slug still quotes what was typed. ~user/ is left alone \u2014 another person\u2019s home is a guess about the machine, and a wrong guess names somebody else\u2019s directory',
-        'Who may use the path form does not change: still the operator\u2019s own direct message, and a tilde is not a way around it. What ~/x reaches was already reachable by typing the long path in the same conversation by the same person',
-      ] },
-      { label: 'LIMITED', tone: '#FFD67E', items: [
-        'One test is flaky under load and it is not this one. On the first full gate run it failed once, then passed three of three alone, two of two full runs after, and on the second machine. This change is a pure string function and one guard in the router, neither of which touches the approval queue. Written down rather than passed over: a test that fails one run in six will fail on somebody else\u2019s machine one day and be read as a regression',
-        'src/ measures 9,620 lines against the ~8,000 ceiling, up 22 against an estimate of 12 \u2014 the closest estimate of this release, because the function is pure and its home directory was already a parameter, so no seam had to be bought',
-      ] },
-    ] },
-  { v: '1.3.2 → 0.0.0', state: 'in CHANGELOG.md', date: '7–13 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
+  { v: '1.3.3 → 0.0.0', state: 'in CHANGELOG.md', date: '7–13 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
     groups: [
       { label: 'WHERE THE FULL ENTRIES ARE', tone: '#FFD67E', items: [
         'CHANGELOG.md in the repository, linked at the foot of this page. It carries every release below at the length it was written in; what is here is one line each, and nothing has been dropped from the history',
       ] },
       { label: 'SHIPPED', tone: '#8EEE98', items: [
+        '1.3.3 · 13 August 2026 — a workspace written as @~/Project/Coret answered that no workspace had that name',
         '1.3.2 · 13 August 2026 — answering yes to the memory offer left a config pointing at a service that could not be started by name',
         '1.3.1 · 13 August 2026 — Caraka renamed threads it did not open, and on a channel that can archive one it archived them too',
         '1.3.0 · 13 August 2026 — six issues filed against a released 1.2.0, and the two most expensive things in the release are in none of them',

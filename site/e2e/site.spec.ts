@@ -435,7 +435,7 @@ test.describe('the comps still decide the layout', () => {
       '/install': 5465,
       '/security': 6147,
       '/whatsapp-risk': 6857,
-      '/status': 9265,
+      '/status': 9273,
       '/brand/readme': 5581,
       // still measured against the comp
       '/story': 5734,

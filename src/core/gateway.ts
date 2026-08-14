@@ -697,6 +697,7 @@ export class Gateway {
     // entry retains a whole `InboundMessage` and mints a DM. The approval path
     // caps at five for the same reason.
     this.sweep(this.pendingWorkspaces);
+    const inside = this.nestedIn(path);
     const callback = approvalCallbacks(this.approvalKey, "a");
     this.pendingWorkspaces.set(callback.id, {
       // The operator, read from the channel and not from `message.from`. The two
@@ -712,7 +713,12 @@ export class Gateway {
       expiresAt: Date.now() + 10 * 60_000,
     });
     return {
-      text: this.t("ws.addCard", { path, slug }),
+      // A card that hides the nesting would be asking for a yes it did not earn:
+      // two scopes over one directory is a real consequence, and the operator is
+      // the only person who can weigh it.
+      text: inside
+        ? this.t("ws.addCardNested", { path, slug, outer: inside.slug })
+        : this.t("ws.addCard", { path, slug }),
       markup: this.confirmCard(callback),
     };
   }
@@ -764,12 +770,38 @@ export class Gateway {
    * `~/Project/coret`. Folding makes this predicate refuse more, and folding the
    * shared one would make containment accept more.
    */
+  /**
+   * A proposed path that would CONTAIN an existing workspace, which is the half
+   * of the overlap that widens a grant: `~/Project` swallowing `~/Project/coret`
+   * is the rooted allowlist ADR-0010 rejected with measurements, one trust window
+   * away from every repository beneath it.
+   *
+   * The other half is not refused, and refusing it was a design error that made
+   * the feature useless for the commonest layout. A path INSIDE an existing
+   * workspace grants nothing new — the parent already reaches it today, so the
+   * child is a narrower key, not a wider one. Refusing it meant an operator whose
+   * workspace is `~/Project` could never name a folder inside it, which is every
+   * folder they work in.
+   *
+   * What the child direction does cost is written on the card rather than
+   * refused: two scopes over one directory means `/lock` on one leaves the
+   * other's window open, and memory saved under one does not surface under the
+   * other. Case is folded here and not in `insideWorkspace`, which `isHighRisk`
+   * reads in the direction where folding would accept more.
+   */
   private overlapping(path: string) {
     const lower = path.toLowerCase();
-    return this.workspaces.find((workspace) => {
-      const root = workspace.path.toLowerCase();
-      return insideWorkspace(root, lower) || insideWorkspace(lower, root);
-    });
+    return this.workspaces.find((workspace) =>
+      insideWorkspace(lower, workspace.path.toLowerCase()),
+    );
+  }
+
+  /** An existing workspace this path sits inside. Not a refusal; the card says so. */
+  private nestedIn(path: string) {
+    const lower = path.toLowerCase();
+    return this.workspaces.find((workspace) =>
+      insideWorkspace(workspace.path.toLowerCase(), lower),
+    );
   }
 
   // Both confirmation maps are written in one place and read only by the press
