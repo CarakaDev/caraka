@@ -20,7 +20,7 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.4.1', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.4.2', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Seven presets load; five routes across four agents have completed a turn
   // against a live binary here, all on 10 August 2026 — Claude Code over ACP
@@ -130,6 +130,22 @@ export const releases = [
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
       ] },
     ] },
+  { v: '1.4.2', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'MEASURED', tone: '#6FB9F0', items: [
+        'Two things this project had been saying for four releases turned out to be false, and both were settled by measuring. The first: there was no deletion waiting. Four specs in a row closed with a version of the same sentence \u2014 a set of verified removals had been found, and only the rule against mixing a fix with a refactor stood between them and the budget. The pass that finally made them ADDED 35 lines, 9,633 to 9,668',
+        'The reason is uniform across all six candidates. Each duplicate is a body of four to twenty lines, and what holds the two copies apart \u2014 an error class, an injected clock, a translated sentence, a body-level retry header \u2014 costs more as parameters than the body costs as a copy. The shared fetch-with-retry is the clearest: 24 lines off the two channel adapters, 47 on in core. Only the twin PRAGMA scans broke even, and the sixth candidate had already been folded',
+        'The second: this page was not what was slowing the mobile suite down. That had been called margin erosion from a page growing about 600px per release. Paired runs with the build redone for each side: 15.2s alone before and after, 22.2s under the full suite before and after. Trimming 9,817 pixels moved it by half a second at most, while the full-suite figure swings 18.5 to 22.2s between runs of one build. That test spends 2,673ms navigating thirteen routes and 11,461ms in its own fixed waits, and this page navigates in 123ms \u2014 among the cheapest on the list',
+      ] },
+      { label: 'CHANGED', tone: '#8EEE98', items: [
+        'This page stops growing by a card per release. The five newest keep a full card; the fourteen older ones are one line each, taken from the lead sentence of their own changelog entry. Nothing vanishes \u2014 every published version is still named here, and a test fails on a sixth full card or on a version with no line. 18,455px to 8,638px, twenty cards to seven',
+        'One retry loop on the path that carries a bot token, where there were two. This is what the simplification pass actually bought. The copy it deleted had no test at any point in its life, so that path now runs the same code the Discord 429 tests exercise. The token never crosses into core: the helper takes the request as a closure it cannot see into and has no init parameter, which an adversarial review confirmed by reading it',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'Five things the green gate does not prove, recorded rather than claimed as covered: the WhatsApp REST path has no test at all, the Discord body-level retry fallback is never exercised because the tests always send the header, the Discord 204 branch has no caller, one unreachable-channel sentence needs a fetch that throws and nothing makes one, and one memory-failure sentence appears nowhere in the tests',
+        'src/ measures 9,668 lines against the ~8,000 ceiling, 1,668 over. The next feature owes that or a removal, and it will not be one of these six',
+      ] },
+    ] },
   { v: '1.4.1', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
     groups: [
       { label: 'FIXED', tone: '#FFD67E', items: [
@@ -184,38 +200,13 @@ export const releases = [
         'src/ measures 9,598 lines against the ~8,000 ceiling, up 160 against an estimate of 55 \u2014 the third estimate in this release to come in low, for the same reason each time. About 35 lines are injected seams with their types and defaults, carrying no decision but making the ones that exist reachable from a test; without them none of the ten new tests can run without a real installer on whatever machine runs the gate',
       ] },
     ] },
-  { v: '1.3.1', state: 'unproven', date: '13 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
-    groups: [
-      { label: 'FIXED', tone: '#FFD67E', items: [
-        'Caraka renamed threads it did not open, and on a channel that can archive one it archived them too. A session can be born inside a topic that already exists — the thread arrives on the incoming message, and a topic is only created when there is none — so a message sent inside a topic a human made and named gave that session the human’s thread, with nothing recording who made it. The first state change then renamed it to the first line of whoever’s message started the task',
-        'The half the report did not reach: the archive call runs on done, failed and cancelled, so one task run inside someone else’s thread renamed it and then archived it. The issue described a rename on Telegram; the hole was in core, and one guard closes both because the rename and the archive sit behind the same check',
-        'Caraka records the threads it opens and mutates only those. A thread it does not own gets neither call, one audit line naming the chat and the thread, and a session that runs and answers exactly as before — the guard costs a glyph, never a name. Ownership is keyed by thread rather than by session, so a second session opened in the same topic through /new inherits it',
-      ] },
-      { label: 'LIMITED', tone: '#FFD67E', items: [
-        'A name already overwritten cannot be restored. It was never stored, and the Bot API has no method that returns a forum topic’s name — which is also why the stored record is a bit and never a name',
-        'After upgrading, a session that already had a topic stops updating its glyph. No audit row records a topic’s creation and no name can be read back, so ownership of a thread that predates this release cannot be proven from anything on disk, and the guard fails closed rather than guessing. Guessing the other way is what renames someone else’s topic',
-        'Half of the acceptance criteria in the report are deliberately not built. They ask for an explicit target name and a current-to-target confirmation, which assume a product that offers renaming to its users; Caraka has no rename command, and its only topic mutation is the automatic state glyph. What it needed was a provenance condition',
-        'src/ measures 9,438 lines against the ~8,000 ceiling, up 26, of which eleven are the comment recording why ownership sits beside the route and why the guard sits below the glyph check',
-      ] },
-    ] },
-  // The fourteen cards from 1.3.0 down to 0.0.0, one line each, drawn in the
-  // card shape the comp already gave every release above. Each line is the lead
-  // sentence of that release's own entry in CHANGELOG.md, shortened; no number,
-  // date, or claim enters here that is not already in that file. The stagger
-  // continues from the block above rather than restarting, the way the port
-  // already stepped the two cards that used to sit at the tail.
-  //
-  // One deviation went out with the 0.0.0 card and is recorded here because it
-  // is still true: the CHANGELOG 0.0.0 entry writes "Eleven sourced research
-  // documents", docs/research/ has held thirteen files since e090f1b, and
-  // docs.astro counts them correctly. The line below names no count, so nothing
-  // on this page contradicts that file any more.
-  { v: '1.3.0 → 0.0.0', state: 'in CHANGELOG.md', date: '7–13 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
+  { v: '1.3.1 → 0.0.0', state: 'in CHANGELOG.md', date: '7–13 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
     groups: [
       { label: 'WHERE THE FULL ENTRIES ARE', tone: '#FFD67E', items: [
         'CHANGELOG.md in the repository, linked at the foot of this page. It carries every release below at the length it was written in; what is here is one line each, and nothing has been dropped from the history',
       ] },
       { label: 'SHIPPED', tone: '#8EEE98', items: [
+        '1.3.1 · 13 August 2026 — Caraka renamed threads it did not open, and on a channel that can archive one it archived them too',
         '1.3.0 · 13 August 2026 — six issues filed against a released 1.2.0, and the two most expensive things in the release are in none of them',
         '1.2.0 · 10 August 2026 — the Titen adapter spoke to a live Titen for the first time, and every field it had been sending was refused',
         '1.1.2 · 10 August 2026 — caraka --version printed 1.1.0 on an installed 1.1.1',

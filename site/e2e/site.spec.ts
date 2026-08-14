@@ -408,6 +408,10 @@ test.describe('the comps still decide the layout', () => {
     // cheapest on the list. Whoever goes after that margin next should start at
     // the waits. Growth on this page was worth stopping for its own sake; it is
     // not what the phone suite is paying for.
+    // 1.4.2 is the first release under the bound: +84 to 8722, against the ~600
+    // every release cost before it. The card for it went on and 1.3.1 came off
+    // the full-card list into the archive line, which is the trade the bound
+    // makes. Measured Chromium at 1440x900.
     const EXPECTED: Record<string, number> = {
       // v1.2 copy, except the two v1.3 moved — measured from the site (see above)
       '/': 6595,
@@ -416,7 +420,7 @@ test.describe('the comps still decide the layout', () => {
       '/install': 5465,
       '/security': 6147,
       '/whatsapp-risk': 6857,
-      '/status': 8638,
+      '/status': 8722,
       '/brand/readme': 5581,
       // still measured against the comp
       '/story': 5734,
