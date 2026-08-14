@@ -20,7 +20,7 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.4.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.4.1', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Seven presets load; five routes across four agents have completed a turn
   // against a live binary here, all on 10 August 2026 — Claude Code over ACP
@@ -119,6 +119,19 @@ export const releases = [
         'Watch the dashboard swap a panel in a real browser with the CSP live',
         'Run fourteen days on a real WhatsApp number with no ban and no manual relink, or publish the honest finding that makes Cloud API the default',
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
+      ] },
+    ] },
+  { v: '1.4.1', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'FIXED', tone: '#FFD67E', items: [
+        'A setting that describes direct messages was switching topics off in groups. init read has_topics_enabled from getMe and wrote it as the topic preference, but the Bot API defines that field as "the bot has forum topic mode enabled in private chats" \u2014 it answers for a DM and says nothing about a group. That value became the channel capability, and the gate checks it before anything else, so the one line about groups was never reached. A supergroup forum full of its own topics, where Caraka held the manage-topics right, never got a topic from Caraka',
+        'The preference is the operator\u2019s now, the way the Discord one is, and each container kind is decided on its own terms: the forum flag per chat, the manage-topics right per group, and the first real refusal marking a container linear. The gate itself was deliberately left alone \u2014 moving that check into the private branch would have fixed Telegram by breaking Discord, where the same field is a real opt-out',
+        'caraka doctor now names the conversation its rows report. Topics and User-created topics read a private-chat field and told the operator to visit BotFather; they say "in direct messages", and the remedy adds that a group\u2019s own topics are unaffected. That row is what sent one operator to the wrong setting',
+        'A security test could pass a forgery. It built its forged callback by replacing the signature\u2019s last character with x, so on runs where the signature already ended in x the forgery was the original string and verification correctly accepted it. Measured at 98 collisions in 6,400 callbacks, 1.53%, against the 1.56% one character of a 64-symbol alphabet predicts. The code was never wrong; the test was, and a flaky security test reads as a security hole to whoever meets it next',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'An existing config keeps the value init wrote it. An installation made before this release still holds the preference off until one line is changed by hand; what changed is what the next init writes, and what doctor says about it',
+        'A direct message whose topic mode is off now costs one failed API call, once per installation, because the preference no longer pre-empts the attempt. The first real refusal marks that conversation, tells its owner once, and every session after runs linear',
       ] },
     ] },
   { v: '1.4.0', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),

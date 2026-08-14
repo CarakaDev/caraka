@@ -97,7 +97,7 @@ npx caraka start
 
 `init` validates the bot token through Telegram, opens a one-time pairing link, asks for confirmation in the terminal, then stores the token outside `config.yaml` in a mode-`0600` file.
 
-Enable topic mode for the bot in BotFather if you want one Telegram topic per session. Where topics are unavailable, Caraka keeps working in linear mode with a session header.
+A group gets one topic per session when the group is a forum and Caraka holds the manage-topics right there. A direct message needs one more thing, the bot's own topic mode in BotFather, which is a separate setting and applies to direct messages only. Where topics are unavailable either way, Caraka keeps working in linear mode with a session header.
 
 Installing globally is optional:
 

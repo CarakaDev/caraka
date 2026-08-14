@@ -167,7 +167,8 @@ Kedua jalur memakai config yang sama di `~/.caraka`.
 | Pairing habis waktu | jalankan `npx caraka init` lagi, lalu tekan Start dalam lima menit |
 | Bot diam | pastikan `npx caraka start` masih hidup dan `doctor` hijau |
 | Telegram melaporkan conflict | hentikan proses bot lain yang memakai token yang sama |
-| Topic tidak muncul | aktifkan topic mode di BotFather atau gunakan mode linear |
+| Topic tidak muncul di percakapan pribadi | aktifkan topic mode bot di BotFather; setelan itu tidak berlaku untuk grup |
+| Topic tidak muncul di grup | pastikan grupnya forum dan Caraka punya hak kelola topic di sana; `telegram.topics` di config harus `true` |
 | Claude gagal melanjutkan sesi lama | Caraka otomatis membuat sesi ACP pengganti |
 
 Lihat [troubleshooting.md](troubleshooting.md) untuk diagnosis lain.

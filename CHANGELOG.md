@@ -4,6 +4,32 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] — 2026-08-14
+
+A setting that describes direct messages was switching topics off in groups.
+
+`init` read `has_topics_enabled` from `getMe` and wrote it as `telegram.topics`. The Bot API defines that field as *"True, if the bot has forum topic mode enabled **in private chats**"* — it answers for a DM and says nothing about a group. That value became `caps.threads`, and `topicsAvailable` checks it before anything else:
+
+```ts
+if (!this.channelOf(chatId).caps.threads) return false;   // stops here
+if (message.chat.type === "private") return message.chat.is_forum !== false;
+return message.chat.is_forum === true && this.forumChats.get(chatId) !== false;
+```
+
+The third line, the only one about groups, was never reached. So a supergroup forum with its own topics, where Caraka held the manage-topics right, never got a topic from Caraka — and the reason was a switch about private chats. Measured on this installation: `getMe` answered `has_topics_enabled: false`, config held `topics: false`, and a group full of topics got none.
+
+### Fixed
+
+- **`init` no longer derives the topic preference from a private-chat field.** `telegram.topics` is the operator's preference, the way `discord.threads` is, and it is written on. Each container kind is already decided on its own terms: `is_forum` per chat, the manage-topics right per group, and the first real refusal marks a container as linear through `noteThreadsOff`. The gate in `topicsAvailable` is deliberately untouched — moving the `caps.threads` check into the private branch would have fixed Telegram by breaking Discord, where `threads` is a real opt-out.
+- **`caraka doctor` names the conversation its rows report.** `Topics` and `User-created topics` read a private-chat field and told the operator to visit @BotFather; they read `Topics in direct messages` and `User-created topics in direct messages` now, and the remedy says a group's own topics are unaffected. That row is what sent the owner of this installation to the wrong setting.
+- **A security test could pass a forgery.** `approval callbacks reject forgery and preserve signed decision` built its forged callback by replacing the signature's last character with `x` — so on the runs where the signature already ended in `x`, the forgery was the original string and verification correctly accepted it. Measured at **98 collisions in 6,400 callbacks, 1.53%**, against the 1.56% that one character in a 64-symbol alphabet predicts. The mutation is now guaranteed to differ and asserted to differ before it is used. The code was never wrong; the test was, and a flaky security test reads as a security hole to whoever meets it next.
+
+### Limited
+
+- **An existing `config.yaml` keeps the value `init` wrote it.** An installation created before this release still holds `topics: false` and will keep it until one line is changed by hand. What changed is what the next `init` writes, and what `doctor` says about it.
+- **A direct message whose topic mode is off now costs one failed API call**, once per installation, because the preference no longer pre-empts the attempt. `noteThreadsOff` marks that conversation on the first real refusal, tells its owner once, and every session after runs linear. `caraka doctor` clears the marker if the setting changes.
+- `src/` measures **9,634 lines**, up 14, all of it comment and renaming — one expression became one literal.
+
 ## [1.4.0] — 2026-08-14
 
 The install prompt told people to use Claude, and the README buried it under the manual route.

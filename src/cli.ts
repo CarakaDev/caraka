@@ -459,7 +459,15 @@ async function init(args: string[]) {
     workspace,
     bot.username,
     String(paired.id),
-    bot.has_topics_enabled === true,
+    // Not `has_topics_enabled`. The Bot API defines that as "the bot has forum
+    // topic mode enabled in private chats", so it answers for a DM and says
+    // nothing about a group — and it was being written here as the preference
+    // that gates topics everywhere, which is why a supergroup forum with its own
+    // topics never got one from Caraka. This field is the operator's preference,
+    // the way `discord.threads` is, and both container kinds are already checked
+    // on their own terms: `is_forum` per chat, `can_manage_topics` per group, and
+    // `noteThreadsOff` on the first real refusal.
+    true,
     language,
     memoryProvider,
   );
@@ -776,13 +784,18 @@ async function doctor(args: string[] = []) {
     try {
       const me = await new Telegram(loaded.token, fetch, undefined, t).getMe();
       check("Telegram", me.username === telegram.botUsername, `@${me.username ?? "unknown"}`);
+      // Named for the conversation it actually reports. A group's topics depend
+      // on the group being a forum and Caraka holding `can_manage_topics` there,
+      // neither of which this field knows about, and a row that read plain
+      // "Topics" sent at least one operator to @BotFather over a group that was
+      // never affected.
       check(
-        "Topics",
+        "Topics in direct messages",
         me.has_topics_enabled === true,
-        "turn on Threaded Mode for this bot in @BotFather",
+        "turn on Threaded Mode in @BotFather; a group's own topics are unaffected",
       );
       check(
-        "User-created topics",
+        "User-created topics in direct messages",
         me.allows_users_to_create_topics === true,
         "controlled by “Disallow users to create new threads” in @BotFather",
       );

@@ -99,7 +99,7 @@ npx caraka start
 
 `init` memvalidasi token bot ke Telegram, menampilkan tautan pairing sekali pakai, meminta konfirmasi di terminal, lalu menyimpan token di luar `config.yaml` dalam berkas mode `0600`.
 
-Aktifkan topic mode bot di BotFather bila ingin satu topic Telegram per sesi. Jika topic tidak tersedia, Caraka tetap jalan dalam mode linear dengan header sesi.
+Sebuah grup mendapat satu topic per sesi bila grup itu forum dan Caraka punya hak kelola topic di sana. Percakapan pribadi butuh satu hal lagi, yaitu topic mode bot di BotFather, yang setelan terpisah dan hanya berlaku untuk percakapan pribadi. Bila topic tidak tersedia di salah satunya, Caraka tetap jalan dalam mode linear dengan header sesi.
 
 Instalasi global tidak wajib:
 

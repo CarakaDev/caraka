@@ -165,7 +165,8 @@ Both routes use the same config in `~/.caraka`.
 | Pairing timed out | run `npx caraka init` again, then press Start within five minutes |
 | The bot is silent | make sure `npx caraka start` is still alive and `doctor` is green |
 | Telegram reports a conflict | stop the other bot process using the same token |
-| No topic appears | turn on topic mode in BotFather or use linear mode |
+| No topic appears in a direct message | turn on the bot's topic mode in BotFather; that setting does not apply to groups |
+| No topic appears in a group | check the group is a forum and Caraka holds the manage-topics right there, and that `telegram.topics` is `true` in config |
 | Claude cannot resume an old session | Caraka creates a replacement ACP session on its own |
 
 See [troubleshooting.md](troubleshooting.md) for other diagnoses.

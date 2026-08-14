@@ -295,7 +295,16 @@ test("approval callbacks reject forgery and preserve signed decision", () => {
     id: callback.id,
     decision: "reject",
   });
-  assert.equal(verifyApprovalCallback(key, `${callback.allow.slice(0, -1)}x`), null);
+  // The mutation has to be guaranteed to mutate. This replaced the last
+  // character with `x` unconditionally, so on the roughly one run in sixty-four
+  // where the signature already ended in `x` the "forgery" was the original
+  // string and verification correctly accepted it — a flaky security test that
+  // reads as a security hole. Found on a second machine on 14 August 2026, the
+  // same way the `activeGrant` tie-break was.
+  const tail = callback.allow.slice(-1);
+  const forged = `${callback.allow.slice(0, -1)}${tail === "x" ? "y" : "x"}`;
+  assert.notEqual(forged, callback.allow);
+  assert.equal(verifyApprovalCallback(key, forged), null);
   assert.ok(callback.allow.length <= 64);
 });
 
@@ -6034,4 +6043,41 @@ test("every copy of the install prompt is byte-identical to the others", async (
     english,
     "site/src/data/install.ts drifted from README.md",
   );
+});
+
+test("a group's topics do not depend on the bot's private-chat topic mode", async () => {
+  // spec/topic-dm-vs-grup. AC-1, AC-2, AC-3, AC-4. The Bot API defines
+  // `has_topics_enabled` as "the bot has forum topic mode enabled in private
+  // chats", and it was being written as the preference that gates topics
+  // everywhere — so a supergroup forum with its own topics never got one.
+  const oldHome = process.env.CARAKA_HOME;
+  const root = await mkdtemp(join(tmpdir(), "caraka-topicpref-"));
+  process.env.CARAKA_HOME = root;
+  try {
+    // AC-1 and AC-2: what `init` writes no longer reads that field at all, so a
+    // bot with DM topic mode off still gets the preference on.
+    const written = defaultConfig(root, BOT, "42", true);
+    assert.equal(written.telegram?.topics, true);
+
+    // AC-3 and AC-4: the preference is what reaches caps, and a forum group is
+    // decided by `is_forum` plus the manage-topics right, never by the DM field.
+    for (const preference of [true, false]) {
+      const channel = new Telegram("fake-token", fetch, undefined, translator(), preference);
+      assert.equal(channel.caps.threads, preference);
+    }
+  } finally {
+    if (oldHome === undefined) delete process.env.CARAKA_HOME;
+    else process.env.CARAKA_HOME = oldHome;
+  }
+});
+
+test("the doctor rows that read a private-chat field say so", async () => {
+  // AC-6 and AC-7. The row read "Topics" and sent an operator to @BotFather over
+  // a group that field never described.
+  const source = await readFile(new URL("../src/cli.ts", import.meta.url), "utf8");
+  assert.match(source, /"Topics in direct messages"/);
+  assert.match(source, /"User-created topics in direct messages"/);
+  assert.match(source, /a group's own topics are unaffected/);
+  // The derivation that caused it must not come back.
+  assert.equal(/bot\.has_topics_enabled === true,/.test(source), false);
 });
