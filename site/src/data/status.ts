@@ -20,7 +20,7 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.4.2', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.5.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Seven presets load; five routes across four agents have completed a turn
   // against a live binary here, all on 10 August 2026 — Claude Code over ACP
@@ -130,6 +130,29 @@ export const releases = [
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
       ] },
     ] },
+  { v: '1.5.0', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'ADDED', tone: '#8EEE98', items: [
+        'A finished session closes its topic. Closed, never deleted \u2014 the delete call takes the whole transcript with it, while closing is a flag and a service message and the history stays readable to every member. Telegram refuses a rename and a close in one call, so the state glyph is written first. Continuing a session reopens it, Caraka closes only topics it opened, and it can never reach the General topic, which has its own methods and no creator exemption',
+        'A folder can be named from a group: /new ~/Project/coret Coret. The folder comes first and the title is the rest, and only an absolute path is read as a folder \u2014 Project/coret stays a title, which is what makes the rule explainable in two sentences',
+        'A page that teaches the whole thing, at /guide: what you supply, pairing, topics, aiming a message, sessions and folders, approvals, what happens when Caraka refuses, and what is still unproven. It has no mockup of its own, so it borrows the docs comp\u2019s shapes the way /whatsapp-risk borrows the security comp\u2019s',
+        '/help answers differently in a room than in a direct message. In a room it says what a room refuses, what everyone in it can read, and what the channel does and does not deliver',
+      ] },
+      { label: 'CHANGED', tone: '#6FB9F0', items: [
+        'A session topic is no longer an exception to the addressing rule. Any message inside a topic Caraka held a session in used to count as addressed, so the topic could not be used for discussion. It is addressed the same way everywhere now: a mention, a command, or a reply to one of Caraka\u2019s own messages. A reply to the topic-creation service message does not count, and that exemption matters more than it looks \u2014 every first-level message in a forum topic is technically a reply to it, so without it the rule just removed comes back through the other door',
+        'The path form is accepted from any container and only from the channel operator. The earlier decision refused it outside the operator\u2019s direct message because whoever can post in a group would otherwise choose what directory the agent runs against. Read against the code, what that was holding is who chooses the string: the requester becomes the session\u2019s principal, and the store then makes that same person the only one who can answer permission cards inside the directory they named. So the operator test stays and the container test goes. The card is raised in the operator\u2019s direct message and nowhere else, and the room receives one sentence that does not vary with whether the path exists \u2014 one that varied would be a way to probe the filesystem from a group',
+      ] },
+      { label: 'FIXED', tone: '#FFD67E', items: [
+        'Seven defects in already-shipped code, all found by the reviews that produced this release rather than by anyone using it. A card could have been decided by the person who triggered it. The create intent did not survive the workspace card, so naming a new folder with a title would have run the title as a prompt. A folder whose name is not a legal slug wrote a config that would not boot',
+        'Nothing refused a folder that contains or is contained by an existing workspace \u2014 which is how a parent directory becomes by accident the rooted allowlist an earlier decision rejected with measurements, one trust window away from auto-approving every repository beneath it. That check also did not fold case, and ran only when the card was drawn rather than when it was pressed',
+        'A failed run\u2019s explanation never reached its topic. It was reported against the message that opened the topic, whose thread id is empty, so it landed in the general channel while the topic was renamed with a failure glyph and closed with nothing inside saying why. The comment above that code asserted the opposite',
+        'Two pending maps grew without bound and had no sweeper, each entry holding a whole inbound message and minting a direct message. The approval path has capped at five since v0.6 for exactly this reason',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'src/ measures 9,971 lines, up 303. The spec estimated ~190 and its plan wrote an honest range of 220 to 320, citing that the last five estimates here came in low by 1.8 to 2.6 times. It landed inside the range for the first time. No removal paid for it',
+        'Whether a closed topic still accepts a message from the bot is implementation evidence, not a documented promise. Telegram\u2019s own server permits it for the topic\u2019s creator, which Caraka always is here, but the API page says nothing about it \u2014 so every send into a closed topic stays fallible and a refused close is swallowed rather than ending a run',
+      ] },
+    ] },
   { v: '1.4.2', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
     groups: [
       { label: 'MEASURED', tone: '#6FB9F0', items: [
@@ -187,25 +210,13 @@ export const releases = [
         'src/ measures 9,620 lines against the ~8,000 ceiling, up 22 against an estimate of 12 \u2014 the closest estimate of this release, because the function is pure and its home directory was already a parameter, so no seam had to be bought',
       ] },
     ] },
-  { v: '1.3.2', state: 'unproven', date: '13 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
-    groups: [
-      { label: 'FIXED', tone: '#FFD67E', items: [
-        'Answering yes to the memory offer left a config pointing at a service that could not be started by name. init read the installer\u2019s exit status as proof the provider worked; it is not. The installer finished with status 0, installed into a bun directory, and printed itself that the command would not resolve because that directory is not on PATH \u2014 four things were missing and Caraka claimed none of them were',
-        'Three of the four are Caraka\u2019s to do and it does them: the binary is resolved as an absolute path instead of looked up on PATH, bootstrap runs against one pinned store, and the key it prints is stored at 0600. provider: titen is written only when a key is actually held; every other outcome falls back to local and names the step that did not hold',
-        'The fourth is the server, which stays the operator\u2019s to run because Caraka installs no background service. What it prints is that one command with the pinned store already in it \u2014 the store matters, because both bootstrap and serve default it to the working directory, so a key made in one place answers 401 from another',
-        'The key no longer has to be exported by hand. It is read the way every channel token is: the environment first, the secret file when the environment is silent. caraka doctor reads the same two sources, so its memory row stopped going red on an install that works, and its remedy names the store rather than suggesting the command that produces the 401',
-      ] },
-      { label: 'LIMITED', tone: '#FFD67E', items: [
-        'Recall is still empty under Titen and this release does not change it. An observation is accepted and stored; a compile selects claims, claims come only from a consolidation route, and nothing in Caraka calls it. Verified again with two curl calls: the observation is accepted, and a compile of the same subject answers with an empty list where selected, omitted and deduplicated are all zero \u2014 it was never a candidate. This makes Titen reachable and /ingat genuinely store; it does not make /memori return rows',
-        'src/ measures 9,598 lines against the ~8,000 ceiling, up 160 against an estimate of 55 \u2014 the third estimate in this release to come in low, for the same reason each time. About 35 lines are injected seams with their types and defaults, carrying no decision but making the ones that exist reachable from a test; without them none of the ten new tests can run without a real installer on whatever machine runs the gate',
-      ] },
-    ] },
-  { v: '1.3.1 → 0.0.0', state: 'in CHANGELOG.md', date: '7–13 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
+  { v: '1.3.2 → 0.0.0', state: 'in CHANGELOG.md', date: '7–13 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
     groups: [
       { label: 'WHERE THE FULL ENTRIES ARE', tone: '#FFD67E', items: [
         'CHANGELOG.md in the repository, linked at the foot of this page. It carries every release below at the length it was written in; what is here is one line each, and nothing has been dropped from the history',
       ] },
       { label: 'SHIPPED', tone: '#8EEE98', items: [
+        '1.3.2 · 13 August 2026 — answering yes to the memory offer left a config pointing at a service that could not be started by name',
         '1.3.1 · 13 August 2026 — Caraka renamed threads it did not open, and on a channel that can archive one it archived them too',
         '1.3.0 · 13 August 2026 — six issues filed against a released 1.2.0, and the two most expensive things in the release are in none of them',
         '1.2.0 · 10 August 2026 — the Titen adapter spoke to a live Titen for the first time, and every field it had been sending was refused',

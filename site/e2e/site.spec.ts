@@ -408,6 +408,9 @@ test.describe('the comps still decide the layout', () => {
     // cheapest on the list. Whoever goes after that margin next should start at
     // the waits. Growth on this page was worth stopping for its own sake; it is
     // not what the phone suite is paying for.
+    // 1.5.0: +543 to 9265. Bigger than 1.4.2's +84 because its card is long, not
+    // because the bound slipped — 1.3.2 came off the full-card list as 1.5.0 went
+    // on, and the fidelity test is what caught the sixth card both times.
     // 1.4.2 is the first release under the bound: +84 to 8722, against the ~600
     // every release cost before it. The card for it went on and 1.3.1 came off
     // the full-card list into the archive line, which is the trade the bound
@@ -432,7 +435,7 @@ test.describe('the comps still decide the layout', () => {
       '/install': 5465,
       '/security': 6147,
       '/whatsapp-risk': 6857,
-      '/status': 8722,
+      '/status': 9265,
       '/brand/readme': 5581,
       // still measured against the comp
       '/story': 5734,
