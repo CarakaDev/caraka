@@ -129,6 +129,20 @@ Sejak 1.3.3 `~/` di depan token dibaca sebagai path yang berakar di direktori ru
 
 **Prinsip:** *sesi tidak pernah berpindah topic, dan topic tidak pernah dipakai ulang oleh sesi lain.* Ini yang membuat riwayat dapat dipercaya.
 
+### Agent mana yang menjalankan sebuah sesi
+
+Tiga pertanyaan, dijawab berurutan, dan yang pertama menjawab menang:
+
+1. **Agent yang disimpan baris sesi itu.** `/switch <agent>` menulis ke sana, dan pilihan terakhir seseorang mengalahkan berkas.
+2. **`agent:` milik workspace sesi itu.** Setiap workspace boleh menyebut agennya sendiri, dan dua workspace dalam satu proses boleh menyebut agen yang berbeda.
+3. **Agen bawaan produk,** `claude-code`. Ini yang berlaku pada pemasangan yang tidak menyebut agen di mana pun, dan itu mayoritasnya.
+
+Baris sesi menyimpan `agent` sejak ia dibuat, disalin dari workspace-nya saat itu. Jadi sebuah sesi yang dibuat sebelum workspace-nya menyebut agennya menyimpan kosong, dan sampai 1.5.2 kosong itu langsung jatuh ke langkah 3 — sebuah pemasangan yang config-nya berbunyi `agent: codex` menjalankan Claude, dan gagal pada mesin yang tidak pernah memasang Claude ([issue #9]). Langkah 2 adalah yang hilang. Sejak 1.5.3 tidak ada baris yang ditulis ulang untuk itu; yang berubah adalah cara membacanya, jadi mengubah `agent:` workspace besok tetap berlaku untuk sesi lama juga.
+
+Driver pemanasan yang dinyalakan saat start membaca urutan yang sama, dengan workspace pertama dan tanpa sesi, sehingga pemasangan yang tidak bisa menyalakan agennya gagal saat start dan bukan pada tugas pertama. Baris yang dicetak Caraka saat hidup menyebut agen yang sama itu, dengan id preset yang dipakai `caraka doctor`.
+
+[issue #9]: https://github.com/CarakaDev/caraka/issues/9
+
 **Satu pengecualian, di sisi agent.** Isolasi di atas berlaku untuk apa yang Caraka simpan. Agent yang menyimpan riwayatnya sendiri di direktori kerja tidak ikut terisolasi, karena setiap sesi pada satu workspace dijalankan dengan cwd yang sama. Aider adalah kasusnya: ia tidak punya id thread, resume-nya `--restore-chat-history` membaca `.aider.chat.history.md` dari cwd, jadi dua sesi Caraka pada workspace yang sama berbagi satu berkas dan giliran lanjutan salah satunya bisa memuat transcript yang lain (`presets/agents/aider.yaml`). Preset dengan id thread — Codex, Claude Code — tidak punya masalah ini.
 
 ---

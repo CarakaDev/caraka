@@ -884,6 +884,11 @@ async function start(args: string[] = []) {
   console.log(
     t("cli.running", {
       channels: Object.keys(blocks).join(", "),
+      // The agent actually selected for the first workspace, by the same order
+      // the gateway uses, printed as the preset id `caraka doctor` prints. It
+      // read `Claude` as fixed text until 14 August 2026, so an installation
+      // running codex was told it was running Claude (issue #9).
+      agent: loaded.config.workspaces?.[0]?.agent || DEFAULT_AGENT,
       workspace: loaded.config.workspace.path,
     }),
   );

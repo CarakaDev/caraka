@@ -4,6 +4,33 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.3] — 2026-08-14
+
+An installation whose config said `agent: codex` ran Claude, and said so.
+
+Reported from outside as [issue #9] by an installation upgraded 1.3.2 → 1.5.1. Its workspace named `agent: codex`, `caraka doctor` answered `✓ Agent codex codex-cli 0.147.0: ready`, and the service still started Claude, printed `Caraka is live: telegram → Claude`, and failed the first Telegram task with `Authentication required` — on a machine where Claude had never been signed in.
+
+One cause, in three places. An empty agent id resolved against the product default without the workspace it belonged to ever being asked: at start-up, where the warm-up driver was always the default; on every run, where a session row written before its workspace named an agent stores `""`; and in the banner, where `Claude` was fixed text in both catalogs and could never have said anything else.
+
+Sessions created after a workspace names its agent were never affected — `createSession` copies it. What the bug hit was exactly the installations that had been running longest.
+
+### Fixed
+
+- **A session that stores no agent now runs the one its workspace names.** The order is the session's agent, then the workspace's `agent:`, then the product default; it is written once, in `agentFor`, and both places that pick a driver read it. `DEFAULT_AGENT` has not moved and is still the last resort for the installations — most of them — that name no agent anywhere.
+- **The warm-up driver started at boot is the first workspace's agent**, not the default. An installation that cannot start its agent fails at start-up rather than on its first task, which is what that line was written for.
+- **The line printed when Caraka comes up names the agent actually selected**, as the preset id `caraka doctor` prints: `Caraka is live: telegram → codex (/home/…)`.
+
+### Changed
+
+- Nothing is written to the database for this. Old session rows keep their empty agent and are read against their workspace every time, so changing a workspace's `agent:` tomorrow applies to sessions created before today too.
+
+### Limited
+
+- A workspace naming an agent that is not installed now fails at start-up with that agent's error rather than reaching the first task. That is the intent of the warm-up, but the message an installation with a typo in `agent:` sees is a different one than before.
+- No `defaultAgent` key was added to the config. The reporter offered it as one of four possibilities; a single workspace's `agent:` already is that key, and a second global one is only somewhere for the two to disagree.
+
+[issue #9]: https://github.com/CarakaDev/caraka/issues/9
+
 ## [1.5.2] — 2026-08-14
 
 The topic closed after every turn, because `done` was read as the end of a session.

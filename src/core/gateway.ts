@@ -315,6 +315,21 @@ export class Gateway {
     return this.workspaces.map((workspace) => `@${workspace.slug} · ${workspace.path}`).join("\n");
   }
 
+  /**
+   * Which agent a run belongs to. The session first, because `/switch` writes
+   * there and a person's last choice outranks a file; then the workspace, which
+   * is the only other thing that knows; and `""` last, which `driverFor` reads
+   * as the product default.
+   *
+   * The middle step is what issue #9 was missing. A session created before its
+   * workspace named an agent stores `""`, and `""` went straight to the default
+   * — so an installation whose config said `agent: codex` ran Claude, on a
+   * machine where Claude had never been signed in.
+   */
+  private agentFor(workspace: Workspace, session?: Session) {
+    return session?.agent || workspace.agent || "";
+  }
+
   // Selection is the driver layer's job (`channels → core ← drivers`); core
   // hands over the session's agent id and the workspace's forced route, and
   // keeps the instance only to stop it later.
@@ -361,7 +376,7 @@ export class Gateway {
     await this.announceStart();
     // The default driver starts now, so a setup that cannot start any route
     // fails at startup, not on the first task.
-    await this.driver("", this.home.driver);
+    await this.driver(this.agentFor(this.home), this.home.driver);
     // One queue map for the whole process, so a second channel cannot start a
     // second run in a workspace that is already busy (FR-SESS-04).
     await Promise.all(this.channels.map((channel) => this.pump(channel)));
@@ -1331,7 +1346,7 @@ export class Gateway {
     try {
       // The session's own agent, on the workspace's own route (AC-5.4): the
       // registry behind `driverFor` decides what serves this pair.
-      const driver = await this.driver(session.agent, workspace.driver);
+      const driver = await this.driver(this.agentFor(workspace, session), workspace.driver);
       // A route that decides permissions itself has no seam for read-only to
       // refuse a write at, so the run does not start rather than start
       // unguarded (`docs/security.md` §5).

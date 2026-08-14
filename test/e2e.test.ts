@@ -317,6 +317,8 @@ async function harness(
     onPrompt?: (prompt: string, route: DriverRoute) => Promise<{ stopReason: string }>;
     driver?: AgentDriver;
     driverFor?: DriverFor;
+    /** Every agent id and forced route core asks the registry for, in order. */
+    onDriverFor?: (agent: string, forced?: string) => void;
     store?: Store;
     root?: string;
     runLimitMs?: number;
@@ -464,7 +466,11 @@ async function harness(
     config,
     Buffer.alloc(32, 4),
     [telegram, ...(options.alsoChannel ? [options.alsoChannel] : [])],
-    options.driverFor ?? (async () => claude),
+    options.driverFor ??
+      (async (agent, forced) => {
+        options.onDriverFor?.(agent, forced);
+        return claude;
+      }),
     store,
     scrub,
     "0.2.0",
@@ -4932,4 +4938,80 @@ test("a caption decides a card once, on a channel that has no buttons", async ()
   assert.match(h.sent.at(-1)?.text ?? "", /already used/);
   assert.equal(decisions(), before + 1);
   await h.finish();
+});
+
+test("a session that stores no agent runs the one its workspace names", async () => {
+  // Issue #9, reported from an installation upgraded 1.3.2 → 1.5.1. Its
+  // workspace said `agent: codex` and `caraka doctor` agreed, and every task
+  // still started Claude and failed on an authentication Claude never had on
+  // that machine. An empty agent id was resolved against DEFAULT_AGENT without
+  // the workspace it belonged to ever being asked.
+  const asked: string[] = [];
+  const h = await harness({
+    workspaces: [
+      { slug: "codexer", path: tmpdir(), agent: "codex" },
+      { slug: "other", path: tmpdir(), agent: "amp" },
+    ],
+    onDriverFor: (agent) => asked.push(agent),
+  });
+  // AC-4: the warm-up at startup takes the first workspace's agent, not the
+  // product default. This is what printed `→ Claude` before a message arrived.
+  // `run()` is not awaited by the harness, so the warm-up lands a tick later.
+  await h.settle(50);
+  assert.deepEqual(asked, ["codex"], "the start-up driver is the workspace's");
+
+  // A row exactly as a restart leaves it behind: written when the workspace did
+  // not name an agent yet, so it stores none.
+  h.store.createSession({
+    principal: "42",
+    chatId: "42",
+    threadId: "",
+    title: "from before",
+    workspace: "codexer",
+    agent: "",
+  });
+  h.feed.push(message(42, 42, "carry on"));
+  await h.settle(200);
+  // AC-1.
+  assert.equal(asked.at(-1), "codex", "the run took the workspace's agent");
+
+  // AC-6: the second workspace names a different one, and gets it.
+  h.store.createSession({
+    principal: "42",
+    chatId: "43",
+    threadId: "",
+    title: "elsewhere",
+    workspace: "other",
+    agent: "",
+  });
+  h.feed.push(message(43, 42, "@other and here"));
+  await h.settle(200);
+  assert.equal(asked.at(-1), "amp", "each workspace keeps its own agent");
+
+  // AC-3: a session that does store one still wins over the workspace.
+  h.store.createSession({
+    principal: "42",
+    chatId: "44",
+    threadId: "",
+    title: "picked",
+    workspace: "codexer",
+    agent: "goose",
+  });
+  h.feed.push(message(44, 42, "and here"));
+  await h.settle(200);
+  assert.equal(asked.at(-1), "goose", "the session's own agent still wins");
+});
+
+test("a workspace that names no agent falls to the product default", async () => {
+  // AC-2. The majority of installations name no agent anywhere, and the fix for
+  // #9 must not move them: `""` reaches driverFor and DEFAULT_AGENT resolves it,
+  // exactly as before.
+  const asked: string[] = [];
+  const h = await harness({
+    workspaces: [{ slug: "plain", path: tmpdir() }],
+    onDriverFor: (agent) => asked.push(agent),
+  });
+  h.feed.push(message(42, 42, "hello"));
+  await h.settle(200);
+  assert.deepEqual([...new Set(asked)], [""], "nothing but the default was asked for");
 });

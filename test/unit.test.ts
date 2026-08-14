@@ -6380,3 +6380,14 @@ test("the doctor rows that read a private-chat field say so", async () => {
   // The derivation that caused it must not come back.
   assert.equal(/bot\.has_topics_enabled === true,/.test(source), false);
 });
+
+test("the line Caraka prints when it comes up names the agent, not a brand", () => {
+  // AC-5 of spec agen-milik-workspace. Both catalogs wrote `Claude` as fixed
+  // text, so the reporter of issue #9 still read `→ Claude` after patching the
+  // default in dist/ — the banner had never been able to say anything else.
+  for (const [name, catalog] of Object.entries(catalogs)) {
+    const line = catalog["cli.running"];
+    assert.match(line, /\{agent\}/, `${name} does not interpolate the agent`);
+    assert.doesNotMatch(line, /claude|codex|gemini|goose/i, `${name} names an agent as fixed text`);
+  }
+});
