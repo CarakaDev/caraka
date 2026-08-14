@@ -44,7 +44,7 @@ One route has no mockup: `/whatsapp-risk` renders `../docs/whatsapp-risiko.en.md
 
 ## Where the port leaves the mockup
 
-Three places, and each is written down here because a deviation nobody recorded
+Four places, and each is written down here because a deviation nobody recorded
 is a diff someone finds six months later and "fixes" back.
 
 `Caraka Landing.dc.html` labels the opening veil `MEMBUKA GERBANG`. The port
@@ -85,6 +85,31 @@ file already gives: a comp is authoritative for design and stopped being
 authoritative for release facts, and the version is the one `package.json`
 carries and `src/cli.ts` prints. The line count, the tones, the marks, and every
 `animation-range` are the comp's.
+
+`Caraka Status.dc.html:280-289` draws the changelog as a card per release, and
+the port let that list run: every release added a card and nothing ever took one
+away. On 14 August 2026 `/status` measured 18,455px at 1440x900, and the five
+newest cards had cost 663, 632, 513, 716 and 610px. Five releases keep a card
+now. The fourteen from 1.3.0 down to 0.0.0 are one line each inside one more
+card of the same shape, whose header names the range and points at
+`CHANGELOG.md`, which carries every entry at the length it was written in and is
+linked in this page's footer. The page came out at 8,638px, and a release costs
+it one line rather than one card. No markup, style, or `animation-range` in
+`src/pages/status.astro` changed; the whole diff is `src/data/status.ts`, so the
+comp still decides how a release card looks and has stopped deciding how many
+there are. `test/fidelity.test.js` fails on a sixth full card, and on a version
+that has a `## [x.y.z]` heading in `CHANGELOG.md` and no line here.
+
+The reason given for doing it does not survive its own measurement, and that is
+written here rather than dropped. The 320px overflow test in `e2e/mobile.spec.ts`
+had gone past its 30-second timeout once under the full parallel suite, and it
+measured 22.2s under `npm run e2e` before this change and 22.2s after. Two other
+run shapes were paired the same way and agreed: 19.7s against 19.4s, and 15.8s
+against 15.2s alone. Removing 9,817px is worth half a second at most, and the
+full-suite figure moves between 18.5s and 22.2s across runs of one build. That
+test's time is its own `settle()` rather than the size of any page it visits,
+and the route-by-route numbers are in the comment above the height baselines in
+`e2e/site.spec.ts`. Trimming a page is not how that margin comes back.
 
 ## Content
 

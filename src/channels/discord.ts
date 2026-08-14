@@ -13,6 +13,7 @@ import {
   containerOf,
   drainInbox,
   evict,
+  fetchWithRetry,
   routeOf,
   splitMarkdown,
   type Channel,
@@ -222,10 +223,9 @@ export class Discord implements Channel {
     body?: unknown,
     init?: RequestInit,
   ): Promise<T> {
-    for (;;) {
-      let response: Response;
-      try {
-        response = await this.fetcher(`${this.base}${path}`, {
+    const response = await fetchWithRetry({
+      send: () =>
+        this.fetcher(`${this.base}${path}`, {
           method,
           headers: {
             authorization: `Bot ${this.token}`,
@@ -233,31 +233,18 @@ export class Discord implements Channel {
           },
           ...(body === undefined ? {} : { body: JSON.stringify(body) }),
           ...init,
-        });
-      } catch {
-        throw new DiscordError(this.t("channel.unreachable", { channel: "Discord", method: path }));
-      }
-      if (response.status === 429) {
-        // The wait comes off the response, never off a number written down
-        // here: `retry-after` in the headers, the body's `retry_after` when the
-        // header is missing. Both are seconds.
-        const header = Number(response.headers.get("retry-after"));
-        const fromBody = (await response.json().catch(() => ({}))) as { retry_after?: number };
-        const seconds =
-          Number.isFinite(header) && header > 0 ? header : (fromBody.retry_after ?? 1);
-        await delay(Math.min(seconds, 60) * 1000);
-        continue;
-      }
-      if (!response.ok) {
-        const detail = await response.text().catch(() => "");
-        throw new DiscordError(
-          `${this.t("channel.refused", { channel: "Discord", method: path })} ${detail}`.trim(),
-          response.status,
-        );
-      }
-      if (response.status === 204) return undefined as T;
-      return (await response.json().catch(() => undefined)) as T;
-    }
+        }),
+      sleep: (ms) => delay(ms),
+      fail: (sentence, status) => new DiscordError(sentence, status),
+      unreachable: this.t("channel.unreachable", { channel: "Discord", method: path }),
+      refused: this.t("channel.refused", { channel: "Discord", method: path }),
+      // The header, which the shared loop reads first, and this when it is
+      // missing. Both are seconds, and neither is a number written down here.
+      retryAfter: async (rateLimited) =>
+        ((await rateLimited.json().catch(() => ({}))) as { retry_after?: number }).retry_after,
+    });
+    if (response.status === 204) return undefined as T;
+    return (await response.json().catch(() => undefined)) as T;
   }
 
   private remember(messageId: string, channel: string, markup?: Record<string, unknown>) {

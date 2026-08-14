@@ -678,14 +678,22 @@ export async function doctorFix(
   return { fixed, refused };
 }
 
+// `doctor --fix` and `uninstall` both run where there may be no config, and
+// read it for one thing. Unreadable leaves `t` alone and answers null, which
+// each caller handles rather than treats as an error.
+async function configForLanguage() {
+  const config = await loadConfig()
+    .then((loaded) => loaded.config)
+    .catch(() => null);
+  if (config?.language) t = translator(config.language);
+  return config;
+}
+
 async function doctor(args: string[] = []) {
   // The repair pass runs before the checks, so the rows below report the state
   // the operator is left with rather than the one they arrived with.
   if (args.includes("--fix")) {
-    const config = await loadConfig()
-      .then((loaded) => loaded.config)
-      .catch(() => null);
-    if (config?.language) t = translator(config.language);
+    const config = await configForLanguage();
     const { fixed, refused } = await doctorFix(carakaPaths(), config, t);
     if (fixed.length === 0 && refused.length === 0) console.log(t("fix.nothing"));
     if (fixed.length > 0) console.log([t("fix.header"), ...fixed].join("\n"));
@@ -1056,10 +1064,7 @@ export function uninstallConfirmed(answer: string) {
 async function uninstallCommand() {
   const paths = carakaPaths();
   // Read the language while the config that holds it is still on disk.
-  const config = await loadConfig()
-    .then((loaded) => loaded.config)
-    .catch(() => null);
-  if (config?.language) t = translator(config.language);
+  await configForLanguage();
   const running = await livePid(paths.pid);
   if (running !== null) {
     console.error(t("cli.uninstallRunning", { pid: running }));

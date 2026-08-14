@@ -380,6 +380,34 @@ test.describe('the comps still decide the layout', () => {
     // again: +513 to 17129, 1.4.0 +716 to 17845, and 1.4.1 +610 to 18455. The
     // chip held through all five — v1.3.0 to v1.4.1 is the same width, so it
     // never reflowed. Measured Chromium at 1440x900.
+    //
+    // status-tidak-terus-tumbuh is the first entry here that subtracts, and it
+    // moved one: /status −9817 to 8638. The fourteen cards from 1.3.0 down to
+    // 0.0.0 became fourteen lines inside one card of the same shape, the five
+    // newest releases keep a card each, and CHANGELOG.md keeps every entry at
+    // the length it was written in. A release costs this page one line now
+    // instead of one card. The other twelve routes hold — nothing outside
+    // src/data/status.ts changed. Measured 14 August 2026, Chromium at
+    // 1440x900, against `rm -rf dist && npm run build`, twice, identical both
+    // times.
+    //
+    // The reason for that trim was the 320px overflow test in mobile.spec.ts,
+    // which had gone past its 30-second timeout once under the full parallel
+    // suite, and the trim did not buy the margin back. Three run shapes, each
+    // measured back to back on the same machine with dist rebuilt for each
+    // side: under `npm run e2e` 22.2s before and 22.2s after; with the two
+    // phone projects alone 19.7s and 19.4s; alone 15.8s and 15.2s. The change
+    // is worth half a second at most, and the full-suite figure moves between
+    // 18.5s and 22.2s across runs of one build, so half a second is not a
+    // reading this suite can even resolve.
+    //
+    // Its cost is its own settle(), not the size of a page it visits: 3,000ms
+    // on / plus 700ms on each of the twelve other routes is 11.5s of deliberate
+    // waiting against 2.7s of navigation for all thirteen, measured route by
+    // route at 320px in WebKit, and /status navigates in 123ms, among the
+    // cheapest on the list. Whoever goes after that margin next should start at
+    // the waits. Growth on this page was worth stopping for its own sake; it is
+    // not what the phone suite is paying for.
     const EXPECTED: Record<string, number> = {
       // v1.2 copy, except the two v1.3 moved — measured from the site (see above)
       '/': 6595,
@@ -388,7 +416,7 @@ test.describe('the comps still decide the layout', () => {
       '/install': 5465,
       '/security': 6147,
       '/whatsapp-risk': 6857,
-      '/status': 18455,
+      '/status': 8638,
       '/brand/readme': 5581,
       // still measured against the comp
       '/story': 5734,

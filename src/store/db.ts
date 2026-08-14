@@ -142,11 +142,7 @@ export class Store {
     // A file from before v0.4 has sessions without the two routing columns.
     // ponytail: two PRAGMA-guarded ALTERs instead of the numbered-migration
     // ledger `docs/techstack.md` promises; build the ledger at the third one.
-    const sessionColumns = new Set(
-      (this.db.prepare("PRAGMA table_info(sessions)").all() as Array<{ name: string }>).map(
-        (column) => column.name,
-      ),
-    );
+    const sessionColumns = this.columns("sessions");
     if (!sessionColumns.has("workspace"))
       this.db.exec("ALTER TABLE sessions ADD COLUMN workspace TEXT NOT NULL DEFAULT ''");
     if (!sessionColumns.has("agent"))
@@ -155,11 +151,7 @@ export class Store {
     // partial unique index is what makes AC-3.4 the database's promise rather
     // than the generator's: two undecided rows in one session cannot share a
     // code. SQLite counts NULLs as distinct, so the pre-v0.6 rows never collide.
-    const approvalColumns = new Set(
-      (this.db.prepare("PRAGMA table_info(approvals)").all() as Array<{ name: string }>).map(
-        (column) => column.name,
-      ),
-    );
+    const approvalColumns = this.columns("approvals");
     if (!approvalColumns.has("short_code"))
       this.db.exec("ALTER TABLE approvals ADD COLUMN short_code TEXT");
     this.db.exec(
@@ -176,6 +168,14 @@ export class Store {
     } catch {
       this.fts = false;
     }
+  }
+
+  // What a table already has, for the guarded ALTERs above. The table name is
+  // a literal from this file and never a parameter from anywhere else, because
+  // PRAGMA takes no bound value.
+  private columns(table: "sessions" | "approvals") {
+    const rows = this.db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+    return new Set(rows.map((column) => column.name));
   }
 
   memoryInsert(scope: string, kind: string, text: string) {

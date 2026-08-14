@@ -4,6 +4,27 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.2] — 2026-08-14
+
+Two things this project had been saying for four releases turned out to be false, and both were settled by measuring rather than by arguing.
+
+**The first: there was no deletion waiting.** Four specs in a row closed with a version of the same sentence — a set of verified removals had been found, and only the rule against mixing a fix with a refactor stood between them and the complexity budget. That sentence was wrong about the removals. The pass that finally made them **added 35 lines**, taking `src/` from 9,633 to 9,668.
+
+The reason is uniform across all six candidates. Each duplicate is a body of four to twenty lines, and what holds the two copies apart — an error class, an injected clock, a translated sentence, Discord's body-level `retry_after` — costs more as parameters than the body costs as a copy. A function declaration is three lines the inline version never had. The shared fetch-with-retry is the clearest case: 24 lines came off the two channel adapters and 47 went on in `core/channel.ts`. Only the twin `PRAGMA` scans broke even, and the sixth candidate had already been folded, which the comment above it said. `AGENTS.md` now records this so a fifth spec does not write the sentence again.
+
+**The second: the status page was not what was slowing the mobile suite down.** The 320px WebKit overflow test had been called margin erosion caused by that page growing ~600px per release. Paired before-and-after runs, with `dist` rebuilt for each side: 15.2s alone before and after, 22.2s under the full suite before and after. Trimming 9,817 pixels off the page moved it by half a second at most, while the full-suite figure swings 18.5–22.2s between runs of one build. Route-by-route timing says why: that test spends 2,673ms navigating all thirteen routes and 11,461ms in its own fixed waits, and `/status` navigates in 123ms — among the cheapest on the list. It pays for its waits, not for page height.
+
+### Changed
+
+- **The status page stops growing by a card per release.** The five newest releases keep a full card; the fourteen older ones became one line each — version, date, and the lead sentence of their own changelog entry — inside one more card of the shape the comp already drew. Nothing vanishes: every version with a heading in `CHANGELOG.md` is still named on the page, and a test fails on a sixth full card or on a published version with no line. `/status` went from 18,455px to 8,638px, and twenty release cards to seven. Worth doing on its own terms; it just does not buy what it was expected to buy.
+- **One retry loop on the path that carries a bot token, where there were two.** This is what the simplification pass actually bought. The WhatsApp copy it deleted had no test at any point in its life — every WhatsApp test injects a transport or uses Baileys — so that path now runs the same code Discord's 429 tests exercise. The token never crosses into core: the helper takes the request as a closure it cannot see into and has no `init` parameter, which an adversarial review confirmed by reading it.
+
+### Limited
+
+- **Five things the green gate does not prove**, recorded rather than claimed as covered: WhatsApp's REST path has no test at all, Discord's body-level `retry_after` fallback is never exercised because the tests always send the header, Discord's 204 branch has no caller, `channel.unreachable` needs a `fetch` that throws and nothing makes one, and `memory.failed` appears nowhere in `test/`.
+- **Two behaviour-adjacent details from the fold**, written down rather than glossed: the two translated sentences are now built per REST call instead of only on the failing branch, which is a pure catalog lookup either way, and Discord no longer reads the 429 body when the header is usable, where the old code read it and threw it away.
+- `src/` measures **9,668 lines**, 1,668 over the ~8,000 ceiling. The next feature owes that or a removal, and it will not be one of these six.
+
 ## [1.4.1] — 2026-08-14
 
 A setting that describes direct messages was switching topics off in groups.

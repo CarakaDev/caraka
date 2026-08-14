@@ -1,5 +1,6 @@
 import { test, expect, describe } from 'vitest'
 import { VEIL_LABEL } from '../src/data/landing.ts'
+import { releases } from '../src/data/status.ts'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -203,5 +204,48 @@ describe('the opening veil', () => {
     // because this suite runs without a build.
     expect(index).toMatch(/\[data-veil-seen\]\s*\[data-veil\]\s*\{[^}]*display:\s*none\s*!important/)
     expect(index).toMatch(/<div data-veil[^>]*display:\s*flex/)
+  })
+})
+
+describe('the changelog list is bounded', () => {
+  // Every release added a card and nothing ever took one away. /status measured
+  // 18,455px at 1440x900 on 14 August 2026 and was growing about 600px a
+  // release, which the 320px overflow test in e2e/mobile.spec.ts pays for in
+  // seconds against a 30-second timeout. Five full cards is the bound, and the
+  // rest are one line each in the last card.
+  //
+  // The height baseline in e2e/site.spec.ts also goes red on a sixth card, but
+  // a red baseline only says a number moved. These say which rule was broken,
+  // and they run without a browser or a build.
+  const semver = /^\d+\.\d+\.\d+$/
+  const line = /^(\d+\.\d+\.\d+) · /
+  const items = (r) => r.groups.flatMap((g) => g.items)
+  const full = releases.filter((r) => semver.test(r.v))
+  const archive = releases.find((r) => items(r).some((i) => line.test(i)))
+
+  test('at most five releases keep a full card', () => {
+    expect(full.length, `full cards: ${full.map((r) => r.v).join(', ')} — the sixth belongs in the archive card as one line`).toBeLessThanOrEqual(5)
+  })
+
+  test('the card holding the rest says where they are read in full', () => {
+    expect(archive, 'no card carries the collapsed release lines').toBeDefined()
+    expect(items(archive).join('\n')).toContain('CHANGELOG.md')
+  })
+
+  test('every version in CHANGELOG.md is still named on the page', () => {
+    // Read from the file rather than from a list here, so a release published
+    // without a card or a line fails instead of passing quietly.
+    const changelog = readFileSync(join(SITE, '..', 'CHANGELOG.md'), 'utf8')
+    const published = [...changelog.matchAll(/^## \[(\d+\.\d+\.\d+)\]/gm)].map((m) => m[1])
+    expect(published.length, 'CHANGELOG.md parsed to nothing — the heading shape changed').toBeGreaterThan(5)
+
+    // Matched against versions the page presents as versions, never against
+    // the whole page: '0.86.2' inside a sentence about aider would otherwise
+    // answer for a release nobody listed.
+    const named = new Set([
+      ...full.map((r) => r.v),
+      ...releases.flatMap(items).map((i) => line.exec(i)?.[1]).filter(Boolean),
+    ])
+    expect(published.filter((v) => !named.has(v))).toEqual([])
   })
 })

@@ -754,10 +754,9 @@ export class Gateway {
   // `/switch` writes the preset id and drops the agent-side session id; no
   // agent mode name is known here, let alone hardened (`docs/ui-ux.md`).
   private async switchAgent(message: InboundMessage, argument: string) {
-    const { chatId, threadId } = this.route(message);
     if (!argument || !this.agents.includes(argument))
       return this.reply(message, this.t("switch.unknown", { list: this.agents.join(", ") || "—" }));
-    const session = this.store.sessionFor(chatId, threadId);
+    const session = this.sessionOf(message);
     if (!session) return this.reply(message, this.t("status.none"));
     this.store.setAgent(session.id, argument);
     const principal = String(message.from?.id);
@@ -768,8 +767,7 @@ export class Gateway {
   // A slash command is forwarded only while Caraka has no list to check it
   // against. Once the agent has told us what it answers to, a typo is a typo.
   private knownAgentCommand(message: InboundMessage, name: string) {
-    const { chatId, threadId } = this.route(message);
-    const session = this.store.sessionFor(chatId, threadId);
+    const session = this.sessionOf(message);
     const commands = session ? this.facts.get(session.id)?.commands : undefined;
     if (!commands) return true;
     return commands.some((entry) => entry.name.toLowerCase() === name);
@@ -780,8 +778,7 @@ export class Gateway {
   }
 
   private listCommands(message: InboundMessage) {
-    const { chatId, threadId } = this.route(message);
-    const session = this.store.sessionFor(chatId, threadId);
+    const session = this.sessionOf(message);
     const commands = session ? this.facts.get(session.id)?.commands : undefined;
     const body = commands?.length
       ? this.t("help.commands", {
@@ -792,8 +789,7 @@ export class Gateway {
   }
 
   private reportUsage(message: InboundMessage) {
-    const { chatId, threadId } = this.route(message);
-    const session = this.store.sessionFor(chatId, threadId);
+    const session = this.sessionOf(message);
     const usage = session ? this.facts.get(session.id)?.usage : undefined;
     const body = usage
       ? this.t("usage.report", { used: usage.used, size: usage.size, cost: usage.cost ?? "—" })
@@ -844,6 +840,14 @@ export class Gateway {
 
   private route(message: InboundMessage) {
     return { chatId: String(message.chat.id), threadId: String(message.message_thread_id ?? "") };
+  }
+
+  // The session already at this message's route, or none. Not `sessionFor`,
+  // which is taken and creates one when there is none. Callers that also need
+  // the ids keep reading `route` themselves rather than reading it twice.
+  private sessionOf(message: InboundMessage) {
+    const { chatId, threadId } = this.route(message);
+    return this.store.sessionFor(chatId, threadId);
   }
 
   private respond(message: InboundMessage, response: Promise<unknown>) {
@@ -1057,8 +1061,7 @@ export class Gateway {
   // A session never changes workspace (FR-SESS-01: the workspace is part of its
   // identity), so a route whose newest session belongs elsewhere gets a new one.
   private async sessionFor(message: InboundMessage, title: string, workspace: Workspace) {
-    const { chatId, threadId } = this.route(message);
-    const existing = this.store.sessionFor(chatId, threadId);
+    const existing = this.sessionOf(message);
     if (existing && this.workspaceOf(existing)?.slug === workspace.slug) return existing;
     return this.createSession(message, title, existing !== undefined, workspace);
   }
@@ -1448,41 +1451,49 @@ export class Gateway {
   }
 
   // A provider that failed answers as text, never as an error report: memory
-  // stays a degradation, not a failure. All three commands below do it.
-  private async rememberMemory(message: InboundMessage, argument: string) {
+  // stays a degradation, not a failure. All three commands below do it, so each
+  // works out its sentence and this sends it. The provider is an argument
+  // rather than read off `this`, which is what keeps it narrowed in a closure.
+  private async withMemory(
+    message: InboundMessage,
+    body: (memory: MemoryProvider) => Promise<string>,
+  ) {
     if (!this.memory) return this.sendGeneral(message, this.t("memory.off"));
-    if (!argument) return this.sendGeneral(message, this.t("memory.rememberUsage"));
+    let text: string;
     try {
-      const id = await this.memory.observe({
+      text = await body(this.memory);
+    } catch {
+      text = this.t("memory.failed");
+    }
+    // Outside the `try`, where each of the three had it: a send that fails is
+    // not the provider failing, and would answer the wrong sentence.
+    return this.sendGeneral(message, text);
+  }
+
+  private rememberMemory(message: InboundMessage, argument: string) {
+    return this.withMemory(message, async (memory) => {
+      if (!argument) return this.t("memory.rememberUsage");
+      const id = await memory.observe({
         scope: this.memoryScopeFor(message),
         kind: "note",
         text: argument,
       });
-      return this.sendGeneral(message, this.t("memory.remembered", { id }));
-    } catch {
-      return this.sendGeneral(message, this.t("memory.failed"));
-    }
+      return this.t("memory.remembered", { id });
+    });
   }
 
-  private async forgetMemory(message: InboundMessage, argument: string) {
-    if (!this.memory) return this.sendGeneral(message, this.t("memory.off"));
-    if (!argument) return this.sendGeneral(message, this.t("memory.forgetUsage"));
-    try {
-      const count = await this.memory.forget(argument);
-      return this.sendGeneral(
-        message,
-        this.t(count > 0 ? "memory.forgotten" : "memory.notFound", { id: argument }),
-      );
-    } catch {
-      return this.sendGeneral(message, this.t("memory.failed"));
-    }
+  private forgetMemory(message: InboundMessage, argument: string) {
+    return this.withMemory(message, async (memory) => {
+      if (!argument) return this.t("memory.forgetUsage");
+      const count = await memory.forget(argument);
+      return this.t(count > 0 ? "memory.forgotten" : "memory.notFound", { id: argument });
+    });
   }
 
-  private async listMemory(message: InboundMessage) {
-    if (!this.memory) return this.sendGeneral(message, this.t("memory.off"));
-    try {
+  private listMemory(message: InboundMessage) {
+    return this.withMemory(message, async (memory) => {
       const context = await withTimeout(
-        this.memory.compile({
+        memory.compile({
           scope: this.memoryScopeFor(message),
           task: "",
           budgetTokens: MEMORY_BUDGET_TOKENS,
@@ -1490,13 +1501,10 @@ export class Gateway {
         this.memoryTimeoutMs,
       );
       const lines = this.memoryLines(context.items);
-      const body = lines.length
+      return lines.length
         ? this.t("memory.list", { list: lines.join("\n") })
         : this.t("memory.empty");
-      return this.sendGeneral(message, body);
-    } catch {
-      return this.sendGeneral(message, this.t("memory.failed"));
-    }
+    });
   }
 
   private async askPermission(
@@ -1673,12 +1681,11 @@ export class Gateway {
    * session, same TTL, same single-use write.
    */
   private async decideByCode(message: InboundMessage, text: string) {
-    const { chatId, threadId } = this.route(message);
     const principal = String(message.from?.id);
     const match = APPROVAL_CODE_REPLY.exec(text);
     const decision = match?.[1]?.toLowerCase() === "ok" ? "allow" : "reject";
     const code = (match?.[2] ?? "").toUpperCase();
-    const session = this.store.sessionFor(chatId, threadId);
+    const session = this.sessionOf(message);
     const refuse = (key: "approval.codeInvalid" | "approval.codeLocked" | "callback.used") =>
       this.reply(
         message,

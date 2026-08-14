@@ -163,6 +163,53 @@ export function evict(
   }
 }
 
+/**
+ * Send, wait out a 429, send again; anything else that is not ok becomes one
+ * translated sentence. Discord and WhatsApp both wrote this out. There is no
+ * `init` parameter and there never should be one: the request arrives as a
+ * closure this function cannot see into, so the authorization header — a bot
+ * token — has nothing here to leak from. A `Response` comes back rather than a
+ * parsed body, because 204 is Discord's answer to a delete and WhatsApp has no
+ * equivalent. Telegram is not a caller: it reports a refusal inside a 200 JSON
+ * body, so nothing below would fire on it, and teaching this function that one
+ * channel reports differently is the branch hard rule 1 refuses.
+ */
+export async function fetchWithRetry(request: {
+  send: () => Promise<Response>;
+  /** Injected, so a test waits out a retry without waiting. */
+  sleep: (ms: number) => Promise<unknown>;
+  /** The adapter's error class, and the two sentences that name its channel. */
+  fail: (sentence: string, status?: number) => Error;
+  unreachable: string;
+  refused: string;
+  /** Seconds to wait when the response carries no usable `retry-after`. */
+  retryAfter?: (response: Response) => Promise<number | undefined>;
+}): Promise<Response> {
+  for (;;) {
+    let response: Response;
+    try {
+      response = await request.send();
+    } catch {
+      throw request.fail(request.unreachable);
+    }
+    if (response.status === 429) {
+      // The wait comes off the response, never off a number written down here.
+      const header = Number(response.headers.get("retry-after"));
+      const seconds =
+        Number.isFinite(header) && header > 0
+          ? header
+          : ((await request.retryAfter?.(response)) ?? 1);
+      await request.sleep(Math.min(seconds, 60) * 1000);
+      continue;
+    }
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      throw request.fail(`${request.refused} ${detail}`.trim(), response.status);
+    }
+    return response;
+  }
+}
+
 function toggledFence(line: string, openFence: string | null) {
   const match = /^\s*(```[^\r\n]*)/.exec(line);
   if (!match) return openFence;

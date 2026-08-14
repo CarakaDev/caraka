@@ -18,6 +18,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import {
   containerOf,
   drainInbox,
+  fetchWithRetry,
   routeOf,
   splitMarkdown,
   type Channel,
@@ -441,10 +442,11 @@ export class WhatsApp implements Channel {
   // ---- Cloud API --------------------------------------------------------
 
   private async graph<T>(path: string, body?: unknown, init?: RequestInit): Promise<T> {
-    for (;;) {
-      let response: Response;
-      try {
-        response = await this.fetcher(`${this.base}${path}`, {
+    // No `retryAfter`: the Cloud API puts no number in the body, so the shared
+    // loop's one-second fallback is the wait this already had.
+    const response = await fetchWithRetry({
+      send: () =>
+        this.fetcher(`${this.base}${path}`, {
           method: "POST",
           headers: {
             authorization: `Bearer ${this.options.token ?? ""}`,
@@ -452,26 +454,13 @@ export class WhatsApp implements Channel {
           },
           ...(body === undefined ? {} : { body: JSON.stringify(body) }),
           ...init,
-        });
-      } catch {
-        throw new WhatsAppError(
-          this.t("channel.unreachable", { channel: "WhatsApp", method: path }),
-        );
-      }
-      if (response.status === 429) {
-        // The wait comes off the response, never off a number written here.
-        const header = Number(response.headers.get("retry-after"));
-        await this.sleep(Math.min(Number.isFinite(header) && header > 0 ? header : 1, 60) * 1000);
-        continue;
-      }
-      if (!response.ok) {
-        const detail = await response.text().catch(() => "");
-        throw new WhatsAppError(
-          `${this.t("channel.refused", { channel: "WhatsApp", method: path })} ${detail}`.trim(),
-        );
-      }
-      return (await response.json().catch(() => undefined)) as T;
-    }
+        }),
+      sleep: this.sleep,
+      fail: (sentence) => new WhatsAppError(sentence),
+      unreachable: this.t("channel.unreachable", { channel: "WhatsApp", method: path }),
+      refused: this.t("channel.refused", { channel: "WhatsApp", method: path }),
+    });
+    return (await response.json().catch(() => undefined)) as T;
   }
 
   private cloud(): WhatsAppTransport {
