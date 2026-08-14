@@ -10,19 +10,23 @@
 // Rendered by every page inside <header>, and display:none above 940px — the
 // same breakpoint at which the mockups retire the right rail. Desktop headers
 // are untouched.
+//
+// It reads NAV rather than taking a list, so it cannot fall out of step with
+// the bar it stands in for.
+import { NAV } from '../lib/site'
 interface Link {
   label: string
   href: string
 }
 
 interface Props {
-  /** Every link in this page's desktop header, in the same order. */
-  links: Link[]
+  /** This page's own href, so its link is marked the way the desktop nav marks it. */
+  active: string
   /** The trailing call to action, e.g. GitHub or Report. Rendered last, boxed. */
   cta?: Link
 }
 
-const { links, cta } = Astro.props
+const { active, cta } = Astro.props
 ---
 
 <details class="ck-menu">
@@ -31,8 +35,12 @@ const { links, cta } = Astro.props
   </summary>
 
   <nav class="ck-menu-panel">
-    {links.map((l) => (
-      <a href={l.href} class="ck-menu-link">{l.label}</a>
+    {NAV.map((l) => (
+      <a
+        href={l.href}
+        class="ck-menu-link ck-nav"
+        aria-current={l.href === active ? 'page' : undefined}
+      >{l.label}</a>
     ))}
     {cta && (
       <a href={cta.href} class="ck-menu-link ck-menu-cta">{cta.label}</a>

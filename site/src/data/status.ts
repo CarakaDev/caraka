@@ -20,7 +20,7 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.5.2', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.5.3', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Seven presets load; five routes across four agents have completed a turn
   // against a live binary here, all on 10 August 2026 — Claude Code over ACP
@@ -130,6 +130,22 @@ export const releases = [
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
       ] },
     ] },
+  { v: '1.5.3', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'FIXED', tone: '#FFD67E', items: [
+        'An installation whose config said agent: codex ran Claude, and said so. Reported from outside as issue #9 by an installation upgraded 1.3.2 to 1.5.1: doctor answered that codex was ready, the service still started Claude, printed telegram \u2192 Claude, and failed the first task with an authentication Claude had never had on that machine',
+        'One cause in three places \u2014 an empty agent id resolved against the product default without the workspace it belonged to ever being asked: the warm-up driver at start-up, every run whose session row was written before its workspace named an agent, and the banner, where Claude was fixed text in both catalogs and could never have said anything else',
+        'The order is now the session\u2019s agent, then the workspace\u2019s agent:, then the product default, written once and read by both places that pick a driver. Sessions created after a workspace names its agent were never affected, so what the bug hit was exactly the installations that had been running longest',
+        'The line printed when Caraka comes up names the agent actually selected, as the preset id doctor prints',
+      ] },
+      { label: 'CHANGED', tone: '#8EEE98', items: [
+        'Nothing is written to the database for this. Old session rows keep their empty agent and are read against their workspace every time, so changing a workspace\u2019s agent: tomorrow applies to sessions created before today too',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'A workspace naming an agent that is not installed now fails at start-up with that agent\u2019s error rather than reaching the first task. That is the intent of the warm-up, but an installation with a typo in agent: sees a different message than before',
+        'No defaultAgent key was added to the config. The reporter offered it as one of four possibilities; a single workspace\u2019s agent: already is that key, and a second global one is only somewhere for the two to disagree',
+      ] },
+    ] },
   { v: '1.5.2', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
     groups: [
       { label: 'FIXED', tone: '#FFD67E', items: [
@@ -197,25 +213,13 @@ export const releases = [
         'src/ measures 9,668 lines against the ~8,000 ceiling, 1,668 over. The next feature owes that or a removal, and it will not be one of these six',
       ] },
     ] },
-  { v: '1.4.1', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
-    groups: [
-      { label: 'FIXED', tone: '#FFD67E', items: [
-        'A setting that describes direct messages was switching topics off in groups. init read has_topics_enabled from getMe and wrote it as the topic preference, but the Bot API defines that field as "the bot has forum topic mode enabled in private chats" \u2014 it answers for a DM and says nothing about a group. That value became the channel capability, and the gate checks it before anything else, so the one line about groups was never reached. A supergroup forum full of its own topics, where Caraka held the manage-topics right, never got a topic from Caraka',
-        'The preference is the operator\u2019s now, the way the Discord one is, and each container kind is decided on its own terms: the forum flag per chat, the manage-topics right per group, and the first real refusal marking a container linear. The gate itself was deliberately left alone \u2014 moving that check into the private branch would have fixed Telegram by breaking Discord, where the same field is a real opt-out',
-        'caraka doctor now names the conversation its rows report. Topics and User-created topics read a private-chat field and told the operator to visit BotFather; they say "in direct messages", and the remedy adds that a group\u2019s own topics are unaffected. That row is what sent one operator to the wrong setting',
-        'A security test could pass a forgery. It built its forged callback by replacing the signature\u2019s last character with x, so on runs where the signature already ended in x the forgery was the original string and verification correctly accepted it. Measured at 98 collisions in 6,400 callbacks, 1.53%, against the 1.56% one character of a 64-symbol alphabet predicts. The code was never wrong; the test was, and a flaky security test reads as a security hole to whoever meets it next',
-      ] },
-      { label: 'LIMITED', tone: '#FFD67E', items: [
-        'An existing config keeps the value init wrote it. An installation made before this release still holds the preference off until one line is changed by hand; what changed is what the next init writes, and what doctor says about it',
-        'A direct message whose topic mode is off now costs one failed API call, once per installation, because the preference no longer pre-empts the attempt. The first real refusal marks that conversation, tells its owner once, and every session after runs linear',
-      ] },
-    ] },
-  { v: '1.4.0 → 0.0.0', state: 'in CHANGELOG.md', date: '7–13 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
+  { v: '1.4.1 → 0.0.0', state: 'in CHANGELOG.md', date: '7–14 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
     groups: [
       { label: 'WHERE THE FULL ENTRIES ARE', tone: '#FFD67E', items: [
         'CHANGELOG.md in the repository, linked at the foot of this page. It carries every release below at the length it was written in; what is here is one line each, and nothing has been dropped from the history',
       ] },
       { label: 'SHIPPED', tone: '#8EEE98', items: [
+        '1.4.1 · 14 August 2026 — a setting that describes direct messages was switching topics off in groups',
         '1.4.0 · 14 August 2026 — the install prompt told people to use Claude, and the README buried it under the manual route',
         '1.3.3 · 13 August 2026 — a workspace written as @~/Project/Coret answered that no workspace had that name',
         '1.3.2 · 13 August 2026 — answering yes to the memory offer left a config pointing at a service that could not be started by name',

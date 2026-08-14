@@ -3,9 +3,9 @@
 // transcribed as-is; see site/AGENTS.md for the substitutions that replace the
 // design-comp runtime.
 import Base from '../layouts/Base.astro'
+import SiteHeader from '../components/SiteHeader.astro'
 import '../styles/pages/compare.css'
 import { products, rows, complaints, tokenPaths, picks, honest } from '../data/compare'
-import MobileMenu from '../components/MobileMenu.astro'
 ---
 
 <Base page="compare">
@@ -15,20 +15,7 @@ import MobileMenu from '../components/MobileMenu.astro'
       <div style="height: 100%; width: 100%; background: linear-gradient(90deg, #E2452C, #FF7A5E); transform-origin: left; transform: scaleX(var(--ck-sp, 0));"></div>
     </div>
 
-    <header style="position: fixed; left: 0; right: 0; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px clamp(16px, 4vw, 34px); background: rgba(5,8,12,.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid #0C1116;">
-      <a href="/" style="display: flex; align-items: center; gap: 12px;">
-        <span style="width: 27px; height: 27px; border-radius: 7px; background: #E2452C; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><span style="font-family: 'Noto Sans Javanese', serif; font-size: 16px; line-height: 1; display: block; transform: translateY(17.5%); color: #FFEDE7;">ꦕ</span></span>
-        <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: .2em; color: #E9EDF2;">caraka</span>
-        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .16em; color: #E2452C; padding: 3px 8px; border: 1px solid #2B1612; border-radius: 5px;">COMPARE</span>
-      </a>
-      <nav data-navlinks="1" style="display: flex; align-items: center; gap: clamp(14px, 2.4vw, 26px); font-family: 'JetBrains Mono', monospace; font-size: 12px;">
-        <a href="/" class="hv-ink" style="color: #7A848F;">Home</a>
-        <a href="/docs" class="hv-ink" style="color: #7A848F;">Docs</a>
-        <a href="/story" class="hv-ink" style="color: #7A848F;">Story</a>
-      </nav>
-      <a href="https://github.com/CarakaDev/caraka" class="hv-ring-ink" style="padding: 9px 16px; border: 1px solid #292E35; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B2BCC6; transition: border-color .2s, color .2s; white-space: nowrap;">GitHub ↗</a>
-      <MobileMenu links={[{ label: 'Home', href: '/' }, { label: 'Docs', href: '/docs' }, { label: 'Story', href: '/story' }]} cta={{ label: 'GitHub ↗', href: 'https://github.com/CarakaDev/caraka' }} />
-    </header>
+    <SiteHeader badge="COMPARE" active="/compare" />
 
     <main id="main">
 

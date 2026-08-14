@@ -16,11 +16,17 @@ export const SITE = {
 } as const
 
 /**
- * The links in the fixed header, in mockup order. Guide is the fifth and has no
- * mockup: the comp was drawn when the site had four content routes, and a page
- * nobody can reach from the header is a page written for nobody.
+ * The links in the fixed header. `SiteHeader.astro` renders exactly this, on
+ * every page, and `MobileMenu.astro` reads the same array — so a route added
+ * here reaches all eight headers and nothing else is edited.
+ *
+ * Two entries are not in any comp. Guide has none, because the comps were drawn
+ * when four content routes were all there were. Home is here so the page being
+ * read is always one of these links and can carry the marker; the comps left it
+ * to the wordmark, which cannot be marked without also being a nav item.
  */
 export const NAV = [
+  { label: 'Home', href: '/' },
   { label: 'Guide', href: '/guide' },
   { label: 'Docs', href: '/docs' },
   { label: 'Install', href: '/install' },

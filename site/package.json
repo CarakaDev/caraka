@@ -16,7 +16,7 @@
     "typecheck": "astro check",
     "pretest": "npm run assets",
     "test": "vitest run",
-    "e2e": "playwright test",
+    "e2e": "npm run build && playwright test",
     "deploy": "wrangler deploy",
     "check": "npm run lint && npm run typecheck && npm run test",
     "compare": "node scripts/compare-to-mockup.mjs dist ../design/mockups"

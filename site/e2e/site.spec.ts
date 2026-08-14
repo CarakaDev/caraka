@@ -435,7 +435,7 @@ test.describe('the comps still decide the layout', () => {
       '/install': 5465,
       '/security': 6147,
       '/whatsapp-risk': 6857,
-      '/status': 9236,
+      '/status': 9261,
       '/brand/readme': 5581,
       // still measured against the comp
       '/story': 5734,
@@ -459,5 +459,57 @@ test.describe('the comps still decide the layout', () => {
     }
 
     expect(drift).toEqual([])
+  })
+})
+
+test.describe('the menu marks the page being read', () => {
+  const MENU = ['Home', 'Guide', 'Docs', 'Install', 'Compare', 'Security']
+  const MENU_ROUTES = ROUTES.filter((r) => ['/', '/guide', '/docs', '/install', '/compare', '/security'].includes(r.path))
+
+  for (const r of MENU_ROUTES) {
+    test(`${r.path} holds the whole menu and marks itself`, async ({ page }) => {
+      await page.goto(r.path)
+      if (r.path === '/') await settle(page)
+
+      // AC-1 — the same six links, in the same order, on every one of them.
+      const nav = page.locator('header nav[data-navlinks]')
+      await expect(nav.locator('a')).toHaveText(MENU)
+
+      // AC-2 — exactly one link claims the page, and it is this one.
+      const current = nav.locator('a[aria-current="page"]')
+      await expect(current).toHaveCount(1)
+      await expect(current).toHaveAttribute('href', r.path)
+    })
+  }
+
+  test('the dot is lit before any animation runs', async ({ page }) => {
+    // AC-5 — opacity is the rule's, not a keyframe's, so an engine that drops
+    // ck-nav-ping still shows the reader where they are. Read with the
+    // animation paused at 0s, which is the frame such an engine renders.
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('/docs')
+    const dot = await page.evaluate(() => {
+      const a = document.querySelector('header nav a[aria-current="page"]')!
+      const s = getComputedStyle(a, '::after')
+      return { opacity: s.opacity, animation: s.animationName, width: s.width }
+    })
+    // AC-6 — and the ring does not run at all under reduced motion.
+    expect(dot.opacity).toBe('1')
+    expect(dot.animation).toBe('none')
+    expect(dot.width).toBe('4px')
+  })
+
+  test('the six links stay on one row at the width the comps use', async ({ page }) => {
+    // The bar carried three to five links per page before; six is the most it
+    // has ever held, and 960 is the narrowest desktop width — one pixel above
+    // the breakpoint where the compact menu takes over.
+    for (const width of [1440, 960]) {
+      await page.setViewportSize({ width, height: 900 })
+      await page.goto('/compare')
+      const rows = await page.locator('header nav[data-navlinks] a').evaluateAll((els) =>
+        new Set(els.map((e) => Math.round(e.getBoundingClientRect().top))).size,
+      )
+      expect(rows, `${width}px`).toBe(1)
+    }
   })
 })

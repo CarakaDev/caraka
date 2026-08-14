@@ -1,6 +1,7 @@
 import { test, expect, describe } from 'vitest'
 import { VEIL_LABEL } from '../src/data/landing.ts'
 import { releases } from '../src/data/status.ts'
+import { NAV } from '../src/lib/site.ts'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -31,6 +32,11 @@ const SLUG = {
 const mockup = (file) => readFileSync(join(MOCKUPS, file), 'utf8')
 const styleBlock = (src) => src.slice(src.indexOf('<style>') + 7, src.indexOf('</style>')).trim()
 const globalCss = readFileSync(join(SITE, 'src', 'styles', 'global.css'), 'utf8')
+
+const walk = (dir) =>
+  readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? walk(join(dir, e.name)) : e.name.endsWith('.astro') ? [join(dir, e.name)] : [],
+  )
 
 describe('page stylesheets', () => {
   for (const [file, slug] of Object.entries(SLUG)) {
@@ -125,11 +131,6 @@ describe('fonts', () => {
 
 describe('ports', () => {
   const pagesDir = join(SITE, 'src', 'pages')
-  const walk = (dir) =>
-    readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
-      e.isDirectory() ? walk(join(dir, e.name)) : e.name.endsWith('.astro') ? [join(dir, e.name)] : [],
-    )
-
   test('no design-comp syntax survived the port', () => {
     const leftovers = []
     for (const f of walk(pagesDir)) {
@@ -154,12 +155,63 @@ describe('ports', () => {
       routes.add(rel === '' ? '/' : rel)
     }
     const broken = []
-    for (const f of walk(pagesDir)) {
+    // Components too: the header's links moved out of the pages into
+    // SiteHeader, and NAV out of both. Walking only pages/ would leave the six
+    // links every page carries unchecked, which is the opposite of this test.
+    const sources = [...walk(pagesDir), ...walk(join(SITE, 'src', 'components'))]
+    for (const f of sources) {
       for (const m of readFileSync(f, 'utf8').matchAll(/href="(\/[^"#?]*)"/g)) {
         if (!routes.has(m[1])) broken.push(`${f.replace(SITE, '')} -> ${m[1]}`)
       }
     }
+    for (const l of NAV) {
+      if (!routes.has(l.href)) broken.push(`NAV -> ${l.href}`)
+    }
     expect(broken).toEqual([])
+  })
+})
+
+describe('the header is one bar', () => {
+  // Every page drew its own <header> until 14 August 2026, and the ten copies
+  // had drifted into ten different menus — no two alike, /status in none of
+  // them. These two tests are what stops the eleventh copy.
+  const pages = [...walk(join(SITE, 'src', 'pages'))].filter((f) => f.endsWith('.astro'))
+  const route = (f) =>
+    f.slice(join(SITE, 'src', 'pages').length).replace(/\.astro$/, '').replace(/\/index$/, '') || '/'
+
+  test('no page writes a header of its own', () => {
+    const own = pages.filter((f) => readFileSync(f, 'utf8').includes('<header')).map(route)
+    expect(own).toEqual([])
+  })
+
+  test('every route in the menu carries the bar', () => {
+    // Not every page: /404 and the four brand preview boards start their
+    // content at or near y=0, where a fixed header would sit on top of it, and
+    // none of them is a stop on the path through the site. Every route the menu
+    // names is.
+    const missing = NAV.map((l) => l.href).filter(
+      (href) => !pages.some((f) => route(f) === href && readFileSync(f, 'utf8').includes('<SiteHeader')),
+    )
+    expect(missing).toEqual([])
+  })
+
+  test('every page that carries the bar names itself as the open page', () => {
+    // A wrong `active` is the quiet failure here: the bar renders, and it marks
+    // somebody else's page.
+    const wrong = []
+    for (const f of pages) {
+      const m = readFileSync(f, 'utf8').match(/<SiteHeader[^>]*\bactive="([^"]*)"/)
+      if (m && m[1] !== route(f)) wrong.push(`${route(f)}: active="${m[1]}"`)
+    }
+    expect(wrong).toEqual([])
+  })
+
+  test('the marker survives an engine with no animation', () => {
+    // opacity belongs to the rule, not to a keyframe: where ck-nav-ping is
+    // dropped the dot is still lit and the page is still marked.
+    const rule = globalCss.slice(globalCss.indexOf(".ck-nav[aria-current='page']::after"))
+    expect(rule.slice(0, rule.indexOf('}'))).toMatch(/opacity:\s*1/)
+    expect(globalCss).toMatch(/prefers-reduced-motion:\s*reduce/)
   })
 })
 

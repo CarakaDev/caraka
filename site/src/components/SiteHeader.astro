@@ -1,0 +1,46 @@
+---
+// The fixed header, once. It was written eight times — every page ported the
+// same bar from its own comp — and the eight copies were byte-identical apart
+// from three things: the badge beside the wordmark, the list of links, and the
+// button at the right end. Those three are the props; there is no fourth.
+//
+// The markup and every inline style below are `src/pages/docs.astro`'s header
+// as it stood before this component existed, unchanged. What changed is which
+// links it holds: `NAV` on every page rather than the three-to-five siblings
+// each comp happened to draw. site/AGENTS.md records why.
+import { NAV } from '../lib/site'
+import MobileMenu from './MobileMenu.astro'
+
+interface Props {
+  /** The page name beside the wordmark: DOCS, SECURITY, … Absent on `/`. */
+  badge?: string
+  /** This page's own href, so its link in NAV can be marked. */
+  active: string
+  /** The trailing button. GitHub everywhere except /security, which reports. */
+  cta?: { label: string; href: string }
+}
+
+const { badge, active, cta = { label: 'GitHub ↗', href: 'https://github.com/CarakaDev/caraka' } } = Astro.props
+---
+
+<header style="position: fixed; left: 0; right: 0; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px clamp(16px, 4vw, 34px); background: rgba(5,8,12,.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid #0C1116;">
+  <a href="/" style="display: flex; align-items: center; gap: 12px;">
+    <span style="width: 27px; height: 27px; border-radius: 7px; background: #E2452C; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><span style="font-family: 'Noto Sans Javanese', serif; font-size: 16px; line-height: 1; display: block; transform: translateY(17.5%); color: #FFEDE7;">ꦕ</span></span>
+    <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: .2em; color: #E9EDF2;">caraka</span>
+    {badge && (
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .16em; color: #E2452C; padding: 3px 8px; border: 1px solid #2B1612; border-radius: 5px;">{badge}</span>
+    )}
+  </a>
+  <nav data-navlinks="1" style="display: flex; align-items: center; gap: clamp(14px, 2.4vw, 26px); font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+    {NAV.map((l) => (
+      <a
+        href={l.href}
+        class="ck-nav"
+        aria-current={l.href === active ? 'page' : undefined}
+        style="color: #7A848F;"
+      >{l.label}</a>
+    ))}
+  </nav>
+  <a href={cta.href} class="hv-ring-ink" style="padding: 9px 16px; border: 1px solid #292E35; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B2BCC6; transition: border-color .2s, color .2s; white-space: nowrap;">{cta.label}</a>
+  <MobileMenu active={active} cta={cta} />
+</header>

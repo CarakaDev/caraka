@@ -259,6 +259,68 @@ a:focus-visible > .hv-tick { background: #FF7A5E; width: 22px; }
 .ck-menu-cta:hover,
 .ck-menu-cta:focus-visible { border-color: #E2452C; padding-left: 0; }
 
+/* --- header navigation ---------------------------------------------------- */
+
+/* One dot, two meanings: on the page being read it is lit and it pulses; under
+   the pointer it fades up dim. Here is where you are, there is where you would
+   be.
+
+   It lives in global.css rather than a page stylesheet because the header is
+   the one element all eight pages share, and `ck-nav-ping` is a name no comp
+   uses — the rule in site/AGENTS.md guards against the nine keyframe names that
+   carry different values per mockup, and this is not one of them. */
+.ck-nav {
+  position: relative;
+  transition: color 0.2s;
+}
+.ck-nav:hover,
+.ck-nav:focus-visible { color: #ff7a5e; }
+
+.ck-nav::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #e2452c;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.ck-nav:hover::after,
+.ck-nav:focus-visible::after { opacity: 0.45; }
+
+/* Opacity 1 is the resting state, not a frame of the animation: where the ring
+   is dropped the dot is still there, lit, and the page is still marked. */
+.ck-nav[aria-current='page'] { color: #e9edf2; }
+.ck-nav[aria-current='page']::after {
+  opacity: 1;
+  animation: ck-nav-ping 2.8s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+}
+
+/* The ring is drawn by the dot's own shadow, so the marker is one node. */
+@keyframes ck-nav-ping {
+  0% { box-shadow: 0 0 0 0 rgba(226, 69, 44, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(226, 69, 44, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(226, 69, 44, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ck-nav[aria-current='page']::after { animation: none; }
+}
+
+/* In the compact menu the rows are full width, so a dot centred on the row
+   would sit nowhere near its label. It goes to the left instead, into the
+   panel's own padding, where the 8px hover shift already points. */
+.ck-menu-link.ck-nav::after {
+  left: -12px;
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+}
+
 /* --- table of contents --------------------------------------------------- */
 
 .ck-toc { display: none; }

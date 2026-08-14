@@ -47,15 +47,48 @@ Two routes have no mockup, and both borrow rather than copy. `/whatsapp-risk` re
 Five places, and each is written down here because a deviation nobody recorded
 is a diff someone finds six months later and "fixes" back.
 
-Three headers carry a link the comps do not draw. `/`, `/docs` and `/install`
-each gained a `Guide` entry, in the desktop nav and in the `MobileMenu` beside
-it, along with a footer link on the same three pages and one in `footerLinks`.
-The comps were drawn when those four links were every content route there was,
-so no comp can hold `/guide`; and a page nobody can reach from a header is a
-page written for nobody. `NAV` in `src/lib/site.ts` carries the same five entries and
-is the written record of what that header holds. Nothing else in those headers
-moved: same gap, same type, same order for the four links that were already
-there.
+**The header is one bar, and it holds `NAV` on every page.** Each comp drew its
+own header with three to five of its siblings in it, and the port copied each
+one, so ten pages shipped ten different menus — no two alike. `/status` was in
+none of them, `/guide` in three, and from `/security` there was no link to
+`/compare`, `/story`, or `/guide` at all. No comp is wrong about this; no comp
+holds ten pages, so none of them could see it. `src/components/SiteHeader.astro`
+is that bar, and its markup and every inline style in it are `docs.astro`'s
+header unedited. It takes three props because the ten copies differed in exactly
+three things: the badge, the links, the button at the right end.
+
+`NAV` in `src/lib/site.ts` is the list, and two of its six entries are not in
+any comp. `Guide` has no comp at all — the comps were drawn when four content
+routes were all there were, and a page nobody can reach from a header is a page
+written for nobody. `Home` is there because the page being read has to be in the
+menu for the menu to be able to mark it; the comps left it to the wordmark,
+which cannot carry a marker without also being a nav item.
+
+The marker is a 4px dot under the label, brand red, and it pulses one ring every
+2.8s — `.ck-nav` in `global.css`, keyframe `ck-nav-ping`, a name no comp uses, so
+the rule above about per-page keyframes is not in play. Its `opacity: 1` belongs
+to the rule and not to the keyframes, so an engine that drops the animation still
+shows the reader where they are; `prefers-reduced-motion: reduce` stops the ring
+and keeps the dot. Links that are not the open page grow the same dot at `.45` on
+hover, so it means one thing in two states: here you are, there you would be.
+
+`/404` and the four brand boards do not take the bar. Their content starts at or
+near y=0, where a fixed header would sit on top of it, and none of them is a stop
+on the path through the site. `/brand/ui-kit` and `/whatsapp-risk` do take it,
+and neither is in `NAV`, so neither is marked — which is the honest answer for a
+reference page.
+
+Four tests hold this: no page may write a `<header>` of its own, every route in
+`NAV` must render `SiteHeader`, a page that renders it must name its own route as
+`active`, and the dot's opacity must live outside the keyframes. The e2e suite
+checks the six links and the single `aria-current` on all six menu routes, and
+that they stay on one row at 1440 and at 960.
+
+`npm run e2e` builds first. It serves `dist/` through `astro preview`, so before
+14 August 2026 it could pass green against the build before the change — which it
+did once, during this work, and the run that reported no page height had moved
+was reading the old pages. The build costs about half a second and the gate is
+worth more than that.
 
 `Caraka Landing.dc.html` labels the opening veil `MEMBUKA GERBANG`. The port
 reads `OPENING THE GATE` (`VEIL_LABEL` in `src/data/landing.ts`), because `/`
