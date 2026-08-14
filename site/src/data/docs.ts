@@ -66,7 +66,7 @@ export const chapters: Chapter[] = [
   {
     no: '02', id: 'sessions', href: '#sessions', label: 'Sessions', title: 'Sessions & topics',
     intro: 'A Telegram topic or a Discord thread maps to one persisted agent session. Where threads are unavailable — a failed creation, or WhatsApp, which has none — the same task runs in linear mode behind a workspace and session header.',
-    // comp:219-233 lists nine chat commands. Thirteen are registered, and they
+    // comp:219-233 lists nine chat commands. Fourteen are registered, and they
     // are these: `gatewayCommands` in src/core/channel.ts, sent through
     // setMyCommands on Telegram and registered as application commands on
     // Discord. A slash command outside that list is refused once the agent has

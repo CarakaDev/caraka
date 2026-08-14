@@ -20,13 +20,13 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.5.4', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.5.5', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
-  // Seven presets load; five routes across four agents have completed a turn
-  // against a live binary here, all on 10 August 2026 — Claude Code over ACP
-  // and over its CLI route, Codex and aider on the CLI, goose over ACP. Two of
-  // those presets were wrong until the run found them, so the count of proven
-  // agents is four and the argument for reading the other three as unproven is
+  // Nine presets load; six routes across five agents have completed a turn
+  // against a live binary here — Claude Code over ACP and over its CLI route,
+  // Codex and aider on the CLI, and goose over ACP, all on 10 August 2026, then
+  // opencode over ACP on 14 August. Two of those presets were wrong until the
+  // run found them, so the argument for reading the other four as unproven is
   // that running them is what breaks them. Three channels since v0.6 —
   // Telegram, Discord, WhatsApp — and WhatsApp counts as shipped code, not as a
   // linked number: none has ever been linked, which the cards below state in as
@@ -99,7 +99,7 @@ export const phases: Phase[] = [
     range: r(6, 3, 26) },
   { n: '7', title: 'Public release · v1.0', dur: '2 weeks', live: true, ...shipped,
     q: 'Is it ready to be trusted by strangers?',
-    gate: 'Every goal in prd.md is met and measured. Fifteen agents are not covered: nine presets ship and five have run against a live binary here — Claude Code on both its routes, Codex and aider on the CLI, goose and opencode over ACP. Codex’s smoke reached a spent usage quota rather than a finished turn. Taking the release to the Indonesian developer community and to the ACP ecosystem is the step nothing in a repository can perform.',
+    gate: 'Every goal in prd.md is met and measured. Fifteen agents are not covered: nine presets ship and five have completed a turn against a live binary here, over six routes — Claude Code over ACP and over its CLI route, Codex and aider on the CLI, goose and opencode over ACP. Four have never run here at all. Taking the release to the Indonesian developer community and to the ACP ecosystem is the step nothing in a repository can perform.',
     range: r(7, 3, 26) },
 ]
 
@@ -128,6 +128,18 @@ export const releases = [
         'Watch the dashboard swap a panel in a real browser with the CSP live',
         'Run fourteen days on a real WhatsApp number with no ban and no manual relink, or publish the honest finding that makes Cloud API the default',
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
+      ] },
+    ] },
+  { v: '1.5.5', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'FIXED', tone: '#FFD67E', items: [
+        'One dropped request stranded a session for good. A transient transport failure \u2014 four ECONNRESETs in a burst of thirty calls, each at 420 to 466ms, measured by the person who reported it \u2014 aborted the task while Caraka was sending its own progress line. That send sat above the run\u2019s try block, so the failure skipped every catch and finally: nothing wrote failed, nothing released the queue, and the session stayed running. One run at a time per workspace means that locks the workspace behind it',
+        'A dropped request is now tried once more, after half a second. Discord and WhatsApp got it through the shared helper without either adapter changing; Telegram calls it directly, because Telegram answers 200 for its own errors and puts the code in the body, which a status-reading helper cannot fold in. A refusal is an answer, not a dropped request, and is never retried',
+        'A stored session id the agent no longer has is replaced, once. The CLI driver hands the agent\u2019s own id back on every later turn, and when that rollout is gone from disk \u2014 an update, a cleanup, a moved HOME \u2014 the agent refuses and nothing cleared the id, so every turn after repeated the same doomed resume and the session was broken for good. Caraka drops the id and runs the turn again as a fresh session, and says so, because the fresh session does not carry the earlier turns',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'A retried write can arrive twice. Telegram has no idempotency key, and a request that arrived with a lost answer cannot be told apart from one that never left. The trade is one rare duplicate progress line against a session stuck running behind a locked workspace',
+        'Only the resume failure that names the id Caraka just sent is retried. A run that died halfway may already have written files, and repeating its prompt would repeat them. The id is the signal because we are the ones who sent it, so no preset has to guess at nine agents\u2019 error sentences',
       ] },
     ] },
   { v: '1.5.4', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
@@ -173,7 +185,7 @@ export const releases = [
         'What was asked for was a close-topic function, not an automatic close on a state that is not an ending. Caraka has no event meaning this session is over, and guessing it from done was the wrong guess',
       ] },
       { label: 'ADDED', tone: '#8EEE98', items: [
-        '/close finishes a session and closes its topic, in that order: the session is marked done, a closing line is sent, and only then does the topic close \u2014 so the last thing in the topic explains why it ended. It sits under the same ownership record as the rename, so Caraka closes only a topic it opened, and a session running without a thread is simply marked finished',
+        '/close finishes a session and closes its topic, in that order: the session is marked done, a closing line is sent, and only then does the topic close \u2014 so the last thing in the topic explains why it ended. It sits under the same ownership record as the rename, so Caraka closes only a topic it opened, and a session running without a thread is marked finished',
         '/close refuses while a task is still running and names /stop as the way through. Closing under a live run would shut the topic the answer was about to arrive in',
       ] },
       { label: 'LIMITED', tone: '#FFD67E', items: [
@@ -193,35 +205,13 @@ export const releases = [
         'Merging two scopes over one directory is not attempted. Nested workspaces stay two keys: two trust windows, two memory scopes',
       ] },
     ] },
-  { v: '1.5.0', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
-    groups: [
-      { label: 'ADDED', tone: '#8EEE98', items: [
-        'A finished session closes its topic. Closed, never deleted \u2014 the delete call takes the whole transcript with it, while closing is a flag and a service message and the history stays readable to every member. Telegram refuses a rename and a close in one call, so the state glyph is written first. Continuing a session reopens it, Caraka closes only topics it opened, and it can never reach the General topic, which has its own methods and no creator exemption',
-        'A folder can be named from a group: /new ~/Project/coret Coret. The folder comes first and the title is the rest, and only an absolute path is read as a folder \u2014 Project/coret stays a title, which is what makes the rule explainable in two sentences',
-        'A page that teaches the whole thing, at /guide: what you supply, pairing, topics, aiming a message, sessions and folders, approvals, what happens when Caraka refuses, and what is still unproven. It has no mockup of its own, so it borrows the docs comp\u2019s shapes the way /whatsapp-risk borrows the security comp\u2019s',
-        '/help answers differently in a room than in a direct message. In a room it says what a room refuses, what everyone in it can read, and what the channel does and does not deliver',
-      ] },
-      { label: 'CHANGED', tone: '#6FB9F0', items: [
-        'A session topic is no longer an exception to the addressing rule. Any message inside a topic Caraka held a session in used to count as addressed, so the topic could not be used for discussion. It is addressed the same way everywhere now: a mention, a command, or a reply to one of Caraka\u2019s own messages. A reply to the topic-creation service message does not count, and that exemption matters more than it looks \u2014 every first-level message in a forum topic is technically a reply to it, so without it the rule just removed comes back through the other door',
-        'The path form is accepted from any container and only from the channel operator. The earlier decision refused it outside the operator\u2019s direct message because whoever can post in a group would otherwise choose what directory the agent runs against. Read against the code, what that was holding is who chooses the string: the requester becomes the session\u2019s principal, and the store then makes that same person the only one who can answer permission cards inside the directory they named. So the operator test stays and the container test goes. The card is raised in the operator\u2019s direct message and nowhere else, and the room receives one sentence that does not vary with whether the path exists \u2014 one that varied would be a way to probe the filesystem from a group',
-      ] },
-      { label: 'FIXED', tone: '#FFD67E', items: [
-        'Seven defects in already-shipped code, all found by the reviews that produced this release rather than by anyone using it. A card could have been decided by the person who triggered it. The create intent did not survive the workspace card, so naming a new folder with a title would have run the title as a prompt. A folder whose name is not a legal slug wrote a config that would not boot',
-        'Nothing refused a folder that contains or is contained by an existing workspace \u2014 which is how a parent directory becomes by accident the rooted allowlist an earlier decision rejected with measurements, one trust window away from auto-approving every repository beneath it. That check also did not fold case, and ran only when the card was drawn rather than when it was pressed',
-        'A failed run\u2019s explanation never reached its topic. It was reported against the message that opened the topic, whose thread id is empty, so it landed in the general channel while the topic was renamed with a failure glyph and closed with nothing inside saying why. The comment above that code asserted the opposite',
-        'Two pending maps grew without bound and had no sweeper, each entry holding a whole inbound message and minting a direct message. The approval path has capped at five since v0.6 for exactly this reason',
-      ] },
-      { label: 'LIMITED', tone: '#FFD67E', items: [
-        'src/ measures 9,971 lines, up 303. The spec estimated ~190 and its plan wrote an honest range of 220 to 320, citing that the last five estimates here came in low by 1.8 to 2.6 times. It landed inside the range for the first time. No removal paid for it',
-        'Whether a closed topic still accepts a message from the bot is implementation evidence, not a documented promise. Telegram\u2019s own server permits it for the topic\u2019s creator, which Caraka always is here, but the API page says nothing about it \u2014 so every send into a closed topic stays fallible and a refused close is swallowed rather than ending a run',
-      ] },
-    ] },
-  { v: '1.4.2 → 0.0.0', state: 'in CHANGELOG.md', date: '7–14 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
+  { v: '1.5.0 → 0.0.0', state: 'in CHANGELOG.md', date: '7–14 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
     groups: [
       { label: 'WHERE THE FULL ENTRIES ARE', tone: '#FFD67E', items: [
         'CHANGELOG.md in the repository, linked at the foot of this page. It carries every release below at the length it was written in; what is here is one line each, and nothing has been dropped from the history',
       ] },
       { label: 'SHIPPED', tone: '#8EEE98', items: [
+        '1.5.0 · 14 August 2026 — a session got its own topic, and a finished one closed it',
         '1.4.2 · 14 August 2026 — a group could not open a topic, because init had read a private-chat setting as the answer for every container',
         '1.4.1 · 14 August 2026 — a setting that describes direct messages was switching topics off in groups',
         '1.4.0 · 14 August 2026 — the install prompt told people to use Claude, and the README buried it under the manual route',

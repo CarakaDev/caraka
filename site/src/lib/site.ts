@@ -81,7 +81,7 @@ export const PAGES: Record<PageKey, PageMeta> = {
     // three channels cost `an allowlisted group` and `streaming progress` the
     // room to stay in a description search engines cut at about 160 characters.
     description:
-      'Caraka v1.3 connects Telegram, Discord, or WhatsApp to the coding agent on your machine, with sessions, single-use approvals, secret scrubbing, and audit.',
+      'Caraka v1.5 connects Telegram, Discord, or WhatsApp to the coding agent on your machine, with sessions, single-use approvals, secret scrubbing, and audit.',
     ogHeadline: 'Send the task. · Caraka runs it.',
     // Latin-1 only. Two constraints meet here: wide tracking breaks the
     // aksara's conjunct shaping (the mark beside it already carries ꦕ), and
@@ -106,7 +106,7 @@ export const PAGES: Record<PageKey, PageMeta> = {
     lang: 'en',
     title: 'Documentation — caraka',
     description:
-      'Caraka documentation: the shipped v1.3 scope across three channels, architecture, session model, security controls, and roadmap.',
+      'Caraka documentation: the shipped v1.5 scope across three channels, architecture, session model, security controls, and roadmap.',
     // Shortened for the card: the old sentence needed four lines at 58px.
     ogHeadline: 'Everything it does. · And what it does not.',
     ogKicker: 'DOCUMENTATION',
@@ -116,7 +116,7 @@ export const PAGES: Record<PageKey, PageMeta> = {
     lang: 'en',
     title: 'Install — caraka',
     description:
-      'Install Caraka v1.3 for private Telegram chat and Claude Code, by command or with a safe prompt for Codex and Claude.',
+      'Install Caraka v1.5 for private Telegram chat and Claude Code, by command or with a safe prompt for the coding agent you already use.',
     // Shortened for the card. The three checks are the requirement chain in
     // src/data/install.ts: Node 22+, Git, and a signed-in Claude Code.
     ogHeadline: 'Three checks. · Then one command.',
@@ -160,7 +160,7 @@ export const PAGES: Record<PageKey, PageMeta> = {
     lang: 'en',
     title: 'Status & roadmap — caraka',
     description:
-      'Caraka v1.3 is unproven: every phase carries shipped code, and no field gate has been answered. See the phases, the open gates, and the release scope.',
+      'Caraka v1.5 is unproven: every phase carries shipped code, and no field gate has been answered. See the phases, the open gates, and the release scope.',
     // Both halves of the release state, which is why the word beside it is
     // `unproven`. The gates roadmap.md still holds open are field evidence, and
     // a version number does not stand in for any of them. `/brand/og` previews

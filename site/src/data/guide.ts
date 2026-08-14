@@ -69,7 +69,7 @@ export const chapters: Chapter[] = [
       },
       {
         k: 'A coding agent, signed in',
-        v: 'init scans PATH for the nine presets and one of them is enough. Claude Code over the official ACP adapter is the shortest route, and five of the nine have run against a live binary here.',
+        v: 'init scans PATH for the nine presets and one of them is enough. Claude Code over the official ACP adapter is the shortest route, and five of the nine have completed a turn against a live binary here.',
       },
       {
         k: 'A bot of your own',
@@ -205,7 +205,7 @@ export const chapters: Chapter[] = [
     // src/core/gateway.ts reads the first word as a folder only when it is
     // absolute after ~/ is expanded, and routeTask's own /^@(\S+)(?:\s+|$)/ is
     // anchored at the start of the line, so the folder comes first and the title
-    // takes the rest. The thirteen commands are gatewayCommands in
+    // takes the rest. The fourteen commands are gatewayCommands in
     // src/core/channel.ts.
     term: [
       { t: '/new', tone: '#D2D8DF' },
@@ -319,7 +319,7 @@ export const chapters: Chapter[] = [
       },
     ],
     note:
-      'Nothing closes a topic on its own. A finished run is renamed with its state glyph and left open, because a run ending is not a session ending — the next message in that topic continues the same session. When you are done, /close marks the session finished, sends a closing line, and closes the topic in that order, so the last thing in it explains why it ended. It refuses while a task is running and names /stop as the way through. Closed, never deleted: the delete call takes the whole transcript with it, while closing is a flag and the history stays readable to every member. In a group the composer is then gone for everyone but an admin with Manage topics, and the next session starts with /new.',
+      'Nothing closes a topic on its own. A finished run is renamed with its state glyph and left open, because a run ending is not a session ending — the next message in that topic continues the same session. When you are done, /close marks the session finished, sends a closing line, and closes the topic in that order, so the last thing in the topic explains why the session ended. It refuses while a task is running and names /stop as the way through. Closed, never deleted: the delete call takes the whole transcript with it, while closing is a flag and the history stays readable to every member. In a group the composer is then gone for everyone but an admin with Manage topics, and the next session starts with /new.',
   },
   {
     no: '08',
@@ -343,7 +343,7 @@ export const chapters: Chapter[] = [
       },
       {
         k: 'Four of the nine agent presets',
-        v: 'Have never completed a turn here. Four have driven a live binary, which is the smaller claim it sounds like: one of those runs got as far as a spent usage quota and stopped there. A YAML file that loads is not an agent that answered.',
+        v: 'Have never been run here at all: amp, antigravity, cursor, and gemini. The other five each completed two turns and a resume against their real binary. A YAML file that loads is not an agent that answered, and running one is what breaks its preset — two of the five were wrong until the run found them.',
       },
     ],
     note:

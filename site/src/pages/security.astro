@@ -86,7 +86,7 @@ import MobileToc from '../components/MobileToc.astro'
             <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">02</span>
             <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">Threats and controls</h2>
           </div>
-          <p style="margin: 0 0 24px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Thirteen threats, each with a primary control and a fallback. Nothing here relies on the agent behaving well.</p>
+          <p style="margin: 0 0 24px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">Thirteen threats, each with a control. Nothing here relies on the agent behaving well. Nothing here relies on the agent behaving well.</p>
           <div style="border: 1px solid #171C22; border-radius: 14px; overflow: hidden;">
             {threats.map((t) => (
               <div class="hv-row" style={`display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 16px 20px; border-bottom: 1px solid #171C22; background: #0C1116; transition: background .2s; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: ${t.range};`}>
@@ -142,7 +142,7 @@ import MobileToc from '../components/MobileToc.astro'
             <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E2452C;">04</span>
             <h2 style="margin: 0; font-size: clamp(20px, 2.8vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #F6F9FC;">What ships turned on</h2>
           </div>
-          <p style="margin: 0 0 24px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">These controls are fixed in v1.0. There is no configuration switch that disables them.</p>
+          <p style="margin: 0 0 24px; max-width: 660px; font-size: 15px; line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 24%;">These controls are fixed in v1.5. There is no configuration switch that disables them.</p>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: 14px;">
             {mandatory.map((m) => (
               <div class="hv-ring-soft" style={`padding: 22px 24px; background: #0C1116; border: 1px solid #171C22; border-radius: 13px; display: flex; gap: 13px; align-items: flex-start; transition: border-color .25s; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: ${m.range};`}>

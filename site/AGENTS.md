@@ -44,7 +44,7 @@ Two routes have no mockup, and both borrow rather than copy. `/whatsapp-risk` re
 
 ## Where the port leaves the mockup
 
-Six places, and each is written down here because a deviation nobody recorded
+Seven places, and each is written down here because a deviation nobody recorded
 is a diff someone finds six months later and "fixes" back.
 
 **The header is one bar, and it holds `NAV` on every page.** Each comp drew its
@@ -83,6 +83,31 @@ Four tests hold this: no page may write a `<header>` of its own, every route in
 `active`, and the dot's opacity must live outside the keyframes. The e2e suite
 checks the six links and the single `aria-current` on all six menu routes, and
 that they stay on one row at 1440 and at 960.
+
+**The page files hold prose too, and it drifts faster than `src/data/`.** On 14
+August 2026 five audits read every page against the code. What they found was
+not in `src/data/` — that had been swept the same day — but hard-coded in the
+`.astro` files beside it: `/` said `v1.0` and `7 PRESETS VIA ACP`, `/docs` said
+`v1.2` and called attachments roadmap work eight releases after they shipped,
+five footers said `MIT · v1.0, unproven`, and `src/lib/site.ts` said `v1.3` in
+four meta descriptions. `src/data/*.ts` is where the lists live and it is not
+where all the sentences live; a sweep that stops at `src/data/` has swept half
+the site. Three `v1.0`s are correct and must stay: the UI Kit and the colour
+system carry their own version, which is the design system's, not the product's.
+
+**One of those numbers was wrong because this file was wrong.** `site/AGENTS.md`
+said the codex smoke "has so far only reached a spent usage quota rather than a
+finished turn". That sentence describes 8 August 2026 and was written that day.
+On 10 August a live smoke against codex-cli 0.147.0 completed two turns and a
+resume — it is what found `codex exec resume` rejecting `--color` and ignoring
+`--sandbox`, and finding that requires running the resume. The sentence outlived
+its evidence by two days, and on 14 August it was copied out of here into
+`src/data/status.ts`, into a CHANGELOG entry, and into a reply posted to the
+person who reported issue #9. The count is five agents over six routes: Claude
+Code over ACP and over its CLI route, Codex and aider on the CLI, goose over
+ACP, and opencode over ACP on 14 August. A stale sentence in the file that
+decides what is true is worse than a stale sentence anywhere else, because
+everything else copies from it.
 
 `npm run e2e` builds first. It serves `dist/` through `astro preview`, so before
 14 August 2026 it could pass green against the build before the change — which it
@@ -158,7 +183,7 @@ and the route-by-route numbers are in the comment above the height baselines in
 
 `src/data/*.ts` holds what the lists render. Every value there traces to `../docs/` and `../src/`. Copy must distinguish the verified scope below from roadmap work, and never introduce a number, date, version, or quotation that is not already in the docs.
 
-What v1.5 verifiably supports: one operator across three channels, Telegram, Discord, and WhatsApp, all on the same `Channel` contract, with the chats, guild channels, and numbers their allowlists name; a session as a Telegram topic, a Discord thread, or a `[workspace · #id]` header where the chat app has neither; nine agent presets, one YAML file each, five of which have run against a live binary here; memory through Titen, a local SQLite provider, or none; more than one workspace with `@slug` routing and one run at a time in each; an approval that is a single-use secret bound to the principal, the session, and the request on every channel — a signed callback where there are buttons, a generated code on the card where there are none; a policy mode read per message from the channel's `modes` map and the kind of container, defaulting to `assisted` in a private conversation and `read-only` in a room, where a write, a command, and `/yolo` are all refused; deep-link pairing whose code answers once and expires in five minutes; `caraka doctor --fix` and `caraka uninstall`, both terminal-only; and a read-only dashboard on `127.0.0.1` that `caraka dashboard` starts. Every one of those has a limit worth naming when the copy claims it: the Discord path has never touched a real Discord, no WhatsApp number has ever been linked and no live Cloud API webhook has ever arrived, four of the nine presets have never run here at all, and the codex smoke drives the real binary but has so far only reached a spent usage quota rather than a finished turn — the CLI route carries no permission hook at all and a `read-only` run refuses to start on it, the Titen adapter has only answered a mocked fetch, and the dashboard has no authentication — a loopback listener is not an authentication boundary.
+What v1.5 verifiably supports: one operator across three channels, Telegram, Discord, and WhatsApp, all on the same `Channel` contract, with the chats, guild channels, and numbers their allowlists name; a session as a Telegram topic, a Discord thread, or a `[workspace · #id]` header where the chat app has neither; nine agent presets, one YAML file each, five of which have completed a turn against a live binary here; memory through Titen, a local SQLite provider, or none; more than one workspace with `@slug` routing and one run at a time in each; an approval that is a single-use secret bound to the principal, the session, and the request on every channel — a signed callback where there are buttons, a generated code on the card where there are none; a policy mode read per message from the channel's `modes` map and the kind of container, defaulting to `assisted` in a private conversation and `read-only` in a room, where a write, a command, and `/yolo` are all refused; deep-link pairing whose code answers once and expires in five minutes; `caraka doctor --fix` and `caraka uninstall`, both terminal-only; and a read-only dashboard on `127.0.0.1` that `caraka dashboard` starts. Every one of those has a limit worth naming when the copy claims it: the Discord path has never touched a real Discord, no WhatsApp number has ever been linked and no live Cloud API webhook has ever arrived, four of the nine presets have never run here at all — the CLI route carries no permission hook at all and a `read-only` run refuses to start on it, the Titen adapter has only answered a mocked fetch, and the dashboard has no authentication — a loopback listener is not an authentication boundary.
 
 The release state is one word, and it is **unproven**. It means both halves at once — every phase 0 to 7 carries shipped code, and not one field gate has been answered by a person. Do not soften it to a maturity word the field gates would have to earn.
 

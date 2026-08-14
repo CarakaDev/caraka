@@ -88,7 +88,7 @@ export const threats = [
     // but by default. Ephemeral was refused as a control and stays refused
     // (done/v02/spec.md §2b.2), so the disclosure is stated instead.
     control:
-      'A group message needs its chat and its sender on the allowlists, and pairing is confirmed in the operator DM. A room the channel’s modes map does not name runs read-only: the task reads, and a write or a command is refused before a card is drawn. Caraka never asks for group admin, so a bot left in privacy mode reads only commands and replies to itself. Every member of a paired group still sees the approval cards, paths, and command output.',
+      'A group message needs its chat and its sender on the allowlists, and pairing is confirmed in the operator DM. A room the channel’s modes map does not name runs read-only: the task reads, and a write or a command is refused before a card is drawn. Caraka never asks for group admin, nor for the permission that would let it read every message. Telegram calls that privacy mode; on Discord it is the MESSAGE_CONTENT intent, which Caraka does not request. Either way it reads only commands, mentions, and replies to its own messages. Every member of a paired group still sees the approval cards, paths, and command output.',
   },
   {
     id: 'T7',
@@ -179,7 +179,7 @@ export const mandatory = [
 
 export const notClaimed = [
   'Caraka cannot guarantee that your agent asks before every operation. The coding agent owns its tool policy and sandbox.',
-  'The CLI route carries no permission hook. An agent driven from a preset in presets/agents/ answers to its own brakes, and Caraka has nothing to put a button on until ACP hands it a request.',
+  'The CLI route carries no permission hook. An agent driven from a preset in presets/agents/ answers to its own brakes, and Caraka has nothing to put a button on until ACP hands it a request — so a read-only room refuses to start a run on this route at all, rather than starting one it could not refuse a write on.',
   'A signed button proves who approved one request; it does not make the approved operation safe.',
   'We have not had a third-party security audit. This will be stated openly until it changes.',
   'The local dashboard has no authentication. While caraka dashboard runs, anyone on that machine who can reach 127.0.0.1 can read it, including a local user with no read permission on the database file. Loopback is not an authentication boundary; what the page does refuse is a browser arriving under someone else\u2019s hostname.',

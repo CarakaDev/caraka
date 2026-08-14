@@ -80,8 +80,8 @@ export const mapping = [
   {
     aksara: '—',
     latin: 'no one could ask',
-    feature: 'Approval by tap, not by text',
-    body: 'Every consequential action stops and asks a human, through a signed single-use callback. Chat text can never approve — which is exactly what stops a forged instruction.',
+    feature: 'Approval by tap, or by a code that answers once',
+    body: 'Every consequential action stops and asks a human, through a signed single-use callback. Chat text can never approve, which is what stops a forged instruction.',
     range: r(2, 4, 28),
   },
   {
@@ -110,7 +110,7 @@ export const markNotes = [
     range: r(1, 4, 30),
   },
   {
-    t: 'The accent is kesumba, a traditional red dye — the same family as the cinnabar used in Javanese manuscripts for rubrication: marking the most important word on a page. That is exactly what an accent colour does here.',
+    t: 'The accent is kesumba, a traditional red dye — the same family as the cinnabar used in Javanese manuscripts for rubrication: marking the most important word on a page. That is what an accent colour does here.',
     range: r(2, 4, 30),
   },
   {

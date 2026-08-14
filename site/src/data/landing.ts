@@ -74,15 +74,16 @@ export const topics = [
   { glyph: '⊘', name: 'toko-api · restructure docs', id: '#a81', color: '#CB86DB', ink: '#5D666F', bg: '#0C1116', bar: 0, delay: '0s', range: r(5, 3.5, 30) },
 ]
 
-// comp:509 lists 13 agents plus "+ 15 more" with no status. Four agents are
-// verified live as of 10 August 2026, over five routes: Claude Code over ACP
-// and over its CLI route, Codex and aider on the CLI, goose over ACP. Each of
-// those runs is two turns and a resume that recalls a number from the first.
-// Only three of the four appear below: the comp draws thirteen names and aider
-// is not among them, and adding a fourteenth row would redraw a grid the comp
-// decided. `presets/agents/` is the list that is complete, and it holds seven.
+// comp:509 lists 13 agents plus "+ 15 more" with no status. Five agents are
+// verified live over six routes: Claude Code over ACP and over its CLI route,
+// Codex and aider on the CLI, and goose over ACP, all on 10 August 2026, then
+// opencode over ACP on 14 August. Each of those runs is two turns and a resume
+// that recalls a number from the first. Only three of the five appear below:
+// the comp draws thirteen names, aider and opencode are not among them, and
+// adding rows would redraw a grid the comp decided. `presets/agents/` is the
+// list that is complete, and it holds nine.
 //
-// The three that stay "preset" reached an ACP `initialize` on the same day and
+// The three that stay "preset" reached an ACP `initialize` on 10 August and
 // stopped at "Authentication required" — a full turn on amp, cursor, or gemini
 // needs a paid account this machine does not have. "verified" is a claim an
 // agent earns by answering a turn, and a handshake is not one, so the row reads
@@ -105,7 +106,7 @@ export const layers = [
     tag: 'ACP · PRIMARY',
     tone: '#FF7A5E',
     title: 'Claude first, one protocol',
-    body: 'ACP over stdio carries streaming updates, permission requests, cancellation, and persisted sessions. Claude Code and goose are verified live on it.',
+    body: 'ACP over stdio carries streaming updates, permission requests, cancellation, and persisted sessions. Claude Code, goose, and opencode are verified live on it.',
     bg: '#12100F',
     border: '#2B1612',
     delay: '0s',
@@ -178,7 +179,7 @@ export const term = [
   { t: '', tone: '#5D666F', range: r(1, 2.4, 22) },
   // comp:535 reads `caraka · v0.1.0`; `VERSION` in src/cli.ts reads the
   // `version` in package.json, which is 1.3.3.
-  { t: 'caraka · v1.5.4', tone: '#F6F9FC', mark: 'ꦕꦫꦏ', markTone: '#E2452C', range: r(2, 2.4, 22) },
+  { t: 'caraka · v1.5.5', tone: '#F6F9FC', mark: 'ꦕꦫꦏ', markTone: '#E2452C', range: r(2, 2.4, 22) },
   { t: '', tone: '#5D666F', range: r(3, 2.4, 22) },
   { t: 'agent · found on PATH', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(4, 2.4, 22) },
   { t: 'telegram · paired', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(5, 2.4, 22) },
