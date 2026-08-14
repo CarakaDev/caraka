@@ -439,7 +439,7 @@ test.describe('the comps still decide the layout', () => {
       '/brand/readme': 5581,
       // still measured against the comp
       '/story': 5734,
-      '/brand': 10177,
+      '/brand': 10216,
       '/brand/warna': 5264,
       '/brand/ui-kit': 9584,
       '/brand/og': 6821,

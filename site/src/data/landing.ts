@@ -203,7 +203,9 @@ export const footerLinks = [
   { label: 'Install', href: '/install' },
   { label: 'Security', href: '/security' },
   { label: 'Status', href: '/status' },
-  { label: 'UI Kit', href: '/brand/ui-kit' },
+  // One entry rather than five: /brand is the kit, and it links the other four
+  // boards. The UI kit is a detail inside it, not a peer of Docs.
+  { label: 'Brand', href: '/brand' },
   { label: 'GitHub', href: 'https://github.com/CarakaDev/caraka' },
   { label: 'ACP', href: 'https://agentclientprotocol.com' },
   { label: 'Titen', href: 'https://titen.dev' },
