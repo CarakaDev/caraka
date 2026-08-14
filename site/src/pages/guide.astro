@@ -1,18 +1,33 @@
 ---
-// Ported from design/mockups/Caraka Docs.dc.html. Markup and inline styles are
-// transcribed as-is; see site/AGENTS.md for the substitutions that replace the
-// design-comp runtime.
+// The guide: what to do after `npx caraka init` finishes, in the order a person
+// meets it. The owner asked for one page with complete instructions that are
+// easy to follow; spec/grup-nyaman.md deferred it here and fixed its shape.
+//
+// There is no design comp for this route. It is built from the shapes the docs
+// page already ports — the same header, the same numbered chapters, the same
+// terminal block, row table and note panel — and it imports that page's
+// stylesheet rather than copying it, so the two keep one set of keyframe values
+// instead of two that can drift. That is the /whatsapp-risk precedent, which
+// borrows security.css for the same reason; site/AGENTS.md records both. Every
+// sentence traces to ../docs/ or ../src/; see src/data/guide.ts.
 import Base from '../layouts/Base.astro'
 import '../styles/pages/docs.css'
-import { chapters } from '../data/docs'
+import { chapters, banner, closing } from '../data/guide'
 import MobileMenu from '../components/MobileMenu.astro'
 import MobileToc from '../components/MobileToc.astro'
+
+const links = [
+  { label: 'Home', href: '/' },
+  { label: 'Docs', href: '/docs' },
+  { label: 'Install', href: '/install' },
+  { label: 'Security', href: '/security' },
+]
 ---
 
-<Base page="docs">
+<Base page="guide">
   <div style="width: 100%; background: #05080C; font-family: 'Public Sans', sans-serif; color: #E9EDF2; position: relative; overflow-x: hidden;">
 
-    <div style="position: fixed; left: 0; top: 0; right: 0; height: 2px; z-index: 110; background: #171C22;">
+    <div aria-hidden="true" style="position: fixed; left: 0; top: 0; right: 0; height: 2px; z-index: 110; background: #171C22;">
       <div style="height: 100%; width: 100%; background: linear-gradient(90deg, #E2452C, #FF7A5E); transform-origin: left; transform: scaleX(var(--ck-sp, 0));"></div>
     </div>
 
@@ -20,17 +35,15 @@ import MobileToc from '../components/MobileToc.astro'
       <a href="/" style="display: flex; align-items: center; gap: 12px;">
         <span style="width: 27px; height: 27px; border-radius: 7px; background: #E2452C; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><span style="font-family: 'Noto Sans Javanese', serif; font-size: 16px; line-height: 1; display: block; transform: translateY(17.5%); color: #FFEDE7;">ꦕ</span></span>
         <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: .2em; color: #E9EDF2;">caraka</span>
-        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .16em; color: #E2452C; padding: 3px 8px; border: 1px solid #2B1612; border-radius: 5px;">DOCS</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .16em; color: #E2452C; padding: 3px 8px; border: 1px solid #2B1612; border-radius: 5px;">GUIDE</span>
       </a>
       <nav data-navlinks="1" style="display: flex; align-items: center; gap: clamp(14px, 2.4vw, 26px); font-family: 'JetBrains Mono', monospace; font-size: 12px;">
-        <a href="/" class="hv-ink" style="color: #7A848F;">Home</a>
-        <a href="/guide" class="hv-ink" style="color: #7A848F;">Guide</a>
-        <a href="/compare" class="hv-ink" style="color: #7A848F;">Compare</a>
-        <a href="/install" class="hv-ink" style="color: #7A848F;">Install</a>
-        <a href="/story" class="hv-ink" style="color: #7A848F;">Story</a>
+        {links.map((l) => (
+          <a href={l.href} class="hv-ink" style="color: #7A848F;">{l.label}</a>
+        ))}
       </nav>
       <a href="https://github.com/CarakaDev/caraka" class="hv-ring-ink" style="padding: 9px 16px; border: 1px solid #292E35; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B2BCC6; transition: border-color .2s, color .2s; white-space: nowrap;">GitHub ↗</a>
-      <MobileMenu links={[{ label: 'Home', href: '/' }, { label: 'Guide', href: '/guide' }, { label: 'Compare', href: '/compare' }, { label: 'Install', href: '/install' }, { label: 'Story', href: '/story' }]} cta={{ label: 'GitHub ↗', href: 'https://github.com/CarakaDev/caraka' }} />
+      <MobileMenu links={links} cta={{ label: 'GitHub ↗', href: 'https://github.com/CarakaDev/caraka' }} />
     </header>
 
     <div style="display: flex; gap: clamp(30px, 5vw, 66px); width: min(1240px, 100%); margin: 0 auto; padding: clamp(96px, 14vh, 130px) clamp(20px, 5vw, 48px) clamp(70px, 12vh, 120px);">
@@ -41,18 +54,14 @@ import MobileToc from '../components/MobileToc.astro'
 
         <div style="margin-bottom: clamp(40px, 6vh, 62px); animation: ck-boot .8s cubic-bezier(.2,.9,.3,1) both;">
           <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px;">
-            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .22em; color: #E2452C;">DOCUMENTATION</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .22em; color: #E2452C;">GUIDE</span>
             <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #2B1612, transparent); transform-origin: left; animation: ck-drawX 1s cubic-bezier(.3,.7,.3,1) .2s both;"></span>
           </div>
-          <h1 style="margin: 0 0 16px; font-size: clamp(30px, 5.2vw, 52px); font-weight: 700; letter-spacing: -.03em; line-height: 1.08; color: #F6F9FC; text-wrap: balance;">Everything Caraka does, and what it deliberately doesn't.</h1>
-          <p style="margin: 0; max-width: 640px; font-size: clamp(15px, 1.8vw, 17px); line-height: 1.7; color: #95A0AB; text-wrap: pretty;">Caraka is a bridge, not an agent. It has no reasoning loop, no execution tools, no model provider, and no plugin marketplace — your coding agent already has all of those, in better form.</p>
+          <h1 style="margin: 0 0 16px; font-size: clamp(30px, 5.2vw, 52px); font-weight: 700; letter-spacing: -.03em; line-height: 1.08; color: #F6F9FC; text-wrap: balance;">From installed to working, in the room where the work happens.</h1>
+          <p style="margin: 0; max-width: 640px; font-size: clamp(15px, 1.8vw, 17px); line-height: 1.7; color: #95A0AB; text-wrap: pretty;">Eight chapters in the order you meet them, from what is yours to supply before anything runs, to what to do when Caraka refuses. The last one names the parts of this that have only ever answered a test.</p>
           <div style="display: flex; align-items: center; gap: 10px; margin-top: 22px; padding: 13px 18px; background: #12100F; border: 1px solid #2B1612; border-radius: 10px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #E0B4A8; max-width: 640px;">
             <span style="color: #FFD67E;">⏸</span>
-            {/* The comp banner (line 118) named groups and services as roadmap work.
-                v0.2 serves an allowlisted group (src/core/gateway.ts) and prints a
-                unit file (src/service.ts); memory and the other agents left the
-                list at v0.3 and v0.4. What is left in it is what is left. */}
-            <span><strong style="color: #F6F9FC; font-weight: 600;">v1.2, unproven.</strong> Telegram, Discord, and WhatsApp all reach the agent, and seven presets load — four have answered a live binary here. Attachments and an MCP inbox remain roadmap work, and no field gate has been answered by anyone but the author.</span>
+            <span>{banner}</span>
           </div>
         </div>
 
@@ -84,18 +93,6 @@ import MobileToc from '../components/MobileToc.astro'
               </div>
             )}
 
-            {c.cards && (
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; margin-bottom: 24px;">
-                {c.cards.map((d) => (
-                  <div style={`padding: 22px 24px; background: ${d.bg}; border: 1px solid ${d.border}; border-radius: 13px; display: flex; flex-direction: column; gap: 9px; animation: ck-riseSm linear both; animation-timeline: view(); animation-range: ${d.range};`}>
-                    <span style={`font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .18em; color: ${d.tone};`}>{d.tag}</span>
-                    <span style="font-size: 16px; font-weight: 600; color: #F6F9FC; text-wrap: pretty;">{d.title}</span>
-                    <span style="font-size: 13.5px; line-height: 1.6; color: #7A848F; text-wrap: pretty;">{d.body}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
             {c.note && (
               <div style="display: flex; gap: 13px; padding: 17px 20px; background: #12100F; border-left: 2px solid #E2452C; border-radius: 0 10px 10px 0; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 26%;">
                 <span style="color: #FF7A5E; font-family: 'JetBrains Mono', monospace; font-size: 13px; flex-shrink: 0;">!</span>
@@ -107,11 +104,14 @@ import MobileToc from '../components/MobileToc.astro'
 
         <div style="padding: clamp(30px, 5vw, 44px); background: #0C1116; border: 1px solid #171C22; border-radius: 16px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; animation: ck-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 30%;">
           <div>
-            <div style="font-size: 19px; font-weight: 600; color: #F6F9FC; margin-bottom: 7px;">The spec is public, in full.</div>
-            {/* Comp line 129 says nine; docs/research/ has held thirteen documents since they landed in e090f1b. */}
-            <div style="font-size: 14px; line-height: 1.6; color: #7A848F; max-width: 420px; text-wrap: pretty;">Thirteen research documents, plus PRD, FRD, architecture, ERD, security model, and roadmap.</div>
+            <div style="font-size: 19px; font-weight: 600; color: #F6F9FC; margin-bottom: 7px;">{closing.title}</div>
+            <div style="font-size: 14px; line-height: 1.6; color: #7A848F; max-width: 420px; text-wrap: pretty;">{closing.body}</div>
           </div>
-          <a href="https://github.com/CarakaDev/caraka" class="hv-btn" style="padding: 14px 24px; background: #E2452C; border-radius: 10px; font-family: 'JetBrains Mono', monospace; font-size: 13.5px; color: #FFEDE7; white-space: nowrap; transition: background .2s;">Browse the repo →</a>
+          <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+            {closing.links.map((l) => (
+              <a href={l.href} class="hv-ring-ink" style="padding: 13px 20px; border: 1px solid #292E35; border-radius: 10px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #B2BCC6; transition: border-color .2s, color .2s; white-space: nowrap;">{l.label}</a>
+            ))}
+          </div>
         </div>
       </main>
 
@@ -130,13 +130,12 @@ import MobileToc from '../components/MobileToc.astro'
 
     <footer style="padding: clamp(44px, 7vh, 70px) clamp(20px, 5vw, 60px); border-top: 1px solid #0C1116;">
       <div style="width: min(1240px, 100%); margin: 0 auto; display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between;">
-        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #414950;">ꦕ caraka · MIT · v1.0, unproven</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #414950;">ꦕ caraka · MIT · unproven</span>
         <div style="display: flex; flex-wrap: wrap; gap: clamp(14px, 2.6vw, 28px); font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
           <a href="/" class="hv-ink" style="color: #7A848F;">Home</a>
-          <a href="/guide" class="hv-ink" style="color: #7A848F;">Guide</a>
-          <a href="/story" class="hv-ink" style="color: #7A848F;">Story</a>
+          <a href="/docs" class="hv-ink" style="color: #7A848F;">Docs</a>
+          <a href="/install" class="hv-ink" style="color: #7A848F;">Install</a>
           <a href="/security" class="hv-ink" style="color: #7A848F;">Security</a>
-          <a href="/whatsapp-risk" class="hv-ink" style="color: #7A848F;">WhatsApp risk</a>
           <a href="/status" class="hv-ink" style="color: #7A848F;">Status</a>
           <a href="https://github.com/CarakaDev/caraka" class="hv-ink" style="color: #7A848F;">GitHub</a>
           <a href="mailto:halo@caraka.dev" class="hv-ink" style="color: #7A848F;">halo@caraka.dev</a>

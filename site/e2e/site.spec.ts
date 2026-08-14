@@ -412,10 +412,22 @@ test.describe('the comps still decide the layout', () => {
     // every release cost before it. The card for it went on and 1.3.1 came off
     // the full-card list into the archive line, which is the trade the bound
     // makes. Measured Chromium at 1440x900.
+    //
+    // /guide is the fourteenth entry and the second route here that never had a
+    // comp: it teaches the path from `caraka init` to a working session in a
+    // room, and it borrows the docs page's shapes and stylesheet the way
+    // /whatsapp-risk borrows the security page's. 7244 is its first baseline.
+    // /docs moved with it, +22 to 7425: its footer took a Guide link and the row
+    // wrapped at 1440px, which is the eighth link that page's footer holds. /
+    // and /install each took the same link in nav and footer and held — the
+    // landing footer had room in its wrap, and /install's had four. Measured 14
+    // August 2026, Chromium at 1440x900, against `rm -rf dist && npm run
+    // build`, twice, identical both times.
     const EXPECTED: Record<string, number> = {
       // v1.2 copy, except the two v1.3 moved — measured from the site (see above)
       '/': 6595,
-      '/docs': 7403,
+      '/guide': 7244,
+      '/docs': 7425,
       '/compare': 5931,
       '/install': 5465,
       '/security': 6147,

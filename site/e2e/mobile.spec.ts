@@ -65,7 +65,7 @@ test.describe('no overflow', () => {
 
 test.describe('header menu', () => {
   /** Pages whose header carries navigation. The two brand boards have none by design. */
-  const NAVIGATED = ['/', '/docs', '/install', '/compare', '/security', '/whatsapp-risk', '/status', '/story', '/brand/ui-kit']
+  const NAVIGATED = ['/', '/guide', '/docs', '/install', '/compare', '/security', '/whatsapp-risk', '/status', '/story', '/brand/ui-kit']
 
   test('every navigated page offers a menu, and it holds every desktop link', async ({ page }) => {
     // AC-2.1 and AC-2.2
@@ -165,7 +165,7 @@ test.describe('header menu', () => {
 })
 
 test.describe('table of contents', () => {
-  const WITH_TOC = ['/docs', '/install', '/security', '/whatsapp-risk', '/brand/ui-kit']
+  const WITH_TOC = ['/guide', '/docs', '/install', '/security', '/whatsapp-risk', '/brand/ui-kit']
 
   test('the sidebar the comps hide comes back as a disclosure', async ({ page }) => {
     // AC-3.1 and AC-3.2 — same entries, same numbers, same order.

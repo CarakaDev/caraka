@@ -38,14 +38,24 @@ Everything else — every inline `style`, every `animation`, every `animation-ra
 
 **Keyframes belong to their page.** Nine keyframe names appear in more than one mockup with different values: `ck-rise` travels 18, 22, 24, 26, or 28 pixels depending on which page you are on. `src/styles/pages/<slug>.css` holds one mockup's `<style>` block, unedited, imported by the page that ports that mockup. Never merge them into `global.css`.
 
-One route has no mockup: `/whatsapp-risk` renders `../docs/whatsapp-risiko.en.md`, and it imports `security.css` rather than owning a copy of it. That is the rule holding rather than bending — the page is built from the security comp's shapes, so the security comp's keyframe values are the correct ones, and one file cannot drift from itself. A page with a comp of its own never shares.
+Two routes have no mockup, and both borrow rather than copy. `/whatsapp-risk` renders `../docs/whatsapp-risiko.en.md` and imports `security.css`; `/guide` teaches the path from `caraka init` to a working session in a room, and imports `docs.css`. That is the rule holding rather than bending — each page is built from the shapes of the comp whose stylesheet it takes, so those keyframe values are the correct ones, and one file cannot drift from itself. A page with a comp of its own never shares.
 
 **Scroll-driven animations must survive an engine that lacks them.** An element carrying `animation: ck-rise linear both` with no duration is invisible until its timeline advances. Where `animation-timeline` is unsupported the declaration is dropped, the animation runs for 0s, and `both` leaves the element on its final frame — visible. The e2e suite asserts this in Firefox and WebKit, not just Chromium. If you add a scroll-driven animation, add it to that assertion.
 
 ## Where the port leaves the mockup
 
-Four places, and each is written down here because a deviation nobody recorded
+Five places, and each is written down here because a deviation nobody recorded
 is a diff someone finds six months later and "fixes" back.
+
+Three headers carry a link the comps do not draw. `/`, `/docs` and `/install`
+each gained a `Guide` entry, in the desktop nav and in the `MobileMenu` beside
+it, along with a footer link on the same three pages and one in `footerLinks`.
+The comps were drawn when those four links were every content route there was,
+so no comp can hold `/guide`; and a page nobody can reach from a header is a
+page written for nobody. `NAV` in `src/lib/site.ts` carries the same five entries and
+is the written record of what that header holds. Nothing else in those headers
+moved: same gap, same type, same order for the four links that were already
+there.
 
 `Caraka Landing.dc.html` labels the opening veil `MEMBUKA GERBANG`. The port
 reads `OPENING THE GATE` (`VEIL_LABEL` in `src/data/landing.ts`), because `/`

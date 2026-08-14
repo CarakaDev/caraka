@@ -212,6 +212,39 @@ class Feed {
 
 type Sent = { chatId: string; text: string; thread?: string; markup?: Record<string, unknown> };
 
+const BOT_NAME = "caraka_test_bot";
+const BOT_USER = { id: 7, first_name: "Caraka", is_bot: true, username: BOT_NAME };
+
+/**
+ * The same messages after the real Telegram adapter has read them: `addressed`
+ * answered and this bot's own leading mention cut. The cases that turn on either
+ * of those two are pushed into the harness through here, so what decides is the
+ * adapter that ships rather than a flag the test wrote by hand.
+ */
+async function viaAdapter(pushed: TelegramMessage[]) {
+  let served = false;
+  const json = (body: unknown) =>
+    new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } });
+  const fetcher: typeof fetch = async (input) => {
+    const method = String(input).split("/").at(-1) ?? "";
+    if (method === "getMe") return json({ ok: true, result: BOT_USER });
+    if (method !== "getUpdates") return json({ ok: true, result: true });
+    const batch = served ? [] : pushed.map((message, index) => ({ update_id: index + 1, message }));
+    served = true;
+    return json({ ok: true, result: batch });
+  };
+  const telegram = new Telegram("fake-token", fetcher);
+  await telegram.start();
+  const controller = new AbortController();
+  const seen: Array<TelegramMessage | undefined> = [];
+  for await (const update of telegram.updates(controller.signal)) {
+    seen.push(update.message);
+    if (seen.length >= pushed.length) break;
+  }
+  controller.abort();
+  return seen;
+}
+
 // `addressed` is what the adapter reports about who a room message named; left
 // out, the channel is one that cannot tell and core answers (FR-CHAN-09).
 function message(
@@ -274,12 +307,13 @@ async function harness(
     commandsFailFor?: string;
     editTopicFails?: boolean;
     /**
-     * Whether this channel can archive a finished thread. Telegram cannot, so the
-     * stub leaves the method out by default. Core reads the capability rather than
-     * the channel (hard rule 1), so the archive guard is tested by turning the
-     * capability on here instead of borrowing an adapter that has it.
+     * Whether this channel can close and reopen a finished thread. Left out by
+     * default, because a channel that has neither is what WhatsApp is and what
+     * Telegram is in a private conversation, and core has to mark the session
+     * either way (hard rule 1: it reads the capability, never the channel).
+     * `"fails"` is the channel that has the call and refuses it.
      */
-    archives?: boolean;
+    archives?: boolean | "fails";
     onPrompt?: (prompt: string, route: DriverRoute) => Promise<{ stopReason: string }>;
     driver?: AgentDriver;
     driverFor?: DriverFor;
@@ -328,6 +362,9 @@ async function harness(
       return true;
     },
     updates: () => feed.updates(),
+    // Both sends land on `calls` as well as on `sent`, because `sent` alone cannot
+    // answer whether a line went out before or after a topic call: two arrays hold
+    // no order between them, and the whole of AC-1.5 is that order.
     sendText: async (
       chatId: string,
       text: string,
@@ -336,10 +373,12 @@ async function harness(
     ) => {
       messageId += 1;
       sent.push({ chatId, text, thread, ...(markup ? { markup } : {}) });
+      calls.push(`sendText:${text}`);
       return { message_id: messageId, chat: { id: Number(chatId), type: "private" } };
     },
     sendResult: async (chatId: string, text: string) => {
       sent.push({ chatId, text });
+      calls.push(`sendResult:${text}`);
       return [];
     },
     editText: async (_chatId: string, _messageId: number, text: string) => {
@@ -361,6 +400,12 @@ async function harness(
       ? {
           finishThread: async (_chatId: string, threadId: string) => {
             calls.push(`finishThread:${threadId}`);
+            if (options.archives === "fails") throw new Error("TOPIC_CLOSED");
+            return true;
+          },
+          resumeThread: async (_chatId: string, threadId: string) => {
+            calls.push(`resumeThread:${threadId}`);
+            if (options.archives === "fails") throw new Error("TOPIC_NOT_MODIFIED");
             return true;
           },
         }
@@ -458,6 +503,19 @@ async function harness(
     },
     finish,
   };
+}
+
+/**
+ * Whether a line matching `text` went into the thread before the close did. One
+ * list, because two lists hold no order between them: the harness's sends and its
+ * topic calls both land on `calls`.
+ */
+function spokeBeforeClose(h: { calls: string[] }, text: RegExp) {
+  const said = h.calls.findIndex(
+    (call) => /^send(Text|Result):/.test(call) && text.test(call.slice(call.indexOf(":") + 1)),
+  );
+  const closed = h.calls.findIndex((call) => call.startsWith("finishThread:"));
+  return said >= 0 && closed >= 0 && said < closed;
 }
 
 function audits(store: Store, action: string) {
@@ -654,6 +712,13 @@ test("a trust window opens only from a signed button, and never covers the high-
   const confirm = h.buttons()[0]?.callback_data ?? "";
   assert.ok(confirm.startsWith("t:"));
   assert.equal(count(), 0);
+  // AC-4.4 of `spec/grup-nyaman.md`: the card names the directory beside the slug.
+  // A workspace can be added from chat now, so ten minutes after that card the
+  // operator's memory of it is the only thing between a slug and a directory.
+  assert.match(
+    h.sent.filter((item) => item.markup).at(-1)?.text ?? "",
+    new RegExp(resolve(h.root)),
+  );
 
   // AC-6.10: a forged signature and a stranger both fail.
   h.feed.push(callback(42, forged(confirm)));
@@ -1272,10 +1337,14 @@ test("a workspace question waiting in the room does not open the gate", async ()
   await h.finish();
 });
 
-test("a thread Caraka owns is Caraka's; a thread it does not own is left alone", async () => {
-  // AC-2.1 and AC-2.2. Every message in every forum topic carries a thread id,
-  // including the topics people opened for themselves, so the question is never
-  // "is this a thread" but "is this a thread holding a session of mine".
+test("a session topic is no exception to the mention gate", async () => {
+  // AC-5.1 and AC-5.2 of `spec/grup-nyaman.md`, replacing AC-2.1 of
+  // `done/grup-sapa-dan-menu/spec.md`, which asserted the opposite: that a thread
+  // holding a session answers every line in it. Holding a session is not the same
+  // as being spoken to, `group.readyAll` promises the stricter rule at pairing,
+  // and the clause tested `sessionFor` rather than ownership — so a `/new` inside
+  // somebody else's topic opened that topic too. AC-2.2 below is untouched and
+  // only gets stronger.
   const h = await harness({ topics: true, allowChats: [String(GATED_ROOM), "42"] });
   // A supergroup only holds topics when it says `is_forum`, which is the
   // container's own answer and the one core asks for before it opens one.
@@ -1298,16 +1367,51 @@ test("a thread Caraka owns is Caraka's; a thread it does not own is left alone",
     "the session lives in the topic the fake opened",
   );
 
-  // AC-2.1: the session's own topic keeps answering without being named again.
-  h.feed.push(forum("keep going", false, 7001));
+  // AC-5.1: an ordinary line inside Caraka's own session topic reaches no agent
+  // and leaves an `ignored` line. This is the assertion that fails without the
+  // change, and the behaviour the owner asked to be rid of.
+  h.feed.push(forum("people are talking here", false, 7001));
   await h.settle(200);
-  assert.deepEqual(h.prompts, ["start here", "keep going"]);
+  assert.deepEqual(h.prompts, ["start here"]);
+  assert.deepEqual(
+    audits(h.store, "msg.in").map((row) => row.result),
+    ["accepted", "ignored"],
+  );
 
-  // AC-2.2: someone else's topic in the same room opens nothing.
+  // AC-5.2: the two ways in, decided by the real adapter and acted on by core. A
+  // reply to one of Caraka's own messages continues the session; a reply to the
+  // service message that opened the topic does not, and without that exemption
+  // the deleted clause would come back through the other door, because every
+  // first-level message in a topic Caraka opened replies to it.
+  const bot = { message_id: 5, chat: { id: GATED_ROOM, type: "supergroup" }, from: BOT_USER };
+  const [answering, chatting] = await viaAdapter([
+    {
+      ...forum("carry on", undefined, 7001).message,
+      reply_to_message: { ...bot, text: "◌ Claude is working…" } as TelegramMessage,
+    },
+    {
+      ...forum("nice topic", undefined, 7001).message,
+      reply_to_message: {
+        ...bot,
+        forum_topic_created: { name: "▸ start here" },
+      } as TelegramMessage,
+    },
+  ]);
+  assert.equal(answering?.addressed, true);
+  assert.equal(chatting?.addressed, false);
+  h.feed.push({ message: answering });
+  await h.settle(200);
+  assert.deepEqual(h.prompts, ["start here", "carry on"]);
+  h.feed.push({ message: chatting });
+  await h.settle(200);
+  assert.deepEqual(h.prompts, ["start here", "carry on"]);
+
+  // AC-2.2 of `done/grup-sapa-dan-menu/spec.md`, untouched and now stronger:
+  // someone else's topic in the same room opens nothing.
   const opened = h.calls.filter((call) => call.startsWith("createForumTopic")).length;
   h.feed.push(forum("people talking in their topic", false, 8123));
   await h.settle(200);
-  assert.deepEqual(h.prompts, ["start here", "keep going"]);
+  assert.deepEqual(h.prompts, ["start here", "carry on"]);
   assert.equal(
     h.calls.filter((call) => call.startsWith("createForumTopic")).length,
     opened,
@@ -1411,6 +1515,36 @@ test("/status with the bot suffix is answered in a room that never named Caraka"
   const answer = h.sent.at(-1)?.text ?? "";
   assert.match(answer, /No session in this conversation yet/);
   assert.match(answer, /privacy mode is on/, "and the room's readiness rides with it");
+  await h.finish();
+});
+
+test("/help answers one thing in a conversation and another in a room", async () => {
+  // AC-6.1. Five things differ between the two containers: whether an ordinary
+  // message arrives, the default policy mode, whether the path form is read, whether
+  // `/yolo` works, and who reads an approval card. One body cannot be right in
+  // both. The split is the container and never the channel (hard rule 1) — what the
+  // channel holds back is `readiness()`, the same sentence `/status` appends.
+  const h = await harness({ allowChats: [String(PAIRED_ROOM), "42"] });
+  h.feed.push(message(42, 42, "/help"));
+  await h.settle(120);
+  const direct = h.sent.at(-1)?.text ?? "";
+  assert.match(direct, /^Send a task as an ordinary message/);
+  assert.match(direct, /closed, not deleted/);
+  assert.doesNotMatch(direct, /This is a room/);
+  assert.doesNotMatch(direct, /privacy mode/);
+
+  h.feed.push(message(PAIRED_ROOM, 42, "/help@caraka_test_bot", "supergroup", false));
+  await h.settle(120);
+  const room = h.sent.at(-1)?.text ?? "";
+  assert.match(room, /^This is a room/);
+  assert.match(room, /inside a session topic too/);
+  assert.match(room, /privacy mode is on/, "the readiness sentence rides with it");
+  assert.doesNotMatch(room, /Send a task as an ordinary message/);
+  // `/start` takes the same branch, because the first thing a person sees has to
+  // be the one that is true where they are.
+  h.feed.push(message(42, 42, "/start"));
+  await h.settle(120);
+  assert.match(h.sent.at(-1)?.text ?? "", /^Send a task as an ordinary message/);
   await h.finish();
 });
 
@@ -1580,17 +1714,31 @@ test("Caraka marks the thread it created, and keeps it for the next session", as
   await h.finish();
 });
 
-test("a thread that is not Caraka's is not archived either", async () => {
-  // AC-5. Telegram has no archive call, so the capability is turned on in the
-  // stub. One guard covers both mutations because `editTopic` and `finishThread`
-  // sit behind the same glyph check — the pair here is what proves it, since a
-  // guard that only covered the rename would still archive someone's thread.
+test("a thread that is not Caraka's is neither closed nor reopened", async () => {
+  // AC-5 of `done/topic-provenance/`, and AC-1.6 of `spec/grup-nyaman.md`. One
+  // guard covers all three mutations because `editTopic`, `finishThread`, and
+  // `resumeThread` sit behind the same glyph check — the pair here is what proves
+  // it, since a guard that only covered the rename would still close someone's
+  // thread. Closing a topic a human opened is an unasked-for change in their room,
+  // the same class as renaming it.
   const h = await harness({ topics: true, archives: true });
   h.feed.push(message(42, 42, "ship it", "private", undefined, 900));
   await h.settle(150);
   assert.deepEqual(
     h.calls.filter((call) => call.startsWith("finishThread:")),
     [],
+  );
+  // AC-1.6: and a second task in that thread reopens nothing, with the audit line
+  // saying why each time.
+  h.feed.push(message(42, 42, "again", "private", undefined, 900));
+  await h.settle(150);
+  assert.deepEqual(
+    h.calls.filter((call) => call.startsWith("resumeThread:")),
+    [],
+  );
+  assert.deepEqual(
+    audits(h.store, "topic.skip").map((row) => row.result),
+    ["unowned", "unowned", "unowned", "unowned"],
   );
 
   // The other half, and the reason this test carries both: a guard that read the
@@ -1672,24 +1820,256 @@ test("a rename Telegram refuses changes neither the run nor the row", async () =
   await h.finish();
 });
 
-test("a session that finishes is marked, never closed and never deleted", async () => {
-  // AC-7.4 and AC-7.5: closeForumTopic and deleteForumTopic are not in the code.
-  const h = await harness();
+test("a finished session is renamed and then closed, on each of the three end states", async () => {
+  // AC-1.1, AC-1.3 and AC-1.7. `docs/session-model.md` §6 has asked for the close
+  // since v0.1 and the code stopped at the rename; the order is part of the
+  // feature, because the name is the status board and a topic list is read at a
+  // glance.
+  const h = await harness({ topics: true, archives: true });
   h.feed.push(message(42, 42, "ship it"));
-  await h.settle(120);
+  await h.settle(200);
+  assert.deepEqual(
+    h.calls.filter((call) => call.startsWith("editForumTopic:") || call.startsWith("finishThread")),
+    ["editForumTopic:▸ ship it", "editForumTopic:✓ ship it", "finishThread:7001"],
+  );
+  // AC-1.7: not one reopen inside a run that reached `done` through
+  // `running` → `awaiting_approval` is asked for here, because no state before
+  // `running` was a finished one.
   assert.equal(
-    h.calls.some((call) => call.startsWith("createForumTopic")),
+    h.calls.some((call) => call.startsWith("resumeThread")),
+    false,
+  );
+
+  // AC-1.7, the other half: the next addressed message in that topic reopens it
+  // exactly once, on the one transition a close preceded.
+  h.calls.length = 0;
+  h.feed.push(message(42, 42, "one more thing", "private", undefined, 7001));
+  await h.settle(200);
+  assert.deepEqual(
+    h.calls.filter((call) => call.startsWith("resumeThread")),
+    ["resumeThread:7001"],
+  );
+  assert.deepEqual(
+    h.calls.filter((call) => call.startsWith("finishThread")),
+    ["finishThread:7001"],
+  );
+
+  // AC-1.4: a close Telegram refuses leaves the state written, the rename done,
+  // and nothing about it in the chat.
+  const refusing = await harness({ topics: true, archives: "fails" });
+  refusing.feed.push(message(42, 42, "ship it"));
+  await refusing.settle(200);
+  assert.equal(
+    (refusing.store.db.prepare("SELECT state FROM sessions").get() as { state: string }).state,
+    "done",
+  );
+  assert.ok(refusing.calls.includes("editForumTopic:✓ ship it"));
+  assert.equal(
+    refusing.sent.some((item) => /TOPIC_CLOSED|error|Error/.test(item.text)),
+    false,
+  );
+  await refusing.finish();
+  await h.finish();
+});
+
+test("the last line reaches the topic before the close does, on all three paths", async () => {
+  // AC-1.5. `/stop`, the run limit, and a failure each wrote the state first and
+  // spoke second, which put three messages into a topic that had just been closed.
+  // That send works only because Caraka is the topic's creator, and the evidence
+  // for it is in TDLib rather than on any Bot API page — two lines swapped end the
+  // dependency (`docs/session-model.md` §6).
+  // `/stop`
+  const stopped = heldDriver();
+  const s = await harness({ topics: true, archives: true, driver: stopped.driver });
+  s.feed.push(message(42, 42, "hold the fort"));
+  await s.settle(200);
+  s.feed.push(message(42, 42, "/stop", "private", undefined, 7001));
+  await s.settle(250);
+  assert.ok(spokeBeforeClose(s, /Cancelling the task/), s.calls.join(" | "));
+  await s.finish();
+
+  // The run limit.
+  const t = await harness({
+    topics: true,
+    archives: true,
+    runLimitMs: 40,
+    onPrompt: async () => {
+      await delay(300);
+      return { stopReason: "cancelled" as const };
+    },
+  });
+  t.feed.push(message(42, 42, "a long job"));
+  await t.settle(500);
+  assert.ok(spokeBeforeClose(t, /passed 0\.0\d+ minutes/), t.calls.join(" | "));
+  await t.finish();
+
+  // A failure, which also stops rethrowing into `enqueue` so the report can go out
+  // before the close.
+  const f = await harness({
+    topics: true,
+    archives: true,
+    onPrompt: async () => {
+      throw new Error("the agent fell over");
+    },
+  });
+  f.feed.push(message(42, 42, "break it"));
+  await f.settle(250);
+  assert.ok(spokeBeforeClose(f, /the agent fell over/), f.calls.join(" | "));
+  // And into the topic, not merely before the close. The message a run starts
+  // from carries no thread id when the topic was opened for it, so the report
+  // landed in General while the topic it belonged to was renamed ✗ and closed
+  // with nothing in it saying why.
+  assert.equal(f.sent.find((item) => /the agent fell over/.test(item.text))?.thread, "7001");
+  assert.equal(
+    (f.store.db.prepare("SELECT state FROM sessions").get() as { state: string }).state,
+    "failed",
+  );
+  await f.finish();
+});
+
+test("a session in General is finished without a close, because it has no thread id", async () => {
+  // AC-1.8. `ForumTopicId::general()` is 1 and `Client::get_forum_topic_id` refuses
+  // only negatives, so `closeForumTopic` with 1 most likely closes General itself —
+  // which has methods of its own and no creator exemption. A message in General
+  // carries no `message_thread_id`, so `session.threadId` is empty and `setState`
+  // has already returned. This test fails the day that guard moves; the literal is
+  // checked in `test/unit.test.ts`.
+  const h = await harness({ topics: true, archives: true, allowChats: [String(GATED_ROOM), "42"] });
+  h.feed.push({
+    message: {
+      message_id: 1,
+      from: { id: 42, first_name: "Rama", is_bot: false },
+      chat: { id: GATED_ROOM, type: "supergroup", is_forum: true },
+      text: "/new in General",
+      addressed: true,
+    } as TelegramMessage,
+  });
+  await h.settle(200);
+  // The topic Caraka opened for it is 7001 and never 1, so the close it does make
+  // is on a thread of its own.
+  const session = h.store.db.prepare("SELECT thread_id AS thread FROM sessions").get() as {
+    thread: string;
+  };
+  assert.equal(session.thread, "7001");
+
+  // And the same conversation with topics off: no thread id at all, so no close.
+  const linear = await harness({ archives: true, allowChats: [String(GATED_ROOM), "42"] });
+  linear.feed.push(message(GATED_ROOM, 42, "ship it", "supergroup", true));
+  await linear.settle(200);
+  assert.equal(
+    (
+      linear.store.db.prepare("SELECT thread_id AS thread FROM sessions").get() as {
+        thread: string;
+      }
+    ).thread,
+    "",
+  );
+  assert.deepEqual(
+    linear.calls.filter(
+      (call) => call.startsWith("finishThread") || call.startsWith("resumeThread"),
+    ),
+    [],
+  );
+  await linear.finish();
+  await h.finish();
+});
+
+test("this bot's own leading mention is cut before core, and only at offset 0", async () => {
+  // AC-3.5 and AC-3.7. `parseCommand` is anchored at `^/`, so `@caraka_test_bot
+  // /new …` reached no router at all: the text fell to `routeTask`, whose
+  // `/^@(\S+)/` matched the mention and answered that no workspace was called
+  // `caraka_test_bot`. The cut is the adapter's, so these go through it.
+  const root = await mkdtemp(join(tmpdir(), "caraka-mention-"));
+  const away = await mkdtemp(join(tmpdir(), "caraka-mention-away-"));
+  const fresh = join(away, "coret");
+  await mkdir(fresh);
+  const d = heldDriver();
+  const h = await harness({ root, driver: d.driver, allowChats: [String(PAIRED_ROOM), "42"] });
+  const seen = await viaAdapter([
+    // A command behind the mention, in a room, which is the shape the owner asked
+    // for. The mention makes it addressed and then leaves.
+    {
+      message_id: 1,
+      from: { id: 42, first_name: "Rama", is_bot: false },
+      chat: { id: PAIRED_ROOM, type: "supergroup" },
+      text: `@${BOT_NAME} /new ${fresh} Coret`,
+      entities: [{ type: "mention", offset: 0, length: BOT_NAME.length + 1 }],
+    },
+    // The same mention in a private conversation, where it used to draw "No
+    // workspace is called caraka_test_bot".
+    {
+      message_id: 2,
+      from: { id: 42, first_name: "Rama", is_bot: false },
+      chat: { id: 42, type: "private" },
+      text: `@${BOT_NAME} fix the login bug`,
+      entities: [{ type: "mention", offset: 0, length: BOT_NAME.length + 1 }],
+    },
+    // A mention further along is part of what was said.
+    {
+      message_id: 3,
+      from: { id: 42, first_name: "Rama", is_bot: false },
+      chat: { id: 42, type: "private" },
+      text: `fix @${BOT_NAME}'s parser`,
+    },
+    // AC-3.7: nothing but the mention.
+    {
+      message_id: 4,
+      from: { id: 42, first_name: "Rama", is_bot: false },
+      chat: { id: PAIRED_ROOM, type: "supergroup" },
+      text: `@${BOT_NAME}`,
+      entities: [{ type: "mention", offset: 0, length: BOT_NAME.length + 1 }],
+    },
+  ]);
+  assert.deepEqual(
+    seen.map((one) => one?.text),
+    [`/new ${fresh} Coret`, "fix the login bug", `fix @${BOT_NAME}'s parser`, ""],
+  );
+  const quiet = h.sent.length;
+  for (const one of seen) h.feed.push({ message: one });
+  await h.settle(300);
+  // The first is the path form, which raises its card in the operator's own
+  // conversation; the second and third are prompts, and the mention that stayed
+  // rides along inside one of them.
+  assert.deepEqual(d.prompts, [
+    `agent-${basename(root)}:fix the login bug`,
+    `agent-${basename(root)}:fix @${BOT_NAME}'s parser`,
+  ]);
+  assert.ok(h.sent.some((item) => item.markup && /workspace coret/.test(item.text)));
+  // AC-3.7: the mention-only message drew nothing at all — no reply, no session.
+  assert.equal(
+    h.sent.slice(quiet).some((item) => /^\s*$/.test(item.text)),
+    false,
+  );
+  assert.equal(
+    h.store.db.prepare("SELECT count(*) AS n FROM sessions").get()?.n,
+    1,
+    "one session, from the two prompts in one conversation",
+  );
+  await h.finish();
+});
+
+test("a run that fails while the gateway is shutting down reports nothing to the chat", async () => {
+  // The risk `plan/grup-nyaman.md` names. `runTask` reports its own failure now
+  // instead of rethrowing into `enqueue`, so that the report reaches the topic
+  // before `setState` closes it — and the `stopping` guard `enqueue` held has to
+  // come with it. Without it, every shutdown that catches a run mid-flight writes
+  // an error report into somebody's chat.
+  const h = await harness({
+    onPrompt: async () => {
+      void h.gateway.stop();
+      await delay(20);
+      throw new Error("the agent fell over during shutdown");
+    },
+  });
+  h.feed.push(message(42, 42, "break it"));
+  await h.settle(300);
+  // The audit table cannot be read afterwards — `stopNow` closes the store — so
+  // what is asserted is the send, which is the thing a person would have seen.
+  assert.equal(
+    h.sent.some((item) => item.text.includes("fell over during shutdown")),
     false,
   );
   await h.finish();
-  const gateway = await readFile(new URL("../src/core/gateway.ts", import.meta.url), "utf8");
-  const telegram = await readFile(new URL("../src/channels/telegram.ts", import.meta.url), "utf8");
-  // Neither name appears as a called method; both appear only in prose saying why.
-  for (const source of [gateway, telegram]) {
-    assert.equal(source.includes('"closeForumTopic"'), false);
-    assert.equal(source.includes('"deleteForumTopic"'), false);
-  }
-  assert.ok(telegram.includes('"editForumTopic"'));
 });
 
 test("a run past its time limit is cancelled, marked, and recorded", async () => {
@@ -2725,9 +3105,11 @@ test("/lock never reports closed what it did not close", async () => {
   await h.finish();
 });
 
-test("the path form is read in the operator's DM and refused everywhere else", async () => {
-  // AC-7.1 through AC-7.6. Until now `/^@([\w.-]+)/` had no `/` in its class, so
-  // `@/home/rama` fell through as prompt text.
+test("the path form is read from the operator anywhere, and from nobody else", async () => {
+  // AC-2.1 and AC-2.2, over `done/workspace-dari-chat/` AC-7.1 through AC-7.6.
+  // Until 1.4.0 `/^@([\w.-]+)/` had no `/` in its class, so `@/home/rama` fell
+  // through as prompt text; until this release the form was refused in every room,
+  // and what ADR-0010 decision 1 was really holding is who chooses the string.
   const root = await mkdtemp(join(tmpdir(), "caraka-wspath-"));
   const alpha = join(root, "alpha");
   const d = heldDriver();
@@ -2751,23 +3133,36 @@ test("the path form is read in the operator's DM and refused everywhere else", a
     false,
     "a configured path needs no card",
   );
-  // AC-7.2: the same message in a paired room is refused, and AC-7.6 is its
-  // audit line.
-  h.feed.push(message(PAIRED_ROOM, 42, `@${alpha} do the thing`, "supergroup"));
+  // AC-2.1: the same message from the operator in a paired room now routes there,
+  // and the session is born in the room rather than in the DM.
+  h.feed.push(message(PAIRED_ROOM, 42, `@${alpha} do the thing`, "supergroup", true));
   await h.settle(150);
-  assert.match(h.sent.at(-1)?.text ?? "", /direct message with the bot/);
-  assert.match(h.sent.at(-1)?.text ?? "", /@alpha[\s\S]*@beta/);
-  assert.deepEqual(d.prompts, ["agent-alpha:do the thing"]);
-  assert.deepEqual(
-    audits(h.store, "ws.path").map((row) => row.result),
-    ["denied"],
+  assert.deepEqual(d.prompts, ["agent-alpha:do the thing", "agent-alpha:do the thing"]);
+  assert.equal(
+    (
+      h.store.db.prepare("SELECT chat_id FROM sessions ORDER BY rowid DESC").get() as {
+        chat_id: string;
+      }
+    ).chat_id,
+    String(PAIRED_ROOM),
   );
-  // AC-7.3: a private conversation with a sender who is not the operator, which
-  // is the first entry of the sender allowlist.
+  assert.deepEqual(audits(h.store, "ws.path"), [], "nothing was refused");
+
+  // AC-2.2, twice: an allowlisted sender who is not the operator, once in the room
+  // and once in a private conversation of their own. Both are refused with the
+  // sentence that says who may write the form, and both leave the audit line.
+  h.feed.push(message(PAIRED_ROOM, 77, `@${alpha} do the thing`, "supergroup", true));
+  await h.settle(150);
+  assert.match(h.sent.at(-1)?.text ?? "", /first sender on this channel's allowlist/);
+  assert.match(h.sent.at(-1)?.text ?? "", /@alpha[\s\S]*@beta/);
   h.feed.push(message(77, 77, `@${alpha} do the thing`));
   await h.settle(150);
-  assert.match(h.sent.at(-1)?.text ?? "", /direct message with the bot/);
-  assert.deepEqual(d.prompts, ["agent-alpha:do the thing"]);
+  assert.match(h.sent.at(-1)?.text ?? "", /first sender on this channel's allowlist/);
+  assert.deepEqual(d.prompts, ["agent-alpha:do the thing", "agent-alpha:do the thing"]);
+  assert.deepEqual(
+    audits(h.store, "ws.path").map((row) => row.result),
+    ["denied", "denied"],
+  );
   // AC-7.5: a token that is neither an absolute path nor a slug. `@foo!bar` used
   // to fall through as prompt text, which the wider regex deliberately ends.
   for (const token of ["@bukan-slug", "@foo!bar"]) {
@@ -2775,7 +3170,15 @@ test("the path form is read in the operator's DM and refused everywhere else", a
     await h.settle(80);
     assert.match(h.sent.at(-1)?.text ?? "", /No workspace is called/);
   }
-  assert.deepEqual(d.prompts, ["agent-alpha:do the thing"]);
+  // AC-3.4: outside `/new` a bare path is prompt text, so a line that opens with
+  // one reaches the agent whole rather than naming a workspace nobody chose.
+  h.feed.push(message(42, 42, `${alpha}/src fix the bug`));
+  await h.settle(150);
+  assert.deepEqual(d.prompts, [
+    "agent-alpha:do the thing",
+    "agent-alpha:do the thing",
+    `agent-alpha:${alpha}/src fix the bug`,
+  ]);
   await h.finish();
 });
 
@@ -2804,11 +3207,12 @@ test("a path written with ~ reaches the path branch, not the slug list", async (
   assert.ok(answered.includes(homedir()), answered);
   assert.equal(answered.includes("~"), false, answered);
 
-  // AC-5: the room refuses it the same way it refuses an absolute path, and
-  // leaves the same audit line. A tilde is not a way around the DM rule.
-  h.feed.push(message(PAIRED_ROOM, 42, `${"@"}${absent} do the thing`, "supergroup"));
+  // AC-5: the room refuses it from a sender who is not the operator, the same way
+  // it refuses an absolute path, and leaves the same audit line. A tilde is not a
+  // way around the operator rule.
+  h.feed.push(message(PAIRED_ROOM, 77, `${"@"}${absent} do the thing`, "supergroup", true));
   await h.settle(150);
-  assert.match(h.sent.at(-1)?.text ?? "", /direct message with the bot/);
+  assert.match(h.sent.at(-1)?.text ?? "", /first sender on this channel's allowlist/);
   assert.deepEqual(
     audits(h.store, "ws.path").map((row) => row.result),
     ["denied"],
@@ -2830,7 +3234,9 @@ test("a path the config does not name is written by a signed card, or not at all
   process.env.CARAKA_HOME = home;
   try {
     const root = await mkdtemp(join(tmpdir(), "caraka-wsadd-"));
-    const fresh = join(root, "kelinci");
+    // Outside `root`, which is the configured workspace: a proposal that sits
+    // inside one is refused now, and the refusal has a test of its own below.
+    const fresh = join(await mkdtemp(join(tmpdir(), "caraka-wsadd-else-")), "kelinci");
     await mkdir(fresh);
     // The file the writer appends to, in the shape the harness holds in memory.
     const configPath = join(home, "config.yaml");
@@ -2899,13 +3305,17 @@ test("the card refuses before it is drawn, and every wrong press leaves the file
     const before = await readFile(configPath, "utf8");
     const d = heldDriver();
     const h = await harness({ root, allowFrom: ["42", "77"], driver: d.driver });
+    // Every proposal below sits outside `root`, which is the configured workspace:
+    // a path that contains or is contained by one is refused now, and the refusal
+    // has a table of its own in `test/unit.test.ts`.
+    const away = await mkdtemp(join(tmpdir(), "caraka-wsrefuse-away-"));
     // AC-8.2: a path that is no directory is refused before any card.
-    h.feed.push(message(42, 42, `@${join(root, "nowhere")} do the thing`));
+    h.feed.push(message(42, 42, `@${join(away, "nowhere")} do the thing`));
     await h.settle();
     assert.match(h.sent.at(-1)?.text ?? "", /is not a directory Caraka can find/);
     assert.equal(h.sent.at(-1)?.markup, undefined);
     // AC-8.3: the slug `basename` would give is already the config's own.
-    const twin = join(root, basename(root));
+    const twin = join(away, basename(root));
     await mkdir(twin);
     h.feed.push(message(42, 42, `@${twin} do the thing`));
     await h.settle();
@@ -2913,7 +3323,7 @@ test("the card refuses before it is drawn, and every wrong press leaves the file
     assert.equal(h.sent.at(-1)?.markup, undefined);
 
     const offer = async (name: string) => {
-      const path = join(root, name);
+      const path = join(away, name);
       await mkdir(path, { recursive: true });
       h.feed.push(message(42, 42, `@${path} do the thing`));
       await h.settle();
@@ -2946,7 +3356,7 @@ test("the card refuses before it is drawn, and every wrong press leaves the file
 
     // Two cards for one path, both pressed: the slug was free when the second
     // was minted, and the second press writes no second entry under it.
-    const twice = join(root, "dua-kartu");
+    const twice = join(away, "dua-kartu");
     await mkdir(twice);
     h.feed.push(message(42, 42, `@${twice} do the thing`));
     await h.settle();
@@ -2973,13 +3383,151 @@ test("the card refuses before it is drawn, and every wrong press leaves the file
     await h.settle(120);
     assert.match(h.sent.at(-1)?.text ?? "", /not valid or has ended/);
     assert.equal(await readFile(configPath, "utf8"), afterOne);
+
+    // A parent and a child, both cards minted while neither was a workspace yet.
+    // The overlap is free until a press takes it, exactly as the slug above is, so
+    // it is read again on the press: without that, two messages nest one inside
+    // the other and `/yolo` on the parent covers everything under it.
+    const parent = join(away, "induk");
+    const nested = join(parent, "anak");
+    await mkdir(nested, { recursive: true });
+    h.feed.push(message(42, 42, `@${parent} do the thing`));
+    await h.settle();
+    const parentCard = h.buttons()[0]?.callback_data ?? "";
+    h.feed.push(message(42, 42, `@${nested} do the thing`));
+    await h.settle();
+    const nestedCard = h.buttons()[0]?.callback_data ?? "";
+    assert.notEqual(parentCard, nestedCard, "neither path refused the other's card");
+    h.feed.push(callback(42, nestedCard));
+    await h.settle(200);
+    const afterNested = await readFile(configPath, "utf8");
+    h.feed.push(callback(42, parentCard));
+    await h.settle(120);
+    // The same sentence the slug collision above answers with, and for the same
+    // reason: the config moved under a card that was valid when it was drawn.
+    assert.match(h.sent.at(-1)?.text ?? "", /already used or has expired/);
+    assert.equal(await readFile(configPath, "utf8"), afterNested, "the parent was not written");
+
     // Every press that was not the card's own leaves a line, and the one grant
     // here is the first of the two presses on the same id. An operator's no
     // writes none: it is an answer, not a refused press, which is how the trust
     // and pairing cards have always recorded it.
     assert.deepEqual(
       audits(h.store, "ws.add").map((row) => row.result),
-      ["denied", "granted", "denied", "granted", "denied", "denied"],
+      // The last pair is the nested card and the parent that followed it: one
+      // entry written, one press refused by a config that moved under it.
+      ["denied", "granted", "denied", "granted", "denied", "denied", "granted", "denied"],
+    );
+    await h.finish();
+  } finally {
+    if (oldHome === undefined) delete process.env.CARAKA_HOME;
+    else process.env.CARAKA_HOME = oldHome;
+  }
+});
+
+test("a path named in a room is answered in the operator's DM, and the room is told nothing else", async () => {
+  // AC-2.3, AC-2.4, AC-2.6 and AC-3.6. The room reads one sentence whatever the
+  // answer turns out to be, because a card, `ws.pathMissing`, and `ws.slugTaken`
+  // naming a configured path are three answers that can be told apart, which is
+  // the primitive `isdir(p)` for any `p` in front of everyone who can see the room
+  // (`docs/security.md` T6b).
+  const oldHome = process.env.CARAKA_HOME;
+  const home = await mkdtemp(join(tmpdir(), "caraka-wsroom-home-"));
+  process.env.CARAKA_HOME = home;
+  try {
+    const root = await mkdtemp(join(tmpdir(), "caraka-wsroom-"));
+    const away = await mkdtemp(join(tmpdir(), "caraka-wsroom-away-"));
+    await writeFile(join(home, "config.yaml"), stringify(defaultConfig(root, "b", "42", false)), {
+      mode: 0o600,
+    });
+    const fresh = join(away, "coret");
+    await mkdir(fresh);
+    await writeFile(join(away, "berkas.txt"), "not a directory");
+    const d = heldDriver();
+    const h = await harness({
+      root,
+      topics: true,
+      driver: d.driver,
+      allowFrom: ["42", "77"],
+      allowChats: [String(PAIRED_ROOM), "42", "77"],
+      modes: { [String(PAIRED_ROOM)]: "assisted" },
+      // The one workspace sits inside `root`, so `root` itself is a proposal that
+      // contains a workspace and draws the overlap refusal.
+      workspaces: [{ slug: "utama", path: join(root, "utama") }],
+    });
+    await mkdir(join(root, "utama"));
+    // The owner's own example, in the room, with the folder and the title in one
+    // message and no sigil typed. `is_forum` is the container's own answer and the
+    // one core asks for before it opens a topic.
+    h.feed.push({
+      message: {
+        message_id: 1,
+        from: { id: 42, first_name: "Rama", is_bot: false },
+        chat: { id: PAIRED_ROOM, type: "supergroup", is_forum: true },
+        text: `/new ${fresh} Coret`,
+        addressed: true,
+      } as TelegramMessage,
+    });
+    await h.settle(150);
+    // AC-2.3: the card is on the operator's own chat id, and the room holds no
+    // keyboard at all. `handleCallback` strips a card's buttons for every
+    // allowlisted presser before it reads the purpose, so a card left in a shared
+    // room can be disarmed by anybody in it.
+    const card = h.sent.filter((item) => item.markup).at(-1);
+    assert.equal(card?.chatId, "42");
+    assert.match(card?.text ?? "", /workspace coret/);
+    assert.equal(
+      h.sent.some((item) => item.chatId === String(PAIRED_ROOM) && item.markup),
+      false,
+    );
+
+    // AC-2.4: five answers, one sentence. The room is told the same thing for a
+    // directory that exists, one that does not, a path that is a file, a slug the
+    // config already holds, a path with no usable slug, and a path that overlaps a
+    // workspace.
+    const roomText = () =>
+      h.sent.filter((item) => item.chatId === String(PAIRED_ROOM)).map((item) => item.text);
+    const asked = roomText();
+    for (const path of [
+      join(away, "nowhere"),
+      join(away, "berkas.txt"),
+      join(away, "utama"),
+      "/",
+      root,
+    ]) {
+      if (path === join(away, "utama")) await mkdir(path);
+      h.feed.push(message(PAIRED_ROOM, 42, `@${path} do the thing`, "supergroup", true));
+      await h.settle(120);
+    }
+    const answers = roomText();
+    assert.equal(answers.length, asked.length + 5);
+    assert.deepEqual(new Set(answers), new Set(asked), "every answer to the room is one sentence");
+    assert.match(asked[0] ?? "", /answered in the private conversation/);
+    // And the real answers went to the operator, where they can be acted on.
+    assert.ok(h.sent.some((item) => item.chatId === "42" && /is not a directory/.test(item.text)));
+    assert.ok(h.sent.some((item) => item.chatId === "42" && /no usable name/.test(item.text)));
+    assert.ok(
+      h.sent.some((item) => item.chatId === "42" && /overlaps the workspace/.test(item.text)),
+    );
+
+    // AC-2.6 and AC-3.6: the press is in the DM and the session is born in the
+    // room, titled `Coret`, with nothing sent to the driver.
+    const rows = card?.markup?.inline_keyboard as
+      | Array<Array<{ callback_data: string }>>
+      | undefined;
+    const row = rows?.[0] ?? [];
+    h.feed.push(callback(42, row[0]?.callback_data ?? ""));
+    await h.settle(250);
+    const session = h.store.db
+      .prepare("SELECT chat_id AS chat, title, workspace FROM sessions ORDER BY rowid DESC")
+      .get() as { chat: string; title: string; workspace: string };
+    assert.equal(session.chat, String(PAIRED_ROOM));
+    assert.equal(session.title, "Coret");
+    assert.equal(session.workspace, "coret");
+    assert.deepEqual(d.prompts, [], "a session was opened, not a run started");
+    assert.ok(
+      h.calls.some((call) => call === "createForumTopic:Coret"),
+      h.calls.join(" | "),
     );
     await h.finish();
   } finally {
@@ -3363,6 +3911,17 @@ test("a Discord slash command opens a thread, is approved by button, and the thr
     ).n,
     1,
   );
+
+  // AC-1.9 of `spec/grup-nyaman.md`: a session that continues unarchives its own
+  // thread, on the one transition the archive followed. Both halves are the same
+  // `PATCH` with the flag turned the other way, and no file both channels share
+  // branches on which of them answered.
+  h.command("caraka", "one more thing");
+  await h.settle(250);
+  const reopen = h.rest.find(
+    (call) => call.path === `/channels/${THREAD}` && call.body.archived === false,
+  );
+  assert.ok(reopen && reopen.at > archive.at, "the thread was unarchived after being archived");
   await h.finish();
 });
 

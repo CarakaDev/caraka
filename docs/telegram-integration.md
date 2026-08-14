@@ -28,7 +28,7 @@ Target versi: **Bot API 10.2** dengan degradasi otomatis ke jalur lama bila serv
 |---|---|---|
 | Sesi ber-tab | `createForumTopic` di private chat | mode linear + header `[ws · #id]` |
 | Status sesi terlihat sekilas | `editForumTopic` (`name`, `icon_custom_emoji_id`) | prefiks di nama topic |
-| Menandai sesi selesai | `editForumTopic` — lihat catatan di bawah | pesan penutup saja |
+| Menandai sesi selesai | `editForumTopic` lalu `closeForumTopic` — lihat catatan di bawah | pesan penutup saja |
 | Hasil terstruktur (diff, tabel, test) | `sendRichMessage` dengan input Markdown | teks polos yang sudah di-scrub dan dipecah |
 | Streaming progres | `sendRichMessageDraft` + `InputRichBlockThinking` | `editMessageText` teks polos |
 | Approval | `InlineKeyboardButton` | tolak permission bila callback tidak tersedia; teks tidak pernah menjadi approval |
@@ -37,19 +37,47 @@ Target versi: **Bot API 10.2** dengan degradasi otomatis ke jalur lama bila serv
 | Voice note masuk | unduh file → transcriber user (opsional) | tolak dengan pesan jelas |
 | Lapisan izin kedua | access whitelist @BotFather (**belum terverifikasi**, §6) | allowlist kita saja |
 
-### Kenapa sesi di DM tidak ditutup dengan `closeForumTopic`
+### Sesi ditutup di grup, dan tidak ditutup di DM
 
-Versi sebelumnya dokumen ini memasangkan "menutup sesi" dengan `closeForumTopic`.
-Itu salah. Deskripsi Bot API untuk `closeForumTopic` dan `reopenForumTopic`
-berbunyi "in a forum supergroup chat" saja. Klausa "or a private chat with a
-user" ada di `createForumTopic`, `editForumTopic`, `deleteForumTopic`, dan
+Deskripsi Bot API untuk `closeForumTopic` dan `reopenForumTopic` berbunyi "in a
+forum supergroup chat" saja. Klausa "or a private chat with a user" ada di
+`createForumTopic`, `editForumTopic`, `deleteForumTopic`, dan
 `unpinAllForumTopicMessages`, dan tidak ada di keduanya. Topic di DM memang bisa
-dibuat dan diubah, tetapi tidak ada method berdokumentasi yang menutupnya.
+dibuat dan diubah, tetapi tidak ada method berdokumentasi yang menutupnya, dan
+sesi di sana berhenti di penggantian nama.
 
-`editForumTopic` hanya mengekspos `name` dan `icon_custom_emoji_id`; tidak ada
-flag `closed` yang bisa dipakai sebagai gantinya. Satu-satunya method yang
-menghilangkan topic di DM adalah `deleteForumTopic`, dan ia menghapus seluruh
-transkrip bersamanya.
+Versi sebelumnya dokumen ini menyimpulkan dari situ bahwa grup pun tidak bisa.
+Itu salah, dan sejak 1.4.3 diperbaiki. Di grup haknya sudah dipegang:
+`can_manage_topics` didefinisikan sebagai "allowed to create, rename, close, and
+reopen forum topics", dan `gateway.ts` hanya menyalakan `forumChats` untuk grup
+ketika hak itu ada. Deskripsi kedua method juga memuat pengecualian "unless it is
+the creator of the topic", dan sejak 1.3.1 Caraka hanya menyentuh thread yang
+dibukanya sendiri, jadi ia selalu pencipta topic yang akan ditutupnya.
+
+Menutup tidak menghilangkan apa pun: ia `messages.editForumTopic` dengan flag
+`closed` saja, ditambah satu service message `forum_topic_closed`. Yang
+menghapus transkrip adalah method sebelahnya, yang menghapus topic "along with
+all its messages", dan repositori ini tidak menyebut namanya di `src/` sama
+sekali — satu test gagal kalau nama itu muncul.
+
+Dua hal yang ikut mengikat. Penutupan dan penggantian nama adalah dua panggilan:
+`TOPIC_CLOSE_SEPARATELY` menyatakan flag `close` tidak boleh dikirim bersama flag
+lain, jadi `editForumTopic` tidak bisa membawa keduanya. Dan `reopenForumTopic`
+dipanggil tepat pada transisi yang penutupan terjadi — dari
+`done`/`failed`/`cancelled` kembali ke `running` — karena `TOPIC_NOT_MODIFIED`
+adalah galat 400 untuk bot, sehingga penutupan-pembukaan per pesan masuk adalah
+bentuk yang menarik flood wait.
+
+Sesudah sebuah topic ditutup, yang masih bisa menulis di dalamnya hanya admin
+ber-`can_manage_topics` dan pencipta topic; anggota biasa mendapat
+`TOPIC_CLOSED`. Itu konsekuensi yang dipilih sadar, dan `session-model.md` §5
+mencatatnya alih-alih membiarkan tabelnya berbohong.
+
+`closeGeneralForumTopic` dan keluarganya tidak dipakai, dan `message_thread_id`
+bernilai `1` tidak pernah dikirim: `ForumTopicId::general()` bernilai 1, jadi
+`closeForumTopic` dengan 1 kemungkinan besar benar-benar menutup General. Pesan di
+General tidak membawa `message_thread_id`, sehingga `session.threadId` kosong dan
+`setState` sudah kembali lebih dulu.
 
 **`icon_color` tidak bisa diubah setelah topic dibuat.** Parameter itu hanya ada
 di `createForumTopic`; tabel parameter `editForumTopic` berisi `chat_id`,
@@ -60,11 +88,12 @@ dilakukan lewat API yang sama: warna terkunci saat topic dibuat, dan yang masih
 bisa berubah adalah nama topic dan custom emoji-nya. Model warna-per-state perlu
 keputusan di spec, bukan penulisan ulang diam-diam di sini.
 
-Karena itu sesi yang selesai ditandai lewat `editForumTopic` — nama dan ikonnya
-berubah, topic-nya tetap terbuka dan tetap bisa dibaca. Caraka tidak memanggil
-`closeForumTopic` pada chat bertipe `private`. Yang belum diuji: apakah Telegram
-benar-benar mengembalikan galat bila dipanggil di sana, atau sekadar tidak
-mendokumentasikannya.
+Karena itu urutannya penggantian nama lalu penutupan, dan ringkasan penutup
+dikirim sebelum keduanya. Yang belum diuji terhadap server sungguhan: apakah
+Telegram benar-benar mengembalikan galat untuk `closeForumTopic` di chat bertipe
+`private`, atau sekadar tidak mendokumentasikannya. Jawabannya tidak dijadikan
+dasar perilaku apa pun — `.catch(() => undefined)` di `setState` tidak membaca
+isinya, dan sesi tetap tertandai.
 
 ---
 

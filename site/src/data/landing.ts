@@ -195,6 +195,7 @@ export const verse = [
 
 /** Footer links, in mockup order. Local paths replace the comps' filenames. */
 export const footerLinks = [
+  { label: 'Guide', href: '/guide' },
   { label: 'Docs', href: '/docs' },
   { label: 'Story', href: '/story' },
   { label: 'Compare', href: '/compare' },

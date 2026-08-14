@@ -362,6 +362,10 @@ export class Discord implements Channel {
     return this.call("PATCH", `/channels/${threadId}`, { archived: true });
   }
 
+  resumeThread(_chatId: string, threadId: string) {
+    return this.call("PATCH", `/channels/${threadId}`, { archived: false });
+  }
+
   // ---- Identity, commands, interactions ---------------------------------
 
   async getMe() {
@@ -675,7 +679,11 @@ export class Discord implements Channel {
               })),
             }
           : {}),
-        text: message.content ?? "",
+        // This app's own mention, cut when it opens the message, so a command
+        // behind one reaches the router core already has. `<@!ID>` is the
+        // deprecated nickname form and old clients still send it. Only offset 0
+        // is cut; a mention further along is part of what was said.
+        text: (message.content ?? "").replace(new RegExp(`^<@!?${this.appId}>\\s*`), ""),
       },
     });
   }

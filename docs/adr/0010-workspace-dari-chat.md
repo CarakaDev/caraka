@@ -3,6 +3,7 @@
 **English:** this document is Indonesian only, and stays that way because an accepted decision record is never rewritten. English documentation starts at [`../../README.md`](../../README.md).
 
 **Status:** Diterima · **Tanggal:** 13 Agustus 2026
+**Sebagian digantikan:** keputusan 1, "hanya di percakapan pribadi antara Caraka dan operator", digantikan [ADR-0011](0011-workspace-dari-ruangan-oleh-operator.md) pada 14 Agustus 2026 menjadi "operator, di container mana pun yang Caraka layani". Yang klausa itu benar-benar jaga adalah siapa yang memilih string-nya, dan itu tetap operator. Keputusan 2 sampai 5 dan seluruh konsekuensi tetap berlaku.
 **Memakai bentuk dari:** [ADR-0004](0004-approval-hanya-lewat-callback.md) — kartu bertanda tangan, sekali pakai, ber-TTL, terikat principal. Keputusan ini tidak mengubah ADR-0004; ia memakai mekanismenya untuk pertanyaan kedua.
 
 ## Konteks

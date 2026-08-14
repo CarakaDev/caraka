@@ -35,7 +35,7 @@ import {
   type InboundEvent,
   type InboundMessage,
 } from "../src/core/channel.js";
-import { expandHome, Gateway } from "../src/core/gateway.js";
+import { expandHome, Gateway, markWorkspace } from "../src/core/gateway.js";
 import {
   agentChecks,
   buildDriver,
@@ -1063,6 +1063,49 @@ test("no chat path can reach Claude's bypass mode", async () => {
   assert.match(await read("core/security.ts"), /cedingOptionIds = new Set\(\["bypassPermissions"/);
 });
 
+test("a topic is closed and reopened by name, and no file under src/ deletes one", async () => {
+  // AC-1.1 and AC-1.2. The method names and their two parameters, read off the
+  // real adapter with a stub fetcher: the e2e harness uses a fake channel, which
+  // can only prove that core called something. `close` and `reopen` are separate
+  // calls because `TOPIC_CLOSE_SEPARATELY` refuses the close flag beside another,
+  // and the topic id goes on the wire as a number.
+  const requests: Array<{ method: string; body: Record<string, unknown> }> = [];
+  const fetcher: typeof fetch = async (input, init) => {
+    requests.push({
+      method: String(input).split("/").at(-1) ?? "",
+      body: JSON.parse(String(init?.body)) as Record<string, unknown>,
+    });
+    return new Response(JSON.stringify({ ok: true, result: true }), {
+      headers: { "content-type": "application/json" },
+    });
+  };
+  const telegram = new Telegram("fake-token", fetcher);
+  await telegram.finishThread("-1001234", "7001");
+  await telegram.resumeThread("-1001234", "7001");
+  assert.deepEqual(
+    requests.map((request) => request.method),
+    ["closeForumTopic", "reopenForumTopic"],
+  );
+  for (const request of requests)
+    assert.deepEqual(request.body, { chat_id: "-1001234", message_thread_id: 7001 });
+
+  // The other call in that family deletes a topic "along with all its messages",
+  // and this repository has avoided it from the start. The name is absent from
+  // `src/` entirely, comments included, so no spelling of a call to it — and no
+  // future paste of one — can pass here. The sweep reads the tree the way the
+  // bypass-mode test above does.
+  const root = new URL("../src/", import.meta.url);
+  const files = (await readdir(root, { recursive: true })).filter((name) => name.endsWith(".ts"));
+  assert.ok(files.length > 20, `the sweep read ${files.length} files`);
+  for (const name of files) {
+    const source = await readFile(new URL(name, root), "utf8");
+    assert.equal(source.includes("deleteForumTopic"), false, name);
+    // And `message_thread_id: 1` is General, which has methods of its own and no
+    // creator exemption. Nothing writes the literal.
+    assert.doesNotMatch(source, /message_thread_id: 1[,\s}]/, name);
+  }
+});
+
 test("no file under src/ passes shell to a process call", async () => {
   // AC-5.1 and AC-5.2 (spec spawn-windows). With `shell` on, Node sets
   // `windowsVerbatimArguments` for CMD itself and per-argument escaping goes
@@ -1637,8 +1680,12 @@ test("durations parse, and sixty minutes is the ceiling", () => {
 test("the three sentences about a workspace say where the authority is, in both catalogs", () => {
   // AC-10.2, written by hand for the same reason the pairing test below is: no
   // tool can see a sentence that is true in one catalog and wrong in the other.
-  assert.match(catalogs.en["ws.pathDmOnly"], /direct message with the bot/);
-  assert.match(catalogs.id["ws.pathDmOnly"], /pesan langsungmu sendiri dengan bot/);
+  // The sentence stopped promising a DM when the form opened to every container
+  // the operator writes in (ADR-0011). What it still has to name is who.
+  assert.match(catalogs.en["ws.pathOperatorOnly"], /first sender on this channel's allowlist/);
+  assert.match(catalogs.id["ws.pathOperatorOnly"], /pengirim pertama di allowlist channel ini/);
+  assert.doesNotMatch(catalogs.en["ws.pathOperatorOnly"], /direct message/);
+  assert.doesNotMatch(catalogs.id["ws.pathOperatorOnly"], /pesan langsung/);
   assert.match(catalogs.en["ws.addCard"], /writes the entry into config\.yaml/);
   assert.match(catalogs.id["ws.addCard"], /menulis entrinya ke config\.yaml/);
   assert.match(catalogs.en["trust.closedAll"], /every open trust window was closed/);
@@ -1646,14 +1693,66 @@ test("the three sentences about a workspace say where the authority is, in both 
   assert.match(catalogs.en["cli.trustNotWorkspace"], /named in config\.yaml/);
   assert.match(catalogs.id["cli.trustNotWorkspace"], /ditulis di config\.yaml/);
   for (const catalog of Object.values(catalogs)) {
-    assert.match(catalog["ws.pathDmOnly"], /\{list\}/);
+    assert.match(catalog["ws.pathOperatorOnly"], /\{list\}/);
     assert.match(catalog["ws.pathMissing"], /\{path\}/);
     assert.match(catalog["ws.slugTaken"], /\{slug\}[\s\S]*\{path\}/);
+    assert.match(catalog["ws.slugBad"], /\{path\}/);
+    assert.match(catalog["ws.pathOverlap"], /\{path\}[\s\S]*\{slug\}[\s\S]*\{existing\}/);
     assert.match(catalog["ws.addCard"], /\{path\}[\s\S]*\{slug\}/);
     assert.match(catalog["ws.added"], /\{slug\}[\s\S]*\{path\}/);
     assert.match(catalog["trust.closedAll"], /\{n\}/);
+    // AC-4.4 of `spec/grup-nyaman.md`: the trust card names the directory beside
+    // the slug, because a workspace can be added from chat and a slug alone is a
+    // name the operator has to remember a card from ten minutes ago to check.
+    assert.match(catalog["trust.card"], /\{workspace\}[\s\S]*\{path\}/);
     assert.match(catalog["cli.trustNotWorkspace"], /\{path\}[\s\S]*\{list\}/);
   }
+});
+
+test("the four /help bodies fit, carry no markup, and say what each container refuses", () => {
+  // AC-6.2 through AC-6.5. Two limits bind the text and both were measured rather
+  // than guessed. Length: Discord truncates `content` at 2000 characters without an
+  // error, and only `sendResult` splits, so 2000 is the ceiling for all four.
+  // Format: Telegram's `sendText` is called with no `parse_mode`, so a backtick
+  // arrives as a backtick, while Discord renders the same string as markdown — one
+  // string cannot carry two renders, so it carries neither.
+  const LIMIT = 2000;
+  for (const [language, catalog] of Object.entries(catalogs)) {
+    const room = catalog["help.room"];
+    // The worst case in a room is the body, a blank line, and the longest readiness
+    // pair the channel can append, which is what `/help` in a room actually sends.
+    const readiness = Math.max(
+      ...(["group.ready", "group.readyAll"] as const).map((key) => catalog[key].length),
+    );
+    const worst = room.length + 2 + readiness + catalog["group.topicsOff"].length;
+    assert.ok(
+      catalog["help.direct"].length < LIMIT,
+      `${language} direct ${catalog["help.direct"].length}`,
+    );
+    assert.ok(worst < LIMIT, `${language} room worst case ${worst}`);
+    // AC-6.3
+    for (const key of ["help.direct", "help.room"] as const)
+      assert.doesNotMatch(catalog[key], /[`*]/, `${language} ${key}`);
+  }
+  // AC-6.4: an ordinary task, a slug, the path form, the topic that is closed and
+  // not deleted, that no word approves anything, and one line per gateway command.
+  const direct = catalogs.en["help.direct"];
+  assert.match(direct, /add a rate limit to the login route/);
+  assert.match(direct, /@toko-api/);
+  assert.match(direct, /\/new ~\//);
+  assert.match(direct, /closed, not deleted/);
+  assert.match(direct, /No word you type decides anything/);
+  for (const entry of gatewayCommands)
+    for (const catalog of Object.values(catalogs))
+      assert.match(catalog["help.direct"], new RegExp(`\n/${entry.command}[ \n]`), entry.command);
+  // AC-6.5
+  const room = catalogs.en["help.room"];
+  assert.match(room, /inside a session topic too/);
+  assert.match(room, /read-only/);
+  assert.match(room, /config\.yaml/);
+  assert.match(room, /approval cards/);
+  assert.match(room, /slug/);
+  assert.match(room, /by its path/);
 });
 
 test("an untitled session is named in both catalogs", () => {
@@ -2053,9 +2152,13 @@ test("the titen adapter sends the bodies a running titen accepts", async () => {
 
 test("the memory commands are in the help text and the Telegram menu", () => {
   // AC-7.8's static half; the dispatch chain itself is proved end to end.
+  // Both bodies: the room lists the names and the DM explains each one, so a
+  // command that fell out of one of them is a command nobody in that container
+  // can find.
   for (const [language, catalog] of Object.entries(catalogs))
     for (const name of ["/ingat", "/lupakan", "/memori"])
-      assert.ok(catalog["help.body"].includes(name), `${language} ${name}`);
+      for (const key of ["help.direct", "help.room"] as const)
+        assert.ok(catalog[key].includes(name), `${language} ${key} ${name}`);
   for (const name of ["ingat", "lupakan", "memori"])
     assert.ok(
       gatewayCommands.some((entry) => entry.command === name),
@@ -5993,6 +6096,174 @@ test("a leading tilde is a home path, and a tilde anywhere else is not", () => {
   // tilde in the middle of a token is an ordinary character.
   for (const token of ["~coret", "~root/x", "/srv/~/x", "a~/b", "alpha", "/abs/path"])
     assert.equal(expandHome(token, home), token, token);
+});
+
+test("/new reads its first word as a folder only when that word is a path", () => {
+  // AC-3.1, AC-3.2 and AC-3.3. `home` is a parameter, so this asserts the rule
+  // rather than the layout of whatever machine runs the gate. The output is the
+  // `@` spelling that already worked before this release and already has tests,
+  // which is what keeps `parseCommand`, `routeTask`'s `at`, and `workspaceForPath`
+  // untouched by this feature.
+  const home = "/home/rama";
+  const mark = (argument: string) => markWorkspace(argument, home);
+  // AC-3.1: a path, with a title behind it and without one.
+  assert.equal(mark("~/Project/coret Coret"), "@~/Project/coret Coret");
+  assert.equal(mark("/etc Coret"), "@/etc Coret");
+  assert.equal(mark("~/Project/coret"), "@~/Project/coret");
+  assert.equal(mark("~ Coret"), "@~ Coret");
+  // AC-3.1: the rest of the line is the title, newlines and all.
+  assert.equal(mark("/srv/app fix the\nlogin bug"), "@/srv/app fix the\nlogin bug");
+  // AC-3.2: not absolute, so the whole line is a title — including a line that
+  // holds a slash and a word that happens to be a workspace slug.
+  for (const argument of [
+    "Project/coret Coret",
+    "coret Coret",
+    "fix src/auth.ts please",
+    "~coret Coret",
+    "",
+  ])
+    assert.equal(mark(argument), argument, argument);
+  // AC-3.3: an argument that already carries the sigil is passed through, so the
+  // token is marked once and never twice.
+  for (const argument of ["@coret Coret", "@~/Project/coret Coret", "@/etc Coret"])
+    assert.equal(mark(argument), argument, argument);
+});
+
+test("a proposed workspace is refused before its card, and the card is the operator's", async () => {
+  // AC-2.7, AC-4.1, AC-4.2, AC-4.3 and AC-4.5. `workspaceOffer` is reached by cast
+  // for the reason `memoryLines` above is: what is under test is the refusal, and
+  // a run per case would buy nothing but a gateway turn. A refusal is a body with
+  // no markup, so "before the card is drawn" is an assertion rather than a
+  // sentiment.
+  const root = await mkdtemp(join(tmpdir(), "caraka-offer-"));
+  const configured = join(root, "Coret");
+  const away = await mkdtemp(join(tmpdir(), "caraka-offer-away-"));
+  await mkdir(configured);
+  const scrub = createScrubber();
+  const store = new Store(join(root, "test.db"), scrub);
+  const channel = {
+    id: "telegram",
+    caps: { threads: false, buttons: true, edit: true, maxChars: 4096 },
+    sendText: async () => ({ message_id: 0 }),
+  } as unknown as Channel;
+  const gateway = new Gateway(
+    {
+      ...defaultConfig(root, "caraka_test_bot", "42", false),
+      // The slug deliberately differs from `basename(path)`, so the path clash and
+      // the slug clash below are two assertions and not one twice. The second
+      // entry is spelled in a case no directory here is written in, which is what
+      // the fold below is read against; a config path is never stat'ed, so it
+      // needs no directory of its own.
+      workspaces: [
+        { slug: "utama", path: configured },
+        { slug: "kotak", path: join(root, "MIXEDcase") },
+      ],
+    },
+    Buffer.alloc(32, 9),
+    [channel],
+    (async () => undefined) as unknown as DriverFor,
+    store,
+    scrub,
+  );
+  const inner = gateway as unknown as {
+    workspaceOffer(
+      message: InboundMessage,
+      path: string,
+      text: string,
+      create: boolean,
+    ): { text: string; markup?: Record<string, unknown> };
+    pendingWorkspaces: Map<string, { principal: string; create: boolean; expiresAt: number }>;
+  };
+  // `from` is 77, who is not the operator: the router refuses that sender today,
+  // and the field this asserts is what would decide the card if it ever did not.
+  const from = (id: string) =>
+    ({
+      message_id: 1,
+      chat: { id: "-1009990001", type: "supergroup" },
+      from: { id },
+    }) as InboundMessage;
+  const offer = (path: string, id = "77", create = false) =>
+    inner.workspaceOffer(from(id), path, "do the thing", create);
+
+  // AC-4.1: `basename(resolve("/"))` is the empty string, and `addAllowedWorkspace`
+  // does not re-validate. One press wrote a `config.yaml` that `loadConfig`
+  // refuses, and before the restart an empty slug read as the first workspace.
+  for (const path of ["/", resolve("/etc/../")]) {
+    const answer = offer(path);
+    assert.match(answer.text, /no usable name for a workspace/, path);
+    assert.equal(answer.markup, undefined, path);
+  }
+  assert.equal(inner.pendingWorkspaces.size, 0, "no card was minted for a refusal");
+
+  // AC-4.2: the slug, case folded. `Сoret` with a Cyrillic Es is a different
+  // string to `===` and indistinguishable in a topic list; the same fold catches
+  // the two spellings that are one directory on APFS and NTFS.
+  const twinSlug = join(away, "UTAMA");
+  await mkdir(twinSlug);
+  assert.match(offer(twinSlug).text, /slug utama already points at/);
+  // AC-4.2, the path half: the same directory in another case, under a basename
+  // that clashes with no slug.
+  const twinPath = join(root, "CORET");
+  await mkdir(twinPath, { recursive: true });
+  assert.match(offer(twinPath).text, /already points at/);
+
+  // AC-4.3: a parent of a workspace, a child of one, and one that is it.
+  // `~/Project` holds 89 repositories on the machine ADR-0010 measured, so
+  // approving it is not a smaller grant than approving the disk.
+  const child = join(configured, "src");
+  await mkdir(child, { recursive: true });
+  for (const path of [root, child]) {
+    const answer = offer(path);
+    assert.match(answer.text, /overlaps the workspace utama/, path);
+    assert.equal(answer.markup, undefined, path);
+  }
+  // A proposal that is the workspace is refused by the clause above it, which
+  // names the same workspace and its path. Both refusals name what it collided
+  // with, and neither draws a card.
+  const same = offer(configured);
+  assert.match(same.text, /already points at/);
+  assert.equal(same.markup, undefined);
+
+  // AC-4.3 with the two spellings that are one directory on APFS and NTFS.
+  // `relative()` does not fold, so a proposal that lands inside a workspace in
+  // another case was accepted and the parent became a trust window over it. The
+  // fold is at this call site and never inside `insideWorkspace`, which
+  // `isHighRisk` reads in the direction where folding would accept more.
+  const folded = join(root, "mixedcase", "inner");
+  await mkdir(folded, { recursive: true });
+  const cased = offer(folded);
+  assert.match(cased.text, /overlaps the workspace kotak/);
+  assert.equal(cased.markup, undefined);
+
+  // The card that does go out, and the two fields the four defects were about.
+  const fresh = join(away, "kelinci");
+  await mkdir(fresh);
+  const card = offer(fresh, "77", true);
+  assert.match(card.text, /workspace kelinci/);
+  assert.ok(card.markup, "a path that passes every refusal draws a card");
+  const [entry] = [...inner.pendingWorkspaces.values()];
+  // AC-2.7: the operator, read from the channel. With `message.from` here, a card
+  // a non-operator triggered would be decidable by that non-operator, because
+  // `confirmed()` compares the presser against this field.
+  assert.equal(entry?.principal, "42");
+  // AC-3.6's half in the map: ten minutes on, the press still has to open a
+  // session rather than send its title to the agent as a prompt.
+  assert.equal(entry?.create, true);
+
+  // AC-4.5: nothing sweeps these entries but the press that spends one, and each
+  // retains a whole message and mints a DM. Two stale entries are put in through
+  // the clock, and the next offer drops them.
+  const realNow = Date.now;
+  Date.now = () => realNow.call(Date) - 11 * 60_000;
+  offer(join(away, "kelinci"));
+  await mkdir(join(away, "kedua"));
+  offer(join(away, "kedua"));
+  Date.now = realNow;
+  assert.equal(inner.pendingWorkspaces.size, 3, "two stale entries and the live one");
+  await mkdir(join(away, "ketiga"));
+  offer(join(away, "ketiga"));
+  assert.equal(inner.pendingWorkspaces.size, 2, "the stale pair went, the live pair stayed");
+  store.close();
 });
 
 test("every copy of the install prompt is byte-identical to the others", async () => {

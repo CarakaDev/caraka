@@ -184,8 +184,17 @@ tidak menyentuh keduanya.
 
 ### AC-2 · Thread yang dimiliki Caraka
 
-- **AC-2.1** WHEN pesan biasa dengan `addressed` bernilai false tiba di thread
-  yang punya sesi Caraka pada rute itu, core shall menyerahkannya ke agent.
+- **AC-2.1** ~~WHEN pesan biasa dengan `addressed` bernilai false tiba di thread
+  yang punya sesi Caraka pada rute itu, core shall menyerahkannya ke agent.~~
+  **Digantikan AC-5.1 `spec/grup-nyaman.md` pada 14 Agustus 2026:** core
+  mengabaikannya. Memegang sesi di sebuah thread bukan hal yang sama dengan
+  disapa; klausa ini menguji `sessionFor` dan bukan kepemilikan thread, sehingga
+  sebuah `/new` di dalam topic milik orang lain ikut membuka topic itu; dan
+  `group.readyAll`, yang Caraka kirim sendiri saat pairing, sudah menjanjikan
+  aturan yang lebih ketat kepada ruangan. AC-2.2 dan AC-2.3 di bawah tetap
+  berlaku dan menjadi lebih kuat. Tidak ada opsi konfigurasi untuk mematikan
+  gerbang itu — `docs/frd.md` FR-CHAN-09 menolak saklar mati dan `grep -r
+  requireMention src/` tidak menghasilkan apa pun.
 - **AC-2.2** WHEN pesan biasa dengan `addressed` bernilai false tiba di thread
   yang tidak punya sesi Caraka pada rute itu, core shall mengabaikannya.
 - **AC-2.3** IF ruang itu menjalankan sesinya linear, sehingga thread id-nya

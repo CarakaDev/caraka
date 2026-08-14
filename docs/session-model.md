@@ -59,9 +59,15 @@ Di supergroup/Discord hierarkinya sama, hanya wadahnya berbeda.
                                           editForumTopic + ringkasan akhir
 ```
 
-Sesi yang selesai ditandai lewat `editForumTopic`, tidak ditutup. `closeForumTopic`
-didokumentasikan hanya untuk supergroup, jadi topic sesi di DM tidak punya cara
-berdokumentasi untuk ditutup. Alasan lengkapnya di `telegram-integration.md` §2.
+Sesi yang selesai ditandai lewat `editForumTopic` lalu ditutup lewat
+`closeForumTopic`, dalam urutan itu. Menutup tidak menghilangkan apa pun: ia satu
+flag ditambah satu service message, dan transkripnya tetap terbaca. Di grup
+haknya sudah dipegang, dan deskripsi method itu sendiri mengecualikan pencipta
+topic — yang Caraka selalu, karena sejak 1.3.1 ia hanya menyentuh thread yang
+dibukanya sendiri. Di DM `closeForumTopic` tidak didokumentasikan, jadi panggilan
+itu dijawab galat dan galatnya ditelan: sesi tetap tertandai, dan itu paruh yang
+absen dari kapabilitas yang sama. Alasan lengkapnya di
+`telegram-integration.md` §2.
 
 | State | Warna ikon topic | Prefiks nama |
 |---|---|---|
@@ -101,15 +107,16 @@ Judul diperbarui **satu kali** setelah agent memberi respons pertama, bila agent
 |---|---|
 | Pesan di topic **General** dengan `@workspace` | Buat sesi baru di topic baru, balas di sana. Di General cukup tinggalkan satu baris tautan. |
 | Pesan di topic **General** tanpa `@workspace` | Pakai workspace terakhir yang aktif. Bila belum ada → tanya (tombol pilih workspace). |
-| Pesan di **topic sesi** | Lanjutkan sesi itu. Tidak pernah membuat topic baru. |
-| Pesan di topic sesi **yang sudah `done`** | Lanjutkan sesi yang sama (ACP `session/load`) dan kembalikan penanda state lewat `editForumTopic`. Topic di DM tidak pernah ditutup, jadi tidak ada yang perlu dibuka kembali. |
+| Pesan di **topic sesi** | Lanjutkan sesi itu, dan tidak pernah membuat topic baru — tetapi hanya kalau pesan itu ditujukan kepada Caraka. Di ruangan, memegang sesi di sebuah topic bukan hal yang sama dengan disapa: sejak 1.4.3 setiap baris di topic sesi harus menyebut Caraka atau membalas salah satu pesannya, sama seperti di sisa ruangan (FR-CHAN-09). Di percakapan pribadi setiap pesan ditujukan ke Caraka menurut definisinya. |
+| Pesan di topic sesi **yang sudah `done`** | Lanjutkan sesi yang sama (ACP `session/load`), kembalikan penanda state lewat `editForumTopic`, dan buka topic-nya kembali lewat `reopenForumTopic` — tepat pada transisi yang penutupan terjadi, karena `TOPIC_NOT_MODIFIED` adalah galat 400 untuk bot. Di grup, sampai pesan itu tiba, yang bisa menulis di topic tertutup hanya admin ber-`can_manage_topics` dan pencipta topic, jadi anggota biasa tidak bisa melanjutkannya dan tidak bisa berdiskusi di sana lagi. Itu yang dibayar untuk daftar topic yang tidak membengkak. Di DM tidak ada penutupan, jadi tidak ada yang perlu dibuka. |
 | Pesan saat sesi `running` | Masuk antrean sesi tersebut, balas "diantrekan (#n)". |
 | Perintah global (`/ws`, `/status`, `/memori`) | Selalu dijawab di General, dari topic mana pun ia dikirim. |
-| Pesan dengan `@<path absolut>` atau `@~/<path>` di percakapan pribadi operator | Rutekan ke workspace ber-path itu. Path yang tidak dinamai config menaikkan kartu bertanda tangan sekali pakai yang menulis entrinya ke `config.yaml` (ADR-0010). |
-| Pesan dengan `@<path absolut>` atau `@~/<path>` di tempat lain | Tolak, sebutkan bahwa bentuk itu hanya berlaku di DM operator, dan catat satu baris audit. Anggota ruangan menyebut workspace lewat slug. |
+| Pesan dengan `@<path absolut>` atau `@~/<path>` dari operator channel, di container mana pun | Rutekan ke workspace ber-path itu. Path yang tidak dinamai config menaikkan kartu bertanda tangan sekali pakai yang menulis entrinya ke `config.yaml` (ADR-0010, ADR-0011). Kartunya selalu digambar di percakapan pribadi operator; container lain menerima satu kalimat tetap yang menyebut di mana jawabannya diberikan, dan kalimat itu tidak bercabang atas apa pun. |
+| `/new <path> <judul>` dari operator channel | Sama seperti di atas, dengan `@` yang tidak perlu diketik. Argumen pertama dibaca sebagai folder hanya ketika ia absolut sesudah `~/` dikembangkan; kalau tidak, seluruh barisnya menjadi judul. |
+| Pesan berbentuk path dari pengirim lain di allowlist | Tolak, sebutkan siapa yang boleh memakai bentuk itu, dan catat satu baris audit `ws.path` `denied` — sama di percakapan pribadi maupun di ruangan. Pengirim lain menyebut workspace lewat slug. |
 | Baris sesi yang slug-nya tidak ada di config | Jangan jalankan apa pun; jawab dengan daftar workspace. Slug kosong, yaitu setiap baris sebelum v0.4, tetap berarti workspace pertama. |
 
-Sejak 1.3.3 `~/` di depan token dibaca sebagai path yang berakar di direktori rumah pengguna yang menjalankan Caraka. Sebuah pesan chat tidak pernah melewati shell, jadi tidak ada yang mengembangkan tilde sebelum Caraka melihatnya, dan sebelum itu `@~/Project/Coret` dijawab sebagai nama workspace yang tidak dikenal. `~user/` sengaja tidak dikembangkan: rumah orang lain adalah tebakan tentang tata letak mesin. Aturan siapa yang boleh memakai bentuk path tidak berubah — tetap DM operator saja.
+Sejak 1.3.3 `~/` di depan token dibaca sebagai path yang berakar di direktori rumah pengguna yang menjalankan Caraka. Sebuah pesan chat tidak pernah melewati shell, jadi tidak ada yang mengembangkan tilde sebelum Caraka melihatnya, dan sebelum itu `@~/Project/Coret` dijawab sebagai nama workspace yang tidak dikenal. `~user/` sengaja tidak dikembangkan: rumah orang lain adalah tebakan tentang tata letak mesin. Sejak 1.4.3 aturan siapa yang boleh memakai bentuk path adalah operator channel itu, di container mana pun yang Caraka layani (ADR-0011).
 
 **Prinsip:** *sesi tidak pernah berpindah topic, dan topic tidak pernah dipakai ulang oleh sesi lain.* Ini yang membuat riwayat dapat dipercaya.
 
@@ -123,14 +130,14 @@ Tanpa aturan, daftar topic akan membengkak seperti tab browser.
 
 | Aturan | Default |
 |---|---|
-| Tutup topic saat sesi `done`/`failed`/`cancelled` | ✅ langsung, setelah pesan ringkasan |
-| Hapus topic yang `done` | setelah **7 hari** (dapat diatur; `0` = jangan pernah) |
+| Tutup topic saat sesi `done`/`failed`/`cancelled` | ✅ langsung, setelah pesan ringkasan. Terbangun sejak 1.4.3 di grup; di DM `closeForumTopic` tidak berdokumentasi, jadi sesi berhenti di penggantian nama |
+| Hapus topic yang `done` | ❌ tidak dibangun, dan tidak akan: `deleteForumTopic` menghapus topic beserta seluruh pesannya. Yang dibangun adalah penutupan |
 | Batas sesi aktif bersamaan | **5** per operator — melebihi itu, tawarkan menutup yang terlama |
-| Sesi `running` tanpa aktivitas | timeout 30 menit → `failed` + topic ditutup |
+| Sesi `running` tanpa aktivitas | timeout 30 menit → `cancelled` + topic ditutup |
 | Topic "General" | tidak pernah ditutup, tidak pernah dihapus |
 | Sesi yang dipin (`/pin`) | dikecualikan dari auto-hapus |
 
-Ringkasan penutup dikirim **sebelum** topic ditutup, sehingga baris terakhir topic selalu menjelaskan apa yang terjadi:
+Ringkasan penutup dikirim **sebelum** topic ditutup, sehingga baris terakhir topic selalu menjelaskan apa yang terjadi. Sejak 1.4.3 keempat jalur akhir melakukannya dalam urutan itu — run yang sukses, `/stop`, timeout run, dan run yang gagal — dan urutan itu bagian dari fiturnya: kirim ke topic yang baru ditutup hanya berhasil karena Caraka pencipta topic itu, dan buktinya di sumber TDLib, bukan di halaman Bot API.
 
 ```
 ✓ Selesai · 1:12 · 2 file berubah · 18 test lulus
@@ -149,7 +156,7 @@ Kolom Discord terpasang sejak v0.5, kolom WhatsApp sejak v0.6.
 | Sesi | forum topic | forum topic | public thread | — (linear) |
 | Kontrol | topic General | topic General | channel induk | chat yang sama |
 | Membuat | `createForumTopic` (tanpa admin) | butuh `can_manage_topics` | `CREATE_PUBLIC_THREADS` | — `createTopic` melempar error bernama |
-| Menandai selesai | `editForumTopic` (tidak ada `closeForumTopic` di DM) | `closeForumTopic`, butuh `can_manage_topics` | `archived: true`, sesudah ringkasan penutup | — glif state ikut di header setiap balasan |
+| Menandai selesai | `editForumTopic` lalu `closeForumTopic`; di DM penutupannya dijawab galat dan galatnya ditelan | `editForumTopic` lalu `closeForumTopic`, ber-`can_manage_topics` atau sebagai pencipta topic | `archived: true`, sesudah ringkasan penutup | — glif state ikut di header setiap balasan |
 | Batas | belum terdokumentasi | — | ±50 aktif/channel, 1.000/guild — tiba sebagai error, bukan disapu | — tidak ada wadah yang bisa habis |
 | Auto-arsip | manual (kita) | manual | dipaksa Discord (60/1440/4320/10080 mnt); dipakai 10080 | — |
 

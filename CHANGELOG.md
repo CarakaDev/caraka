@@ -4,6 +4,42 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] — 2026-08-14
+
+Working in a group stopped meaning shouting into it.
+
+Three things a person actually hits, in the order they hit them. A finished session left its topic open forever, so the topic list only grew. Naming a folder needed a direct message, so the group could not start work on anything the config did not already know. And inside a session topic every line became a prompt, which makes the topic useless for talking to anyone but the bot.
+
+### Added
+
+- **A finished session closes its topic.** Closed, never deleted: `deleteForumTopic` takes the whole transcript with it, while closing is a flag and a service message and the history stays readable to every member. Telegram refuses a rename and a close in one call, so the state glyph is written first and the close follows. Continuing a finished session reopens the topic. Caraka closes only topics it opened — the ownership record from 1.3.1 gates the close and the reopen exactly as it gates the rename — and it can never reach the General topic, which has its own methods and no creator exemption. `deleteForumTopic` is now absent from `src/` entirely, comments included, and a test sweeps the whole tree to keep it that way.
+- **`/new ~/Project/coret Coret` works from a group.** The folder comes first, the title is the rest, and only an absolute path is read as a folder — `Project/coret` stays a title, which is what makes the rule explainable in two sentences. `@slug` keeps working exactly as before.
+- **A page that teaches the whole thing**, at [caraka.dev/guide](https://caraka.dev/guide): what you supply, pairing, topics, aiming a message, sessions and folders, approvals, what happens when Caraka refuses, and what is still unproven. It has no mockup of its own, so it borrows the docs comp's shapes the way `/whatsapp-risk` borrows the security comp's — the one precedent this project already set for a route with no comp.
+- **`/help` answers differently in a room than in a direct message.** In a room it says what a room refuses, what everyone in it can read, and what the channel does and does not deliver. With examples, in language a person can act on.
+
+### Changed
+
+- **A session topic is no longer an exception to the addressing rule.** Since 1.3.0 a room only answers when addressed, but any message inside a topic Caraka held a session in counted as addressed — so the topic could not be used for discussion. Now it is addressed the same way everywhere: a mention, a command, or **a reply to one of Caraka's own messages**. Replying is the natural way to continue a session without repeating the bot's name. A reply to the topic-creation service message does not count, and that exemption matters more than it looks: every first-level message in a forum topic is technically a reply to it, so without it the rule that was just removed would come back through the other door.
+- **The path form is accepted from any container, and only from the channel operator.** ADR 0010 refused it outside the operator's direct message because whoever can post in a group would otherwise choose what directory the agent runs against. Re-read against the code, what that decision was really holding is *who chooses the string* — `createSession` makes the requester the session's principal, and the store then makes that same person the only one who can answer permission cards inside the directory they named. So the amendment keeps the operator test and drops the container test. The confirmation card is raised in the operator's direct message and nowhere else; the room receives one fixed sentence that does not vary with whether the path exists, because a sentence that varied would be a way to probe the filesystem from a group. Recorded as ADR 0011, which amends 0010 rather than replacing it.
+
+### Fixed
+
+Seven defects in already-shipped code, all found by the reviews that produced this release rather than by anyone using it.
+
+- **A card could have been decidable by the person who triggered it.** The pending workspace entry took its principal from the requester rather than from the operator. Invisible while the path form was direct-message-only, and live the moment a room could ask. The test asserts the stored principal is the operator while the message's sender is somebody else.
+- **`create` did not survive the workspace card**, so `/new <new folder> Coret` would have run "Coret" as a prompt instead of titling the session — the owner's own example. Same class as the bug fixed in 1.3.0 for the workspace-choice button; this map had it too.
+- **A folder whose name is not a legal slug wrote a config that would not boot.** Refused before the card now, case-insensitively against existing slugs and existing paths both.
+- **A proposed folder that contains or is contained by an existing workspace is refused.** Without it `~/Project` becomes by accident the rooted allowlist ADR 0010 rejected with measurements: one `/yolo` on it would auto-approve every non-high-risk action across every repository beneath it.
+- **That overlap check did not fold case, while the slug check three lines above it did.** On a case-insensitive filesystem two spellings of one directory passed both directions. And it ran only when the card was drawn, never when it was pressed — so two cards minted separately could be pressed in either order and leave nested workspaces behind. It runs again on the press now.
+- **A failed run's explanation never reached its topic.** The error was reported against the message that opened the topic, whose thread id is empty, so it landed in General while the topic was renamed with a failure glyph and closed with nothing inside saying why. The comment above that code asserted the opposite.
+- **Two pending maps grew without bound and had no sweeper**, each entry holding a whole inbound message and minting a direct message. The approval path has capped at five since v0.6 for exactly this reason.
+
+### Limited
+
+- `src/` measures **9,971 lines**, up 303. The spec estimated ~190 and its plan wrote an honest expectation of 220–320, citing that the last five estimates in this repository came in low by 1.8 to 2.6 times. It landed at 303, inside the range. No removal paid for it: the pass that looked for one measured the candidates at −35 lines rather than the several hundred four earlier specs had assumed.
+- **Whether a closed topic still accepts a message from the bot is implementation evidence, not a documented promise.** Telegram's own server permits it for the topic's creator, which Caraka always is here, but the Bot API page says nothing about it, so every send into a closed topic stays fallible and a refused close is swallowed rather than ending a run.
+- Symlink and bind-mount containment is still unpromised, exactly as ADR 0010 recorded it.
+
 ## [1.4.2] — 2026-08-14
 
 Two things this project had been saying for four releases turned out to be false, and both were settled by measuring rather than by arguing.

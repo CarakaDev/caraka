@@ -43,6 +43,7 @@ import {
   cedesPermission,
   chooseOption,
   guardPermission,
+  insideWorkspace,
   isHighRisk,
   parseDuration,
   resolvePolicyMode,
@@ -79,6 +80,10 @@ const MEMORY_BUDGET_TOKENS = 800;
 const MEMORY_MAX_ITEMS = 6;
 // FR-MEM-07: recall that passes 500 ms is skipped, never waited out.
 const MEMORY_TIMEOUT_MS = 500;
+// The three states a session ends in. One set rather than three comparisons,
+// because `setState` now asks the question twice: once to close the topic, once
+// to know whether the state it is leaving was one a close had followed.
+const FINISHED = new Set(["done", "failed", "cancelled"]);
 
 /**
  * A leading `~/` read as a path. A chat message never passes through a shell, so
@@ -91,6 +96,23 @@ const MEMORY_TIMEOUT_MS = 500;
 export function expandHome(token: string, home = homedir()) {
   if (token === "~") return home;
   return token.startsWith("~/") ? join(home, token.slice(2)) : token;
+}
+
+/**
+ * `/new <folder> <title>`: the folder is the first word when that word is a
+ * path, and `routeTask` reads a workspace token only behind `@`. Marking it here
+ * keeps one reader of that token and confines the bare spelling to `/new` — free
+ * text still needs the `@`, so a prompt that opens with `/etc/hosts is broken`
+ * stays a prompt and does not become a workspace nobody named.
+ */
+export function markWorkspace(argument: string, home = homedir()) {
+  const match = /^(\S+)(?:\s+([\s\S]*))?$/.exec(argument);
+  const token = match?.[1];
+  if (!token || token.startsWith("@") || !isAbsolute(expandHome(token, home))) return argument;
+  // ponytail: the folder ends at the first space, so a directory whose own name
+  // contains one is not addressable by this form. Upgrade is one alternation in
+  // two regexes — `(?:"([^"]+)"|(\S+))` here and in `routeTask`'s `at`.
+  return `@${token} ${match[2] ?? ""}`.trim();
 }
 
 export class Gateway {
@@ -127,7 +149,10 @@ export class Gateway {
     }
   >();
   // One offered workspace entry per card, keyed by the callback id the card
-  // carries, with the task that was waiting on the answer.
+  // carries, with the task that was waiting on the answer. `create` is here for
+  // the reason `pendingChoice` above carries it: ten minutes later the press has
+  // to still open a session and still not start a run, and a hardcoded `false`
+  // made `/new <path> Coret` send `Coret` to the coding agent as a prompt.
   private readonly pendingWorkspaces = new Map<
     string,
     {
@@ -136,6 +161,7 @@ export class Gateway {
       slug: string;
       message: InboundMessage;
       text: string;
+      create: boolean;
       expiresAt: number;
     }
   >();
@@ -454,14 +480,19 @@ export class Gateway {
     // router.
     const attachments = message.attachments ?? [];
     if (!text && attachments.length === 0) return;
-    const { threadId } = this.route(message);
     // A room is talking to Caraka only when it says so (FR-CHAN-09). A DM is
-    // always aimed here, a thread holding a Caraka session belongs to Caraka,
-    // and a channel that cannot tell reports nothing and is answered.
-    const aimed =
-      message.chat.type === "private" ||
-      message.addressed !== false ||
-      (threadId !== "" && this.store.sessionFor(chatId, threadId) !== undefined);
+    // always aimed here, and a channel that cannot tell reports nothing and is
+    // answered.
+    //
+    // A third clause used to read a session at this thread as Caraka's own room,
+    // which made every line inside a session topic a prompt. Holding a session is
+    // not the same as being spoken to: `group.readyAll`, printed at pairing,
+    // already promises the stricter rule, and the clause tested `sessionFor`
+    // rather than ownership, so a `/new` inside somebody else's topic opened that
+    // topic too. The two ways in stay one gesture each — name the bot, or reply to
+    // one of its messages, which the adapter counts and which excludes the
+    // service message that opened the topic.
+    const aimed = message.chat.type === "private" || message.addressed !== false;
     this.store.audit(
       "msg.in",
       aimed ? "accepted" : "ignored",
@@ -497,7 +528,7 @@ export class Gateway {
     else if (command === "memori") this.respond(message, this.listMemory(message));
     else if (command === "ws") this.respond(message, this.listWorkspaces(message));
     else if (command === "switch") this.respond(message, this.switchAgent(message, argument));
-    else if (command === "new") this.routeTask(message, argument, true);
+    else if (command === "new") this.routeTask(message, markWorkspace(argument), true);
     else if (command && !this.knownAgentCommand(message, command))
       this.respond(message, this.rejectCommand(message, command));
     // The gate sits here and nowhere higher. Below the code check, because on a
@@ -555,7 +586,7 @@ export class Gateway {
       // one spelling.
       const target = expandHome(token);
       const chosen = isAbsolute(target)
-        ? this.workspaceForPath(message, target, rest)
+        ? this.workspaceForPath(message, target, rest, create)
         : this.workspaceBySlug(token);
       if (!chosen) {
         // The path branch has answered already: the refusal, the missing
@@ -593,55 +624,158 @@ export class Gateway {
   }
 
   /**
-   * The path form of `@`, and the one container it is read in: the private
-   * conversation between Caraka and this channel's operator, who is the first
-   * sender on its allowlist (ADR-0010 decision 1). A room reads it as a refusal,
-   * because a workspace is a capability and a room full of allowlisted senders
-   * is not where one is handed out.
+   * The path form of `@`, and the one sender it is read from: this channel's
+   * operator, who is the first sender on its allowlist, in any container the
+   * channel serves (ADR-0011, amending ADR-0010 decision 1). What that decision
+   * was holding is who chooses the string — the path becomes a key in
+   * `policy_grant.workspace`, in the `workspace:<path>` memory scope, and as the
+   * `cwd` of both driver routes — and `createSession` makes the requester the
+   * session's principal, so opening the form to every allowlisted sender would
+   * hand one of them a directory of their choosing and the sole authority to
+   * answer permission cards inside it. The operator chooses and the operator
+   * presses, so that clause stays whole.
    *
    * It answers with the workspace the config already names, and undefined once it
    * has answered the sender itself — a refusal, a path that is no directory, or
    * the card that offers to write the entry.
    */
-  private workspaceForPath(message: InboundMessage, token: string, text: string) {
+  private workspaceForPath(message: InboundMessage, token: string, text: string, create: boolean) {
     const { chatId } = this.route(message);
     const principal = String(message.from?.id);
-    if (message.chat.type !== "private" || principal !== this.operatorOf(chatId)) {
+    if (principal !== this.operatorOf(chatId)) {
       this.store.audit("ws.path", "denied", { chatType: message.chat.type }, principal);
       this.respond(
         message,
-        this.reply(message, this.t("ws.pathDmOnly", { list: this.workspaceLines() })),
+        this.reply(message, this.t("ws.pathOperatorOnly", { list: this.workspaceLines() })),
       );
       return undefined;
     }
     const path = resolve(token);
     const known = this.workspaces.find((workspace) => workspace.path === path);
-    if (!known) this.respond(message, this.offerWorkspace(message, path, text));
+    if (!known) this.respond(message, this.offerWorkspace(message, path, text, create));
     return known;
   }
 
   /**
-   * The card a new workspace is written from. It goes out only once the path is a
-   * directory and its slug is free, because a card that promises an entry the
-   * writer would refuse promises nothing. The slug comes off `basename`, which is
-   * the rule `defaultConfig` uses for the workspace the wizard writes.
+   * What a proposed path is answered with: one sentence refusing it, or the card
+   * that writes the entry. Every refusal is read before a card is minted, because
+   * a card that promises an entry the writer would refuse promises nothing. The
+   * slug comes off `basename`, which is the rule `defaultConfig` uses for the
+   * workspace the wizard writes.
    */
-  private async offerWorkspace(message: InboundMessage, path: string, text: string) {
+  private workspaceOffer(message: InboundMessage, path: string, text: string, create: boolean) {
     if (!statSync(path, { throwIfNoEntry: false })?.isDirectory())
-      return this.reply(message, this.t("ws.pathMissing", { path }));
+      return { text: this.t("ws.pathMissing", { path }) };
     const slug = basename(path);
-    const taken = this.workspaceBySlug(slug);
-    if (taken) return this.reply(message, this.t("ws.slugTaken", { slug, path: taken.path }));
+    // `basename(resolve("/"))` is the empty string, and `addAllowedWorkspace`
+    // does not re-validate what it writes: one press on `@/` produced a
+    // `config.yaml` whose `slug: z.string().min(1)` refuses to load, and before
+    // the restart `workspaceOf` read an empty slug as the first workspace, so a
+    // session with cwd `/` borrowed another workspace's grant (ADR-0010
+    // consequence 1).
+    if (!/^[\w.-]+$/.test(slug)) return { text: this.t("ws.slugBad", { path }) };
+    // Case-insensitive on every platform. On APFS and NTFS two spellings are one
+    // directory and two grant keys; on Linux they are two directories, and the
+    // refusal names `config.yaml` as the way through for a setup that holds both.
+    const lower = slug.toLowerCase();
+    const clash = this.workspaces.find(
+      (workspace) =>
+        workspace.slug.toLowerCase() === lower ||
+        workspace.path.toLowerCase() === path.toLowerCase(),
+    );
+    if (clash) return { text: this.t("ws.slugTaken", { slug: clash.slug, path: clash.path }) };
+    const overlap = this.overlapping(path);
+    if (overlap)
+      return {
+        text: this.t("ws.pathOverlap", {
+          path,
+          slug: overlap.slug,
+          existing: overlap.path,
+        }),
+      };
+    // Nothing sweeps these two maps but the press that spends an entry, and each
+    // entry retains a whole `InboundMessage` and mints a DM. The approval path
+    // caps at five for the same reason.
+    this.sweep(this.pendingWorkspaces);
     const callback = approvalCallbacks(this.approvalKey, "a");
     this.pendingWorkspaces.set(callback.id, {
-      principal: String(message.from?.id),
+      // The operator, read from the channel and not from `message.from`. The two
+      // are the same person as long as the form is operator-only, which is why the
+      // wrong version passed every test; a card a non-operator triggered must not
+      // be decidable by that non-operator, and `Store.decide` reads this field.
+      principal: this.operatorOf(String(message.chat.id)),
       path,
       slug,
       message,
       text,
+      create,
       expiresAt: Date.now() + 10 * 60_000,
     });
-    return this.reply(message, this.t("ws.addCard", { path, slug }), this.confirmCard(callback));
+    return {
+      text: this.t("ws.addCard", { path, slug }),
+      markup: this.confirmCard(callback),
+    };
+  }
+
+  /**
+   * Where that answer goes. Three answers that can be told apart — the card,
+   * `ws.pathMissing`, and `ws.slugTaken` naming a configured path — are the
+   * primitive `isdir(p)` for any `p`. In the operator's own conversation the only
+   * reader is the one person who can run `ls`; in a room the readers are every
+   * member who can see it (`docs/security.md` T6b), so the room is told one
+   * sentence that branches on nothing and the answer goes where the question can
+   * be answered. The card is never drawn in a shared room for a second reason:
+   * `handleCallback` clears a card's keyboard for every allowlisted presser
+   * before it reads the purpose, so another member could strip the buttons off
+   * one sitting there.
+   */
+  private async offerWorkspace(
+    message: InboundMessage,
+    path: string,
+    text: string,
+    create: boolean,
+  ) {
+    const offer = this.workspaceOffer(message, path, text, create);
+    if (message.chat.type === "private") return this.reply(message, offer.text, offer.markup);
+    const channel = this.channelOf(String(message.chat.id));
+    const operator = this.operatorOf(String(message.chat.id));
+    await this.reply(message, this.t("ws.askedOperator"));
+    return this.sendText(
+      await this.directTo(channel, operator),
+      offer.text,
+      "",
+      offer.markup,
+      operator,
+    );
+  }
+
+  /**
+   * The configured workspace a proposed path contains, sits inside, or is. This is
+   * the one part of the rooted-allowlist idea worth having: `~/Project` holds 89
+   * repositories, so approving it is not meaningfully smaller than approving the
+   * disk, and one `/yolo` on it would auto-approve every ordinary action under all
+   * of them — the alternative ADR-0010 rejected with measurements, arriving as a
+   * single chat message. `insideWorkspace` answers true for the root itself, so
+   * both directions cover equality as well.
+   *
+   * Case folded here and never inside `insideWorkspace`, which `isHighRisk` also
+   * reads: on APFS and NTFS two spellings are one directory while `relative()`
+   * does not fold, so without this `~/project` was accepted over a workspace at
+   * `~/Project/coret`. Folding makes this predicate refuse more, and folding the
+   * shared one would make containment accept more.
+   */
+  private overlapping(path: string) {
+    const lower = path.toLowerCase();
+    return this.workspaces.find((workspace) => {
+      const root = workspace.path.toLowerCase();
+      return insideWorkspace(root, lower) || insideWorkspace(lower, root);
+    });
+  }
+
+  // Both confirmation maps are written in one place and read only by the press
+  // that spends them, so an entry nobody presses stays until the process ends.
+  private sweep(waiting: Map<string, { expiresAt: number }>) {
+    for (const [id, entry] of waiting) if (entry.expiresAt < Date.now()) waiting.delete(id);
   }
 
   /**
@@ -668,11 +802,19 @@ export class Gateway {
       "ws.add",
     );
     if (!request) return;
-    // Two cards can be minted for one path before either is pressed, because the
-    // slug is free until a press takes it. The second press must not write a
-    // second entry under the same slug.
-    if (this.workspaceBySlug(request.slug)) {
-      this.store.audit("ws.add", "denied", { reason: "the slug was taken" }, principal);
+    // Two cards can be minted before either is pressed, because what each one is
+    // checked against is the config as it stood ten minutes ago. The slug is free
+    // until a press takes it, and so is the overlap: cards for `~/Project/coret`
+    // and for `~/Project` each refuse nothing when they are drawn, and the second
+    // press nests one inside the other — the blast radius the refusal exists to
+    // stop, arriving in two messages rather than one.
+    const collision = this.workspaceBySlug(request.slug)
+      ? "the slug was taken"
+      : this.overlapping(request.path)
+        ? "it overlaps a workspace"
+        : "";
+    if (collision) {
+      this.store.audit("ws.add", "denied", { reason: collision }, principal);
       await channel.answerCallback(queryId, this.t("callback.used"), true);
       return;
     }
@@ -684,7 +826,11 @@ export class Gateway {
     this.store.audit("ws.add", "granted", { path: entry.path, slug: entry.slug }, principal);
     await channel.answerCallback(queryId, this.t("callback.confirmed"));
     await this.tell(chatId, this.t("ws.added", { slug: entry.slug, path: entry.path }), principal);
-    if (request.text) this.queueRun(request.message, request.text, entry, false);
+    // `request.create`, never a constant: ten minutes on, the press still has to
+    // open the session `/new` asked for rather than send its title to the agent
+    // as a prompt. The same defect was fixed in `pendingChoice` in 1.3.0.
+    if (request.text || request.create)
+      this.queueRun(request.message, request.text, entry, request.create);
   }
 
   private askWorkspace(message: InboundMessage, text: string, create = false) {
@@ -1244,9 +1390,14 @@ export class Gateway {
     } catch (error) {
       if (compiled && this.memory)
         void this.memory.feedback(compiled.id, { ok: false }).catch(() => undefined);
+      // Reported here rather than rethrown into `enqueue`'s `.catch`, so the
+      // report reaches the topic before `setState` closes it. `enqueue` keeps that
+      // catch for `createOnly` and for the cancelled `delay`, and the `stopping`
+      // guard it held is kept here: without it, shutting the gateway down sends an
+      // error report into the chat.
+      if (!this.stopping) await this.reportError(message, error, session);
       if (this.store.sessionById(session.id)?.state !== "cancelled")
         await this.setState(session, "failed");
-      throw error;
     } finally {
       if (timeout) clearTimeout(timeout);
       this.active.delete(workspace.slug);
@@ -1265,23 +1416,41 @@ export class Gateway {
 
   private async cancelForTime(driver: AgentDriver, session: Session, agentId: string) {
     await driver.cancel(agentId).catch(() => undefined);
-    await this.setState(session, "cancelled");
     this.note(session, "run.timeout", "cancelled", { minutes: this.runLimitMs / 60_000 });
+    // The last line goes out before `setState` closes the topic
+    // (`docs/session-model.md` §6). A send into a topic Caraka just closed does
+    // work, but only because Caraka is that topic's creator, and the evidence for
+    // that is in TDLib rather than on the Bot API page. Two lines swapped cost
+    // nothing and end the dependency.
     await this.sendToSession(
       session,
       this.t("run.timeout", { minutes: this.runLimitMs / 60_000 }),
     ).catch(() => undefined);
+    await this.setState(session, "cancelled");
   }
 
   // Every state change goes through here so a topic name can never disagree
   // with the row behind it. The glyph leads because the topic list is read at a
-  // glance, and Telegram shows the start of the name. `deleteForumTopic` takes
-  // the whole transcript with it, and `closeForumTopic` is supergroups only —
-  // so a finished session is renamed, never closed or deleted.
+  // glance, and Telegram shows the start of the name. A finished session is
+  // renamed and then closed: `closeForumTopic` sets a flag and posts one service
+  // message, and the transcript stays readable. The Bot API's other call, the one
+  // that removes a topic "along with all its messages", is not named anywhere in
+  // this tree and a test fails on the name appearing.
+  //
+  // A topic in a Telegram DM has no documented way to be closed, so the call
+  // answers with an error there and the swallow below is the degradation. General
+  // never reaches either call: a message in it carries no `message_thread_id`, so
+  // `threadId` is empty and this method has already returned — which matters
+  // because `ForumTopicId::general()` is 1 and `closeForumTopic` with 1 most
+  // likely closes General itself.
   //
   // The map moved to `status.ts` when the dashboard needed the same glyphs. A
   // state with no glyph there still returns early, exactly as before.
   private async setState(session: Session, state: string) {
+    // Read before the write: the reopen fires on the one transition a close
+    // preceded, and the `session` object this method was handed goes stale after
+    // the first call inside a run.
+    const previous = this.store.sessionById(session.id)?.state;
     this.store.setState(session.id, state);
     if (!session.threadId) return;
     const glyph = STATE_GLYPH[state];
@@ -1302,11 +1471,17 @@ export class Gateway {
     await channel
       .editTopic(session.chatId, session.threadId, `${glyph} ${session.title}`)
       .catch(() => undefined);
-    // A channel that can archive a finished thread does so after the rename,
-    // so the closing summary is already in it. Telegram has no such call and
-    // stops at the rename — the absent half of the same capability.
-    if (state === "done" || state === "failed" || state === "cancelled")
+    // After the rename, so the name is already the status board and the closing
+    // summary is already in the thread. Telegram refuses the two in one call:
+    // `TOPIC_CLOSE_SEPARATELY` says the close flag may not travel beside another.
+    if (FINISHED.has(state))
       await channel.finishThread?.(session.chatId, session.threadId).catch(() => undefined);
+    // Never on running → awaiting_approval → running: `TOPIC_NOT_MODIFIED` is a
+    // 400 for a bot, so an unconditional reopen would spend a failed call on
+    // every state change, and a close/reopen per inbound message is the shape
+    // that draws a flood wait.
+    else if (state === "running" && FINISHED.has(previous ?? ""))
+      await channel.resumeThread?.(session.chatId, session.threadId).catch(() => undefined);
   }
 
   private async applyGrantedMode(
@@ -1847,6 +2022,7 @@ export class Gateway {
     }
     if (this.store.activeGrant(workspace.path))
       return this.reply(message, this.t("trust.alreadyOpen"));
+    this.sweep(this.pendingTrust);
     const callback = approvalCallbacks(this.approvalKey, "t");
     this.pendingTrust.set(callback.id, {
       principal: String(message.from?.id),
@@ -1855,9 +2031,11 @@ export class Gateway {
       slug: workspace.slug,
       expiresAt: Date.now() + 10 * 60_000,
     });
+    // The path beside the slug: a workspace can be added from chat now, so the
+    // directory a slug names may sit outside what the operator remembers.
     return this.reply(
       message,
-      this.t("trust.card", { minutes, workspace: workspace.slug }),
+      this.t("trust.card", { minutes, workspace: workspace.slug, path: workspace.path }),
       this.confirmCard(callback),
     );
   }
@@ -1972,6 +2150,10 @@ export class Gateway {
     const channel = this.channelOf(chatId);
     const operator = this.operatorOf(chatId);
     if (!this.allows(chatId, String(event.from.id)) || !operator) return;
+    // The third map with the same defect the other two had: written here, read
+    // only by the press that spends it, so an offer nobody answers stays for the
+    // life of the process and holds a title somebody else chose.
+    this.sweep(this.pendingGroups);
     const callback = approvalCallbacks(this.approvalKey, "g");
     const title = event.chat.title ?? chatId;
     this.pendingGroups.set(callback.id, {
@@ -2051,8 +2233,10 @@ export class Gateway {
       pending.finish({ outcome: { outcome: "cancelled" } });
       this.pending.delete(id);
     }
-    await this.setState(run.local, "cancelled");
+    // The line before the state change, for the reason `cancelForTime` swaps them:
+    // `setState` closes the topic, and the last thing said in it belongs in it.
     await this.sendToSession(run.local, `${this.header(run.local)}${this.t("stop.cancelling")}`);
+    await this.setState(run.local, "cancelled");
   }
 
   private async status(message: InboundMessage) {
@@ -2080,14 +2264,38 @@ export class Gateway {
     await this.reply(message, body, undefined, session?.id);
   }
 
-  private help(message: InboundMessage) {
-    return this.reply(message, this.t("help.body"));
+  // Two answers, and the split is the container, never the channel (hard rule 1):
+  // a room defaults to read-only, refuses the path form from anyone but the
+  // operator, and shows every card to everyone in it, so the DM text is wrong
+  // advice there. What the channel itself holds back is `readiness()`, the same
+  // sentence `/status` appends above, so the per-channel half costs no catalog key
+  // here and stays right when a fourth channel lands.
+  private async help(message: InboundMessage) {
+    const { chatId } = this.route(message);
+    if (message.chat.type === "private") return this.reply(message, this.t("help.direct"));
+    return this.reply(message, `${this.t("help.room")}\n\n${await this.readiness(chatId)}`);
   }
 
-  private async reportError(message: InboundMessage, error: unknown) {
+  // Into the session's own thread when the caller has one. The message a run was
+  // started from carries no thread id when the topic was opened for it, so the
+  // report landed in General while the topic it belonged to was renamed ✗ and
+  // closed with nothing in it saying why (`docs/session-model.md` §6). Callers
+  // outside a run keep answering where they were asked.
+  private async reportError(message: InboundMessage, error: unknown, session?: Session) {
     const details = this.scrub(error instanceof Error ? error.message : error);
-    this.store.audit("error", "failed", { message: details }, String(message.from?.id));
-    await this.reply(message, this.t("error.report", { details })).catch(() => undefined);
+    this.store.audit(
+      "error",
+      "failed",
+      { message: details },
+      String(message.from?.id),
+      session?.id,
+    );
+    const text = this.t("error.report", { details });
+    await (
+      session
+        ? this.sendToSession(session, `${this.header(session)}${text}`)
+        : this.reply(message, text)
+    ).catch(() => undefined);
   }
 
   stop() {

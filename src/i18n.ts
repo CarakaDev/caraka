@@ -46,20 +46,41 @@ const en = {
   "stop.cancelling": "Cancelling the task.",
   "status.session": "Status: {state}.",
   "status.none": "No session in this conversation yet.",
-  "help.body":
-    "Send a task as an ordinary message; `@workspace` in front routes it. Commands: /new, /status, /stop, /ws, /switch, /commands, /usage, /ingat, /lupakan, /memori, /yolo, /lock, /help.",
+  // Two bodies, chosen by container. Neither carries a backtick or an asterisk:
+  // Telegram's `sendText` is called with no `parse_mode` and shows them, while
+  // Discord renders the same string as markdown, and one string cannot hold two
+  // renders. Both stay under 2000 characters, which is where Discord truncates
+  // `content` without an error.
+  "help.direct":
+    "Send a task as an ordinary message. This conversation is yours, so everything you write here reaches the coding agent:\n\n  add a rate limit to the login route\n\nWhere your chat app has topics, each task gets one of its own and the answer arrives there. When the session ends the topic is closed, not deleted, so the transcript stays readable.\n\nPick the folder with @ in front. /ws lists the names:\n\n  @toko-api fix the checkout 500\n\nA folder can also be named by its path, and I offer to add it:\n\n  /new ~/Project/coret Coret\n\nWhen the agent wants to write a file or run a command, a card arrives. It is yours to decide, it works once, and it expires in ten minutes. No word you type decides anything.\n\n/new [folder] [title]  a fresh session, both optional\n/status   what this session is doing\n/stop     cancel the running task\n/ws       list the workspaces and their paths\n/switch <preset>  run this session on another agent\n/commands what the agent itself offers\n/usage    context and cost so far\n/ingat <note>  save a note for this workspace\n/memori   list those notes\n/lupakan <id>  delete one of them\n/yolo 30m open a trust window, 60 minutes at most\n/lock     close it now\n/help     this message\n\nThe long version: caraka.dev/guide",
+  "help.room":
+    "This is a room, so I answer only what is aimed at me — inside a session topic too. Everything else said here I leave alone: no session opens and nothing reaches the coding agent.\n\nAim a message at me by naming me, by replying to one of my own messages, or with a command:\n\n  @caraka_bot @toko-api fix the checkout 500\n\nA room starts read-only. I read the repository and answer questions; I refuse to write a file, run a command, or open a trust window until whoever runs Caraka opts this room in, in config.yaml on that computer.\n\nEveryone who can read this room reads what I put in it: the approval cards, the file paths, the diffs, and the command output. Adding the room chose that.\n\nA folder is named by its slug here; /ws lists them. Whoever runs Caraka can also name one by its path, and the question that writes it down is asked in their own conversation with me, never here.\n\nCommands: /new /status /stop /ws /switch /commands /usage /ingat /lupakan /memori /yolo /lock /help. Send /help in your own conversation with me for what each one does.\n\nThe long version: caraka.dev/guide",
   "ws.choose": "Which workspace should take this?",
   "ws.unknown": "No workspace is called {slug}. These exist:\n{list}",
   "ws.list": "Workspaces:\n{list}",
   "ws.sticky": "Tasks in this chat now go to {slug}.",
-  // A path names a workspace nobody has approved yet, so the sentence says where
-  // that approval is given rather than only that this is the wrong room.
-  "ws.pathDmOnly":
-    "A path names a workspace only in your own direct message with the bot, and only from the first sender on the allowlist. Here a workspace is named by its slug:\n{list}",
+  // A path names a workspace nobody has approved yet, so the sentence says who
+  // may name one rather than only that this sender may not. The list stays: `/ws`
+  // already prints the same lines into the same room (ADR-0011).
+  "ws.pathOperatorOnly":
+    "A path names a workspace only when the first sender on this channel's allowlist writes it. Here a workspace is named by its slug:\n{list}",
+  // The one sentence a room gets for every path it names, whatever the answer
+  // turns out to be. It branches on nothing, because three answers that can be
+  // told apart are the primitive `isdir(p)` for any `p` (`docs/security.md` T6b).
+  "ws.askedOperator":
+    "That path is answered in the private conversation with whoever runs Caraka, not here.",
   "ws.pathMissing":
     "{path} is not a directory Caraka can find. Create it first, or check the spelling, then send the path again.",
   "ws.slugTaken":
     "The slug {slug} already points at {path}. Give this one a slug of its own in config.yaml, then restart.",
+  // `basename(resolve("/"))` is the empty string, and a slug that cannot be
+  // written is refused before the card rather than after the press.
+  "ws.slugBad":
+    "{path} gives no usable name for a workspace. Add it in config.yaml with a slug of letters, digits, dots, dashes, or underscores, then restart.",
+  // The one part of the rooted-allowlist idea worth having (ADR-0010, rejected
+  // alternative 1): a parent of a workspace is not a smaller grant than the disk.
+  "ws.pathOverlap":
+    "{path} overlaps the workspace {slug} at {existing}, so one trust window would cover both. Name a directory that holds neither the other, or add it in config.yaml by hand.",
   "ws.addCard":
     "Add {path} as workspace {slug}?\nYes writes the entry into config.yaml, where it stays until you remove it by hand. Every task sent to {slug} then runs in that directory, and a trust window opened on it covers that directory.",
   "ws.added": "{slug} now points at {path}. Tasks in this chat go there.",
@@ -98,8 +119,11 @@ const en = {
     "A trust window is confirmed by pressing a button, and this channel has none. Open it from the terminal instead: `caraka trust <workspace> --for 30m`.",
   "trust.alreadyOpen":
     "A trust window is already open. Close it with /lock, then open a new one; both are recorded.",
+  // The path rides beside the slug because a workspace can now be added from
+  // chat: ten minutes after that card, the operator's memory of it is the only
+  // thing standing between a slug and a directory.
   "trust.card":
-    "Open a Caraka trust window for {minutes} minutes on {workspace}?\nCaraka still receives every permission request, still stops at the high-risk list, and still records each action. Press the button to confirm; chat text cannot open it.",
+    "Open a Caraka trust window for {minutes} minutes on {workspace} ({path})?\nCaraka still receives every permission request, still stops at the high-risk list, and still records each action. Press the button to confirm; chat text cannot open it.",
   "trust.opened": "Trust window open for {minutes} minutes. Close it any time with /lock.",
   "trust.closed": "Trust window closed.",
   // The honest answer where the old one said no window was open while every
@@ -374,18 +398,26 @@ const id: Record<MessageKey, string> = {
   "stop.cancelling": "Tugas sedang dibatalkan.",
   "status.session": "Status: {state}.",
   "status.none": "Belum ada sesi di percakapan ini.",
-  "help.body":
-    "Kirim tugas sebagai pesan biasa; `@workspace` di depan merutekannya. Perintah: /new, /status, /stop, /ws, /switch, /commands, /usage, /ingat, /lupakan, /memori, /yolo, /lock, /help.",
+  "help.direct":
+    "Kirim tugas sebagai pesan biasa. Percakapan ini milikmu, jadi semua yang kamu tulis di sini sampai ke coding agent:\n\n  tambahkan rate limit di route login\n\nDi aplikasi chat yang punya topic, tiap tugas mendapat satu topic sendiri dan jawabannya tiba di sana. Saat sesi berakhir, topic-nya ditutup, bukan dihapus, jadi transkripnya tetap bisa dibaca.\n\nPilih foldernya dengan @ di depan. /ws menampilkan namanya:\n\n  @toko-api perbaiki checkout 500\n\nFolder juga bisa disebut lewat path-nya, dan saya menawarkan untuk menambahkannya:\n\n  /new ~/Project/coret Coret\n\nSaat agent hendak menulis berkas atau menjalankan perintah, sebuah kartu tiba. Kamu yang memutuskan, kartunya sekali pakai, dan kedaluwarsa dalam sepuluh menit. Tidak ada kata yang kamu ketik yang memutuskan apa pun.\n\n/new [folder] [judul]  sesi baru, keduanya opsional\n/status   sesi ini sedang apa\n/stop     batalkan tugas yang berjalan\n/ws       daftar workspace beserta path-nya\n/switch <preset>  jalankan sesi ini di agent lain\n/commands apa yang ditawarkan agent-nya sendiri\n/usage    konteks dan biaya sejauh ini\n/ingat <catatan>  simpan catatan untuk workspace ini\n/memori   daftar catatan itu\n/lupakan <id>  hapus salah satunya\n/yolo 30m buka jendela trust, paling lama 60 menit\n/lock     tutup sekarang\n/help     pesan ini\n\nVersi panjangnya: caraka.dev/guide",
+  "help.room":
+    "Ini ruangan, jadi saya hanya menjawab yang ditujukan kepada saya — termasuk di dalam topic sesi. Sisanya saya baca lalu biarkan: tidak ada sesi yang dibuka dan tidak ada yang sampai ke coding agent.\n\nTujukan pesan kepada saya dengan menyebut nama saya, dengan membalas salah satu pesan saya, atau dengan sebuah perintah:\n\n  @caraka_bot @toko-api perbaiki checkout 500\n\nRuangan mulai read-only. Saya membaca repositori dan menjawab pertanyaan; saya menolak menulis berkas, menjalankan perintah, atau membuka jendela trust sampai yang menjalankan Caraka memasukkan ruangan ini di config.yaml pada komputer itu.\n\nSetiap orang yang bisa membaca ruangan ini membaca yang saya taruh di sini: kartu approval, path berkas, diff, dan keluaran perintah. Menambahkan ruangan ini berarti memilih itu.\n\nFolder di sini disebut lewat slug-nya; /ws menampilkannya. Yang menjalankan Caraka juga boleh menyebut folder lewat path, dan pertanyaan yang menuliskannya diajukan di percakapannya sendiri dengan saya, bukan di sini.\n\nPerintah: /new /status /stop /ws /switch /commands /usage /ingat /lupakan /memori /yolo /lock /help. Kirim /help di percakapanmu sendiri dengan saya untuk penjelasan tiap perintah.\n\nVersi panjangnya: caraka.dev/guide",
   "ws.choose": "Workspace mana yang mengerjakan ini?",
   "ws.unknown": "Tidak ada workspace bernama {slug}. Yang ada:\n{list}",
   "ws.list": "Daftar workspace:\n{list}",
   "ws.sticky": "Tugas di chat ini sekarang masuk ke {slug}.",
-  "ws.pathDmOnly":
-    "Bentuk path menamai workspace hanya di pesan langsungmu sendiri dengan bot, dan hanya dari pengirim pertama di allowlist. Di sini workspace disebut lewat slug-nya:\n{list}",
+  "ws.pathOperatorOnly":
+    "Bentuk path menamai workspace hanya ketika pengirim pertama di allowlist channel ini yang menuliskannya. Di sini workspace disebut lewat slug-nya:\n{list}",
+  "ws.askedOperator":
+    "Path itu dijawab di percakapan pribadi dengan yang menjalankan Caraka, bukan di sini.",
   "ws.pathMissing":
     "{path} bukan direktori yang bisa Caraka temukan. Buat dulu direktorinya, atau periksa ejaannya, lalu kirim path-nya lagi.",
   "ws.slugTaken":
     "Slug {slug} sudah menunjuk {path}. Beri yang ini slug sendiri di config.yaml, lalu mulai ulang.",
+  "ws.slugBad":
+    "{path} tidak memberi nama yang bisa dipakai untuk workspace. Tambahkan di config.yaml dengan slug berisi huruf, angka, titik, tanda hubung, atau garis bawah, lalu mulai ulang.",
+  "ws.pathOverlap":
+    "{path} tumpang-tindih dengan workspace {slug} di {existing}, jadi satu jendela trust akan berlaku untuk keduanya. Sebut direktori yang tidak memuat yang lain, atau tambahkan di config.yaml sendiri.",
   "ws.addCard":
     "Tambahkan {path} sebagai workspace {slug}?\nYa menulis entrinya ke config.yaml, dan entri itu tinggal di sana sampai kamu menghapusnya sendiri. Setiap tugas ke {slug} lalu berjalan di direktori itu, dan jendela trust yang dibuka padanya berlaku untuk direktori itu.",
   "ws.added": "{slug} sekarang menunjuk {path}. Tugas di chat ini masuk ke sana.",
@@ -424,7 +456,7 @@ const id: Record<MessageKey, string> = {
   "trust.alreadyOpen":
     "Jendela trust sudah terbuka. Tutup dengan /lock lalu buka yang baru; keduanya tercatat.",
   "trust.card":
-    "Buka jendela trust Caraka selama {minutes} menit di {workspace}?\nCaraka tetap menerima setiap permintaan izin, tetap berhenti pada daftar berisiko tinggi, dan tetap mencatat tiap aksi. Tekan tombol untuk konfirmasi; teks chat tidak bisa membukanya.",
+    "Buka jendela trust Caraka selama {minutes} menit di {workspace} ({path})?\nCaraka tetap menerima setiap permintaan izin, tetap berhenti pada daftar berisiko tinggi, dan tetap mencatat tiap aksi. Tekan tombol untuk konfirmasi; teks chat tidak bisa membukanya.",
   "trust.opened": "Jendela trust terbuka {minutes} menit. Tutup kapan saja dengan /lock.",
   "trust.closed": "Jendela trust ditutup.",
   "trust.closedAll":

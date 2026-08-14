@@ -113,7 +113,7 @@ Send ordinary text to give the agent a task. Thirteen commands cover the rest:
 
 | | |
 |---|---|
-| `/new [title]` | start a fresh session in this conversation, title optional |
+| `/new [folder] [title]` | start a fresh session in this conversation, both optional. A first word shaped like a path names the folder |
 | `/status` | report the state of this conversation's session |
 | `/stop` | cancel the running task |
 | `/ws` | list the workspaces and their paths |
@@ -125,7 +125,7 @@ Send ordinary text to give the agent a task. Thirteen commands cover the rest:
 | `/memori` | list what memory holds for this workspace |
 | `/yolo <duration>` | open a Caraka trust window for a stated duration |
 | `/lock` | close the trust window now |
-| `/help` | explain how to send a task |
+| `/help` | explain how to work here, with examples. In a room the answer is a different one: what the room refuses, what everyone in it can read, and what the channel does and does not deliver |
 
 Permission requests arrive as **Allow once** and **Reject** buttons. Each callback is signed, bound to the chat principal and the session, expires after ten minutes, and works once. Where a channel has no buttons at all — WhatsApp — the card carries a four-character code Caraka generated and printed nowhere else, spent once against the same database update. A plain word is never a decision on any channel.
 

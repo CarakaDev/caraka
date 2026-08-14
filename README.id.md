@@ -115,7 +115,7 @@ Kirim teks biasa untuk memberi agent tugas. Sisanya tiga belas perintah:
 
 | | |
 |---|---|
-| `/new [judul]` | memulai sesi baru di percakapan ini, judul opsional |
+| `/new [folder] [judul]` | memulai sesi baru di percakapan ini, keduanya opsional. Kata pertama yang berbentuk path menamai foldernya |
 | `/status` | menampilkan keadaan sesi percakapan ini |
 | `/stop` | membatalkan tugas yang berjalan |
 | `/ws` | mendaftar workspace beserta path-nya |
@@ -127,7 +127,7 @@ Kirim teks biasa untuk memberi agent tugas. Sisanya tiga belas perintah:
 | `/memori` | menampilkan isi memori untuk workspace ini |
 | `/yolo <durasi>` | membuka jendela trust Caraka selama durasi yang disebut |
 | `/lock` | menutup jendela trust sekarang |
-| `/help` | menjelaskan cara mengirim tugas |
+| `/help` | menjelaskan cara bekerja di sini, dengan contoh. Di ruangan jawabannya berbeda: apa yang ruangan tolak, apa yang bisa dibaca semua anggotanya, dan apa yang channel-nya antar dan tidak antar |
 
 Permintaan izin tampil sebagai tombol **Setujui sekali** dan **Tolak**. Setiap callback ditandatangani, terikat ke principal chat dan sesi, kedaluwarsa setelah sepuluh menit, serta hanya bisa dipakai sekali. Di channel yang sama sekali tidak punya tombol — WhatsApp — kartunya membawa kode empat karakter yang Caraka bangkitkan dan tidak dicetak di tempat lain, dipakai sekali lewat update database yang sama. Kata biasa tidak pernah menjadi keputusan di channel mana pun.
 

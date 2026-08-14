@@ -85,13 +85,13 @@ export const chapters: Chapter[] = [
       { k: '/memori', v: 'List what memory currently holds for this workspace.' },
       { k: '/yolo <duration>', v: 'Offer a trust window for this workspace. The duration is mandatory, sixty minutes is the ceiling, and a signed button opens it.' },
       { k: '/lock', v: 'Close the trust window now.' },
-      { k: '/help', v: 'Show the command list.' },
+      { k: '/help', v: 'Explain how to work here, with examples. The answer in a room is a different one: it says what a room refuses, what everyone in it can read, and what the channel does and does not deliver.' },
       { k: 'restart', v: 'Load the stored ACP session before the next prompt, and close any trust window the last process left open. A CLI-route session starts a fresh agent thread instead: its id lives in process memory.' },
     ],
     // comp:233 has no equivalent; the v0.1 note it replaced said groups were
     // outside the release. The chat allowlist admits them now, and v0.4 made
     // the multi-workspace sentence false.
-    note: 'One run at a time per workspace and the rest queued FIFO; past 20 messages a minute the sender waits, and a run is cancelled at 30 minutes. A group or guild channel is served once its id reaches the chat allowlist, and since v1.3 a message there becomes a task only when it addresses Caraka — a mention, a reply to one of its own messages, or a command. A channel that cannot report addressing is answered rather than left silent. More than one workspace is supported, and @slug in front of a message picks which.',
+    note: 'One run at a time per workspace and the rest queued FIFO; past 20 messages a minute the sender waits, and a run is cancelled at 30 minutes. A group or guild channel is served once its id reaches the chat allowlist, and since v1.3 a message there becomes a task only when it addresses Caraka — a mention, a reply to one of its own messages, or a command — inside a session topic as well as outside one. A channel that cannot report addressing is answered rather than left silent. More than one workspace is supported, and @slug in front of a message picks which.',
   },
   {
     no: '03', id: 'agent', href: '#agent', label: 'Agent', title: 'Claude over ACP',

@@ -289,6 +289,9 @@ export class Telegram implements Channel {
           const aimed = this.addressed(message);
           if (aimed !== undefined) message.addressed = aimed;
         }
+        // After `addressed`, which is the only reader of the entity offsets this
+        // leaves stale.
+        if (message) this.cutMention(message);
         yield update;
       }
     }
@@ -339,6 +342,24 @@ export class Telegram implements Channel {
     if (replied && !replied.forum_topic_created)
       return replied.from?.username?.toLowerCase() === this.botName.toLowerCase();
     return false;
+  }
+
+  /**
+   * This bot's own mention, cut when it opens the message. Mention syntax is wire
+   * format, so it is cut in the adapter and core never learns the shape.
+   * `parseCommand` is anchored at `^/`, so `@caraka_bot /new …` reached no
+   * command router at all: the text fell to `routeTask`, whose `/^@(\S+)/`
+   * matched the mention and answered that no workspace was called `caraka_bot`.
+   * Only offset 0 is cut, so `fix @caraka_bot's parser` keeps its mention, and
+   * the character after the name has to be a non-word one, so a bot called
+   * `caraka` does not eat the first half of `@caraka_bot`.
+   */
+  private cutMention(message: TelegramMessage) {
+    const name = this.botName;
+    const text = message.text ?? "";
+    if (!name || text.slice(0, name.length + 1).toLowerCase() !== `@${name.toLowerCase()}`) return;
+    if (/\w/.test(text.charAt(name.length + 1))) return;
+    message.text = text.slice(name.length + 1).trim();
   }
 
   /**
@@ -430,13 +451,37 @@ export class Telegram implements Channel {
   }
 
   // `editForumTopic` is documented for a private chat too, and it exposes only
-  // `name` and `icon_custom_emoji_id`. `closeForumTopic` is documented for
-  // supergroups alone, so a finished session is marked, never closed or deleted.
+  // `name` and `icon_custom_emoji_id` — nothing else about a topic can be
+  // changed by name.
   editTopic(chatId: string, threadId: string, name: string) {
     return this.call<boolean>("editForumTopic", {
       chat_id: chatId,
       message_thread_id: Number(threadId),
       name: topicName(name, this.t("session.untitled")),
+    });
+  }
+
+  // `closeForumTopic` is documented for a forum supergroup, and its description
+  // exempts the topic's creator from needing `can_manage_topics` — which Caraka
+  // always is, because 1.3.1 stopped it touching a thread it did not open. In a
+  // private chat the method is undocumented and answers with an error; the call
+  // site swallows it and the session still ends marked, the way graceful
+  // degradation asks. `close` cannot ride on `editForumTopic`:
+  // `TOPIC_CLOSE_SEPARATELY` refuses the flag beside any other, so a session that
+  // is renamed and closed costs two calls. The neighbouring call that deletes a
+  // topic "along with all its messages" is not spelled anywhere in this tree, and
+  // a test fails on the name appearing.
+  finishThread(chatId: string, threadId: string) {
+    return this.call<boolean>("closeForumTopic", {
+      chat_id: chatId,
+      message_thread_id: Number(threadId),
+    });
+  }
+
+  resumeThread(chatId: string, threadId: string) {
+    return this.call<boolean>("reopenForumTopic", {
+      chat_id: chatId,
+      message_thread_id: Number(threadId),
     });
   }
 

@@ -327,13 +327,23 @@ export interface Channel {
   editTopic(chatId: string, threadId: string, name: string): Promise<unknown>;
 
   /**
-   * Close a finished session's thread. Optional on purpose: Telegram's
-   * `closeForumTopic` is supergroups only and `deleteForumTopic` takes the
-   * transcript with it, so a Telegram session stops at the rename. A channel
-   * that leaves this out is the absent half of that capability, and core marks
-   * the session either way.
+   * Close a finished session's thread. Optional because a channel may have no
+   * such call, and because the same channel may have one in a group and none in
+   * a private conversation: Telegram's `closeForumTopic` is documented for a
+   * forum supergroup only, so a session whose topic lives in a DM answers with an
+   * error and the call site swallows it. Nothing here ever deletes a thread: the
+   * Bot API call that removes a topic takes its messages with it, and a test
+   * fails on that name appearing under `src/`.
    */
   finishThread?(chatId: string, threadId: string): Promise<unknown>;
+
+  /**
+   * Reopen the thread a finished session left closed, so a session that
+   * continues is writable again. Called only on the transition that closed it,
+   * because a no-op is an error for a bot: `TOPIC_NOT_MODIFIED` is swallowed for
+   * user accounts and answered as a 400 for bots.
+   */
+  resumeThread?(chatId: string, threadId: string): Promise<unknown>;
 
   answerCallback(id: string, text: string, alert?: boolean): Promise<unknown>;
 

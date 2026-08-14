@@ -299,9 +299,10 @@ caps: { threads, buttons, maxChars }
 createTopic(chatId, name): Promise<ThreadRef>;
 editTopic(chatId, threadId, name): Promise<unknown>;
 finishThread?(chatId, threadId): Promise<unknown>;   // absen = berhenti di rename
+resumeThread?(chatId, threadId): Promise<unknown>;   // pasangannya, saat sesi lanjut
 ```
 
-`finishThread` opsional karena kemampuannya benar-benar berbeda: `closeForumTopic` Telegram hanya berlaku di supergroup dan `deleteForumTopic` ikut membawa transkripnya, jadi sesi Telegram berhenti di penggantian nama; Discord menyetel `archived: true`. Core menandai sesi selesai dengan cara yang sama di kedua kasus.
+Keduanya opsional karena kemampuannya bisa absen di dalam satu channel: `closeForumTopic` Telegram didokumentasikan hanya untuk forum supergroup, jadi di grup sesi ditutup dan di percakapan pribadi panggilannya dijawab galat yang ditelan; Discord menyetel `archived: true` lalu `archived: false`. Core menandai sesi selesai dengan cara yang sama di setiap kasus, dan channel tanpa keduanya — WhatsApp — berhenti di penggantian nama.
 
 Lima kemampuan yang dulu ditulis di sini — `edit`, `files`, `typing`, `rich`, `ephemeral` — tetap rencana. Tidak satu pun punya pembaca di core, dan `docs/api.md` §4 sendiri mensyaratkan deklarasi yang jujur.
 

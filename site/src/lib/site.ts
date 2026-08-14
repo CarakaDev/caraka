@@ -15,8 +15,13 @@ export const SITE = {
   void: '#05080C',
 } as const
 
-/** The four links in the fixed header, in mockup order. */
+/**
+ * The links in the fixed header, in mockup order. Guide is the fifth and has no
+ * mockup: the comp was drawn when the site had four content routes, and a page
+ * nobody can reach from the header is a page written for nobody.
+ */
 export const NAV = [
+  { label: 'Guide', href: '/guide' },
   { label: 'Docs', href: '/docs' },
   { label: 'Install', href: '/install' },
   { label: 'Compare', href: '/compare' },
@@ -25,6 +30,7 @@ export const NAV = [
 
 export type PageKey =
   | 'landing'
+  | 'guide'
   | 'docs'
   | 'install'
   | 'compare'
@@ -75,6 +81,19 @@ export const PAGES: Record<PageKey, PageMeta> = {
     // aksara's conjunct shaping (the mark beside it already carries ꦕ), and
     // the OG fonts are subset to latin, so U+2192 and friends draw as tofu.
     ogKicker: 'TELEGRAM · YOUR CODING AGENT',
+  },
+  guide: {
+    path: '/guide',
+    lang: 'en',
+    title: 'Guide — caraka',
+    // The page renders no document of its own: every sentence traces to docs/
+    // and src/, and the strings a reader meets in the chat are quoted from
+    // src/i18n.ts. `lang` is `en` for the reason every content route is — the
+    // site declares one language per route and has no picker.
+    description:
+      'What to do once caraka init finishes: pairing, whether a task gets its own topic, aiming a message in a room, sessions, approvals, and each refusal.',
+    ogHeadline: 'Installed. · Now what?',
+    ogKicker: 'GUIDE',
   },
   docs: {
     path: '/docs',
