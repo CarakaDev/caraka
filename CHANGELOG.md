@@ -4,6 +4,32 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] — 2026-08-14
+
+The install prompt told people to use Claude, and the README buried it under the manual route.
+
+Caraka ships a prompt a person pastes into their coding agent, and it named one agent: *"Verify Node.js 22 or newer, Git, Claude Code, and `claude auth status`"*, then *"do not change Claude's model/provider configuration"*. Anyone using something else had to translate it themselves. The fix is smaller than it sounds, because the prompt is **executed by** the agent, so it already knows what it is and can address itself — *"verify that you yourself are installed and signed in"*, *"do not change your own model or provider configuration"*. Shorter than what it replaced, and it now works for every agent, including two Caraka has only just learned to drive.
+
+The README was the last surface still leading with the manual commands. The website fixed that ordering in `done/install-prompt-dulu/` for a measured reason — the prompt verifies the prerequisites itself, so the prerequisite sections only matter to someone who chose the manual route — and `docs/install-guide.md` §2 already read that way. README now does too, in both languages.
+
+### Added
+
+- **A preset for opencode, verified against a live binary.** `opencode acp` is a real ACP server over stdio, so it joins on the same route as Claude Code and goose. `scripts/smoke-cli.mjs opencode` against opencode 1.18.18 on 14 August 2026: two turns with a `session/load` between them, and the second turn recalled the number the first was given. Nothing in the file changed after that run — the command and its one flag were right the first time. That takes the count of agents proven here from four to five.
+- **A preset for Antigravity CLI, on the CLI route.** Its binary is `agy`, not `antigravity`, and `agy --help` at 1.1.13 names no ACP at all, so it runs through print mode the way codex and aider do: `--print` for the turn, `--output-format json`, and `--conversation <id>` to resume. The JSON envelope was read from real output rather than transcribed — `response` carries the text and `conversation_id` the session, and both are already understood by the existing parser, so this preset costs no driver code at all.
+- **`--dangerously-skip-permissions` exists in `agy --help` and is deliberately not used.** The CLI route hands no permission decisions back to Caraka, so a `read-only` run refuses it before it starts; that flag would remove the only guard left on that route, which is the agent's own. A test pins its absence.
+
+### Changed
+
+- **The install prompt names no agent**, on all four surfaces that carry it — `README.md`, `README.id.md`, `site/src/data/install.ts`, and `docs/install-with-ai.md` with its English pair. A test now holds those copies byte-identical to each other, because a prompt duplicated four ways drifts.
+- **`## Install` in both READMEs leads with the agent-assisted path.** Nothing was dropped in the move: the warning never to paste the bot token into a chat or an issue, the topic-mode note, and the global-install option are all still there, below.
+- **The landing page's terminal read `caraka · v1.1.0`**, three releases stale, and showed only the manual route. It reads the released version and shows the prompt path now. The deviation is recorded in `site/AGENTS.md`, which is where this project keeps every place the port leaves its mockup.
+
+### Limited
+
+- **Antigravity is unverified, and its own file says where it stopped.** `agy` demands a Google sign-in before it answers anything: the run on 14 August 2026 printed an OAuth URL, waited sixty seconds for a pasted code, and answered `{"status":"ERROR","error":"authentication failed or timed out"}`. So three things are unproven — whether `response` is populated on a successful turn, whether the `conversation_id` it returns can be replayed by `--conversation`, and what its default permission behaviour is in print mode. It joins amp, cursor and gemini in that state, and the set of unverified presets is pinned by a test so verifying one means editing that line.
+- **Gemini CLI was retired for individual Pro and Ultra users on 18 June 2026, and Google names Antigravity as its replacement.** That date is two months past. The `gemini` preset is left in place — it has never completed a turn here, so nothing depends on it — but the fact is now written inside the preset with its date and a pointer to the successor, so the next person to maintain those lines knows what they are maintaining.
+- `src/` is unchanged at **9,620 lines**. Two presets and a prompt rewrite are one YAML file each and some prose, which is the shape hard rule 5 asks a new agent to have.
+
 ## [1.3.3] — 2026-08-13
 
 `@~/Project/Coret` answered that no workspace had that name.

@@ -12,9 +12,9 @@ const g = '#7A848F',
 
 // The comp runs the AI prompt last but one, after five sections of
 // prerequisites. docs/install-guide.md §2 puts that prompt ahead of the manual
-// path, because the prompt checks Node, Git, Claude Code, and `claude auth
-// status` itself (agentPrompt below) — the five sections are the manual route,
-// not a precondition for the fast one. The page now reads in the guide's order;
+// path, because the prompt checks Node, Git, and the agent's own sign-in itself
+// (agentPrompt below) — the five sections are the manual route, not a
+// precondition for the fast one. The page now reads in the guide's order;
 // site/AGENTS.md records the deviation.
 export const toc = [
   { no: '01', id: 'script', href: '#script', title: 'AI install prompt' },
@@ -77,16 +77,24 @@ export const costNotes = [
 export const paths = [
   { you: 'Fastest path, no global package', use: 'npx caraka init', chipBg: '#2B1612', chipInk: '#FF7A5E', border: '#2B1612', range: r(0, 2.4, 24) },
   { you: 'Use Caraka every day from PATH', use: 'npm i -g caraka', chipBg: '#171C22', chipInk: '#B2BCC6', border: '#171C22', range: r(1, 2.4, 24) },
-  { you: 'Want Codex or Claude to help', use: 'copy the prompt above', chipBg: '#171C22', chipInk: '#B2BCC6', border: '#171C22', range: r(2, 2.4, 24) },
+  // Named Codex and Claude until 1.3.3. The prompt below addresses whichever
+  // agent reads it, and `docs/install-guide.en.md` §2 stopped naming one too.
+  { you: 'Want your coding agent to do it', use: 'copy the prompt above', chipBg: '#171C22', chipInk: '#B2BCC6', border: '#171C22', range: r(2, 2.4, 24) },
   { you: 'Choose a different repository', use: '--workspace PATH', chipBg: '#171C22', chipInk: '#B2BCC6', border: '#171C22', range: r(3, 2.4, 24) },
   { you: 'Already paired', use: 'npx caraka doctor', chipBg: '#171C22', chipInk: '#B2BCC6', border: '#171C22', range: r(4, 2.4, 24) },
 ]
 
+// The prompt is executed by the coding agent reading it, so it addresses that
+// agent rather than naming one: "you yourself" and "your own model or provider
+// configuration" replaced the Claude Code and `claude auth status` lines this
+// text carried until 1.3.3. Any agent can install Caraka; only running it
+// afterwards needs a preset. The text is byte-identical to the copies in
+// README.md and docs/install-with-ai.en.md — change all three or none.
 export const agentPrompt = `Install Caraka for the repository in my current working directory.
 
 Read https://github.com/CarakaDev/caraka first. Verify Node.js 22 or newer,
-Git, Claude Code, and \`claude auth status\`. Fix only missing prerequisites
-without changing my repository.
+Git, and that you yourself are installed and signed in. Fix only missing
+prerequisites without changing my repository.
 
 Never ask me to paste, reveal, or repeat the Telegram bot token in chat, command
 output, logs, or a committed file. Tell me to create a bot with @BotFather, then
@@ -96,10 +104,13 @@ hand me this command to run myself in a local terminal:
 
 After I confirm init is complete, run \`npx caraka doctor\`, explain failed
 checks, and start it with \`npx caraka start\`. Do not enable a webhook, open a
-port, install a service, or change Claude's model/provider configuration.`
+port, install a service, or change your own model or provider configuration.`
 
 export const scriptRules = [
-  { t: 'The agent checks Node, Git, Claude Code, and Claude authentication first.', range: r(0, 2, 24) },
+  // These eight cards read the prompt above back to you, so both lines that
+  // named Claude moved with it at 1.3.3: the prompt now asks the agent to check
+  // itself and to leave its own configuration alone.
+  { t: 'The agent checks Node, Git, and its own sign-in first.', range: r(0, 2, 24) },
   { t: 'The Telegram token never enters the AI conversation or a committed file.', range: r(1, 2, 24) },
   { t: 'The user performs the private token step in the local init wizard.', range: r(2, 2, 24) },
   { t: 'The agent may continue with doctor after pairing is complete.', range: r(3, 2, 24) },
@@ -109,7 +120,7 @@ export const scriptRules = [
   // nothing installs it — no file is written and the package has no
   // postinstall hook (AC-5.1, AC-5.9).
   { t: 'The agent installs no service. caraka service --print writes a unit to stdout for you to install yourself.', range: r(5, 2, 24) },
-  { t: 'Claude keeps its current model and provider configuration.', range: r(6, 2, 24) },
+  { t: 'The agent keeps its current model and provider configuration.', range: r(6, 2, 24) },
   { t: 'Repository files are not changed by the installer.', range: r(7, 2, 24) },
 ]
 

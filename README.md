@@ -56,7 +56,37 @@ It has **no agent loop, no tools, no model provider, and no plugin marketplace.*
 
 ## Install
 
-Node.js 22+, Git, and one of the seven coding agents Caraka has a preset for, signed in. Claude Code, Codex, aider, and goose are the ones verified here.
+### Ask your coding agent to install it
+
+Paste this into whichever coding agent runs on the machine that holds the repository. It checks the prerequisites, installs what is missing, and is written so the agent never asks you to send the Telegram token through chat.
+
+```text
+Install Caraka for the repository in my current working directory.
+
+Read https://github.com/CarakaDev/caraka first. Verify Node.js 22 or newer,
+Git, and that you yourself are installed and signed in. Fix only missing
+prerequisites without changing my repository.
+
+Never ask me to paste, reveal, or repeat the Telegram bot token in chat, command
+output, logs, or a committed file. Tell me to create a bot with @BotFather, then
+hand me this command to run myself in a local terminal:
+
+  npx caraka init --workspace "$PWD"
+
+After I confirm init is complete, run `npx caraka doctor`, explain failed
+checks, and start it with `npx caraka start`. Do not enable a webhook, open a
+port, install a service, or change your own model or provider configuration.
+```
+
+The agent narrates each step and waits for you to approve it, so read what it proposes before you say yes. Create the bot token with [@BotFather](https://t.me/BotFather), and do not paste it into an issue or into an AI chat.
+
+Any coding agent can do the installing. What Caraka then runs is one of the seven it has a preset for, signed in, on Node.js 22+ with Git. Claude Code, Codex, aider, and goose are the ones verified here.
+
+Some coding-agent clients can hold an interactive terminal open for the wizard. If yours cannot, run the one `init` command yourself and let the agent continue with `doctor` and `start`. That boundary is what keeps the token out of the conversation transcript.
+
+### Or run the commands yourself
+
+Everything the prompt does can be done by hand:
 
 ```bash
 claude auth status
@@ -65,7 +95,7 @@ npx caraka doctor
 npx caraka start
 ```
 
-`init` validates the bot token through Telegram, opens a one-time pairing link, asks for confirmation in the terminal, then stores the token outside `config.yaml` in a mode-`0600` file. Create the token with [@BotFather](https://t.me/BotFather). Do not paste it into an issue or into an AI chat.
+`init` validates the bot token through Telegram, opens a one-time pairing link, asks for confirmation in the terminal, then stores the token outside `config.yaml` in a mode-`0600` file.
 
 Enable topic mode for the bot in BotFather if you want one Telegram topic per session. Where topics are unavailable, Caraka keeps working in linear mode with a session header.
 
@@ -76,32 +106,6 @@ npm install --global caraka
 caraka init
 caraka start
 ```
-
-### Ask Codex or Claude to help
-
-Paste this into either coding agent. It handles the environment checks and explains the rest, and it is written so the agent never asks you to send the Telegram token through chat.
-
-```text
-Install Caraka for the repository in my current working directory.
-
-Read https://github.com/CarakaDev/caraka first. Verify Node.js 22 or newer,
-Git, Claude Code, and `claude auth status`. Fix only missing prerequisites that
-can be installed without changing my repository. Then run `npx caraka doctor`
-if Caraka is already configured.
-
-For Telegram pairing, never ask me to paste, reveal, or repeat the bot token in
-chat, command output, logs, or a committed file. Tell me to create a bot with
-@BotFather, then hand me this exact command to run myself in a local terminal:
-
-  npx caraka init --workspace "$PWD"
-
-Wait while I enter the token privately and approve the Telegram deep link.
-After I confirm init is complete, run `npx caraka doctor`, explain any failed
-check, and start it with `npx caraka start`. Do not enable a webhook, open a
-port, install a service, or modify Claude's model/provider configuration.
-```
-
-Some coding-agent clients can hold an interactive terminal open for the wizard. If yours cannot, run the one `init` command yourself and let the agent continue with `doctor` and `start`. That boundary is what keeps the token out of the conversation transcript.
 
 ## Using it
 

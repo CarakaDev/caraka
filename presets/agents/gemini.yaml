@@ -1,6 +1,15 @@
 # Gemini CLI (Google). ACP native per matriks riset
 # docs/research/coding-agents-matriks-integrasi-multi-sumber.md baris 3.
 #
+# CATATAN 14 Agustus 2026: Google mengumumkan Gemini CLI berhenti untuk pengguna
+# Google AI Pro dan Ultra perorangan pada 18 Juni 2026, dan menyebut Antigravity
+# CLI sebagai penggantinya yang resmi. Tanggal itu sudah lewat dua bulan saat
+# baris ini ditulis. Preset ini dibiarkan apa adanya untuk sekarang — ia tidak
+# pernah menyelesaikan satu giliran penuh di sini, jadi tidak ada yang rusak
+# karenanya — tetapi siapa pun yang menyentuhnya berikutnya perlu memeriksa
+# apakah `gemini` masih terpasang di mesin mana pun sebelum merawat barisnya.
+# Penggantinya ada di `presets/agents/antigravity.yaml`.
+#
 # Dijalankan terhadap gemini-cli 0.54.4 pada 10 Agustus 2026. `--experimental-acp`
 # masih diterima tetapi bendera itu sudah usang — `gemini --help` menandainya
 # "(deprecated, use --acp instead)" — jadi barisnya pindah ke `--acp`. Handshake

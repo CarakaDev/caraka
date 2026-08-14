@@ -90,7 +90,7 @@ The token is never printed again.
 
 ## The coding agent route
 
-Codex or Claude may run the local checks. The token must not be asked for through the conversation. The safe route that holds on every client is:
+The coding agent may run the local checks. The token must not be asked for through the conversation. The safe route that holds on every client is:
 
 1. The agent checks the prerequisites.
 2. The user runs `npx caraka init --workspace "$PWD"` in a local terminal.

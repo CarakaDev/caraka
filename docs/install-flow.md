@@ -90,7 +90,7 @@ Token tidak pernah dicetak ulang.
 
 ## Jalur coding agent
 
-Codex atau Claude boleh menjalankan pemeriksaan lokal. Token tidak boleh diminta lewat percakapan. Jalur aman yang berlaku di semua klien adalah:
+Coding agent boleh menjalankan pemeriksaan lokal. Token tidak boleh diminta lewat percakapan. Jalur aman yang berlaku di semua klien adalah:
 
 1. Agent memeriksa prasyarat.
 2. User menjalankan `npx caraka init --workspace "$PWD"` di terminal lokal.

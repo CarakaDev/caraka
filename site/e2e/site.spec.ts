@@ -377,8 +377,9 @@ test.describe('the comps still decide the layout', () => {
     // 1.3.1 moved one: /status +663 to 15984, the 1.3.1 card. /brand/readme held
     // because the npm chip went from v1.3.0 to v1.3.1 — same width, no reflow.
     // 1.3.2 moved the same one: /status +632 to 16616, the 1.3.2 card. 1.3.3
-    // again: +513 to 17129. The chip held through all three — v1.3.0 to v1.3.3
-    // is the same width, so it never reflowed. Measured Chromium at 1440x900.
+    // again: +513 to 17129, and 1.4.0 +716 to 17845. The chip held through all
+    // four — v1.3.0 to v1.4.0 is the same width, so it never reflowed. Measured
+    // Chromium at 1440x900.
     const EXPECTED: Record<string, number> = {
       // v1.2 copy, except the two v1.3 moved — measured from the site (see above)
       '/': 6595,
@@ -387,7 +388,7 @@ test.describe('the comps still decide the layout', () => {
       '/install': 5465,
       '/security': 6147,
       '/whatsapp-risk': 6857,
-      '/status': 17129,
+      '/status': 17845,
       '/brand/readme': 5581,
       // still measured against the comp
       '/story': 5734,

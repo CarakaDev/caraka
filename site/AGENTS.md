@@ -44,14 +44,14 @@ One route has no mockup: `/whatsapp-risk` renders `../docs/whatsapp-risiko.en.md
 
 ## Where the port leaves the mockup
 
-Two places, and both are written down here because a deviation nobody recorded
+Three places, and each is written down here because a deviation nobody recorded
 is a diff someone finds six months later and "fixes" back.
 
 `Caraka Landing.dc.html` labels the opening veil `MEMBUKA GERBANG`. The port
 reads `OPENING THE GATE` (`VEIL_LABEL` in `src/data/landing.ts`), because `/`
 declares `lang="en"` and the comp's own label is the only Indonesian on it. The
 English is the literal reading, so the gate the animation draws survives. Every
-other character of that mockup is ported unchanged, and `test/fidelity.test.js`
+other character of the veil is ported unchanged, and `test/fidelity.test.js`
 fails if this deviation stops being written down here.
 
 The veil also plays once per tab session rather than on every load. The flag is
@@ -65,14 +65,26 @@ visit and nothing turns red.
 
 `Caraka Install.dc.html` runs the AI prompt section sixth of seven, behind
 Node, Claude Code, the init-check table, and the install-path list. `/install`
-runs it first. The prompt verifies Node, Git, Claude Code, and `claude auth
-status` itself, so the five sections it used to sit behind are the manual
-route rather than a precondition for the fast one, and
+runs it first. The prompt verifies Node, Git, and the agent's own sign-in
+itself, so the five sections it used to sit behind are the manual route rather
+than a precondition for the fast one, and
 `../docs/install-guide.md` already reads in that order — §2 is the coding-agent
 path, §3 the manual one. The section markup, its styles, and its
 `animation-range` values are the comp's, unedited; only its position and the
 numbers 01–07 moved, along with one chip that used to say "the prompt below".
 Every other section of that comp is in the comp's own order.
+
+`Caraka Landing.dc.html:533-541` draws the install terminal as the manual route
+alone: `$ npx caraka init`, then seven lines of what it prints. The port keeps
+those eight lines and changes what they say, so the first one names the coding
+agent that hands the command over and the last one hands the run back to it
+(`term` in `src/data/landing.ts`). `/install` leads with that prompt, and a
+landing page showing only the typed command sends every reader down the longer
+route. The comp's `caraka · v0.1.0` reads 1.3.3 in the port for the reason this
+file already gives: a comp is authoritative for design and stopped being
+authoritative for release facts, and the version is the one `package.json`
+carries and `src/cli.ts` prints. The line count, the tones, the marks, and every
+`animation-range` are the comp's.
 
 ## Content
 

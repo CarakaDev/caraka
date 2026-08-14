@@ -162,16 +162,28 @@ export const safety = [
   'A trust window expires on the clock, and high-risk actions still ask for a tap.',
 ].map((t, i) => ({ t, range: r(i, 2.6, 26) }))
 
+// comp:533-541 draws the manual route alone: eight lines that start at
+// `$ npx caraka init`. The prompt on /install is the shorter way in, so the
+// same eight lines now show where that command comes from and who runs which
+// half — the agent checks the prerequisites and hands the command over, the
+// token step stays in your terminal, and the agent picks the run back up. The
+// line count, the tones, the marks, and every `range` are the comp's.
+//
+// `claude login · ready` went with it: init has scanned PATH for any of the
+// seven presets since v0.4 (src/cli.ts, `agents.none` is the only stop), and
+// the sign-in it names is Claude's own command, which the prompt now asks each
+// agent to run against itself.
 export const term = [
-  { t: '$ npx caraka init', tone: '#5D666F', range: r(0, 2.4, 22) },
+  { t: '$ npx caraka init        # your coding agent hands this one to you', tone: '#5D666F', range: r(0, 2.4, 22) },
   { t: '', tone: '#5D666F', range: r(1, 2.4, 22) },
-  // comp:535 reads `caraka · v0.1.0`; `VERSION` in src/cli.ts is 1.1.0.
-  { t: 'caraka · v1.1.0', tone: '#F6F9FC', mark: 'ꦕꦫꦏ', markTone: '#E2452C', range: r(2, 2.4, 22) },
+  // comp:535 reads `caraka · v0.1.0`; `VERSION` in src/cli.ts reads the
+  // `version` in package.json, which is 1.3.3.
+  { t: 'caraka · v1.4.0', tone: '#F6F9FC', mark: 'ꦕꦫꦏ', markTone: '#E2452C', range: r(2, 2.4, 22) },
   { t: '', tone: '#5D666F', range: r(3, 2.4, 22) },
-  { t: 'claude login · ready', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(4, 2.4, 22) },
+  { t: 'agent · found on PATH', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(4, 2.4, 22) },
   { t: 'telegram · paired', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(5, 2.4, 22) },
   { t: 'workspace toko-api', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(6, 2.4, 22) },
-  { t: 'run npx caraka start', tone: '#B2BCC6', mark: '▸', markTone: '#FF7A5E', caret: true, range: r(7, 2.4, 22) },
+  { t: 'back to the agent: npx caraka doctor, then npx caraka start', tone: '#B2BCC6', mark: '▸', markTone: '#FF7A5E', caret: true, range: r(7, 2.4, 22) },
 ] as { t: string; tone: string; mark?: string; markTone?: string; caret?: boolean; range: string }[]
 
 export const verse = [

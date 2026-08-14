@@ -1,0 +1,28 @@
+# opencode (SST). ACP native: `opencode acp` — "start ACP (Agent Client Protocol)
+# server" — ada persis seperti yang ditulis dokumentasinya di
+# https://opencode.ai/docs/acp/, dan bicara JSON-RPC lewat stdio.
+#
+# Diverifikasi terhadap opencode 1.18.18 pada 14 Agustus 2026 lewat
+# `scripts/smoke-cli.mjs opencode`: dua giliran dengan satu `session/load` di
+# antaranya, dan giliran kedua menyebut angka yang disebut giliran pertama —
+# 3847. Tidak ada yang berubah di berkas ini sesudah run itu; perintah dan
+# bendera di bawah benar sejak percobaan pertama.
+#
+# `--port 0` dan `--hostname 127.0.0.1` adalah nilai bawaan subperintah itu dan
+# sengaja tidak ditulis di sini: yang dipakai Caraka stdio, bukan soket, dan
+# menuliskan bawaan yang tidak dipakai membuat baris yang harus ikut dirawat
+# setiap kali bawaannya berubah.
+#
+# opencode memilih model dan providernya sendiri lewat `opencode providers`
+# milik mesin, jadi preset tidak menyebut satu pun — pola yang sama dengan
+# goose dan `GOOSE_PROVIDER`.
+#
+# `asksPermission` dibiarkan kosong sampai ada yang benar-benar melihat opencode
+# mengirim `session/request_permission`. Giliran smoke melarang pemakaian tool,
+# jadi tidak ada yang pernah melihatnya, dan run `read-only` menolak rute yang
+# belum terlihat bertanya. Itu bawaan yang aman, bukan kelalaian.
+id: opencode
+driver: acp
+acp:
+  command: opencode
+  args: ["acp"]

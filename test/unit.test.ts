@@ -2080,7 +2080,7 @@ function textRoute(updates: string[]) {
   };
 }
 
-test("the seven shipped presets load, and every unverified flag says so", async () => {
+test("the nine shipped presets load, and every unverified flag says so", async () => {
   // AC-3.1, AC-3.4, AC-3.5. The loader's default directory is the package's own
   // `presets/agents/`.
   const shipped = await loadPresets();
@@ -2088,12 +2088,27 @@ test("the seven shipped presets load, and every unverified flag says so", async 
   assert.deepEqual([...shipped.presets.keys()].sort(), [
     "aider",
     "amp",
+    "antigravity",
     "claude-code",
     "codex",
     "cursor",
     "gemini",
     "goose",
+    "opencode",
   ]);
+  // opencode is ACP and answered a full turn here on 14 August 2026; antigravity
+  // is the CLI route because `agy --help` names no ACP at all, and it stops at a
+  // Google sign-in the way gemini, cursor and amp do.
+  assert.equal(shipped.presets.get("opencode")?.acp?.command, "opencode");
+  assert.deepEqual(shipped.presets.get("opencode")?.acp?.args, ["acp"]);
+  const antigravity = shipped.presets.get("antigravity");
+  assert.equal(antigravity?.driver, "cli");
+  assert.equal(antigravity?.command, "agy");
+  assert.deepEqual(antigravity?.sessionIdFields, ["conversation_id"]);
+  // The flag that would remove the only guard left on a route with no permission
+  // seam. It is in `agy --help` and it must never reach a shipped preset.
+  assert.equal(antigravity?.args.includes("--dangerously-skip-permissions"), false);
+  assert.equal(antigravity?.resumeArgs?.includes("--conversation"), true);
   for (const id of ["amp", "cursor", "gemini", "goose"]) {
     const preset = shipped.presets.get(id);
     assert.equal(preset?.driver, "acp", id);
@@ -2126,13 +2141,15 @@ test("the seven shipped presets load, and every unverified flag says so", async 
   // file, and the set is pinned rather than one file sampled. Verifying a
   // preset means editing this line, which is the point — the previous version
   // pinned `aider` alone and went red the day aider was run. The three left
-  // need a paid account: an Amp API key, a Cursor login, a Gemini key.
+  // need a paid account: an Amp API key, a Cursor login, a Gemini key. The
+  // fourth, antigravity, needs a Google sign-in whose sixty-second paste window
+  // no unattended run has managed to hit.
   const marked = [];
   for (const id of [...shipped.presets.keys()].sort()) {
     const file = await readFile(new URL(`../presets/agents/${id}.yaml`, import.meta.url), "utf8");
     if (/^# belum diverifikasi/m.test(file)) marked.push(id);
   }
-  assert.deepEqual(marked, ["amp", "cursor", "gemini"]);
+  assert.deepEqual(marked, ["amp", "antigravity", "cursor", "gemini"]);
 });
 
 test("a broken preset is named with its file and field, and the rest still load", async () => {
@@ -5967,4 +5984,54 @@ test("a leading tilde is a home path, and a tilde anywhere else is not", () => {
   // tilde in the middle of a token is an ordinary character.
   for (const token of ["~coret", "~root/x", "/srv/~/x", "a~/b", "alpha", "/abs/path"])
     assert.equal(expandHome(token, home), token, token);
+});
+
+test("every copy of the install prompt is byte-identical to the others", async () => {
+  // The prompt lives in six files and is pasted from whichever one the reader
+  // reached first. A copy that drifts hands somebody a different install, and
+  // nothing else here would notice — the previous version of it named Claude in
+  // four places and was edited out of two of them.
+  const read = (path: string) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
+  // "```text\n" opens and "```" closes, so the slice is the fence's contents
+  // with the trailing newline the copies all carry.
+  const fences = (text: string) =>
+    (text.match(/```text\n[\s\S]*?```/g) ?? []).map((b) => b.slice(8, -3));
+
+  const carriers = {
+    "Install Caraka for the repository": [
+      "README.md",
+      "docs/install-with-ai.md",
+      "docs/install-with-ai.en.md",
+      "docs/install-guide.en.md",
+    ],
+    "Pasang Caraka untuk repository": [
+      "README.id.md",
+      "docs/install-with-ai.md",
+      "docs/install-with-ai.en.md",
+      "docs/install-guide.md",
+    ],
+  };
+  let english = "";
+  for (const [opening, files] of Object.entries(carriers)) {
+    let first = "";
+    for (const file of files) {
+      const block = fences(await read(file)).find((b) => b.startsWith(opening));
+      assert.ok(block, `${file} carries no fence opening "${opening}"`);
+      if (!first) first = block;
+      assert.equal(block, first, `${file} drifted from ${files[0]}`);
+    }
+    if (opening.startsWith("Install")) english = first;
+  }
+
+  // The website holds the English one as a template literal, so its escaped
+  // backticks come off and the newline the fences end on goes back on.
+  const literal = (await read("site/src/data/install.ts")).match(
+    /agentPrompt = `((?:[^`\\]|\\[\s\S])*)`/,
+  )?.[1];
+  assert.ok(literal, "site/src/data/install.ts carries no agentPrompt");
+  assert.equal(
+    `${literal.replaceAll("\\`", "`")}\n`,
+    english,
+    "site/src/data/install.ts drifted from README.md",
+  );
 });

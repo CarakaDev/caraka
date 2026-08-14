@@ -1,0 +1,41 @@
+# Antigravity CLI (Google). Rute CLI, bukan ACP: `agy --help` pada 1.1.13
+# tidak menyebut ACP sama sekali (`grep -ci acp` menjawab 0), jadi ia dijalankan
+# lewat mode print seperti codex dan aider.
+#
+# Binernya bernama `agy`, bukan `antigravity`, dan pemasang resminya menaruhnya
+# di `~/.local/bin/agy` — 206 MB biner Go tunggal, tanpa Node.
+#
+# Bendera di bawah dibaca dari `agy --help` milik 1.1.13 pada 14 Agustus 2026,
+# bukan dari dokumentasi:
+#   --print / -p        "Run a single prompt non-interactively and print the response"
+#   --output-format     text, json, stream-json
+#   --conversation      "Resume a previous conversation by ID"
+#
+# Bentuk JSON-nya dibaca dari keluaran sungguhan — kebetulan dari jalur error,
+# yang tetap mencetak amplop yang sama:
+#   {"conversation_id":"","status":"ERROR","response":"","error":…,"num_turns":0,…}
+# Jadi `response` memuat teksnya dan `conversation_id` memuat id sesinya, dan
+# keduanya sudah dibaca `parseOutput` tanpa satu baris kode driver baru:
+# `agentMessage` menerima `response`, dan `sessionIdFields` menerima apa saja.
+#
+# belum diverifikasi — satu giliran penuh. `agy` menuntut login Google sebelum
+# menjawab apa pun: run pertama pada 14 Agustus 2026 mencetak URL OAuth,
+# menunggu enam puluh detik, lalu menjawab
+# `{"status":"ERROR","error":"authentication failed or timed out"}`. Yang belum
+# terbukti karena itu: apakah `response` benar-benar terisi pada giliran yang
+# berhasil, apakah `conversation_id` yang dikembalikannya bisa dipakai ulang
+# oleh `--conversation`, dan apa perilaku izin bawaannya di mode print.
+#
+# `--dangerously-skip-permissions` ada di `agy --help` dan sengaja tidak dipakai.
+# Rute CLI tidak punya seam izin sama sekali (`CliDriver.asksPermission` false),
+# jadi run `read-only` menolaknya lebih dulu; menambahkan bendera itu akan
+# menghapus satu-satunya penjaga yang tersisa di rute ini, yaitu penjaga milik
+# agent-nya sendiri.
+id: antigravity
+driver: cli
+command: agy
+args: ["--output-format", "json", "--print"]
+resumeArgs: ["--output-format", "json", "--conversation", "{sessionId}", "--print"]
+output: json
+resumeOutput: json
+sessionIdFields: ["conversation_id"]

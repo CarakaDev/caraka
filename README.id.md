@@ -56,7 +56,39 @@ Ia **tidak punya agent loop, tidak punya tool, tidak punya model provider, dan t
 
 ## Instalasi
 
-Butuh Node.js 22+, Git, dan satu dari tujuh coding agent yang punya preset di sini, sudah login. Claude Code adalah jalur yang terverifikasi.
+### Minta coding agent memasangnya
+
+Tempel prompt ini ke coding agent mana pun yang berjalan di komputer tempat repository berada. Ia memeriksa prasyarat, memasang yang kurang, dan ditulis supaya agent tidak pernah meminta token Telegram dikirim lewat chat.
+
+```text
+Pasang Caraka untuk repository di working directory saya saat ini.
+
+Baca https://github.com/CarakaDev/caraka lebih dulu. Verifikasi Node.js 22 atau
+lebih baru, Git, dan bahwa kamu sendiri sudah terpasang dan sudah login.
+Perbaiki hanya prasyarat yang kurang tanpa mengubah repository saya.
+
+Jangan pernah meminta saya menempel, membuka, atau mengulang token bot Telegram
+lewat chat, output command, log, atau berkas yang akan di-commit. Minta saya
+membuat bot lewat @BotFather, lalu berikan perintah ini untuk saya jalankan
+sendiri di terminal lokal:
+
+  npx caraka init --workspace "$PWD"
+
+Setelah saya mengonfirmasi init selesai, jalankan `npx caraka doctor`, jelaskan
+check yang gagal, lalu mulai dengan `npx caraka start`. Jangan mengaktifkan
+webhook, membuka port, memasang service, atau mengubah konfigurasi model atau
+provider milikmu sendiri.
+```
+
+Agent menarasikan setiap langkah dan menunggu persetujuanmu, jadi baca dulu apa yang ia usulkan sebelum kamu mengiyakan. Buat token bot lewat [@BotFather](https://t.me/BotFather), dan jangan tempel token itu ke issue atau chat AI.
+
+Pemasangannya bisa dikerjakan coding agent mana pun. Yang kemudian dijalankan Caraka adalah satu dari tujuh agent yang punya preset di sini, sudah login, di atas Node.js 22+ dengan Git. Claude Code, Codex, aider, dan goose adalah yang pernah dijalankan di sini terhadap biner hidup.
+
+Beberapa klien coding agent bisa mempertahankan terminal interaktif untuk wizard. Jika klienmu tidak bisa, jalankan satu perintah `init` sendiri; agent dapat melanjutkan dengan `doctor` dan `start`. Batas ini menjaga token agar tidak masuk transkrip percakapan.
+
+### Atau jalankan perintahnya sendiri
+
+Semua yang dikerjakan prompt itu bisa dijalankan manual:
 
 ```bash
 claude auth status
@@ -65,7 +97,7 @@ npx caraka doctor
 npx caraka start
 ```
 
-`init` memvalidasi token bot ke Telegram, menampilkan tautan pairing sekali pakai, meminta konfirmasi di terminal, lalu menyimpan token di luar `config.yaml` dalam berkas mode `0600`. Buat token bot lewat [@BotFather](https://t.me/BotFather). Jangan tempel token ke issue atau chat AI.
+`init` memvalidasi token bot ke Telegram, menampilkan tautan pairing sekali pakai, meminta konfirmasi di terminal, lalu menyimpan token di luar `config.yaml` dalam berkas mode `0600`.
 
 Aktifkan topic mode bot di BotFather bila ingin satu topic Telegram per sesi. Jika topic tidak tersedia, Caraka tetap jalan dalam mode linear dengan header sesi.
 
@@ -76,34 +108,6 @@ npm install --global caraka
 caraka init
 caraka start
 ```
-
-### Minta Codex atau Claude membantu
-
-Tempel prompt berikut ke salah satu coding agent. Ia menangani pemeriksaan lingkungan dan menjelaskan sisanya, dan ditulis supaya agent tidak pernah meminta token Telegram dikirim lewat chat.
-
-```text
-Pasang Caraka untuk repository di working directory saya saat ini.
-
-Baca https://github.com/CarakaDev/caraka lebih dulu. Verifikasi Node.js 22
-atau lebih baru, Git, Claude Code, dan `claude auth status`. Perbaiki hanya
-prasyarat yang kurang tanpa mengubah repository saya. Jika Caraka sudah
-dikonfigurasi, jalankan `npx caraka doctor`.
-
-Untuk pairing Telegram, jangan pernah meminta saya menempel, membuka, atau
-mengulang token bot lewat chat, output command, log, atau berkas yang akan
-di-commit. Minta saya membuat bot lewat @BotFather, lalu berikan perintah ini
-untuk saya jalankan sendiri di terminal lokal:
-
-  npx caraka init --workspace "$PWD"
-
-Tunggu saat saya memasukkan token secara privat dan menyetujui deep link
-Telegram. Setelah saya mengonfirmasi init selesai, jalankan
-`npx caraka doctor`, jelaskan check yang gagal, lalu mulai dengan
-`npx caraka start`. Jangan mengaktifkan webhook, membuka port, memasang service,
-atau mengubah konfigurasi model/provider milik Claude.
-```
-
-Beberapa klien coding agent bisa mempertahankan terminal interaktif untuk wizard. Jika klienmu tidak bisa, jalankan satu perintah `init` sendiri; agent dapat melanjutkan dengan `doctor` dan `start`. Batas ini menjaga token agar tidak masuk transkrip percakapan.
 
 ## Memakainya
 

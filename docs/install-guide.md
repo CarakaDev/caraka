@@ -19,30 +19,28 @@ Docker, akun cloud, domain, webhook, dan port terbuka tidak dibutuhkan.
 
 ## Jalur tercepat: suruh coding agent yang memasangnya
 
-Kalau Codex atau Claude sudah berjalan di komputer tempat repository berada,
+Kalau ada coding agent yang berjalan di komputer tempat repository berada,
 tempel prompt ini ke sana. Ia memeriksa prasyarat, memasang yang kurang, lalu
 menyerahkan bagian token kembali kepadamu.
 
 ```text
 Pasang Caraka untuk repository di working directory saya saat ini.
 
-Baca https://github.com/CarakaDev/caraka lebih dulu. Verifikasi Node.js 22
-atau lebih baru, Git, Claude Code, dan `claude auth status`. Perbaiki hanya
-prasyarat yang kurang tanpa mengubah repository saya. Jika Caraka sudah
-dikonfigurasi, jalankan `npx caraka doctor`.
+Baca https://github.com/CarakaDev/caraka lebih dulu. Verifikasi Node.js 22 atau
+lebih baru, Git, dan bahwa kamu sendiri sudah terpasang dan sudah login.
+Perbaiki hanya prasyarat yang kurang tanpa mengubah repository saya.
 
-Untuk pairing Telegram, jangan pernah meminta saya menempel, membuka, atau
-mengulang token bot lewat chat, output command, log, atau berkas yang akan
-di-commit. Minta saya membuat bot lewat @BotFather, lalu berikan perintah ini
-untuk saya jalankan sendiri di terminal lokal:
+Jangan pernah meminta saya menempel, membuka, atau mengulang token bot Telegram
+lewat chat, output command, log, atau berkas yang akan di-commit. Minta saya
+membuat bot lewat @BotFather, lalu berikan perintah ini untuk saya jalankan
+sendiri di terminal lokal:
 
   npx caraka init --workspace "$PWD"
 
-Tunggu saat saya memasukkan token secara privat dan menyetujui deep link
-Telegram. Setelah saya mengonfirmasi init selesai, jalankan
-`npx caraka doctor`, jelaskan check yang gagal, lalu mulai dengan
-`npx caraka start`. Jangan mengaktifkan webhook, membuka port, memasang service,
-atau mengubah konfigurasi model/provider milik Claude.
+Setelah saya mengonfirmasi init selesai, jalankan `npx caraka doctor`, jelaskan
+check yang gagal, lalu mulai dengan `npx caraka start`. Jangan mengaktifkan
+webhook, membuka port, memasang service, atau mengubah konfigurasi model atau
+provider milikmu sendiri.
 ```
 
 **Token tetap diketik di terminalmu sendiri dan tidak pernah masuk ke percakapan

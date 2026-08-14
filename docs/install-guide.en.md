@@ -19,7 +19,7 @@ Docker, a cloud account, a domain, a webhook, and an open port are not needed.
 
 ## The fastest route: let the coding agent install it
 
-If Codex or Claude is already running on the machine that holds the repository,
+If a coding agent is already running on the machine that holds the repository,
 paste this prompt into it. It checks the prerequisites, installs what is
 missing, then hands the token part back to you.
 
@@ -27,20 +27,18 @@ missing, then hands the token part back to you.
 Install Caraka for the repository in my current working directory.
 
 Read https://github.com/CarakaDev/caraka first. Verify Node.js 22 or newer,
-Git, Claude Code, and `claude auth status`. Fix only missing prerequisites that
-can be installed without changing my repository. Then run `npx caraka doctor`
-if Caraka is already configured.
+Git, and that you yourself are installed and signed in. Fix only missing
+prerequisites without changing my repository.
 
-For Telegram pairing, never ask me to paste, reveal, or repeat the bot token in
-chat, command output, logs, or a committed file. Tell me to create a bot with
-@BotFather, then hand me this exact command to run myself in a local terminal:
+Never ask me to paste, reveal, or repeat the Telegram bot token in chat, command
+output, logs, or a committed file. Tell me to create a bot with @BotFather, then
+hand me this command to run myself in a local terminal:
 
   npx caraka init --workspace "$PWD"
 
-Wait while I enter the token privately and approve the Telegram deep link.
-After I confirm init is complete, run `npx caraka doctor`, explain any failed
-check, and start it with `npx caraka start`. Do not enable a webhook, open a
-port, install a service, or modify Claude's model/provider configuration.
+After I confirm init is complete, run `npx caraka doctor`, explain failed
+checks, and start it with `npx caraka start`. Do not enable a webhook, open a
+port, install a service, or change your own model or provider configuration.
 ```
 
 **The token is still typed in your own terminal and never enters the agent's

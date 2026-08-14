@@ -20,7 +20,7 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.3.3', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.4.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Seven presets load; five routes across four agents have completed a turn
   // against a live binary here, all on 10 August 2026 — Claude Code over ACP
@@ -119,6 +119,22 @@ export const releases = [
         'Watch the dashboard swap a panel in a real browser with the CSP live',
         'Run fourteen days on a real WhatsApp number with no ban and no manual relink, or publish the honest finding that makes Cloud API the default',
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
+      ] },
+    ] },
+  { v: '1.4.0', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'ADDED', tone: '#8EEE98', items: [
+        'A preset for opencode, verified against a live binary. opencode acp is a real ACP server over stdio, so it joins on the same route as Claude Code and goose. Two turns with a session load between them, and the second turn recalled the number the first was given \u2014 opencode 1.18.18, 14 August 2026. Nothing in the file changed after that run. Five agents have now answered a live binary here, up from four',
+        'A preset for Antigravity CLI, on the CLI route. Its binary is agy, not antigravity, and its help names no ACP at all, so it runs through print mode the way codex and aider do. The JSON envelope was read from real output rather than transcribed: response carries the text and conversation_id the session, and both are already understood by the existing parser, so the preset costs no driver code',
+        'The flag that would auto-approve every tool permission exists in that CLI and is deliberately unused. The CLI route hands no permission decisions back to Caraka, so a read-only run refuses it before it starts; that flag would remove the only guard left on that route, which is the agent\u2019s own. A test pins its absence',
+      ] },
+      { label: 'CHANGED', tone: '#6FB9F0', items: [
+        'The install prompt named one agent \u2014 it asked the reader to verify Claude Code and not to change Claude\u2019s configuration \u2014 so anyone using something else had to translate it. The prompt is executed by the agent, so it can address itself: it now asks whoever is reading it to verify that they themselves are installed and signed in. Shorter than what it replaced, and it works for every agent',
+        'Both READMEs lead with the agent-assisted path. The website fixed that ordering earlier for a measured reason \u2014 the prompt verifies the prerequisites itself, so the prerequisite sections only matter to someone taking the manual route \u2014 and the README was the last surface still inverted. Nothing was dropped in the move',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'Antigravity is unverified and its own file says where it stopped. It demands a Google sign-in before it answers anything, and the run printed an OAuth URL, waited sixty seconds for a pasted code, and returned an authentication error. Three things stay unproven: whether the response field is populated on a successful turn, whether the conversation id it returns can be replayed, and what its default permission behaviour is in print mode',
+        'Gemini CLI was retired for individual Pro and Ultra users on 18 June 2026, and Google names Antigravity as its replacement. That date is two months past. The gemini preset is left in place because nothing depends on it, but the fact is now written inside the preset with its date and a pointer to the successor',
       ] },
     ] },
   { v: '1.3.3', state: 'unproven', date: '13 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
