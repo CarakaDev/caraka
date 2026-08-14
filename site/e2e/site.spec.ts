@@ -429,13 +429,13 @@ test.describe('the comps still decide the layout', () => {
     const EXPECTED: Record<string, number> = {
       // v1.2 copy, except the two v1.3 moved — measured from the site (see above)
       '/': 6595,
-      '/guide': 7244,
-      '/docs': 7425,
+      '/guide': 7313,
+      '/docs': 7519,
       '/compare': 5931,
       '/install': 5465,
       '/security': 6147,
       '/whatsapp-risk': 6857,
-      '/status': 9261,
+      '/status': 9126,
       '/brand/readme': 5581,
       // still measured against the comp
       '/story': 5734,

@@ -1,4 +1,4 @@
-// Security-page copy follows docs/security.md and the shipped v1.1 runtime.
+// Security-page copy follows docs/security.md and the shipped v1.5 runtime.
 // Where a line below no longer matches design/mockups/Caraka Security.dc.html,
 // the comment above it names the comp line and what shipped instead. The comp
 // still decides how this page looks; it stopped deciding what is true of the
@@ -193,7 +193,7 @@ export const notClaimed = [
   // The same word the RELEASE STATE stat in src/data/status.ts and the maturity
   // row in src/data/compare.ts use. Reaching 1.1 means every phase carries
   // shipped code; it does not mean anyone outside this repository has run it.
-  'Caraka v1.1 is unproven. Every phase has shipped code and not one field gate has been answered by a person, so treat it as software that has not yet been attacked in the wild.',
+  'Caraka v1.5 is unproven. Every phase has shipped code and not one field gate has been answered by a person, so treat it as software that has not yet been attacked in the wild.',
   'Vulnerabilities in your coding agent, in Telegram, in Discord, or in WhatsApp are theirs to fix. We will help route the report.',
 ]
 

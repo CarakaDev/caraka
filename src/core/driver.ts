@@ -40,6 +40,14 @@ export type PermissionResponse = {
   outcome: { outcome: "cancelled" } | { outcome: "selected"; optionId: string };
 };
 
+/**
+ * The agent a run falls back to when neither the session nor its workspace names
+ * one. It lives here rather than in `cli.ts` because core has to be able to say
+ * it out loud: the sentence a person reads while a task runs names the agent
+ * doing the work, and `""` is not a name.
+ */
+export const DEFAULT_AGENT = "claude-code";
+
 /** The per-prompt pair of callbacks the gateway hands a driver. */
 export type DriverRoute = {
   update(notification: AgentUpdate): void | Promise<void>;

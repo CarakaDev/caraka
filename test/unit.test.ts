@@ -6381,6 +6381,30 @@ test("the doctor rows that read a private-chat field say so", async () => {
   assert.equal(/bot\.has_topics_enabled === true,/.test(source), false);
 });
 
+test("no catalog sentence names an agent as fixed text", () => {
+  // AC-4 of spec nama-yang-bekerja. Three sentences said `Claude` outright —
+  // the start-up banner and the two on the run path — and an installation
+  // running codex read all three. The agent's name arrives as {agent}; a
+  // catalog that spells one out is this bug coming back.
+  const named = /\b(claude|codex|gemini|goose|aider|opencode|cursor|amp|antigravity)\b/i;
+  const offenders = [];
+  for (const [name, catalog] of Object.entries(catalogs)) {
+    for (const [key, line] of Object.entries(catalog)) {
+      // Three kinds of key are allowed to name one: doctor rows and install
+      // remedies say what they checked or what to install, and these three
+      // belong to Claude Code itself rather than to whichever agent is running
+      // — `acp.*` are the Claude ACP adapter's own errors, and
+      // `bypassPermissions` is the name of a mode Claude Code has and the
+      // others do not.
+      if (key.startsWith("doctor.") || key.startsWith("install.") || key.startsWith("agents."))
+        continue;
+      if (key === "acp.start" || key === "acp.notStarted" || key === "cli.bypassOpened") continue;
+      if (typeof line === "string" && named.test(line)) offenders.push(`${name}.${key}: ${line}`);
+    }
+  }
+  assert.deepEqual(offenders, []);
+});
+
 test("the line Caraka prints when it comes up names the agent, not a brand", () => {
   // AC-5 of spec agen-milik-workspace. Both catalogs wrote `Claude` as fixed
   // text, so the reporter of issue #9 still read `→ Claude` after patching the

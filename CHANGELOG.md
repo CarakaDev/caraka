@@ -4,6 +4,31 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.4] — 2026-08-14
+
+Nine sentences said `Claude` outright, and an installation running codex read them on every task.
+
+1.5.3 made the right agent run. It did not change what Caraka says while that agent is working, and the line a person watches on every single task read `◌ Claude sedang bekerja…` no matter which agent had been chosen. So did the approval card, the first line of every new session, and the failure report — `Claude could not finish the task`, which is the sentence the reporter of [issue #9] pasted into it.
+
+This is that bug's third form and its widest: the fix was written into the driver selection, and the catalogs were never read.
+
+### Fixed
+
+- **Six sentences now name the agent that is running**: the working line, the no-output line, the failure report, the approval card header, the first line of a new session, and both `/commands` answers. `agentOf` is the one reader, so they cannot answer differently from each other.
+- **Three that cannot reach the name no longer guess one.** `channel.empty` is sent by three channels that never learn which agent answered, and `help.unknownCommand` runs where there is no session; both now say `the agent`, which is what `usage.none` has always said.
+- **`FINISHED` is deleted.** It has been dead since 1.5.2 removed the automatic close and was left behind in the same commit.
+
+### Changed
+
+- `DEFAULT_AGENT` moved from `src/cli.ts` to `src/core/driver.ts`. Core has to be able to say it out loud now, and `""` is not a name a person can read.
+- Three catalog keys keep the name on purpose and the test that guards this says why: `acp.start` and `acp.notStarted` are the Claude ACP adapter's own errors, and `bypassPermissions` is the name of a mode Claude Code has and the other eight presets do not.
+
+### Limited
+
+- The name printed is the preset id — `codex`, `opencode`, `claude-code` — the same string `caraka doctor` prints. It is not a display name, and there is no mapping from one to the other.
+
+[issue #9]: https://github.com/CarakaDev/caraka/issues/9
+
 ## [1.5.3] — 2026-08-14
 
 An installation whose config said `agent: codex` ran Claude, and said so.

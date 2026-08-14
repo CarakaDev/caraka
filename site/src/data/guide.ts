@@ -69,7 +69,7 @@ export const chapters: Chapter[] = [
       },
       {
         k: 'A coding agent, signed in',
-        v: 'init scans PATH for the seven presets and one of them is enough. Claude Code over the official ACP adapter is the shortest route, and four of the seven have answered a live binary here.',
+        v: 'init scans PATH for the nine presets and one of them is enough. Claude Code over the official ACP adapter is the shortest route, and five of the nine have run against a live binary here.',
       },
       {
         k: 'A bot of your own',
@@ -244,7 +244,7 @@ export const chapters: Chapter[] = [
       },
     ],
     note:
-      'Thirteen commands are registered, so your chat app offers them in its own menu: /new /status /stop /ws /switch /commands /usage /ingat /lupakan /memori /yolo /lock /help. Send /help in your own conversation with the bot for what each one does; the answer in a room is a shorter, different one.',
+      'Fourteen commands are registered, so your chat app offers them in its own menu: /new /status /stop /ws /switch /commands /usage /ingat /lupakan /memori /yolo /lock /close /help. Send /help in your own conversation with the bot for what each one does; the answer in a room is a shorter, different one.',
   },
   {
     no: '06',
@@ -319,7 +319,7 @@ export const chapters: Chapter[] = [
       },
     ],
     note:
-      'A finished session closes its topic rather than deleting it, so the transcript stays readable and the summary is the last line in it. In a group that means the composer is gone for everyone but an admin with Manage topics; a message aimed at Caraka in that topic reopens it and continues the same session.',
+      'Nothing closes a topic on its own. A finished run is renamed with its state glyph and left open, because a run ending is not a session ending — the next message in that topic continues the same session. When you are done, /close marks the session finished, sends a closing line, and closes the topic in that order, so the last thing in it explains why it ended. It refuses while a task is running and names /stop as the way through. Closed, never deleted: the delete call takes the whole transcript with it, while closing is a flag and the history stays readable to every member. In a group the composer is then gone for everyone but an admin with Manage topics, and the next session starts with /new.',
   },
   {
     no: '08',
@@ -342,7 +342,7 @@ export const chapters: Chapter[] = [
         v: 'Exercised against a stub adapter and against the Bot API documentation, never against a real forum supergroup. If a session ends and its topic stays open, this is the gap it fell through.',
       },
       {
-        k: 'Six of the seven agent presets',
+        k: 'Four of the nine agent presets',
         v: 'Have never completed a turn here. Four have driven a live binary, which is the smaller claim it sounds like: one of those runs got as far as a spent usage quota and stopped there. A YAML file that loads is not an agent that answered.',
       },
     ],

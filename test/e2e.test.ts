@@ -1393,7 +1393,7 @@ test("a session topic is no exception to the mention gate", async () => {
   const [answering, chatting] = await viaAdapter([
     {
       ...forum("carry on", undefined, 7001).message,
-      reply_to_message: { ...bot, text: "◌ Claude is working…" } as TelegramMessage,
+      reply_to_message: { ...bot, text: "◌ claude-code is working…" } as TelegramMessage,
     },
     {
       ...forum("nice topic", undefined, 7001).message,
@@ -2316,7 +2316,7 @@ test("a compile that outlives the bound is skipped and audited once", async () =
   assert.equal(h.prompts[0], "carry on");
   assert.equal(h.prompts[0]?.includes("<memory"), false);
   assert.equal(audits(h.store, "memory_degraded").length, 1);
-  assert.ok(h.sent.some((item) => item.text.includes("Claude finished without text output.")));
+  assert.ok(h.sent.some((item) => item.text.includes("claude-code finished without text output.")));
   await h.finish();
 });
 
@@ -4491,9 +4491,9 @@ test("with no threads the header core already wrote is the whole of linear mode"
   };
   // The ack, the approval card, the closing summary, and `/status`: four
   // consecutive replies in one flat conversation, each naming its session.
-  headered(translator()("run.working"));
-  headered(translator()("permission.header"));
-  headered(translator()("run.noOutput"));
+  headered(translator()("run.working", { agent: "claude-code" }));
+  headered(translator()("permission.header", { agent: "claude-code" }));
+  headered(translator()("run.noOutput", { agent: "claude-code" }));
   headered("Status: done");
   assert.deepEqual(
     h.sent.filter((item) => item.thread).map((item) => item.thread),
@@ -4626,7 +4626,9 @@ test("a channel that cannot rewrite a message gets the ack and then silence", as
   await mute.settle(500);
   assert.deepEqual(mute.edits, [], "not one editText");
   assert.equal(
-    mute.sent.filter((item) => item.text.includes(translator()("run.working"))).length,
+    mute.sent.filter((item) =>
+      item.text.includes(translator()("run.working", { agent: "claude-code" })),
+    ).length,
     1,
     "one ack",
   );
@@ -4640,7 +4642,9 @@ test("a channel that cannot rewrite a message gets the ack and then silence", as
   await live.settle(500);
   assert.ok(live.edits.length > 0, "the progress path is alive where edit is true");
   assert.equal(
-    live.sent.filter((item) => item.text.includes(translator()("run.working"))).length,
+    live.sent.filter((item) =>
+      item.text.includes(translator()("run.working", { agent: "claude-code" })),
+    ).length,
     1,
   );
   await live.finish();
@@ -4690,7 +4694,11 @@ test("nothing reaches a channel that the scrubber has not read first", async () 
   const outbound = JSON.stringify([h.sent, h.edits]);
   assert.equal(outbound.includes(value), false, "the token never reached the channel");
   assert.ok(outbound.includes("[REDACTED]"), "and it was replaced rather than dropped silently");
-  assert.ok(h.sent.some((item) => item.text.includes(translator()("permission.header"))));
+  assert.ok(
+    h.sent.some((item) =>
+      item.text.includes(translator()("permission.header", { agent: "claude-code" })),
+    ),
+  );
   // The audit log is written through the same scrubber before it touches disk.
   const rows = JSON.stringify(h.store.db.prepare("SELECT details FROM audit").all());
   assert.equal(rows.includes(value), false);

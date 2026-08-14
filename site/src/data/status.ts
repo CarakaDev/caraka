@@ -20,7 +20,7 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.5.3', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.5.4', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Seven presets load; five routes across four agents have completed a turn
   // against a live binary here, all on 10 August 2026 — Claude Code over ACP
@@ -99,7 +99,7 @@ export const phases: Phase[] = [
     range: r(6, 3, 26) },
   { n: '7', title: 'Public release · v1.0', dur: '2 weeks', live: true, ...shipped,
     q: 'Is it ready to be trusted by strangers?',
-    gate: 'Every goal in prd.md is met and measured. Fifteen agents are not covered: seven presets ship and four have answered a live binary here — Claude Code on both its routes, Codex and aider on the CLI, goose over ACP. Taking the release to the Indonesian developer community and to the ACP ecosystem is the step nothing in a repository can perform.',
+    gate: 'Every goal in prd.md is met and measured. Fifteen agents are not covered: nine presets ship and five have run against a live binary here — Claude Code on both its routes, Codex and aider on the CLI, goose and opencode over ACP. Codex’s smoke reached a spent usage quota rather than a finished turn. Taking the release to the Indonesian developer community and to the ACP ecosystem is the step nothing in a repository can perform.',
     range: r(7, 3, 26) },
 ]
 
@@ -128,6 +128,21 @@ export const releases = [
         'Watch the dashboard swap a panel in a real browser with the CSP live',
         'Run fourteen days on a real WhatsApp number with no ban and no manual relink, or publish the honest finding that makes Cloud API the default',
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
+      ] },
+    ] },
+  { v: '1.5.4', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'FIXED', tone: '#FFD67E', items: [
+        'Nine sentences said Claude outright, and an installation running codex read them on every task. 1.5.3 made the right agent run and did not change what Caraka says while it works, so the line a person watches on every single task still read Claude sedang bekerja \u2014 and so did the approval card, the first line of every new session, and the failure report, which is the exact sentence the reporter of issue #9 pasted into it',
+        'Six sentences now name the agent that is running: the working line, the no-output line, the failure report, the approval card header, the first line of a new session, and both /commands answers. One reader answers for all six, so they cannot disagree with each other',
+        'Three that cannot reach the name no longer guess one. channel.empty is sent by three channels that never learn which agent answered, and help.unknownCommand runs where there is no session; both say the agent, which is what the usage line has always said',
+        'The scope of this was found by its own test. The spec was written against the two sentences anybody had noticed; the test written for its last criterion found nine, and three of the seven it missed are on paths every task crosses',
+      ] },
+      { label: 'CHANGED', tone: '#8EEE98', items: [
+        'Three catalog lines keep the name on purpose and the test says why: two are the Claude ACP adapter\u2019s own errors, and bypassPermissions is the name of a mode Claude Code has and the other eight presets do not',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'The name printed is the preset id \u2014 codex, opencode, claude-code \u2014 the same string caraka doctor prints. It is not a display name, and there is no mapping from one to the other',
       ] },
     ] },
   { v: '1.5.3', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
@@ -197,28 +212,13 @@ export const releases = [
         'Whether a closed topic still accepts a message from the bot is implementation evidence, not a documented promise. Telegram\u2019s own server permits it for the topic\u2019s creator, which Caraka always is here, but the API page says nothing about it \u2014 so every send into a closed topic stays fallible and a refused close is swallowed rather than ending a run',
       ] },
     ] },
-  { v: '1.4.2', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
-    groups: [
-      { label: 'MEASURED', tone: '#6FB9F0', items: [
-        'Two things this project had been saying for four releases turned out to be false, and both were settled by measuring. The first: there was no deletion waiting. Four specs in a row closed with a version of the same sentence \u2014 a set of verified removals had been found, and only the rule against mixing a fix with a refactor stood between them and the budget. The pass that finally made them ADDED 35 lines, 9,633 to 9,668',
-        'The reason is uniform across all six candidates. Each duplicate is a body of four to twenty lines, and what holds the two copies apart \u2014 an error class, an injected clock, a translated sentence, a body-level retry header \u2014 costs more as parameters than the body costs as a copy. The shared fetch-with-retry is the clearest: 24 lines off the two channel adapters, 47 on in core. Only the twin PRAGMA scans broke even, and the sixth candidate had already been folded',
-        'The second: this page was not what was slowing the mobile suite down. That had been called margin erosion from a page growing about 600px per release. Paired runs with the build redone for each side: 15.2s alone before and after, 22.2s under the full suite before and after. Trimming 9,817 pixels moved it by half a second at most, while the full-suite figure swings 18.5 to 22.2s between runs of one build. That test spends 2,673ms navigating thirteen routes and 11,461ms in its own fixed waits, and this page navigates in 123ms \u2014 among the cheapest on the list',
-      ] },
-      { label: 'CHANGED', tone: '#8EEE98', items: [
-        'This page stops growing by a card per release. The five newest keep a full card; the fourteen older ones are one line each, taken from the lead sentence of their own changelog entry. Nothing vanishes \u2014 every published version is still named here, and a test fails on a sixth full card or on a version with no line. 18,455px to 8,638px, twenty cards to seven',
-        'One retry loop on the path that carries a bot token, where there were two. This is what the simplification pass actually bought. The copy it deleted had no test at any point in its life, so that path now runs the same code the Discord 429 tests exercise. The token never crosses into core: the helper takes the request as a closure it cannot see into and has no init parameter, which an adversarial review confirmed by reading it',
-      ] },
-      { label: 'LIMITED', tone: '#FFD67E', items: [
-        'Five things the green gate does not prove, recorded rather than claimed as covered: the WhatsApp REST path has no test at all, the Discord body-level retry fallback is never exercised because the tests always send the header, the Discord 204 branch has no caller, one unreachable-channel sentence needs a fetch that throws and nothing makes one, and one memory-failure sentence appears nowhere in the tests',
-        'src/ measures 9,668 lines against the ~8,000 ceiling, 1,668 over. The next feature owes that or a removal, and it will not be one of these six',
-      ] },
-    ] },
-  { v: '1.4.1 → 0.0.0', state: 'in CHANGELOG.md', date: '7–14 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
+  { v: '1.4.2 → 0.0.0', state: 'in CHANGELOG.md', date: '7–14 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
     groups: [
       { label: 'WHERE THE FULL ENTRIES ARE', tone: '#FFD67E', items: [
         'CHANGELOG.md in the repository, linked at the foot of this page. It carries every release below at the length it was written in; what is here is one line each, and nothing has been dropped from the history',
       ] },
       { label: 'SHIPPED', tone: '#8EEE98', items: [
+        '1.4.2 · 14 August 2026 — a group could not open a topic, because init had read a private-chat setting as the answer for every container',
         '1.4.1 · 14 August 2026 — a setting that describes direct messages was switching topics off in groups',
         '1.4.0 · 14 August 2026 — the install prompt told people to use Claude, and the README buried it under the manual route',
         '1.3.3 · 13 August 2026 — a workspace written as @~/Project/Coret answered that no workspace had that name',

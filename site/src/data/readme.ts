@@ -16,8 +16,8 @@ export const badges = [
   // and the registry itself lagged too on 13 August 2026, answering 1.3.0 for
   // roughly a minute after `npm publish` printed `+ caraka@1.3.1`. Wait for
   // `curl -s https://registry.npmjs.org/caraka` to name the new one before
-  // touching this line. It gave `dist-tags.latest` 1.5.2.
-  { k: 'npm', v: 'v1.5.2', tone: '#E2452C', ink: '#FFEDE7' },
+  // touching this line. It gave `dist-tags.latest` 1.5.3.
+  { k: 'npm', v: 'v1.5.3', tone: '#E2452C', ink: '#FFEDE7' },
   { k: 'license', v: 'MIT', tone: '#8EEE98', ink: '#05300C' },
   { k: 'node', v: '≥22', tone: '#E2452C', ink: '#FFEDE7' },
   { k: 'protocol', v: 'ACP', tone: '#FF7A5E', ink: '#2B0D06' },
@@ -26,7 +26,7 @@ export const badges = [
   // above tracks. The README's own status badge is the same idea and is not the
   // source: it still reads v1.0, which is drift in that file rather than a
   // second answer this one should copy.
-  { k: 'status', v: 'v1.2', tone: '#FFD67E', ink: '#3A2A00' },
+  { k: 'status', v: 'v1.5', tone: '#FFD67E', ink: '#3A2A00' },
 ]
 
 export const legend = [

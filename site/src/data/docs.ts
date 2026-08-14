@@ -1,4 +1,4 @@
-// Documentation-page copy follows the shipped v1.1 implementation and docs/.
+// Documentation-page copy follows the shipped v1.5 implementation and docs/.
 // design/mockups/Caraka Docs.dc.html decides the layout and stopped deciding
 // the content at v0.1: its chapter 05 is Memory, which arrived at v0.3 as a
 // provider rather than a chapter, and its row lists name commands that were
@@ -85,6 +85,7 @@ export const chapters: Chapter[] = [
       { k: '/memori', v: 'List what memory currently holds for this workspace.' },
       { k: '/yolo <duration>', v: 'Offer a trust window for this workspace. The duration is mandatory, sixty minutes is the ceiling, and a signed button opens it.' },
       { k: '/lock', v: 'Close the trust window now.' },
+      { k: '/close', v: 'Finish this session and close its topic, in that order, so the last thing in the topic explains why it ended. It refuses while a task is running and names /stop as the way through; nothing closes a topic on its own.' },
       { k: '/help', v: 'Explain how to work here, with examples. The answer in a room is a different one: it says what a room refuses, what everyone in it can read, and what the channel does and does not deliver.' },
       { k: 'restart', v: 'Load the stored ACP session before the next prompt, and close any trust window the last process left open. A CLI-route session starts a fresh agent thread instead: its id lives in process memory.' },
     ],

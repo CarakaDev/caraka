@@ -5,10 +5,10 @@ const en = {
   "queue.queued": "◌ Task queued (#{n}).",
   "queue.limit": "◌ 20 messages a minute is the limit. The rest are queued.",
   "session.untitled": "New task",
-  "session.created": "Write the task for Claude here.",
-  "run.working": "◌ Claude is working…",
+  "session.created": "Write the task for {agent} here.",
+  "run.working": "◌ {agent} is working…",
   "run.cancelled": "Task cancelled.",
-  "run.noOutput": "Claude finished without text output.",
+  "run.noOutput": "{agent} finished without text output.",
   "run.timeout": "Run passed {minutes} minutes and was cancelled.",
   // What a sender is told when an attachment cannot reach the agent this session
   // runs on. It names the kind rather than the file, because the file has no name
@@ -20,7 +20,7 @@ const en = {
   // that reported the file as too big and core stores no channel's number.
   "attach.tooBig":
     "That attachment is {size} MB and Caraka fetches at most 20 MB; send a smaller one, or put the file in the workspace and name its path.",
-  "permission.header": "⏸ Claude asks for permission",
+  "permission.header": "⏸ {agent} asks for permission",
   "permission.fallbackTitle": "Tool operation",
   "permission.ttl": "Valid for 10 minutes",
   // Where there are no buttons the code is the decision, so the card says both
@@ -97,10 +97,10 @@ const en = {
   "ws.added": "{slug} now points at {path}. Tasks in this chat go there.",
   "switch.unknown": "That is not a loaded preset. Loaded: {list}",
   "switch.done": "This session switches to {agent} on its next task.",
-  "help.commandsEmpty": "Claude has not sent its command list for this session yet.",
-  "help.commands": "Claude commands for this session:\n{list}",
+  "help.commandsEmpty": "{agent} has not sent its command list for this session yet.",
+  "help.commands": "{agent} commands for this session:\n{list}",
   "help.unknownCommand":
-    "Caraka does not know /{name}. Send /commands for the list Claude reported.",
+    "Caraka does not know /{name}. Send /commands for the list the agent reported.",
   "usage.none": "The agent has not reported usage for this session yet.",
   "usage.report": "Context {used}/{size} tokens. Cost {cost}.",
   "memory.off":
@@ -116,7 +116,7 @@ const en = {
     "Memory did not answer, so nothing changed. `npx caraka doctor` on the computer shows why.",
   "memory.saved": "Memory saved: {id}",
   "error.report":
-    "Claude could not finish the task. {details}\nTry /new or run `npx caraka doctor` on the computer.",
+    "{agent} could not finish the task. {details}\nTry /new or run `npx caraka doctor` on the computer.",
   "start.notice": "Caraka is up on {host}. Workspace {workspace}, version {version}.",
   "policy.readOnly":
     '⛔ Refused: {tool}{target}\nThis conversation is read-only, so no write and no command runs here. To let it, add "{container}": assisted under {channel}.modes in config.yaml and restart. A room stays read-only until someone opts it in.',
@@ -157,7 +157,7 @@ const en = {
   "group.topicsOn": "on. Each session gets its own topic here.",
   "group.topicsOff":
     "off. This group is not a forum, or I am not an admin with can_manage_topics — sessions run linear with a header. Granting that right makes me an admin, and an admin bot reads every message in the group. That is the trade.",
-  "channel.empty": "(Claude sent no text.)",
+  "channel.empty": "(The agent sent no text.)",
   "channel.unreachable": "{channel} {method} could not be reached.",
   "channel.refused": "{channel} refused {method}.",
   "channel.startFailed": "{channel} could not start, so nothing was started. {message}",
@@ -376,16 +376,16 @@ const id: Record<MessageKey, string> = {
   "queue.queued": "◌ Tugas masuk antrean (#{n}).",
   "queue.limit": "◌ Batasnya 20 pesan per menit. Sisanya masuk antrean.",
   "session.untitled": "Tugas baru",
-  "session.created": "Tulis tugas untuk Claude di sini.",
-  "run.working": "◌ Claude sedang bekerja…",
+  "session.created": "Tulis tugas untuk {agent} di sini.",
+  "run.working": "◌ {agent} sedang bekerja…",
   "run.cancelled": "Tugas dibatalkan.",
-  "run.noOutput": "Claude selesai tanpa keluaran teks.",
+  "run.noOutput": "{agent} selesai tanpa keluaran teks.",
   "run.timeout": "Run melewati {minutes} menit dan dibatalkan.",
   "attach.unsupported":
     "Caraka tidak bisa menyerahkan {kind} ke agent ini; kirim tugasnya sebagai teks, atau taruh berkasnya di workspace lalu sebut path-nya.",
   "attach.tooBig":
     "Lampiran itu {size} MB dan Caraka mengunduh paling banyak 20 MB; kirim yang lebih kecil, atau taruh berkasnya di workspace lalu sebut path-nya.",
-  "permission.header": "⏸ Claude meminta izin",
+  "permission.header": "⏸ {agent} meminta izin",
   "permission.fallbackTitle": "Operasi tool",
   "permission.ttl": "Berlaku 10 menit",
   "permission.ttlReply":
@@ -438,9 +438,9 @@ const id: Record<MessageKey, string> = {
   "ws.added": "{slug} sekarang menunjuk {path}. Tugas di chat ini masuk ke sana.",
   "switch.unknown": "Itu bukan preset yang termuat. Yang termuat: {list}",
   "switch.done": "Sesi ini beralih ke {agent} pada tugas berikutnya.",
-  "help.commandsEmpty": "Claude belum mengirim daftar perintah untuk sesi ini.",
-  "help.commands": "Perintah Claude untuk sesi ini:\n{list}",
-  "help.unknownCommand": "Caraka tidak mengenal /{name}. Kirim /commands untuk daftar dari Claude.",
+  "help.commandsEmpty": "{agent} belum mengirim daftar perintah untuk sesi ini.",
+  "help.commands": "Perintah {agent} untuk sesi ini:\n{list}",
+  "help.unknownCommand": "Caraka tidak mengenal /{name}. Kirim /commands untuk daftar dari agent.",
   "usage.none": "Agent belum melaporkan pemakaian untuk sesi ini.",
   "usage.report": "Konteks {used}/{size} token. Biaya {cost}.",
   "memory.off":
@@ -456,7 +456,7 @@ const id: Record<MessageKey, string> = {
     "Memori tidak menjawab, jadi tidak ada yang berubah. `npx caraka doctor` di komputer menunjukkan sebabnya.",
   "memory.saved": "Ingatan disimpan: {id}",
   "error.report":
-    "Claude tidak dapat menyelesaikan tugas. {details}\nCoba /new atau jalankan `npx caraka doctor` di komputer.",
+    "{agent} tidak dapat menyelesaikan tugas. {details}\nCoba /new atau jalankan `npx caraka doctor` di komputer.",
   "start.notice": "Caraka aktif di {host}. Workspace {workspace}, versi {version}.",
   "policy.readOnly":
     '⛔ Ditolak: {tool}{target}\nPercakapan ini read-only, jadi tidak ada tulis dan tidak ada perintah yang berjalan di sini. Untuk mengizinkannya, tambahkan "{container}": assisted di bawah {channel}.modes pada config.yaml lalu mulai ulang. Sebuah ruang tetap read-only sampai ada yang memilihnya masuk.',
@@ -487,7 +487,7 @@ const id: Record<MessageKey, string> = {
   "group.topicsOn": "aktif. Tiap sesi mendapat topic sendiri di sini.",
   "group.topicsOff":
     "tidak aktif. Grup ini bukan forum, atau saya bukan admin dengan can_manage_topics — sesi berjalan linear dengan header. Memberi hak itu menjadikan saya admin, dan bot admin membaca setiap pesan di grup. Itu pertukarannya.",
-  "channel.empty": "(Claude tidak mengirim teks.)",
+  "channel.empty": "(Agent tidak mengirim teks.)",
   "channel.unreachable": "{channel} {method} tidak dapat dihubungi.",
   "channel.refused": "{channel} menolak {method}.",
   "channel.startFailed": "{channel} tidak dapat dimulai, jadi tidak ada yang dijalankan. {message}",

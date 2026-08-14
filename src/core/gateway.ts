@@ -30,6 +30,7 @@ import type {
   PermissionRequest,
   PermissionResponse,
 } from "./driver.js";
+import { DEFAULT_AGENT } from "./driver.js";
 import { translator, type Translate } from "../i18n.js";
 import { withTimeout, type MemoryProvider, type Scope } from "../memory/index.js";
 import { Store, type Session } from "../store/db.js";
@@ -80,11 +81,6 @@ const MEMORY_BUDGET_TOKENS = 800;
 const MEMORY_MAX_ITEMS = 6;
 // FR-MEM-07: recall that passes 500 ms is skipped, never waited out.
 const MEMORY_TIMEOUT_MS = 500;
-// The three states a session ends in. One set rather than three comparisons,
-// because `setState` now asks the question twice: once to close the topic, once
-// to know whether the state it is leaving was one a close had followed.
-const FINISHED = new Set(["done", "failed", "cancelled"]);
-
 /**
  * A leading `~/` read as a path. A chat message never passes through a shell, so
  * nothing expands the tilde before core sees it and `isAbsolute("~/x")` is
@@ -974,11 +970,13 @@ export class Gateway {
   private listCommands(message: InboundMessage) {
     const session = this.sessionOf(message);
     const commands = session ? this.facts.get(session.id)?.commands : undefined;
+    const agentName = session ? this.agentOf(session) : DEFAULT_AGENT;
     const body = commands?.length
       ? this.t("help.commands", {
+          agent: agentName,
           list: commands.map((entry) => `/${entry.name} — ${entry.description}`).join("\n"),
         })
-      : this.t("help.commandsEmpty");
+      : this.t("help.commandsEmpty", { agent: agentName });
     return this.reply(message, body, undefined, session?.id);
   }
 
@@ -1262,6 +1260,16 @@ export class Gateway {
 
   // A slug the config no longer names still prints, because the header says which
   // session a line belongs to and the row is what it belongs to.
+  /**
+   * The agent id to put in a sentence about this session. `agentFor` answers
+   * `""` for "the product default", which is not a name a person can read, so
+   * this is the one place that turns it into one.
+   */
+  private agentOf(session: Session) {
+    const workspace = this.workspaceOf(session);
+    return (workspace ? this.agentFor(workspace, session) : session.agent) || DEFAULT_AGENT;
+  }
+
   private header(session: Session) {
     const slug = this.workspaceOf(session)?.slug ?? session.workspace;
     return session.threadId ? "" : `[${slug} · #${session.id.slice(0, 4)}]\n`;
@@ -1269,7 +1277,10 @@ export class Gateway {
 
   private async createOnly(message: InboundMessage, workspace: Workspace, text: string) {
     const session = await this.createSession(message, this.title(text), true, workspace);
-    await this.sendToSession(session, `${this.header(session)}${this.t("session.created")}`);
+    await this.sendToSession(
+      session,
+      `${this.header(session)}${this.t("session.created", { agent: this.agentOf(session) })}`,
+    );
   }
 
   /**
@@ -1334,9 +1345,14 @@ export class Gateway {
     const mode = this.policyMode(message);
     const scope: Scope = { kind: "workspace", id: workspace.path };
     await this.setState(session, "running");
+    // The agent that will actually answer, named where it is chosen rather than
+    // written into the catalogs: both these sentences said `Claude` as fixed
+    // text, and an installation running codex read it on every single task
+    // (issue #9, third form).
+    const agent = this.agentFor(workspace, session) || DEFAULT_AGENT;
     const progress = await this.sendToSession(
       session,
-      `${this.header(session)}${this.t("run.working")}`,
+      `${this.header(session)}${this.t("run.working", { agent })}`,
     );
     let output = "";
     let lastEdit = 0;
@@ -1429,7 +1445,7 @@ export class Gateway {
       // a summary posted into an archived thread arrives after the door shut.
       await this.sendResult(
         session,
-        `${this.header(session)}${output || this.t(cancelled ? "run.cancelled" : "run.noOutput")}${memoryLine}`,
+        `${this.header(session)}${output || this.t(cancelled ? "run.cancelled" : "run.noOutput", { agent })}${memoryLine}`,
       );
       await this.setState(session, cancelled ? "cancelled" : "done");
       this.note(session, "run.finish", result.stopReason, {
@@ -1830,7 +1846,7 @@ export class Gateway {
     await this.setState(session, "awaiting_approval");
     await this.sendToSession(
       session,
-      `${this.header(session)}${this.t("permission.header")}\n${tool}${this.permissionTarget(request)}\n\n${this.t(buttons ? "permission.ttl" : "permission.ttlReply", { code: code ?? "" })}`,
+      `${this.header(session)}${this.t("permission.header", { agent: this.agentOf(session) })}\n${tool}${this.permissionTarget(request)}\n\n${this.t(buttons ? "permission.ttl" : "permission.ttlReply", { code: code ?? "" })}`,
       buttons
         ? {
             inline_keyboard: [
@@ -2361,7 +2377,10 @@ export class Gateway {
       String(message.from?.id),
       session?.id,
     );
-    const text = this.t("error.report", { details });
+    const text = this.t("error.report", {
+      details,
+      agent: session ? this.agentOf(session) : this.agentFor(this.home) || DEFAULT_AGENT,
+    });
     await (
       session
         ? this.sendToSession(session, `${this.header(session)}${text}`)

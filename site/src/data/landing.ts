@@ -170,7 +170,7 @@ export const safety = [
 // line count, the tones, the marks, and every `range` are the comp's.
 //
 // `claude login · ready` went with it: init has scanned PATH for any of the
-// seven presets since v0.4 (src/cli.ts, `agents.none` is the only stop), and
+// nine presets since v0.4 (src/cli.ts, `agents.none` is the only stop), and
 // the sign-in it names is Claude's own command, which the prompt now asks each
 // agent to run against itself.
 export const term = [
@@ -178,7 +178,7 @@ export const term = [
   { t: '', tone: '#5D666F', range: r(1, 2.4, 22) },
   // comp:535 reads `caraka · v0.1.0`; `VERSION` in src/cli.ts reads the
   // `version` in package.json, which is 1.3.3.
-  { t: 'caraka · v1.5.3', tone: '#F6F9FC', mark: 'ꦕꦫꦏ', markTone: '#E2452C', range: r(2, 2.4, 22) },
+  { t: 'caraka · v1.5.4', tone: '#F6F9FC', mark: 'ꦕꦫꦏ', markTone: '#E2452C', range: r(2, 2.4, 22) },
   { t: '', tone: '#5D666F', range: r(3, 2.4, 22) },
   { t: 'agent · found on PATH', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(4, 2.4, 22) },
   { t: 'telegram · paired', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(5, 2.4, 22) },

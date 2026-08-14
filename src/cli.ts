@@ -50,7 +50,9 @@ import { Store } from "./store/db.js";
 // checkout.
 const VERSION = createRequire(import.meta.url)("../package.json").version as string;
 // The preset a session runs until `/switch` names another.
-const DEFAULT_AGENT = "claude-code";
+// The product default lives in the driver layer, so core can name it in the
+// sentence a person reads while a task runs.
+import { DEFAULT_AGENT } from "./core/driver.js";
 
 let t: Translate = translator(defaultLanguage());
 
