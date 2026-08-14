@@ -1,6 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
 import {
+  retrySend,
   splitMarkdown,
   type Channel,
   type ChannelCaps,
@@ -193,12 +194,21 @@ export class Telegram implements Channel {
     for (;;) {
       let response: Response;
       try {
-        response = await this.fetcher(`${this.base}/bot${this.token}/${method}`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(params),
-          ...(signal ? { signal } : {}),
-        });
+        // Telegram answers 200 for its own errors and puts `error_code` in the
+        // body, so this cannot go through `fetchWithRetry`, which reads the HTTP
+        // status. What is shared is the retry itself: one dropped request is
+        // tried again, and only a dropped one (issue #11).
+        response = await retrySend(
+          () =>
+            this.fetcher(`${this.base}/bot${this.token}/${method}`, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify(params),
+              ...(signal ? { signal } : {}),
+            }),
+          (ms) => delay(ms, undefined, signal ? { signal } : undefined),
+          signal,
+        );
       } catch (error) {
         if (signal?.aborted) throw error;
         throw new TelegramError(this.t("channel.unreachable", { channel: "Telegram", method }));

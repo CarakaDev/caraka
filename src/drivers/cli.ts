@@ -125,7 +125,12 @@ export class CliDriver implements AgentDriver {
     return id;
   }
 
-  async prompt(sessionId: string, prompt: string, route: DriverRoute, files?: string[]) {
+  async prompt(
+    sessionId: string,
+    prompt: string,
+    route: DriverRoute,
+    files?: string[],
+  ): Promise<{ stopReason: string }> {
     const state = this.sessions.get(sessionId);
     if (!state) throw new Error(this.t("driver.noSession"));
     const resume = state.turns > 0 && (this.preset.resumeArgs?.length ?? 0) > 0;
@@ -175,6 +180,31 @@ export class CliDriver implements AgentDriver {
     if (exit.code !== 0) {
       const reason = failureReason(collected.stdout) ?? collected.stderr.trim();
       const detail = this.scrub(reason).slice(-400) || `status ${exit.code}`;
+      // The agent saying the id we just handed it does not exist, in its own
+      // words, whatever those are. No preset has to guess at nine agents'
+      // error sentences: the id is the signal, because we are the ones who
+      // sent it. Eight characters, so a short id cannot match by accident.
+      //
+      // Only this failure is retried. A run that died halfway may already have
+      // written files, and repeating its prompt would repeat them; a resume the
+      // agent refused before starting has done nothing (issue #10).
+      const external = state.external;
+      if (resume && external && external.length >= 8 && detail.includes(external)) {
+        state.external = null;
+        // Zero turns is what makes the call below a fresh one, and it is also
+        // what bounds this to a single retry: `resume` cannot be true again.
+        state.turns = 0;
+        // Said out loud, because the fresh session does not carry the earlier
+        // turns and an answer that quietly forgot them is worse than an error.
+        await route.update({
+          sessionId,
+          update: {
+            sessionUpdate: "agent_message_chunk",
+            content: { type: "text", text: this.t("driver.rolloutGone") },
+          },
+        });
+        return this.prompt(sessionId, prompt, route, files);
+      }
       throw new Error(this.t("driver.exit", { command: this.command, detail }));
     }
     const format =

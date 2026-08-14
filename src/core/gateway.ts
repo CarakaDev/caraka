@@ -1350,16 +1350,23 @@ export class Gateway {
     // text, and an installation running codex read it on every single task
     // (issue #9, third form).
     const agent = this.agentFor(workspace, session) || DEFAULT_AGENT;
-    const progress = await this.sendToSession(
-      session,
-      `${this.header(session)}${this.t("run.working", { agent })}`,
-    );
+    // Sent inside the try below, not above it. It used to sit here, and a
+    // dropped send skipped every catch and finally: no `failed` was written and
+    // the queue was never released, so the session stayed `running` for good —
+    // and one run at a time per workspace (FR-SESS-04) means that locks the
+    // workspace behind it. Reported as issue #11 with the audit trail showing
+    // an `error` row carrying no session id at all.
+    let progress: MessageRef | undefined;
     let output = "";
     let lastEdit = 0;
     let agentId = session.agentSessionId;
     let timeout: NodeJS.Timeout | undefined;
     let compiled: { id: string; block: string } | undefined;
     try {
+      progress = await this.sendToSession(
+        session,
+        `${this.header(session)}${this.t("run.working", { agent })}`,
+      );
       // The session's own agent, on the workspace's own route (AC-5.4): the
       // registry behind `driverFor` decides what serves this pair.
       const driver = await this.driver(this.agentFor(workspace, session), workspace.driver);
@@ -1418,7 +1425,7 @@ export class Gateway {
             // silence until the result: the alternative is one new message per
             // update, which is a wall of text and, on a channel with an
             // outbound ceiling, most of the budget for one run.
-            if (!this.channelOf(session.chatId).caps.edit) return;
+            if (!progress || !this.channelOf(session.chatId).caps.edit) return;
             const now = Date.now();
             if (now - lastEdit < 1500) return;
             lastEdit = now;
@@ -1472,9 +1479,11 @@ export class Gateway {
         await rm(join(carakaPaths().inbox, session.id), { recursive: true, force: true }).catch(
           () => undefined,
         );
-      await this.channelOf(session.chatId)
-        .deleteMessage(session.chatId, progress.message_id)
-        .catch(() => undefined);
+      // Nothing to delete when the send that would have created it failed.
+      if (progress)
+        await this.channelOf(session.chatId)
+          .deleteMessage(session.chatId, progress.message_id)
+          .catch(() => undefined);
     }
   }
 

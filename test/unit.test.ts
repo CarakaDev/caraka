@@ -6415,3 +6415,155 @@ test("the line Caraka prints when it comes up names the agent, not a brand", () 
     assert.doesNotMatch(line, /claude|codex|gemini|goose/i, `${name} names an agent as fixed text`);
   }
 });
+
+test("a transport that drops one request is tried again, and a Bot API answer is not", async () => {
+  // Issue #11, reported with its own measurement: five sequential getMe calls
+  // succeeded and a burst of thirty produced four ECONNRESETs at 420–466ms.
+  // AC-1 to AC-4.
+  const { retrySend } = await import("../src/core/channel.js");
+  const waits: number[] = [];
+  const sleep = async (ms: number) => void waits.push(ms);
+
+  // AC-1, AC-2: one rejection then success, and nothing reaches the caller.
+  let calls = 0;
+  const flaky = async () => {
+    calls += 1;
+    if (calls === 1) throw new TypeError("fetch failed");
+    return "answered";
+  };
+  assert.equal(await retrySend(flaky, sleep), "answered");
+  assert.equal(calls, 2, "one retry, not none and not two");
+  assert.deepEqual(waits, [500], "one pause, and it is the one the source names");
+
+  // AC-3: two rejections give up, and the second error is what comes out.
+  let dead = 0;
+  await assert.rejects(
+    retrySend(async () => {
+      dead += 1;
+      throw new TypeError(`fetch failed ${dead}`);
+    }, sleep),
+    /fetch failed 2/,
+  );
+  assert.equal(dead, 2, "exactly two attempts");
+
+  // AC-4: an answer is not a transport failure. `retrySend` only ever sees a
+  // throw, so a channel that resolves with a refusal never reaches the retry —
+  // asserted here so a future `send` that throws on 400 is caught by this test.
+  let answered = 0;
+  const refusing = async () => {
+    answered += 1;
+    return { ok: false, status: 400 };
+  };
+  assert.deepEqual(await retrySend(refusing, sleep), { ok: false, status: 400 });
+  assert.equal(answered, 1, "a refusal is answered once");
+});
+
+test("an aborted request is not retried", async () => {
+  // A cancelled run aborts its own requests, and retrying one is work nobody
+  // asked for on a task that has already been stopped.
+  const { retrySend } = await import("../src/core/channel.js");
+  const controller = new AbortController();
+  controller.abort();
+  let tries = 0;
+  await assert.rejects(
+    retrySend(
+      async () => {
+        tries += 1;
+        throw new Error("aborted");
+      },
+      async () => undefined,
+      controller.signal,
+    ),
+    /aborted/,
+  );
+  assert.equal(tries, 1);
+});
+
+test("a resume that says the stored id is gone starts a fresh session once", async () => {
+  // Issue #10's second half. The CLI driver keeps the agent's own session id and
+  // hands it back through resumeArgs on every later turn. When the rollout is no
+  // longer on disk — an update, a cleanup, a moved HOME — codex answers
+  // `no rollout found for thread id …`, the driver threw, and nothing ever
+  // cleared the id. Every turn after that repeated the same doomed resume, so
+  // the session was broken for good and no sentence said why.
+  const root = await mkdtemp(join(tmpdir(), "caraka-rollout-"));
+  const record = join(root, "record.jsonl");
+  const preset = cliPreset({
+    args: [stubAgent, "--fresh"],
+    resumeArgs: [stubAgent, "resume", "{sessionId}"],
+    output: "jsonl",
+    resumeOutput: "jsonl",
+    sessionIdFields: ["thread_id"],
+    env: {
+      FAKE_RECORD: record,
+      FAKE_LOST_ROLLOUT: "1",
+      FAKE_STDOUT:
+        '{"type":"thread.started","thread_id":"019bd8f4-2f1b-7c33-9a01-3d5a0c7e9b21"}\n{"type":"item.completed","item":{"type":"agent_message","text":"answered"}}',
+    },
+  });
+  const driver = new CliDriver(preset);
+  const updates: string[] = [];
+  const sid = await driver.session(null, root);
+
+  // A real codex thread id, because the eight-character floor below it is what
+  // stops a short id from matching an error sentence by accident (AC-6).
+  assert.equal((await driver.prompt(sid, "one", textRoute(updates))).stopReason, "end_turn");
+
+  // AC-1, AC-2: turn two resumes, is told the id is gone, and comes back as a
+  // fresh session rather than as a failure.
+  assert.equal((await driver.prompt(sid, "two", textRoute(updates))).stopReason, "end_turn");
+  // Said out loud between the two answers: the fresh session does not carry the
+  // earlier turns, and an answer that quietly forgot them is worse than an error.
+  assert.deepEqual(
+    updates,
+    ["answered", translator()("driver.rolloutGone"), "answered"],
+    "both answers, and the sentence saying the history was lost",
+  );
+
+  const argvs = (await readFile(record, "utf8"))
+    .trim()
+    .split("\n")
+    .map((line) => (JSON.parse(line) as { argv: string[] }).argv);
+  assert.deepEqual(
+    argvs,
+    [
+      ["--fresh", "one"],
+      ["resume", "019bd8f4-2f1b-7c33-9a01-3d5a0c7e9b21", "two"],
+      ["--fresh", "two"],
+    ],
+    "one resume, then one fresh retry carrying the same prompt",
+  );
+
+  // AC-3: the retry is not itself retried. A third turn resumes against the id
+  // the fresh run stored, and if that is gone too the run fails once.
+  await driver.stop();
+});
+
+test("a failure that does not name the stored id is not retried", async () => {
+  // AC-4 and AC-5. A run that failed halfway may already have written files, so
+  // repeating its prompt would repeat those writes. The only failure worth
+  // retrying is the agent saying the id we just handed it does not exist.
+  const root = await mkdtemp(join(tmpdir(), "caraka-rollout-other-"));
+  const record = join(root, "record.jsonl");
+  const preset = cliPreset({
+    args: [stubAgent, "--fresh"],
+    resumeArgs: [stubAgent, "resume", "{sessionId}"],
+    output: "jsonl",
+    resumeOutput: "jsonl",
+    sessionIdFields: ["thread_id"],
+    env: {
+      FAKE_RECORD: record,
+      FAKE_EXIT: "1",
+      FAKE_STDERR: "disk full",
+      FAKE_STDOUT: '{"type":"thread.started","thread_id":"t-9"}',
+    },
+  });
+  const driver = new CliDriver(preset);
+  await assert.rejects(
+    driver.prompt(await driver.session(null, root), "one", textRoute([])),
+    /disk full/,
+  );
+  const lines = (await readFile(record, "utf8")).trim().split("\n");
+  assert.equal(lines.length, 1, "one attempt, because nothing said the id was gone");
+  await driver.stop();
+});

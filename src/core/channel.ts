@@ -163,6 +163,40 @@ export function evict(
   }
 }
 
+/** How long to wait before the one retry a dropped request gets. */
+const RETRY_PAUSE_MS = 500;
+
+/**
+ * Run `send` once more if the transport drops it. One retry, not a loop: a
+ * transport that is down is not a transport that is flaky, and retrying it
+ * forever only moves the hang somewhere else.
+ *
+ * Only a *thrown* send is retried. Every channel here answers a refusal by
+ * returning it or by throwing its own error class after reading the body, so a
+ * 400 never reaches this path — which is what keeps a permanent refusal from
+ * being asked twice.
+ *
+ * It cannot tell a request that never left from one whose answer was lost, so a
+ * retried write can arrive twice. The trade is written down in
+ * `done/transport-goyah/spec.md`: one rare duplicate progress line against a
+ * session stuck `running` and a workspace locked behind it.
+ */
+export async function retrySend<T>(
+  send: () => Promise<T>,
+  sleep: (ms: number) => Promise<unknown> = (ms) => delay(ms),
+  signal?: AbortSignal,
+): Promise<T> {
+  try {
+    return await send();
+  } catch (error) {
+    // A run that was cancelled aborted its own requests; trying again is work
+    // on a task somebody already stopped.
+    if (signal?.aborted) throw error;
+    await sleep(RETRY_PAUSE_MS);
+    return await send();
+  }
+}
+
 /**
  * Send, wait out a 429, send again; anything else that is not ok becomes one
  * translated sentence. Discord and WhatsApp both wrote this out. There is no
@@ -188,7 +222,7 @@ export async function fetchWithRetry(request: {
   for (;;) {
     let response: Response;
     try {
-      response = await request.send();
+      response = await retrySend(request.send, request.sleep);
     } catch {
       throw request.fail(request.unreachable);
     }

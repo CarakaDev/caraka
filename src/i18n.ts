@@ -205,6 +205,8 @@ const en = {
   "acp.notStarted": "Claude ACP has not started.",
   "preset.invalid": "Preset {file} is invalid at `{field}` and was skipped.",
   "driver.noSession": "The CLI driver does not know that session. Send /new to start over.",
+  "driver.rolloutGone":
+    "The agent no longer has this session stored, so this ran as a new one. It does not carry the earlier turns.",
   "driver.exit": "{command} stopped with an error. {detail}",
   "driver.acpMissing":
     "Agent {agent}: the ACP command `{command}` was not found. Install it, or set `driver: cli` under `workspace` in config.yaml.",
@@ -535,6 +537,8 @@ const id: Record<MessageKey, string> = {
   "acp.notStarted": "Claude ACP belum dimulai.",
   "preset.invalid": "Preset {file} tidak sah pada `{field}` dan dilewati.",
   "driver.noSession": "Driver CLI tidak mengenal sesi itu. Kirim /new untuk memulai lagi.",
+  "driver.rolloutGone":
+    "Agent tidak lagi menyimpan sesi ini, jadi giliran ini berjalan sebagai sesi baru. Ia tidak membawa giliran-giliran sebelumnya.",
   "driver.exit": "{command} berhenti dengan galat. {detail}",
   "driver.acpMissing":
     "Agent {agent}: perintah ACP `{command}` tidak ditemukan. Pasang dulu, atau setel `driver: cli` di bagian `workspace` config.yaml.",

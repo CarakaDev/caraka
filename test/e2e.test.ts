@@ -319,6 +319,8 @@ async function harness(
     driverFor?: DriverFor;
     /** Every agent id and forced route core asks the registry for, in order. */
     onDriverFor?: (agent: string, forced?: string) => void;
+    /** Which text send to drop, as a flaky transport would. Called per send. */
+    failSend?: (text: string) => boolean;
     store?: Store;
     root?: string;
     runLimitMs?: number;
@@ -373,6 +375,9 @@ async function harness(
       thread: string,
       markup?: Record<string, unknown>,
     ) => {
+      if (options.failSend?.(text)) {
+        throw new Error("Telegram sendMessage could not be reached.");
+      }
       messageId += 1;
       sent.push({ chatId, text, thread, ...(markup ? { markup } : {}) });
       calls.push(`sendText:${text}`);
@@ -5028,4 +5033,34 @@ test("a workspace that names no agent falls to the product default", async () =>
   h.feed.push(message(42, 42, "hello"));
   await h.settle(200);
   assert.deepEqual([...new Set(asked)], [""], "nothing but the default was asked for");
+});
+
+test("a progress message that cannot be sent fails the session instead of hanging it", async () => {
+  // Issue #11's second half. The send sat above runTask's try block, so a
+  // dropped one skipped every catch and finally: no `failed` was written, the
+  // queue was never released, and the session stayed `running` for good — with
+  // one run at a time per workspace (FR-SESS-04), that locks the workspace.
+  // AC-6 and AC-7.
+  // Only the working line is dropped: the start-up notice is a send too, and a
+  // plain counter ate that one instead.
+  const h = await harness({ failSend: (text) => text.includes("lumaku") });
+  h.feed.push(message(42, 42, "do the thing"));
+  await h.settle(300);
+
+  const session = h.store.sessionFor("42", "");
+  assert.ok(session, "a session was created");
+  assert.equal(session.state, "failed", "the session ended rather than hanging");
+
+  // AC-7: the run still cleans up, and the deletion of a message that was never
+  // created is not attempted.
+  assert.ok(
+    !h.calls.some((call) => call.startsWith("deleteMessage")),
+    "nothing tried to delete a message that does not exist",
+  );
+
+  // The workspace is free: a second task runs rather than queueing behind a
+  // session nobody will ever finish.
+  h.feed.push(message(42, 42, "and the next one"));
+  await h.settle(300);
+  assert.ok(h.sent.length > 0, "the next task was answered");
 });

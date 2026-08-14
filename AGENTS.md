@@ -42,6 +42,12 @@ Two more constraints shape every review:
 
   The finding is the size of what the test caught. The spec was written against two sentences, both on the run path, because those were the two anybody had noticed. The test written for its last acceptance criterion — no catalog line may name an agent outright — found nine, and three of the seven the spec missed are on paths every task crosses: the approval card, the first line of a new session, and the failure report a person reads when something breaks. That last one is the exact sentence the reporter of issue #9 pasted into the report, which means the bug was quoted back at us four releases before it was found. A scope written from what has been noticed is a scope the size of what has been noticed. The ceiling stays ~8,000.
 
+  On 14 August 2026 `src/` measures **10,179 lines**, 2,179 over the ceiling. `transport-goyah` and `rollout-hilang` added 87 between them, measured from the 10,092 the tree held when they started. Both came from outside, from the same installation, and both were reproduced here before a line was changed — the transport one down to the same sentence the reporter pasted into the issue.
+
+  Neither is large and both bought a class of failure rather than an instance. The first is a session that could never end: a dropped send skipped every `catch` and `finally`, so `running` was written and nothing ever wrote anything else, and one run at a time per workspace made that a locked workspace. The second is a session that could never continue: a stored id the agent no longer had was handed back on every turn, forever. What they share is that neither failure had an ending — that is the shape worth 87 lines.
+
+  The retry is 24 of them and covers three channels, because `fetchWithRetry` routes through it and Telegram calls it directly. `pangkas-berulang` measured this exact kind of folding at −35 lines rather than +400 and warned against forcing two protocols into one shape; the line held here, and Telegram kept its own body-level error reading rather than being pushed through a status-reading helper. The ceiling stays ~8,000.
+
 - **Graceful degradation.** Nothing hard-fails when a capability is missing. Topics unavailable falls back to linear mode. Memory down still replies. ACP absent falls back to the CLI driver. A rejected rich message falls back to MarkdownV2.
 
 ## Repository map

@@ -4,6 +4,25 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.5] — 2026-08-14
+
+Two reports from the same installation, both reproduced here before either was touched.
+
+### Fixed
+
+- **One dropped request no longer strands a session** ([issue #11]). A transient transport failure — the reporter measured four `ECONNRESET`s in a burst of thirty calls, each at 420–466ms — aborted the task while Caraka was sending its own progress line. That send sat *above* `runTask`'s `try` block, so the failure skipped every `catch` and `finally`: nothing wrote `failed`, nothing released the queue, and the session stayed `running` for good. One run at a time per workspace means that locks the workspace behind it. The send now happens inside the `try`, and both readers of the progress message tolerate its absence.
+- **A dropped request is tried once more.** `retrySend` in `src/core/channel.ts` retries a *thrown* send after 500ms, once. `fetchWithRetry` routes through it, so Discord and WhatsApp got it without either adapter changing; Telegram calls it directly, because Telegram answers 200 for its own errors and puts `error_code` in the body, which a status-reading helper cannot fold in. A refusal is an answer, not a dropped request, and is never retried.
+- **A stored session id the agent no longer has is replaced, once** ([issue #10]). The CLI driver hands the agent's own session id back on every later turn. When that rollout is gone from disk — an update, a cleanup, a moved `HOME` — codex answers `no rollout found for thread id …`, and nothing cleared the id, so every turn after repeated the same doomed resume and the session was broken for good. Caraka now drops the id and runs the turn again as a fresh session. It says so in the chat, because the fresh session does not carry the earlier turns and an answer that quietly forgot them is worse than an error.
+
+### Limited
+
+- A retried write can arrive twice. Telegram has no idempotency key, and a request that arrived with a lost answer is indistinguishable from one that never left. The trade is one rare duplicate progress line against a session stuck `running` behind a locked workspace.
+- Only the resume failure that **names the id Caraka just sent** is retried. A run that died halfway may already have written files, and repeating its prompt would repeat them. The id is the signal because we are the ones who sent it, so no preset has to guess at nine agents' error sentences — with a floor of eight characters, so a short id cannot match by accident.
+- The retry is bounded to one by construction rather than by a counter: clearing the stored id sets the turn count to zero, and a fresh turn cannot take the resume branch.
+
+[issue #10]: https://github.com/CarakaDev/caraka/issues/10
+[issue #11]: https://github.com/CarakaDev/caraka/issues/11
+
 ## [1.5.4] — 2026-08-14
 
 Nine sentences said `Claude` outright, and an installation running codex read them on every task.
