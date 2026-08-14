@@ -1393,7 +1393,13 @@ test("a session topic is no exception to the mention gate", async () => {
   const [answering, chatting] = await viaAdapter([
     {
       ...forum("carry on", undefined, 7001).message,
-      reply_to_message: { ...bot, text: "◌ claude-code is working…" } as TelegramMessage,
+      // Read from the catalog rather than copied: this fixture only needs to be
+      // something Caraka said, and a literal here goes stale every time that
+      // line is reworded.
+      reply_to_message: {
+        ...bot,
+        text: translator()("run.working", { agent: "claude-code" }),
+      } as TelegramMessage,
     },
     {
       ...forum("nice topic", undefined, 7001).message,

@@ -23,6 +23,11 @@ This is that bug's third form and its widest: the fix was written into the drive
 - `DEFAULT_AGENT` moved from `src/cli.ts` to `src/core/driver.ts`. Core has to be able to say it out loud now, and `""` is not a name a person can read.
 - Three catalog keys keep the name on purpose and the test that guards this says why: `acp.start` and `acp.notStarted` are the Claude ACP adapter's own errors, and `bypassPermissions` is the name of a mode Claude Code has and the other eight presets do not.
 
+### Added
+
+- **The working line carries the brand**, in the form this project already uses: `cli.running` has printed `Caraka is live: telegram → codex (/path)` since the arrow meant "carried from, to", and the working line means exactly that. It now reads `◌ Caraka → codex · lumaku…`. *Lumaku* is Javanese for "is on its way" — the language of the ꦕꦫꦏ on the mark, and a verb belonging to Caraka rather than to the agent. Both catalogs carry it unchanged, because it is a brand word rather than one to translate.
+- The arrow stops there. The approval card is still `⏸ codex asks for permission` and the failure report is still `codex could not finish the task`: what asks and what fails is the agent, and an arrow on those two would claim both for Caraka.
+
 ### Limited
 
 - The name printed is the preset id — `codex`, `opencode`, `claude-code` — the same string `caraka doctor` prints. It is not a display name, and there is no mapping from one to the other.

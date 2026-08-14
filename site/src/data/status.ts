@@ -138,6 +138,10 @@ export const releases = [
         'Three that cannot reach the name no longer guess one. channel.empty is sent by three channels that never learn which agent answered, and help.unknownCommand runs where there is no session; both say the agent, which is what the usage line has always said',
         'The scope of this was found by its own test. The spec was written against the two sentences anybody had noticed; the test written for its last criterion found nine, and three of the seven it missed are on paths every task crosses',
       ] },
+      { label: 'ADDED', tone: '#8EEE98', items: [
+        'The working line carries the brand, in the form this project already used: the start-up line has printed Caraka is live: telegram \u2192 codex since the arrow meant carried from, to, and the working line means exactly that. It reads \u25cc Caraka \u2192 codex \u00b7 lumaku\u2026 \u2014 lumaku is Javanese for is on its way, the language of the aksara on the mark, and a verb belonging to Caraka rather than to the agent. Both catalogs carry it unchanged, because it is a brand word rather than one to translate',
+        'The arrow stops there. The approval card still reads codex asks for permission and the failure report still reads codex could not finish the task: what asks and what fails is the agent, and an arrow on those two would claim both for Caraka',
+      ] },
       { label: 'CHANGED', tone: '#8EEE98', items: [
         'Three catalog lines keep the name on purpose and the test says why: two are the Claude ACP adapter\u2019s own errors, and bypassPermissions is the name of a mode Claude Code has and the other eight presets do not',
       ] },
