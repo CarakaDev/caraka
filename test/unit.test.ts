@@ -1740,7 +1740,10 @@ test("the four /help bodies fit, carry no markup, and say what each container re
   assert.match(direct, /add a rate limit to the login route/);
   assert.match(direct, /@toko-api/);
   assert.match(direct, /\/new ~\//);
-  assert.match(direct, /closed, not deleted/);
+  // The sentence moved when the auto-close went: a topic closes on /close, not
+  // when a task finishes, because a session keeps taking turns after `done`.
+  assert.match(direct, /Closed, not deleted/);
+  assert.match(direct, /when you send \/close/);
   assert.match(direct, /No word you type decides anything/);
   for (const entry of gatewayCommands)
     for (const catalog of Object.values(catalogs))

@@ -280,6 +280,7 @@ export const gatewayCommands: ChannelCommand[] = [
   { command: "memori", description: "List what memory holds for this workspace" },
   { command: "yolo", description: "Open a Caraka trust window for a stated duration" },
   { command: "lock", description: "Close the trust window now" },
+  { command: "close", description: "Finish this session and close its topic" },
   { command: "help", description: "Explain how to send a task" },
 ];
 

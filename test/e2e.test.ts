@@ -1529,7 +1529,7 @@ test("/help answers one thing in a conversation and another in a room", async ()
   await h.settle(120);
   const direct = h.sent.at(-1)?.text ?? "";
   assert.match(direct, /^Send a task as an ordinary message/);
-  assert.match(direct, /closed, not deleted/);
+  assert.match(direct, /Closed, not deleted/);
   assert.doesNotMatch(direct, /This is a room/);
   assert.doesNotMatch(direct, /privacy mode/);
 
@@ -1748,6 +1748,8 @@ test("a thread that is not Caraka's is neither closed nor reopened", async () =>
   h.calls.length = 0;
   h.feed.push(message(42, 42, "ship it too"));
   await h.settle(150);
+  h.feed.push(message(42, 42, "/close", "private", undefined, 7001));
+  await h.settle(150);
   assert.ok(h.calls.some((call) => call === "finishThread:7001"));
   await h.finish();
 });
@@ -1820,64 +1822,102 @@ test("a rename Telegram refuses changes neither the run nor the row", async () =
   await h.finish();
 });
 
-test("a finished session is renamed and then closed, on each of the three end states", async () => {
-  // AC-1.1, AC-1.3 and AC-1.7. `docs/session-model.md` §6 has asked for the close
-  // since v0.1 and the code stopped at the rename; the order is part of the
-  // feature, because the name is the status board and a topic list is read at a
-  // glance.
+test("a finished run is renamed and left open, and /close is what closes it", async () => {
+  // The close used to fire on `done`, and `done` is what one run leaves behind
+  // rather than the end of a session — the next message continues the same one.
+  // So a topic was shut after every single turn and reopened on the next, writing
+  // a closed and a reopened service message into the transcript each time and
+  // leaving the topic shut while its session was alive. Caraka has no event
+  // meaning "this session is over", so the person who knows says so.
   const h = await harness({ topics: true, archives: true });
   h.feed.push(message(42, 42, "ship it"));
   await h.settle(200);
+  // Renamed, twice, and not closed.
   assert.deepEqual(
     h.calls.filter((call) => call.startsWith("editForumTopic:") || call.startsWith("finishThread")),
-    ["editForumTopic:▸ ship it", "editForumTopic:✓ ship it", "finishThread:7001"],
-  );
-  // AC-1.7: not one reopen inside a run that reached `done` through
-  // `running` → `awaiting_approval` is asked for here, because no state before
-  // `running` was a finished one.
-  assert.equal(
-    h.calls.some((call) => call.startsWith("resumeThread")),
-    false,
+    ["editForumTopic:▸ ship it", "editForumTopic:✓ ship it"],
   );
 
-  // AC-1.7, the other half: the next addressed message in that topic reopens it
-  // exactly once, on the one transition a close preceded.
+  // A second turn in the same topic: still no close, and no reopen either,
+  // because nothing closed it. This is the churn the old shape produced.
   h.calls.length = 0;
   h.feed.push(message(42, 42, "one more thing", "private", undefined, 7001));
   await h.settle(200);
   assert.deepEqual(
-    h.calls.filter((call) => call.startsWith("resumeThread")),
-    ["resumeThread:7001"],
+    h.calls.filter((call) => call.startsWith("finishThread") || call.startsWith("resumeThread")),
+    [],
   );
+
+  // /close is the one thing that closes it, and it marks the session done.
+  h.calls.length = 0;
+  h.feed.push(message(42, 42, "/close", "private", undefined, 7001));
+  await h.settle(200);
   assert.deepEqual(
     h.calls.filter((call) => call.startsWith("finishThread")),
     ["finishThread:7001"],
   );
+  // The closing line lands in the topic before the topic shuts. That send works
+  // only because Caraka created the topic, which is implementation evidence in
+  // TDLib rather than a promise on any Bot API page, so the order is what keeps
+  // it from depending on one.
+  assert.ok(spokeBeforeClose(h, /Session finished/), h.calls.join(" | "));
+  assert.equal(
+    (
+      h.store.db.prepare("SELECT state FROM sessions ORDER BY updated_at DESC").get() as {
+        state: string;
+      }
+    ).state,
+    "done",
+  );
+  await h.finish();
 
-  // AC-1.4: a close Telegram refuses leaves the state written, the rename done,
-  // and nothing about it in the chat.
+  // A close the channel refuses leaves the state written and says nothing about
+  // it in the chat.
   const refusing = await harness({ topics: true, archives: "fails" });
   refusing.feed.push(message(42, 42, "ship it"));
   await refusing.settle(200);
+  refusing.feed.push(message(42, 42, "/close", "private", undefined, 7001));
+  await refusing.settle(200);
   assert.equal(
-    (refusing.store.db.prepare("SELECT state FROM sessions").get() as { state: string }).state,
+    (
+      refusing.store.db.prepare("SELECT state FROM sessions ORDER BY updated_at DESC").get() as {
+        state: string;
+      }
+    ).state,
     "done",
   );
-  assert.ok(refusing.calls.includes("editForumTopic:✓ ship it"));
   assert.equal(
     refusing.sent.some((item) => /TOPIC_CLOSED|error|Error/.test(item.text)),
     false,
   );
   await refusing.finish();
+});
+
+test("/close refuses while a task is still running", async () => {
+  // Closing under a live run would shut the topic the answer is about to arrive
+  // in. The session keeps its state and the sentence names the way through.
+  const held = heldDriver();
+  const h = await harness({ topics: true, archives: true, driver: held.driver });
+  h.feed.push(message(42, 42, "hold the fort"));
+  await h.settle(200);
+  h.feed.push(message(42, 42, "/close", "private", undefined, 7001));
+  await h.settle(200);
+  assert.match(h.sent.at(-1)?.text ?? "", /still running/);
+  assert.deepEqual(
+    h.calls.filter((call) => call.startsWith("finishThread")),
+    [],
+  );
+  held.release();
   await h.finish();
 });
 
-test("the last line reaches the topic before the close does, on all three paths", async () => {
-  // AC-1.5. `/stop`, the run limit, and a failure each wrote the state first and
-  // spoke second, which put three messages into a topic that had just been closed.
-  // That send works only because Caraka is the topic's creator, and the evidence
-  // for it is in TDLib rather than on any Bot API page — two lines swapped end the
-  // dependency (`docs/session-model.md` §6).
+test("the last line reaches the topic itself, on all three paths", async () => {
+  // The ordering half of this went with the auto-close: nothing closes on `done`
+  // any more, so there is no close for a message to precede. What survives is the
+  // half that was a real defect — the message a run starts from carries no thread
+  // id when the topic was opened for it, so every one of these three landed in
+  // General while the topic it belonged to was renamed and left empty of the
+  // reason.
   // `/stop`
   const stopped = heldDriver();
   const s = await harness({ topics: true, archives: true, driver: stopped.driver });
@@ -1885,7 +1925,7 @@ test("the last line reaches the topic before the close does, on all three paths"
   await s.settle(200);
   s.feed.push(message(42, 42, "/stop", "private", undefined, 7001));
   await s.settle(250);
-  assert.ok(spokeBeforeClose(s, /Cancelling the task/), s.calls.join(" | "));
+  assert.equal(s.sent.find((item) => /Cancelling the task/.test(item.text))?.thread, "7001");
   await s.finish();
 
   // The run limit.
@@ -1900,7 +1940,7 @@ test("the last line reaches the topic before the close does, on all three paths"
   });
   t.feed.push(message(42, 42, "a long job"));
   await t.settle(500);
-  assert.ok(spokeBeforeClose(t, /passed 0\.0\d+ minutes/), t.calls.join(" | "));
+  assert.equal(t.sent.find((item) => /passed 0\.0\d+ minutes/.test(item.text))?.thread, "7001");
   await t.finish();
 
   // A failure, which also stops rethrowing into `enqueue` so the report can go out
@@ -1914,11 +1954,6 @@ test("the last line reaches the topic before the close does, on all three paths"
   });
   f.feed.push(message(42, 42, "break it"));
   await f.settle(250);
-  assert.ok(spokeBeforeClose(f, /the agent fell over/), f.calls.join(" | "));
-  // And into the topic, not merely before the close. The message a run starts
-  // from carries no thread id when the topic was opened for it, so the report
-  // landed in General while the topic it belonged to was renamed ✗ and closed
-  // with nothing in it saying why.
   assert.equal(f.sent.find((item) => /the agent fell over/.test(item.text))?.thread, "7001");
   assert.equal(
     (f.store.db.prepare("SELECT state FROM sessions").get() as { state: string }).state,
@@ -3885,20 +3920,24 @@ test("a Discord slash command opens a thread, is approved by button, and the thr
   assert.ok(ack && disable && ack.at <= disable.at, "the ack came first");
   assert.deepEqual(decision, { outcome: { outcome: "selected", optionId: "allow-once" } });
 
-  // AC-4.3 and AC-4.4: the glyph is the only status Discord has, and the thread
-  // closes after the summary, never before it.
+  // AC-4.3 and AC-4.4: the glyph is the only status Discord has, and a finished
+  // run is renamed and left open. Archiving on `done` shut the thread after every
+  // turn, because `done` is what one run leaves behind rather than the end of a
+  // session; `/close` is what archives it now, and it is not sent here.
   const renames = h.rest.filter((call) => call.path === `/channels/${THREAD}` && call.body.name);
   assert.ok(renames.some((call) => String(call.body.name).startsWith("▸")));
   assert.ok(renames.some((call) => String(call.body.name).startsWith("✓")));
   const archive = h.rest.find(
     (call) => call.path === `/channels/${THREAD}` && call.body.archived === true,
   );
-  assert.ok(archive, "the finished thread was archived");
+  assert.equal(archive, undefined, "a finished run leaves the thread open");
+  // The summary still lands in the thread; there is no archive left to order it
+  // against, and the ordering that mattered moved to `/close`.
   const summary = h
     .posted()
     .filter((call) => call.path === `/channels/${THREAD}/messages`)
     .at(-1);
-  assert.ok(summary && summary.at <= archive.at, "the summary was posted before the archive");
+  assert.ok(summary, "the summary was posted into the thread");
 
   // AC-6.4: the same press a second time decides nothing.
   h.press(row[0]?.custom_id ?? "", "42", cardId);
@@ -3914,14 +3953,15 @@ test("a Discord slash command opens a thread, is approved by button, and the thr
 
   // AC-1.9 of `spec/grup-nyaman.md`: a session that continues unarchives its own
   // thread, on the one transition the archive followed. Both halves are the same
-  // `PATCH` with the flag turned the other way, and no file both channels share
-  // branches on which of them answered.
+  // Nothing unarchives, because nothing archived: a finished run leaves the
+  // thread open on Discord for the same reason it leaves the topic open on
+  // Telegram. A second turn simply continues in it.
   h.command("caraka", "one more thing");
   await h.settle(250);
-  const reopen = h.rest.find(
-    (call) => call.path === `/channels/${THREAD}` && call.body.archived === false,
+  assert.equal(
+    h.rest.find((call) => call.path === `/channels/${THREAD}` && call.body.archived === false),
+    undefined,
   );
-  assert.ok(reopen && reopen.at > archive.at, "the thread was unarchived after being archived");
   await h.finish();
 });
 

@@ -20,7 +20,7 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.5.1', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.5.2', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Seven presets load; five routes across four agents have completed a turn
   // against a live binary here, all on 10 August 2026 — Claude Code over ACP
@@ -130,6 +130,22 @@ export const releases = [
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
       ] },
     ] },
+  { v: '1.5.2', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'FIXED', tone: '#FFD67E', items: [
+        'The topic closed after every turn, because done was read as the end of a session. 1.5.0 closed on done, failed and cancelled, and only the middle one is unambiguous: done is what one RUN leaves behind, and the next message in that topic continues the same session. So every turn shut the topic and the turn after reopened it, writing a closed and a reopened service message into the transcript each time and leaving the topic shut while its session was alive. Seen on the first installation to use it, an hour after the release',
+        'Nothing closes a topic automatically now. A finished run is renamed with its state glyph and left open, which is what it did before 1.5.0. Nothing reopens one either \u2014 with no automatic close there is nothing to reopen, and that branch was firing on every second turn and spending a 400 on each',
+        'What was asked for was a close-topic function, not an automatic close on a state that is not an ending. Caraka has no event meaning this session is over, and guessing it from done was the wrong guess',
+      ] },
+      { label: 'ADDED', tone: '#8EEE98', items: [
+        '/close finishes a session and closes its topic, in that order: the session is marked done, a closing line is sent, and only then does the topic close \u2014 so the last thing in the topic explains why it ended. It sits under the same ownership record as the rename, so Caraka closes only a topic it opened, and a session running without a thread is simply marked finished',
+        '/close refuses while a task is still running and names /stop as the way through. Closing under a live run would shut the topic the answer was about to arrive in',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'A topic stays open until somebody sends /close, so a busy group\u2019s topic list grows until they do. Closing on any guess \u2014 done, an idle timer, a count \u2014 is the same guess that was just removed wearing a different hat',
+        'After /close, ordinary members cannot post in that topic. That is what closing means on Telegram; the next session starts with /new, and an admin who wants to continue can reopen the topic from their own client',
+      ] },
+    ] },
   { v: '1.5.1', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
     groups: [
       { label: 'FIXED', tone: '#FFD67E', items: [
@@ -194,28 +210,13 @@ export const releases = [
         'A direct message whose topic mode is off now costs one failed API call, once per installation, because the preference no longer pre-empts the attempt. The first real refusal marks that conversation, tells its owner once, and every session after runs linear',
       ] },
     ] },
-  { v: '1.4.0', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
-    groups: [
-      { label: 'ADDED', tone: '#8EEE98', items: [
-        'A preset for opencode, verified against a live binary. opencode acp is a real ACP server over stdio, so it joins on the same route as Claude Code and goose. Two turns with a session load between them, and the second turn recalled the number the first was given \u2014 opencode 1.18.18, 14 August 2026. Nothing in the file changed after that run. Five agents have now answered a live binary here, up from four',
-        'A preset for Antigravity CLI, on the CLI route. Its binary is agy, not antigravity, and its help names no ACP at all, so it runs through print mode the way codex and aider do. The JSON envelope was read from real output rather than transcribed: response carries the text and conversation_id the session, and both are already understood by the existing parser, so the preset costs no driver code',
-        'The flag that would auto-approve every tool permission exists in that CLI and is deliberately unused. The CLI route hands no permission decisions back to Caraka, so a read-only run refuses it before it starts; that flag would remove the only guard left on that route, which is the agent\u2019s own. A test pins its absence',
-      ] },
-      { label: 'CHANGED', tone: '#6FB9F0', items: [
-        'The install prompt named one agent \u2014 it asked the reader to verify Claude Code and not to change Claude\u2019s configuration \u2014 so anyone using something else had to translate it. The prompt is executed by the agent, so it can address itself: it now asks whoever is reading it to verify that they themselves are installed and signed in. Shorter than what it replaced, and it works for every agent',
-        'Both READMEs lead with the agent-assisted path. The website fixed that ordering earlier for a measured reason \u2014 the prompt verifies the prerequisites itself, so the prerequisite sections only matter to someone taking the manual route \u2014 and the README was the last surface still inverted. Nothing was dropped in the move',
-      ] },
-      { label: 'LIMITED', tone: '#FFD67E', items: [
-        'Antigravity is unverified and its own file says where it stopped. It demands a Google sign-in before it answers anything, and the run printed an OAuth URL, waited sixty seconds for a pasted code, and returned an authentication error. Three things stay unproven: whether the response field is populated on a successful turn, whether the conversation id it returns can be replayed, and what its default permission behaviour is in print mode',
-        'Gemini CLI was retired for individual Pro and Ultra users on 18 June 2026, and Google names Antigravity as its replacement. That date is two months past. The gemini preset is left in place because nothing depends on it, but the fact is now written inside the preset with its date and a pointer to the successor',
-      ] },
-    ] },
-  { v: '1.3.3 → 0.0.0', state: 'in CHANGELOG.md', date: '7–13 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
+  { v: '1.4.0 → 0.0.0', state: 'in CHANGELOG.md', date: '7–13 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
     groups: [
       { label: 'WHERE THE FULL ENTRIES ARE', tone: '#FFD67E', items: [
         'CHANGELOG.md in the repository, linked at the foot of this page. It carries every release below at the length it was written in; what is here is one line each, and nothing has been dropped from the history',
       ] },
       { label: 'SHIPPED', tone: '#8EEE98', items: [
+        '1.4.0 · 14 August 2026 — the install prompt told people to use Claude, and the README buried it under the manual route',
         '1.3.3 · 13 August 2026 — a workspace written as @~/Project/Coret answered that no workspace had that name',
         '1.3.2 · 13 August 2026 — answering yes to the memory offer left a config pointing at a service that could not be started by name',
         '1.3.1 · 13 August 2026 — Caraka renamed threads it did not open, and on a channel that can archive one it archived them too',

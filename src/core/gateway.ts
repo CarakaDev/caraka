@@ -523,6 +523,7 @@ export class Gateway {
     else if (command === "usage") this.respond(message, this.reportUsage(message));
     else if (command === "yolo") this.respond(message, this.offerTrust(message, argument));
     else if (command === "lock") this.respond(message, this.closeTrust(message));
+    else if (command === "close") this.respond(message, this.closeSession(message));
     else if (command === "ingat") this.respond(message, this.rememberMemory(message, argument));
     else if (command === "lupakan") this.respond(message, this.forgetMemory(message, argument));
     else if (command === "memori") this.respond(message, this.listMemory(message));
@@ -1479,10 +1480,6 @@ export class Gateway {
   // The map moved to `status.ts` when the dashboard needed the same glyphs. A
   // state with no glyph there still returns early, exactly as before.
   private async setState(session: Session, state: string) {
-    // Read before the write: the reopen fires on the one transition a close
-    // preceded, and the `session` object this method was handed goes stale after
-    // the first call inside a run.
-    const previous = this.store.sessionById(session.id)?.state;
     this.store.setState(session.id, state);
     if (!session.threadId) return;
     const glyph = STATE_GLYPH[state];
@@ -1503,17 +1500,15 @@ export class Gateway {
     await channel
       .editTopic(session.chatId, session.threadId, `${glyph} ${session.title}`)
       .catch(() => undefined);
-    // After the rename, so the name is already the status board and the closing
-    // summary is already in the thread. Telegram refuses the two in one call:
-    // `TOPIC_CLOSE_SEPARATELY` says the close flag may not travel beside another.
-    if (FINISHED.has(state))
-      await channel.finishThread?.(session.chatId, session.threadId).catch(() => undefined);
-    // Never on running → awaiting_approval → running: `TOPIC_NOT_MODIFIED` is a
-    // 400 for a bot, so an unconditional reopen would spend a failed call on
-    // every state change, and a close/reopen per inbound message is the shape
-    // that draws a flood wait.
-    else if (state === "running" && FINISHED.has(previous ?? ""))
-      await channel.resumeThread?.(session.chatId, session.threadId).catch(() => undefined);
+    // Nothing closes a topic here, and the absence is the point. `done` is what
+    // one run leaves behind, not the end of a session — the next message
+    // continues the same one. Closing on it shut the topic after every single
+    // turn and reopened it on the next, writing a closed and a reopened service
+    // message into the transcript each time and leaving the topic shut while its
+    // session was alive. Caraka has no event meaning "this session is over", so
+    // the person who knows says so: `/close`. The reopen went with it — with
+    // nothing closing automatically there is nothing to reopen, and it was
+    // firing on every second turn and spending a `TOPIC_NOT_MODIFIED` on each.
   }
 
   private async applyGrantedMode(
@@ -2140,6 +2135,35 @@ export class Gateway {
       this.t("trust.opened", { minutes: request.minutes }),
       principal,
     );
+  }
+
+  /**
+   * The one thing that closes a topic, because it is the only moment anybody
+   * knows a session is finished. `done` is what one run leaves behind and the
+   * next message continues the same session, so closing on it shut the topic
+   * after every turn — this replaced that.
+   *
+   * Closed, never deleted: the transcript stays readable to everyone in the room.
+   * A channel with no such call, and a session running linear with no thread of
+   * its own, both answer the same way rather than failing.
+   */
+  private async closeSession(message: InboundMessage) {
+    const { chatId, threadId } = this.route(message);
+    const session = this.store.sessionFor(chatId, threadId);
+    if (!session) return this.reply(message, this.t("status.none"));
+    const run = this.active.get(this.workspaceOf(session)?.slug ?? "");
+    if (run?.local.id === session.id)
+      return this.reply(message, this.t("close.running"), undefined, session.id);
+    await this.setState(session, "done");
+    await this.sendToSession(session, this.t("close.done"));
+    // Below the ownership record, the same as the rename: Caraka closes only a
+    // thread it opened, and a session running linear has none to close.
+    if (session.threadId && this.store.meta(Gateway.ownKey(chatId, session.threadId)) === "1")
+      await this.channelOf(chatId)
+        .finishThread?.(chatId, session.threadId)
+        .catch(() => undefined);
+    this.note(session, "session.close", "closed", { threadId: session.threadId });
+    return undefined;
   }
 
   private async closeTrust(message: InboundMessage) {

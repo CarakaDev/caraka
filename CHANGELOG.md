@@ -4,6 +4,32 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.2] — 2026-08-14
+
+The topic closed after every turn, because `done` was read as the end of a session.
+
+1.5.0 closed a topic on `done`, `failed`, and `cancelled`. Only the middle one is unambiguous. `done` is the state one **run** leaves behind, and the next message in that topic continues the same session — so every single turn shut the topic and the turn after reopened it, writing a `forum_topic_closed` and a `forum_topic_reopened` service message into the transcript each time and leaving the topic shut while its session was alive.
+
+Seen on the first installation to use it, an hour after the release: two questions in one topic, two answers, and the topic closed in between with nobody asking for it.
+
+What was asked for was "a close-topic function, not delete" — the ability to close, not an automatic close on a state that is not an ending. Caraka has no event meaning "this session is over", and guessing it from `done` was the wrong guess.
+
+### Added
+
+- **`/close` finishes a session and closes its topic**, in that order: the session is marked done, a closing line is sent, and only then does the topic close — so the last thing in the topic explains why it ended. It sits under the same ownership record as the rename, so Caraka closes only a topic it opened, and a session running without a thread is simply marked finished. A close the channel refuses is swallowed, as before.
+- **`/close` refuses while a task is still running**, and names `/stop` as the way through. Closing under a live run would shut the topic the answer was about to arrive in.
+
+### Fixed
+
+- **Nothing closes a topic automatically any more.** A finished run is renamed with its state glyph and left open, which is what it did before 1.5.0.
+- **Nothing reopens one automatically either.** With no automatic close there is nothing to reopen, and that branch was firing on every second turn and spending a `TOPIC_NOT_MODIFIED` — a 400 for a bot — on each.
+
+### Limited
+
+- A topic now stays open until somebody sends `/close`, so a busy group's topic list grows until they do. Closing on any guess — `done`, an idle timer, a count — is the same guess that was just removed wearing a different hat.
+- After `/close`, ordinary members cannot post in that topic. That is what closing means on Telegram; the next session starts with `/new`, and an admin who wants to continue can reopen the topic from their own client.
+- `src/` measures **10,043 lines**, up 72.
+
 ## [1.5.1] — 2026-08-14
 
 The folder form refused the only layout most people have.

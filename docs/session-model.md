@@ -59,8 +59,17 @@ Di supergroup/Discord hierarkinya sama, hanya wadahnya berbeda.
                                           editForumTopic + ringkasan akhir
 ```
 
-Sesi yang selesai ditandai lewat `editForumTopic` lalu ditutup lewat
-`closeForumTopic`, dalam urutan itu. Menutup tidak menghilangkan apa pun: ia satu
+Sebuah run yang selesai ditandai lewat `editForumTopic` dan **topic-nya
+dibiarkan terbuka**. `done` adalah keadaan yang ditinggalkan satu run, bukan
+akhir sebuah sesi: pesan berikutnya melanjutkan sesi yang sama. Menutup pada
+`done` — yang sempat terkirim di 1.5.0 dan dicabut di 1.5.2 — menutup topic
+sesudah setiap giliran lalu membukanya lagi pada giliran berikutnya, menulis satu
+service message `closed` dan satu `reopened` ke dalam transkrip tiap kali, dan
+meninggalkan topic tertutup selagi sesinya masih hidup.
+
+Caraka tidak punya kejadian yang berarti "sesi ini berakhir", jadi yang tahu yang
+mengatakannya: `/close`. Perintah itu menandai sesi `done`, mengirim satu baris
+penutup, lalu menutup topic lewat `closeForumTopic`, dalam urutan itu. Menutup tidak menghilangkan apa pun: ia satu
 flag ditambah satu service message, dan transkripnya tetap terbaca. Di grup
 haknya sudah dipegang, dan deskripsi method itu sendiri mengecualikan pencipta
 topic — yang Caraka selalu, karena sejak 1.3.1 ia hanya menyentuh thread yang
@@ -133,11 +142,13 @@ Tanpa aturan, daftar topic akan membengkak seperti tab browser.
 | Tutup topic saat sesi `done`/`failed`/`cancelled` | ✅ langsung, setelah pesan ringkasan. Terbangun sejak 1.4.3 di grup; di DM `closeForumTopic` tidak berdokumentasi, jadi sesi berhenti di penggantian nama |
 | Hapus topic yang `done` | ❌ tidak dibangun, dan tidak akan: `deleteForumTopic` menghapus topic beserta seluruh pesannya. Yang dibangun adalah penutupan |
 | Batas sesi aktif bersamaan | **5** per operator — melebihi itu, tawarkan menutup yang terlama |
-| Sesi `running` tanpa aktivitas | timeout 30 menit → `cancelled` + topic ditutup |
+| Sesi `running` tanpa aktivitas | timeout 30 menit → `cancelled`; topic tetap terbuka, `/close` yang menutupnya |
 | Topic "General" | tidak pernah ditutup, tidak pernah dihapus |
 | Sesi yang dipin (`/pin`) | dikecualikan dari auto-hapus |
 
-Ringkasan penutup dikirim **sebelum** topic ditutup, sehingga baris terakhir topic selalu menjelaskan apa yang terjadi. Sejak 1.4.3 keempat jalur akhir melakukannya dalam urutan itu — run yang sukses, `/stop`, timeout run, dan run yang gagal — dan urutan itu bagian dari fiturnya: kirim ke topic yang baru ditutup hanya berhasil karena Caraka pencipta topic itu, dan buktinya di sumber TDLib, bukan di halaman Bot API.
+Baris penutup `/close` dikirim **sebelum** topic ditutup, sehingga baris terakhir topic selalu menjelaskan apa yang terjadi. Urutan itu bagian dari fiturnya: kirim ke topic yang baru ditutup hanya berhasil karena Caraka pencipta topic itu, dan buktinya di sumber TDLib, bukan di halaman Bot API.
+
+Yang juga diperbaiki bersama pencabutan itu: baris terakhir keempat jalur akhir — run sukses, `/stop`, timeout, dan run gagal — tiba di topic-nya sendiri. Sebelumnya laporan kegagalan mendarat di General, karena pesan yang memulai sebuah run tidak membawa `message_thread_id` ketika topic-nya baru dibuka untuk run itu.
 
 ```
 ✓ Selesai · 1:12 · 2 file berubah · 18 test lulus
