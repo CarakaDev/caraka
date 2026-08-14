@@ -20,7 +20,7 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.3.2', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.3.3', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Seven presets load; five routes across four agents have completed a turn
   // against a live binary here, all on 10 August 2026 — Claude Code over ACP
@@ -119,6 +119,18 @@ export const releases = [
         'Watch the dashboard swap a panel in a real browser with the CSP live',
         'Run fourteen days on a real WhatsApp number with no ban and no manual relink, or publish the honest finding that makes Cloud API the default',
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
+      ] },
+    ] },
+  { v: '1.3.3', state: 'unproven', date: '13 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'FIXED', tone: '#FFD67E', items: [
+        'A workspace written as @~/Project/Coret answered that no workspace had that name. A chat message never passes through a shell, so nothing expands the tilde before Caraka sees it and the token is not an absolute path \u2014 it fell through to the slug list and got a sentence about workspaces instead of one about paths. The request that asked for this feature wrote its example exactly that way, so what shipped accepted the long spelling and refused the one the person asking for it used',
+        'A leading ~/ is read as a path rooted in the home of the user running Caraka, and ~ alone is that directory. Only the path branch sees the expansion, so an unknown slug still quotes what was typed. ~user/ is left alone \u2014 another person\u2019s home is a guess about the machine, and a wrong guess names somebody else\u2019s directory',
+        'Who may use the path form does not change: still the operator\u2019s own direct message, and a tilde is not a way around it. What ~/x reaches was already reachable by typing the long path in the same conversation by the same person',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'One test is flaky under load and it is not this one. On the first full gate run it failed once, then passed three of three alone, two of two full runs after, and on the second machine. This change is a pure string function and one guard in the router, neither of which touches the approval queue. Written down rather than passed over: a test that fails one run in six will fail on somebody else\u2019s machine one day and be read as a regression',
+        'src/ measures 9,620 lines against the ~8,000 ceiling, up 22 against an estimate of 12 \u2014 the closest estimate of this release, because the function is pure and its home directory was already a parameter, so no seam had to be bought',
       ] },
     ] },
   { v: '1.3.2', state: 'unproven', date: '13 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
