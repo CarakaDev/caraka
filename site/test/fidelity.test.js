@@ -33,9 +33,9 @@ const mockup = (file) => readFileSync(join(MOCKUPS, file), 'utf8')
 const styleBlock = (src) => src.slice(src.indexOf('<style>') + 7, src.indexOf('</style>')).trim()
 const globalCss = readFileSync(join(SITE, 'src', 'styles', 'global.css'), 'utf8')
 
-const walk = (dir) =>
+const walk = (dir, ext = '.astro') =>
   readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
-    e.isDirectory() ? walk(join(dir, e.name)) : e.name.endsWith('.astro') ? [join(dir, e.name)] : [],
+    e.isDirectory() ? walk(join(dir, e.name), ext) : e.name.endsWith(ext) ? [join(dir, e.name)] : [],
   )
 
 describe('page stylesheets', () => {
@@ -299,5 +299,44 @@ describe('the changelog list is bounded', () => {
       ...releases.flatMap(items).map((i) => line.exec(i)?.[1]).filter(Boolean),
     ])
     expect(published.filter((v) => !named.has(v))).toEqual([])
+  })
+})
+
+describe('the release line reads the same everywhere it is written', () => {
+  // Nothing on this site is generated. Every version is typed by hand into an
+  // .astro, .ts or .mjs file, and site/AGENTS.md names the surfaces that have to
+  // agree — because each time one went unnamed there, it drifted. The status chip
+  // sat at v1.2 while three named files read v1.1. The README badge sat at v1.0
+  // for five releases, and it is the badge a reader clicks to reach
+  // docs/roadmap.md. Neither was caught by a test, because there was none.
+  //
+  // package.json is the source. The tests below pin the two shapes the drift
+  // actually took, not every digit on the site: a footer that states the release
+  // line, and the badge. Historical references — "uninstall came back in v1.1",
+  // the UI Kit's own v1.0 — are deliberately not matched by either pattern, and
+  // must never be: they record when something changed and do not move.
+  const version = JSON.parse(readFileSync(join(SITE, '..', 'package.json'), 'utf8')).version
+  const releaseLine = `v${version.split('.').slice(0, 2).join('.')}`
+
+  const sources = [...walk(join(SITE, 'src')), ...walk(join(SITE, 'src'), '.ts')]
+
+  test('every "vX.Y, unproven" on the site is the shipped release line', () => {
+    const found = sources.flatMap((f) => {
+      const src = readFileSync(f, 'utf8')
+      return [...src.matchAll(/v(\d+\.\d+), unproven/g)].map((m) => ({ f, v: `v${m[1]}` }))
+    })
+    expect(found.length, 'no release-state footer found — the wording changed and this test stopped watching anything').toBeGreaterThan(4)
+    expect(found.filter((x) => x.v !== releaseLine).map((x) => `${x.f.slice(SITE.length)}: ${x.v}`)).toEqual([])
+  })
+
+  test('both README status badges carry it, and they are what links to the roadmap', () => {
+    for (const name of ['README.md', 'README.id.md']) {
+      const src = readFileSync(join(SITE, '..', name), 'utf8')
+      const badge = /badge\/status-v(\d+\.\d+)-/.exec(src)
+      expect(badge, `${name} no longer carries a status badge`).not.toBeNull()
+      expect(`v${badge[1]}`, `${name} status badge`).toBe(releaseLine)
+      // The badge is only worth pinning because of where it sends a reader.
+      expect(src).toMatch(/<a href="docs\/roadmap\.md"><img src="https:\/\/img\.shields\.io\/badge\/status-/)
+    }
   })
 })

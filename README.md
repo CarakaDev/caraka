@@ -7,7 +7,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8EEE98?style=flat-square&labelColor=05080C" alt="MIT"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%E2%89%A522-E2452C?style=flat-square&labelColor=05080C" alt="node >= 22"></a>
   <a href="https://agentclientprotocol.com"><img src="https://img.shields.io/badge/protocol-ACP-FF7A5E?style=flat-square&labelColor=05080C" alt="ACP"></a>
-  <a href="docs/roadmap.md"><img src="https://img.shields.io/badge/status-v1.0-FFD67E?style=flat-square&labelColor=05080C" alt="v1.0"></a>
+  <a href="docs/roadmap.md"><img src="https://img.shields.io/badge/status-v1.5-FFD67E?style=flat-square&labelColor=05080C" alt="v1.5"></a>
 </p>
 
 <p align="center">

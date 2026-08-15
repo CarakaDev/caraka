@@ -148,17 +148,22 @@ Kode ditulis mengikuti plan. Plan yang ternyata salah **diperbarui**, tidak diab
 
 ### Tahap 4 — gerbang verifikasi
 
-Keempatnya harus hijau, dan buktinya ditempel di plan. Klaim "sudah lulus" tanpa keluaran perintah tidak dihitung.
+Keenamnya harus hijau, dan buktinya ditempel di plan. Klaim "sudah lulus" tanpa keluaran perintah tidak dihitung.
 
 ```bash
-npm run scan:secrets  # scripts/scan-secrets.sh
-npm run lint          # oxlint
-npm run typecheck     # astro check
-npm test              # vitest
-npm run e2e           # playwright, lintas chromium/firefox/webkit
+npm run scan:secrets      # scripts/scan-secrets.sh
+npm run lint              # oxlint
+npm run typecheck         # astro check
+npm test                  # vitest
+npm run e2e               # playwright, lintas chromium/firefox/webkit
+npm --prefix site run test  # vitest situs, dari akar
 ```
 
-`npm run verify` menjalankan kelimanya berurut, dengan `scan:secrets` di depan: repositori ini publik dan satu commit yang salah tidak bisa ditarik kembali, jadi pemeriksaan itu tidak menunggu empat perintah lain lulus.
+`npm run verify` menjalankan keenamnya berurut, dengan `scan:secrets` di depan: repositori ini publik dan satu commit yang salah tidak bisa ditarik kembali, jadi pemeriksaan itu tidak menunggu lima perintah lain lulus.
+
+Perintah terakhir milik `site/`, dan ia ada di gerbang akar karena kerusakan yang ditangkapnya dibuat di akar. `site/test/fidelity.test.js` membaca `CHANGELOG.md` dan gagal pada versi yang punya judul `## [x.y.z]` di sana tanpa baris di `site/src/data/status.ts`. Commit rilis menulis judul itu; ia ditulis di akar, diverifikasi oleh gerbang akar, lalu diterbitkan — dan sampai 15 Agustus 2026 gerbang akar tidak pernah menyentuh `site/`. Dua rilis lolos begitu, `1.4.2` (`567b116`) dan `1.5.0` (`af25876`), keduanya dengan nol kemunculan versinya di `status.ts`. CI menangkap keduanya, tetapi CI berbunyi sesudah push: 1.5.0 diperbaiki enam belas jam kemudian. `prepublishOnly` memanggil `verify`, jadi baris ini memerahkan rilis sebelum `npm publish`, bukan sesudahnya.
+
+Yang dijalankan adalah `test` milik situs, bukan `check`-nya. Lint dan `astro check` situs sudah punya job sendiri di CI dan tidak menjawab pertanyaan ini; yang menjawabnya cuma vitest, dan ia berjalan tanpa build maupun peramban. Pemeriksaannya membaca daftar rilis terstruktur di `status.ts`, bukan mencari teks versi di seluruh halaman — `0.86.2` di dalam kalimat tentang aider tidak boleh menjawab untuk sebuah rilis. `site/node_modules` harus sudah terpasang; di mesin yang menerbitkan, ia selalu ada.
 
 Yang dibaca pemindai adalah setiap berkas yang dilacak git, bukan diff-nya, terhadap daftar bentuk kredensial yang tetap. Rahasia berbentuk lain tetap lolos, jadi diff tetap dibaca orang.
 

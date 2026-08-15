@@ -20,10 +20,11 @@ A task that looks too small for a spec gets one anyway; if it really is that sma
 ## The verification gate
 
 ```bash
-cd site && npm run check && npm run e2e
+npm run verify                        # package: secrets, lint, types, build, tests — and the site's vitest
+cd site && npm run check && npm run e2e   # site: lint, types, unit, then playwright
 ```
 
-Four commands, all green, output pasted into the plan. "Should work" is not a result. If a check fails and you cannot fix it, say so and leave the task open — a green claim over a red run costs more than the bug did.
+All green, output pasted into the plan. `npm run verify` reaches into `site/` for its last command on purpose — a release is committed from here, and a `CHANGELOG.md` heading with no matching line in `site/src/data/status.ts` used to reach npm before anything said so. "Should work" is not a result. If a check fails and you cannot fix it, say so and leave the task open — a green claim over a red run costs more than the bug did.
 
 ## Two things that are irreversible
 

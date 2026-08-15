@@ -24,8 +24,11 @@ export const badges = [
   // Comp line 260 reads pre-alpha. This one reads the release the code is at,
   // which is the newest heading in CHANGELOG.md, not the registry the chip
   // above tracks. The README's own status badge is the same idea and is not the
-  // source: it still reads v1.0, which is drift in that file rather than a
-  // second answer this one should copy.
+  // source: it read v1.0 until 15 August 2026, five releases after that stopped
+  // being true, and it is the badge a reader clicks to reach docs/roadmap.md.
+  // Both READMEs now read v1.5 with this line, and the badge is hard-coded
+  // rather than served by shields from a version anywhere, so it is swept by
+  // hand like every other surface named in site/AGENTS.md.
   { k: 'status', v: 'v1.5', tone: '#FFD67E', ink: '#3A2A00' },
 ]
 
@@ -40,7 +43,7 @@ export const projects = [
   {
     name: 'caraka',
     desc: 'The envoy. A thin bridge from Telegram, Discord, or WhatsApp to the coding agent already on your machine — sessions as topics, threads, or a header, approval before every write, nothing executed without a human in between.',
-    // Comp line 271 says pre-alpha. 1.3.0 is the release in the CHANGELOG, and
+    // Comp line 271 says pre-alpha. 1.5.5 is the release in the CHANGELOG, and
     // the chip above shows the registry instead, which is what it lags behind.
     status: 'v1.5, unproven',
     tone: '#FFD67E',
