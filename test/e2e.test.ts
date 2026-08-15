@@ -1910,6 +1910,56 @@ test("a finished run is renamed and left open, and /close is what closes it", as
   await refusing.finish();
 });
 
+test("a name the topic already carries is not written again", async () => {
+  // Reported from outside: "every time I give it work it renames the topic
+  // again, even though it is already in that topic." Every rename writes a
+  // `forum_topic_edited` service message into the transcript, so the churn is
+  // visible rather than merely wasteful, and the same name twice is a 400 that
+  // `setState` cannot see through its own catch.
+  //
+  // Four paths sent a name the topic already had. `/close` is the one this test
+  // drives because it is the shortest: the run before it already ended at
+  // `✓ ship it`, and `closeSession` sets `done` a second time.
+  const h = await harness({ topics: true, archives: true });
+  h.feed.push(message(42, 42, "ship it"));
+  await h.settle(200);
+  assert.deepEqual(
+    h.calls.filter((call) => call.startsWith("editForumTopic:")),
+    ["editForumTopic:▸ ship it", "editForumTopic:✓ ship it"],
+  );
+
+  h.calls.length = 0;
+  h.feed.push(message(42, 42, "/close", "private", undefined, 7001));
+  await h.settle(200);
+  // The close still happens and the row still says done — what is gone is the
+  // third `✓ ship it`, which is the whole fix.
+  assert.deepEqual(
+    h.calls.filter((call) => call.startsWith("editForumTopic:")),
+    [],
+  );
+  assert.deepEqual(
+    h.calls.filter((call) => call.startsWith("finishThread")),
+    ["finishThread:7001"],
+  );
+  await h.finish();
+
+  // And the guard remembers a name rather than a state: a second turn moves the
+  // topic back to `▸` and on to `✓` again, because those names differ from the
+  // one on record. A guard keyed on the state alone would have swallowed the
+  // second run's `▸` as "already running once".
+  const again = await harness({ topics: true });
+  again.feed.push(message(42, 42, "ship it"));
+  await again.settle(200);
+  again.calls.length = 0;
+  again.feed.push(message(42, 42, "one more thing", "private", undefined, 7001));
+  await again.settle(200);
+  assert.deepEqual(
+    again.calls.filter((call) => call.startsWith("editForumTopic:")),
+    ["editForumTopic:▸ ship it", "editForumTopic:✓ ship it"],
+  );
+  await again.finish();
+});
+
 test("/close refuses while a task is still running", async () => {
   // Closing under a live run would shut the topic the answer is about to arrive
   // in. The session keeps its state and the sentence names the way through.

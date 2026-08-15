@@ -167,6 +167,15 @@ export function evict(
 const RETRY_PAUSE_MS = 500;
 
 /**
+ * How long a caller may be held waiting out 429s before the refusal is handed
+ * back instead. Sixty seconds because the thing most often on the other end of
+ * that wait is a person watching a chat, and a minute is already longer than
+ * anyone reads as working. It is a ceiling on the total, not on one sleep: the
+ * `retry-after` a channel names is always honoured in full.
+ */
+const RETRY_BUDGET_SECONDS = 60;
+
+/**
  * Run `send` once more if the transport drops it. One retry, not a loop: a
  * transport that is down is not a transport that is flaky, and retrying it
  * forever only moves the hang somewhere else.
@@ -219,6 +228,7 @@ export async function fetchWithRetry(request: {
   /** Seconds to wait when the response carries no usable `retry-after`. */
   retryAfter?: (response: Response) => Promise<number | undefined>;
 }): Promise<Response> {
+  let waited = 0;
   for (;;) {
     let response: Response;
     try {
@@ -233,7 +243,23 @@ export async function fetchWithRetry(request: {
         Number.isFinite(header) && header > 0
           ? header
           : ((await request.retryAfter?.(response)) ?? 1);
-      await request.sleep(Math.min(seconds, 60) * 1000);
+      // Two defects lived in the line this replaces, `sleep(Math.min(seconds,
+      // 60))` inside a loop with no exit. It slept for less than it was told,
+      // which is how a caller earns its next 429; and it never gave up, so a
+      // caller that awaits was held for as long as the far side kept saying no.
+      // `Gateway.setState` awaits, so one 429 on a topic rename held the run
+      // itself — and Discord limits renaming a thread to roughly two per ten
+      // minutes, which one ordinary turn already spent. The number is not
+      // written down anywhere by Discord, so nothing here encodes it.
+      //
+      // The wait is honoured in full, and the budget is what ends the loop. Past
+      // it the adapter's own error is thrown: `setState` catches it and the
+      // topic loses its glyph, which is the right trade against holding a run.
+      // A caller that cannot degrade lets it reach the error report instead.
+      waited += seconds;
+      if (waited > RETRY_BUDGET_SECONDS)
+        throw request.fail(`${request.refused} rate limited for ${waited}s`, 429);
+      await request.sleep(seconds * 1000);
       continue;
     }
     if (!response.ok) {

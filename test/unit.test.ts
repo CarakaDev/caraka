@@ -28,6 +28,7 @@ import {
 } from "../src/channels/whatsapp.js";
 import {
   containerOf,
+  fetchWithRetry,
   gatewayCommands,
   routeOf,
   splitMarkdown,
@@ -3178,6 +3179,40 @@ test("Discord waits out a 429 from the response and repeats the same call", asyn
     ["/users/@me", "/users/@me"],
   );
   assert.ok(Date.now() - started >= 45);
+});
+
+test("a 429 that outlasts the budget is handed back instead of held", async () => {
+  // The loop this guards used to sleep `Math.min(seconds, 60)` and never exit.
+  // Both halves were wrong: sleeping less than the channel asked for is how the
+  // next 429 is earned, and never giving up meant a caller that awaits was held
+  // for as long as the far side kept refusing. `Gateway.setState` awaits, so one
+  // 429 on a topic rename held the run itself — and renaming a Discord thread is
+  // limited to a couple of calls per ten minutes, which one ordinary turn
+  // already spends.
+  //
+  // A rename that cannot happen has to lose its glyph, not the run. Driven
+  // against `fetchWithRetry` itself with the sleep injected, so the suite pays
+  // none of the wait it is asserting about.
+  const slept: number[] = [];
+  let sent = 0;
+  await assert.rejects(
+    () =>
+      fetchWithRetry({
+        send: async () => {
+          sent += 1;
+          return new Response("{}", { status: 429, headers: { "retry-after": "45" } });
+        },
+        sleep: async (ms) => void slept.push(ms),
+        fail: (sentence, status) => new Error(`${sentence} ${status ?? ""}`.trim()),
+        unreachable: "unreachable",
+        refused: "refused",
+      }),
+    /rate limited/,
+  );
+  // The first 45 is waited out in full — not clamped to any number written
+  // here — and the second crosses the budget, so the third call is never sent.
+  assert.deepEqual(slept, [45_000]);
+  assert.equal(sent, 2);
 });
 
 test("a Discord application command becomes the command line core already parses", async () => {

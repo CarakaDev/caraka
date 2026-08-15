@@ -1217,6 +1217,14 @@ export class Gateway {
     return `topic.own.${chatId}.${threadId}`;
   }
 
+  // The last name this process successfully wrote onto a topic. Beside
+  // `topic.own.*` and keyed the same way, because it answers the same kind of
+  // question about the same container and adding a column for it would be a
+  // migration for one string (`docs/session-model.md`).
+  private static nameKey(chatId: string, threadId: string) {
+    return `topic.name.${chatId}.${threadId}`;
+  }
+
   private async createSession(
     message: InboundMessage,
     title: string,
@@ -1536,10 +1544,32 @@ export class Gateway {
       });
       return;
     }
+    // Below the state write on purpose. `store.setState` bumps `updated_at`, and
+    // the route lookup orders by it, so returning early on an unchanged state
+    // would quietly change which session a later message resolves to. What is
+    // skipped here is the topic call and nothing else.
+    //
+    // Every rename writes a `forum_topic_edited` service message into the topic,
+    // and the same name twice is a 400 the caller below cannot see. Four paths
+    // sent it: `/stop` and the run timeout each cancel a run that then reports
+    // itself cancelled, `/close` sets `done` on a session that already ended
+    // there, and two approvals arriving together each fire `awaiting_approval`
+    // and then each fire `running` when they are answered. The reporter saw the
+    // service messages, which is the visible half; on Discord the wasted call is
+    // a rename token against a limit of about two per ten minutes.
+    //
+    // Written only after the call succeeds, so a rename that failed is tried
+    // again on the next transition rather than remembered as done. A topic
+    // renamed by hand outside Caraka goes stale here for exactly one transition.
+    const name = `${glyph} ${session.title}`;
+    const nameKey = Gateway.nameKey(session.chatId, session.threadId);
+    if (this.store.meta(nameKey) === name) return;
     const channel = this.channelOf(session.chatId);
-    await channel
-      .editTopic(session.chatId, session.threadId, `${glyph} ${session.title}`)
-      .catch(() => undefined);
+    const written = await channel
+      .editTopic(session.chatId, session.threadId, name)
+      .then(() => true)
+      .catch(() => false);
+    if (written) this.store.setMeta(nameKey, name);
     // Nothing closes a topic here, and the absence is the point. `done` is what
     // one run leaves behind, not the end of a session — the next message
     // continues the same one. Closing on it shut the topic after every single
