@@ -20,7 +20,7 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.5.6', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.5.7', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Nine presets load; six routes across five agents have completed a turn
   // against a live binary here — Claude Code over ACP and over its CLI route,
@@ -102,7 +102,7 @@ export const phases: Phase[] = [
   // seventeen more releases shipped inside it, so the page answered "v1.0" to a
   // reader looking at 1.5.5. The gate below is what keeps phase 7 open, not the
   // version, and roadmap.md now lists what shipped between the two numbers.
-  { n: '7', title: 'Public release · v1.0 → v1.5.6', dur: '2 weeks', live: true, ...shipped,
+  { n: '7', title: 'Public release · v1.0 → v1.5.7', dur: '2 weeks', live: true, ...shipped,
     q: 'Is it ready to be trusted by strangers?',
     gate: 'Every goal in prd.md is met and measured. Fifteen agents are not covered: nine presets ship and five have completed a turn against a live binary here, over six routes — Claude Code over ACP and over its CLI route, Codex and aider on the CLI, goose and opencode over ACP. Four have never run here at all. Taking the release to the Indonesian developer community and to the ACP ecosystem is the step nothing in a repository can perform.',
     range: r(7, 3, 26) },
@@ -133,6 +133,23 @@ export const releases = [
         'Watch the dashboard swap a panel in a real browser with the CSP live',
         'Run fourteen days on a real WhatsApp number with no ban and no manual relink, or publish the honest finding that makes Cloud API the default',
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
+      ] },
+    ] },
+  { v: '1.5.7', state: 'unproven', date: '15 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'FIXED', tone: '#FFD67E', items: [
+        'A name the topic already carried was written again. Reported from outside: every time I give it work it renames the topic again, even though it is already in that topic. What the reporter sees is not the glyph but the cost of it \u2014 every rename writes a service message into the transcript, so a redundant one is litter in the room they are working in. Four paths sent a name the topic already had: /stop and the thirty-minute timeout each cancel a run that then reports itself cancelled, /close writes done on a session whose last run already ended there, and two approvals arriving together each fire twice',
+        'The guard sits below the state write, not above it. The state write bumps the row timestamp and the route lookup orders by it, so returning early on an unchanged state would quietly change which session a later message resolves to. It is keyed on the rendered name rather than the state, so a second turn still moves from running to done',
+        'A 429 held the run instead of the glyph. The retry loop slept for less than the channel asked \u2014 which is how the next 429 is earned \u2014 and never gave up, and four of the five callers await it, so one rate limit on a rename held the run itself. The wait is honoured in full now and a budget ends the loop: past it the topic loses its glyph rather than the run being held. Renaming a Discord thread is limited to a couple of calls per ten minutes, which one ordinary turn already spent',
+      ] },
+      { label: 'ADDED', tone: '#8EEE98', items: [
+        'An image the agent produced reaches the chat. It did not exist, and the hole ran through three layers: the core update type declared content as text only, the reader returned the empty string for anything else, and no channel method could put bytes in a chat. A turn whose only output was a picture reported that it finished without output \u2014 the agent drew the chart and the person who asked was told nothing had been made',
+        'The tool-call path too, which was lost twice over: it was declared without its content field and its update kind was not declared at all, and that is where an image is usually born, because an agent that draws a chart draws it inside a tool',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'A channel without the method answers with a sentence naming what arrived. WhatsApp is that channel: its API needs upload-then-send, its transport seam types the payload as a string, and every write passes the funnel holding five ban mitigations. No number has ever been linked to this code',
+        'Bytes cannot pass the secret scrubber. A secret rendered into a picture leaves as a picture, and that is recorded as a limit rather than a gap to close',
+        'An ordinary turn still writes two service messages. Those are different names, so nothing skips them; dropping one is a product decision about the status board rather than a bug fix',
       ] },
     ] },
   { v: '1.5.6', state: 'unproven', date: '15 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
@@ -195,28 +212,13 @@ export const releases = [
         'No defaultAgent key was added to the config. The reporter offered it as one of four possibilities; a single workspace\u2019s agent: already is that key, and a second global one is only somewhere for the two to disagree',
       ] },
     ] },
-  { v: '1.5.2', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
-    groups: [
-      { label: 'FIXED', tone: '#FFD67E', items: [
-        'The topic closed after every turn, because done was read as the end of a session. 1.5.0 closed on done, failed and cancelled, and only the middle one is unambiguous: done is what one RUN leaves behind, and the next message in that topic continues the same session. So every turn shut the topic and the turn after reopened it, writing a closed and a reopened service message into the transcript each time and leaving the topic shut while its session was alive. Seen on the first installation to use it, an hour after the release',
-        'Nothing closes a topic automatically now. A finished run is renamed with its state glyph and left open, which is what it did before 1.5.0. Nothing reopens one either \u2014 with no automatic close there is nothing to reopen, and that branch was firing on every second turn and spending a 400 on each',
-        'What was asked for was a close-topic function, not an automatic close on a state that is not an ending. Caraka has no event meaning this session is over, and guessing it from done was the wrong guess',
-      ] },
-      { label: 'ADDED', tone: '#8EEE98', items: [
-        '/close finishes a session and closes its topic, in that order: the session is marked done, a closing line is sent, and only then does the topic close \u2014 so the last thing in the topic explains why it ended. It sits under the same ownership record as the rename, so Caraka closes only a topic it opened, and a session running without a thread is marked finished',
-        '/close refuses while a task is still running and names /stop as the way through. Closing under a live run would shut the topic the answer was about to arrive in',
-      ] },
-      { label: 'LIMITED', tone: '#FFD67E', items: [
-        'A topic stays open until somebody sends /close, so a busy group\u2019s topic list grows until they do. Closing on any guess \u2014 done, an idle timer, a count \u2014 is the same guess that was just removed wearing a different hat',
-        'After /close, ordinary members cannot post in that topic. That is what closing means on Telegram; the next session starts with /new, and an admin who wants to continue can reopen the topic from their own client',
-      ] },
-    ] },
-  { v: '1.5.1 → 0.0.0', state: 'in CHANGELOG.md', date: '7–14 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
+  { v: '1.5.2 → 0.0.0', state: 'in CHANGELOG.md', date: '7–14 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
     groups: [
       { label: 'WHERE THE FULL ENTRIES ARE', tone: '#FFD67E', items: [
         'CHANGELOG.md in the repository, linked at the foot of this page. It carries every release below at the length it was written in; what is here is one line each, and nothing has been dropped from the history',
       ] },
       { label: 'SHIPPED', tone: '#8EEE98', items: [
+        '1.5.2 · 14 August 2026 — the topic closed after every turn, because done was read as the end of a session',
         '1.5.1 · 14 August 2026 — the folder form refused the only layout most people have',
         '1.5.0 · 14 August 2026 — a session got its own topic, and a finished one closed it',
         '1.4.2 · 14 August 2026 — a group could not open a topic, because init had read a private-chat setting as the answer for every container',

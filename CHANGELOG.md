@@ -4,6 +4,32 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.7] — 2026-08-15
+
+Two reports, and the second one turned out to be three layers deep.
+
+### Fixed
+
+- **A name the topic already carried was written again.** Reported from outside: *"every time I give it work it renames the topic again, even though it is already in that topic."* What the reporter sees is not the glyph but the cost of it — every `editForumTopic` writes a `forum_topic_edited` service message into the transcript, so a redundant rename is litter in the room they are working in. `Gateway.setState` is the only caller of `editTopic`, reached from ten places, and it called without comparing anything to the name already on the topic. Four paths therefore sent a name the topic already had: `/stop` and the 30-minute timeout each cancel a run that then reports itself cancelled; `/close` writes `done` on a session whose last run already ended there; and two approvals arriving together each write `awaiting_approval` on arrival and each write `running` when answered. The guard sits *below* the state write — `store.setState` bumps `updated_at` and the route lookup orders by it, so returning early on an unchanged state would quietly change which session a later message resolves to — and it is keyed on the rendered name rather than the state, so a second turn still moves `▸ → ✓`.
+- **A 429 held the run instead of the glyph.** Verifying the above turned up a second defect on the same path. `fetchWithRetry` slept `Math.min(seconds, 60)` inside a loop with no exit: it slept for less than the channel asked, which is how the next 429 is earned, and it never gave up. Four of `setState`'s five callers await it, so one 429 on a rename held the run itself, and the `.catch` in `setState` is not the safety net it looks like because a 429 never throws. The wait is honoured in full now and a total budget ends the loop — past it the adapter's error is thrown, `setState` catches it, and the topic loses its glyph instead of the run being held. Discord is where this bites: renaming a thread is limited to a couple of calls per ten minutes, which one ordinary turn already spent. That number is undocumented, so nothing encodes it.
+
+### Added
+
+- **An image the agent produced reaches the chat.** Outbound images did not exist, and the hole ran through three layers: the core update type declared content as text-only, `agentText` returned the empty string for anything else and its caller returned on empty, and `Channel` had no method that could put bytes in a chat. A turn whose only output was a picture therefore reported *"finished without text output"* — the agent drew the chart and the person who asked was told nothing had been made. Telegram and Discord carry the bytes now; the caption is truncated to each one's own limit rather than the send refused.
+- **The tool-call path too, which was lost twice over.** `tool_call` was declared as `{toolCallId, title}` and `tool_call_update` was not declared at all — and that is where an image is usually born, because an agent that draws a chart draws it inside a tool. A fix aimed only at the message stream would have missed the common case.
+
+### Changed
+
+- **`MEDIA:<path>` is withdrawn rather than built.** `docs/frd.md` FR-CHAN-05 declared it P0, `docs/api.md` repeated it, and `docs/design.md` drew an `OutboundMessage` carrying `files?: {path}[]`. None of it existed in `src/`, and lifting a path out of agent prose is a file-read primitive driven by input this project's own threat model calls untrusted. Bytes the agent sent itself carry no such question: nothing is read off the owner's disk.
+- **Three sentences in `docs/session-model.md` were wrong**, two of them since 1.5.2: the icon colour is fixed at creation and cannot be updated on transitions, the reopen row described a branch that no longer exists, and the line saying a topic name is never stored stopped being true with this release.
+
+### Limited
+
+- A channel without `sendImage` answers with a sentence naming what arrived. WhatsApp is that channel: Cloud API needs upload-then-send, its transport seam types the payload as a string, and every write has to pass the funnel holding five ban mitigations. No number has ever been linked to this code, so building it would mean shipping something nobody has run down a path that can get a person's number blocked.
+- Bytes cannot pass the secret scrubber. `createScrubber` returns a string, and a secret rendered into a picture leaves as a picture. `docs/security.md` records that as a limit rather than a gap to close.
+- An ordinary turn still writes two service messages, `▸` then `✓`. Those are different names, so nothing skips them. Dropping one is a product decision about the status board rather than a bug fix, and it is not taken here.
+- The read-only dashboard still shows no images. Its CSP is `default-src 'none'` with no `img-src`, so showing one is a security change rather than a rendering change.
+
 ## [1.5.6] — 2026-08-15
 
 Nothing in the runtime moved. What moved is everything that describes it, and the gate that had been letting a release go out describing itself wrongly.

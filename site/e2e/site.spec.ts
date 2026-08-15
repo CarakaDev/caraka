@@ -454,6 +454,12 @@ test.describe('the comps still decide the layout', () => {
     // is the question the project is asked most often and it was spread across
     // three chapters; it is answered in one place now, and the README carries
     // the same recipe in both languages. Measured Chromium at 1440x900.
+    //
+    // 1.5.7 moved one: /status +150 to 9005. Its card went on and 1.5.2's came
+    // off into the archive line — the trade the five-card bound makes — and the
+    // fidelity test named the missing card before the release rather than after
+    // it, from inside `npm run verify`, for the second release running.
+    // Measured Chromium at 1440x900.
     const EXPECTED: Record<string, number> = {
       // v1.2 copy, except the two v1.3 moved — measured from the site (see above)
       '/': 6627,
@@ -463,7 +469,7 @@ test.describe('the comps still decide the layout', () => {
       '/install': 5465,
       '/security': 6235,
       '/whatsapp-risk': 6857,
-      '/status': 8855,
+      '/status': 9005,
       '/brand/readme': 5557,
       // still measured against the comp
       '/story': 5734,
