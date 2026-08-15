@@ -9,6 +9,7 @@ const en = {
   "run.working": "◌ Caraka → {agent} · lumaku…",
   "run.cancelled": "Task cancelled.",
   "run.noOutput": "{agent} finished without text output.",
+  "run.imageOnly": "{agent} finished with {count} image and no text.",
   "run.timeout": "Run passed {minutes} minutes and was cancelled.",
   // What a sender is told when an attachment cannot reach the agent this session
   // runs on. It names the kind rather than the file, because the file has no name
@@ -20,6 +21,11 @@ const en = {
   // that reported the file as too big and core stores no channel's number.
   "attach.tooBig":
     "That attachment is {size} MB and Caraka fetches at most 20 MB; send a smaller one, or put the file in the workspace and name its path.",
+  // The outbound half, and the reason it is a sentence rather than silence: the
+  // agent did produce the picture, and a channel that cannot carry one is a fact
+  // about the channel, not about the run.
+  "attach.outUnsupported":
+    "{agent} produced a {mime}, and this channel cannot carry one; ask for the file to be written into the workspace instead.",
   "permission.header": "⏸ {agent} asks for permission",
   "permission.fallbackTitle": "Tool operation",
   "permission.ttl": "Valid for 10 minutes",
@@ -382,11 +388,14 @@ const id: Record<MessageKey, string> = {
   "run.working": "◌ Caraka → {agent} · lumaku…",
   "run.cancelled": "Tugas dibatalkan.",
   "run.noOutput": "{agent} selesai tanpa keluaran teks.",
+  "run.imageOnly": "{agent} selesai dengan {count} gambar dan tanpa teks.",
   "run.timeout": "Run melewati {minutes} menit dan dibatalkan.",
   "attach.unsupported":
     "Caraka tidak bisa menyerahkan {kind} ke agent ini; kirim tugasnya sebagai teks, atau taruh berkasnya di workspace lalu sebut path-nya.",
   "attach.tooBig":
     "Lampiran itu {size} MB dan Caraka mengunduh paling banyak 20 MB; kirim yang lebih kecil, atau taruh berkasnya di workspace lalu sebut path-nya.",
+  "attach.outUnsupported":
+    "{agent} menghasilkan {mime}, dan channel ini tidak bisa membawanya; minta berkasnya ditulis ke dalam workspace saja.",
   "permission.header": "⏸ {agent} meminta izin",
   "permission.fallbackTitle": "Operasi tool",
   "permission.ttl": "Berlaku 10 menit",

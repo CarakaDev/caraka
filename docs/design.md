@@ -64,9 +64,11 @@ type InboundMessage = {
   ts: number;
 };
 
+// Sketsa, bukan kode: tidak ada tipe `OutboundMessage` di `src/`. Yang benar-benar
+// ada adalah method-method di `Channel` (§2.2), dan `files` di bawah tidak pernah
+// dibangun dalam bentuk path — gambar keluar sebagai byte lewat `sendImage?`.
 type OutboundMessage = {
   text?: string;
-  files?: { path: string; caption?: string }[];
   choices?: Choice[];               // dirender jadi tombol bila didukung
   editOf?: MessageRef;              // update status di tempat
   parseMode?: "plain" | "markdown";

@@ -379,6 +379,30 @@ export interface Channel {
 
   sendResult(chatId: string, markdown: string, threadId?: string): Promise<MessageRef[]>;
 
+  /**
+   * Put an image in the chat. Optional, the way `fetchAttachment?` and
+   * `finishThread?` declare a capability rather than a branch — a channel that
+   * cannot do it does not implement it, and core reads the absence rather than
+   * reading `channel.id` (hard rule 1).
+   *
+   * `bytes` and not a path: the workspace boundary is core's to enforce, and an
+   * adapter that took a path would be a file-read primitive reachable from agent
+   * output. The caption is text core has already scrubbed; the bytes are not
+   * scrubbable and never will be — a secret rendered into a picture leaves as a
+   * picture, and `docs/security.md` says so rather than pretending otherwise.
+   *
+   * Every limit here belongs to the channel and is checked by the adapter, not
+   * by core: Telegram takes 10 MB and 1024 caption characters, Discord 10 MiB
+   * with the caption as the message body, and the caption is truncated rather
+   * than the send refused.
+   */
+  sendImage?(
+    chatId: string,
+    image: { bytes: Buffer; mimeType: string; name: string },
+    caption?: string,
+    threadId?: string,
+  ): Promise<MessageRef | undefined>;
+
   editText(chatId: string, messageId: number | string, text: string): Promise<unknown>;
 
   deleteMessage(chatId: string, messageId: number | string): Promise<unknown>;

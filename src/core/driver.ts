@@ -7,13 +7,33 @@
 export type AgentCommand = { name: string; description: string };
 
 /**
- * The update shapes core reads. A driver may emit more kinds on the wire; the
- * gateway reads these four and lets the rest pass unread.
+ * One item of agent output. ACP defines five — text, image, audio,
+ * resource_link, resource — and the same union is used in both directions, so
+ * this is the shape `imageBlock` in the ACP driver already builds going out.
+ * Only the two core can do something with are named; the rest arrive as a bare
+ * `type` and are answered by the sentence that names them.
  */
+export type AgentContent =
+  | { type: "text"; text: string }
+  | { type: "image"; data: string; mimeType: string; uri?: string | null }
+  | { type: string };
+
+/**
+ * The update shapes core reads. A driver may emit more kinds on the wire; the
+ * gateway reads these five and lets the rest pass unread.
+ *
+ * `tool_call` carries `content` and `tool_call_update` exists at all because
+ * that is where an image is most often born: an agent that draws a chart does
+ * it inside a tool and hands the bytes back as tool output. Declaring only
+ * `{toolCallId, title}` meant the block was gone before any reader could see
+ * it, which is a second, quieter loss than the one in `agent_message_chunk`.
+ */
+export type ToolCallContent = { type: "content"; content: AgentContent } | { type: string };
+
 export type AgentUpdate = {
   sessionId: string;
   update:
-    | { sessionUpdate: "agent_message_chunk"; content: { type: string; text: string } }
+    | { sessionUpdate: "agent_message_chunk"; content: AgentContent }
     | { sessionUpdate: "available_commands_update"; availableCommands: AgentCommand[] }
     | {
         sessionUpdate: "usage_update";
@@ -21,7 +41,18 @@ export type AgentUpdate = {
         size: number;
         cost?: { amount: number | string; currency: string } | null;
       }
-    | { sessionUpdate: "tool_call"; toolCallId: string; title: string };
+    | {
+        sessionUpdate: "tool_call";
+        toolCallId: string;
+        title: string;
+        content?: ToolCallContent[] | null;
+      }
+    | {
+        sessionUpdate: "tool_call_update";
+        toolCallId: string;
+        title?: string | null;
+        content?: ToolCallContent[] | null;
+      };
 };
 
 export type PermissionRequest = {

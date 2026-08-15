@@ -304,6 +304,49 @@ export class Discord implements Channel {
     return { message_id: sent.id };
   }
 
+  /**
+   * The same multipart shape `sendFile` above uses, with the caption as the
+   * message body rather than as a field of its own — Discord has no caption. It
+   * is cut at the channel's own outbound ceiling for the reason Telegram's is:
+   * losing the tail of a sentence is smaller than losing the picture.
+   *
+   * `allowed_mentions: { parse: [] }` rides along for the same reason it does
+   * everywhere else in this file: text that came from an agent must not be able
+   * to ping a room.
+   */
+  async sendImage(
+    chatId: string,
+    image: { bytes: Buffer; mimeType: string; name: string },
+    caption = "",
+    threadId = "",
+  ): Promise<MessageRef> {
+    const channel = threadId || containerOf(this.id, chatId);
+    const form = new FormData();
+    form.append(
+      "payload_json",
+      JSON.stringify({
+        ...(caption ? { content: caption.slice(0, this.caps.maxChars) } : {}),
+        allowed_mentions: { parse: [] },
+        attachments: [{ id: 0, filename: image.name }],
+      }),
+    );
+    form.append(
+      "files[0]",
+      new Blob([new Uint8Array(image.bytes)], { type: image.mimeType }),
+      image.name,
+    );
+    const sent = await this.call<{ id: string }>(
+      "POST",
+      `/channels/${channel}/messages`,
+      undefined,
+      {
+        body: form,
+      },
+    );
+    this.remember(sent.id, channel);
+    return { message_id: sent.id };
+  }
+
   editText(chatId: string, messageId: number | string, text: string) {
     return this.call(
       "PATCH",

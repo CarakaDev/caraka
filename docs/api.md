@@ -91,7 +91,7 @@ Mengembalikan pesan yang belum diproses dan menandainya terambil.
   "media": ["/tmp/caraka/diff.patch"] }
 ```
 
-Konvensi lampiran mengikuti gateway: baris `MEDIA:<path>` yang berdiri sendiri di dalam `text` juga diekstrak dan dikirim sebagai lampiran.
+Tidak ada konvensi `MEDIA:<path>`. Baris itu tertulis di sini dan di `frd.md` sejak spesifikasi tanpa kode di belakangnya, dan dicabut pada 15 Agustus 2026: sebuah path yang diangkat dari teks agent adalah primitif baca-berkas yang dikendalikan masukan tidak tepercaya. Gambar keluar lewat `Channel.sendImage?` dan hanya dari byte yang agent kirim sendiri sebagai content block.
 
 ### `ask`
 

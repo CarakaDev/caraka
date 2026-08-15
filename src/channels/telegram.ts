@@ -188,9 +188,14 @@ export class Telegram implements Channel {
 
   async call<T>(
     method: string,
-    params: Record<string, unknown> = {},
+    params: Record<string, unknown> | FormData = {},
     signal?: AbortSignal,
   ): Promise<T> {
+    // A photo cannot be JSON. `FormData` rides the same loop rather than a
+    // second one, because what has to be shared is not the encoding but the
+    // answer: Telegram reports its own refusals inside a 200 body, and a second
+    // sender would have to learn that a second time.
+    const multipart = params instanceof FormData;
     for (;;) {
       let response: Response;
       try {
@@ -202,8 +207,9 @@ export class Telegram implements Channel {
           () =>
             this.fetcher(`${this.base}/bot${this.token}/${method}`, {
               method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify(params),
+              // Set by fetch itself for a multipart body, boundary included.
+              ...(multipart ? {} : { headers: { "content-type": "application/json" } }),
+              body: multipart ? params : JSON.stringify(params),
               ...(signal ? { signal } : {}),
             }),
           (ms) => delay(ms, undefined, signal ? { signal } : undefined),
@@ -407,6 +413,35 @@ export class Telegram implements Channel {
       ...(threadId ? { message_thread_id: Number(threadId) } : {}),
       ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
     });
+  }
+
+  /**
+   * `sendPhoto` for a still and `sendAnimation` for a GIF, because Telegram
+   * refuses an animation on the photo method and the inbound allowlist admits
+   * both. Neither is `sendDocument`: a chart the agent drew is meant to be seen
+   * without a tap.
+   *
+   * The caption is cut at 1024, which is Telegram's limit and not this
+   * project's — the alternative is a refusal, and losing the tail of a sentence
+   * is smaller than losing the picture it describes.
+   */
+  async sendImage(
+    chatId: string,
+    image: { bytes: Buffer; mimeType: string; name: string },
+    caption = "",
+    threadId = "",
+  ) {
+    const animated = image.mimeType === "image/gif";
+    const form = new FormData();
+    form.append("chat_id", chatId);
+    if (threadId) form.append("message_thread_id", threadId);
+    if (caption) form.append("caption", caption.slice(0, 1024));
+    form.append(
+      animated ? "animation" : "photo",
+      new Blob([new Uint8Array(image.bytes)], { type: image.mimeType }),
+      image.name,
+    );
+    return this.call<TelegramMessage>(animated ? "sendAnimation" : "sendPhoto", form);
   }
 
   async sendPlain(chatId: string, text: string, threadId = "") {

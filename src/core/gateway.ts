@@ -24,6 +24,7 @@ import {
 } from "./channel.js";
 import type {
   AgentCommand,
+  AgentContent,
   AgentDriver,
   AgentUpdate,
   DriverFor,
@@ -1366,6 +1367,11 @@ export class Gateway {
     // an `error` row carrying no session id at all.
     let progress: MessageRef | undefined;
     let output = "";
+    // Counted rather than appended, because an image is delivered as itself.
+    // What it is needed for is the closing line: a turn that produced only a
+    // picture used to report `run.noOutput`, which told the person who asked for
+    // a chart that nothing had been produced.
+    let pictures = 0;
     let lastEdit = 0;
     let agentId = session.agentSessionId;
     let timeout: NodeJS.Timeout | undefined;
@@ -1426,6 +1432,11 @@ export class Gateway {
           update: async (notification) => {
             this.recordFacts(session.id, notification);
             this.observeToolCall(notification, scope);
+            // Before the text, because a picture that arrives with a sentence
+            // about it should not arrive after it. Each one is its own message:
+            // there is no channel here that puts two images in one.
+            for (const image of Gateway.imagesOf(notification))
+              if (await this.sendImage(session, image)) pictures += 1;
             const text = this.agentText(notification);
             if (!text) return;
             output = `${output}${text}`.slice(-240_000);
@@ -1460,7 +1471,7 @@ export class Gateway {
       // a summary posted into an archived thread arrives after the door shut.
       await this.sendResult(
         session,
-        `${this.header(session)}${output || this.t(cancelled ? "run.cancelled" : "run.noOutput", { agent })}${memoryLine}`,
+        `${this.header(session)}${output || this.closingLine(cancelled, pictures, agent)}${memoryLine}`,
       );
       await this.setState(session, cancelled ? "cancelled" : "done");
       this.note(session, "run.finish", result.stopReason, {
@@ -1627,11 +1638,112 @@ export class Gateway {
     this.facts.set(sessionId, facts);
   }
 
-  private agentText(notification: AgentUpdate) {
+  /**
+   * Every content block an update carries, from both places one can arrive:
+   * the message stream, and the output of a tool. The second is where an image
+   * is usually born — an agent that draws a chart draws it inside a tool — and
+   * until 1.5.7 core did not declare that field at all, so those blocks were
+   * gone before any reader existed.
+   */
+  private static blocksOf(notification: AgentUpdate): AgentContent[] {
     const update = notification.update;
-    return update.sessionUpdate === "agent_message_chunk" && update.content.type === "text"
-      ? update.content.text
-      : "";
+    if (update.sessionUpdate === "agent_message_chunk") return [update.content];
+    if (update.sessionUpdate === "tool_call" || update.sessionUpdate === "tool_call_update")
+      return (update.content ?? [])
+        .map((item) =>
+          item.type === "content" ? (item as { content: AgentContent }).content : undefined,
+        )
+        .filter((item): item is AgentContent => item !== undefined);
+    return [];
+  }
+
+  /**
+   * The image blocks of one update, decoded. ACP carries the bytes inline as
+   * base64 with the mime beside them, so there is no path here and no fetch —
+   * nothing core reads off the agent's disk, which is the whole reason this is
+   * safe to send onward.
+   *
+   * A block whose base64 does not decode to anything is dropped rather than
+   * sent: an empty upload is an error on every channel, and a broken block is
+   * not evidence a picture exists.
+   */
+  private static imagesOf(notification: AgentUpdate) {
+    const images: Array<{ bytes: Buffer; mimeType: string; name: string }> = [];
+    for (const block of Gateway.blocksOf(notification)) {
+      if (block.type !== "image") continue;
+      const { data, mimeType } = block as { data?: string; mimeType?: string };
+      if (!data || !mimeType?.startsWith("image/")) continue;
+      const bytes = Buffer.from(data, "base64");
+      if (bytes.byteLength === 0) continue;
+      images.push({ bytes, mimeType, name: `caraka.${mimeType.slice("image/".length)}` });
+    }
+    return images;
+  }
+
+  /**
+   * What is said when a run appended no text. A run that delivered pictures said
+   * `run.noOutput` until 1.5.7, which was false in the one case the feature
+   * exists for.
+   */
+  private closingLine(cancelled: boolean, pictures: number, agent: string) {
+    if (cancelled) return this.t("run.cancelled", { agent });
+    if (pictures > 0) return this.t("run.imageOnly", { agent, count: String(pictures) });
+    return this.t("run.noOutput", { agent });
+  }
+
+  /**
+   * One image, into the session's own conversation. A channel that cannot carry
+   * one does not implement the method, and the answer is a sentence naming what
+   * arrived rather than silence — the same degradation the inbound path already
+   * gives a file it cannot forward.
+   */
+  private async sendImage(
+    session: Session,
+    image: { bytes: Buffer; mimeType: string; name: string },
+  ) {
+    const channel = this.channelOf(session.chatId);
+    if (!channel.sendImage) {
+      await this.sendToSession(
+        session,
+        `${this.header(session)}${this.t("attach.outUnsupported", { agent: this.agentOf(session), mime: image.mimeType })}`,
+      );
+      return false;
+    }
+    const sent = await channel
+      .sendImage(session.chatId, image, "", session.threadId)
+      .catch(() => undefined);
+    this.store.audit(
+      "attachment.out",
+      sent ? "sent" : "failed",
+      { mime: image.mimeType, size: image.bytes.byteLength },
+      session.principal,
+      session.id,
+    );
+    return sent !== undefined;
+  }
+
+  /**
+   * What an update contributes to the transcript. A text block is its text; a
+   * block of any other kind is one bracketed word naming what arrived.
+   *
+   * The marker exists because the alternative was a lie. A turn whose only
+   * output was an image appended nothing, so the run finished and reported
+   * `run.noOutput` — the agent drew the chart, and the person who asked for it
+   * was told nothing had been produced. The adapter this project pins already
+   * uses the same shape for an image it cannot encode (`[image: …]`), so the
+   * form is borrowed rather than invented.
+   */
+  private agentText(notification: AgentUpdate) {
+    let text = "";
+    for (const block of Gateway.blocksOf(notification)) {
+      // An image is not described here because it is delivered as itself, in its
+      // own message. What is left is every other non-text kind — audio, a
+      // resource, a resource_link — which this build cannot deliver and will not
+      // silently drop either.
+      if (block.type === "text") text += (block as { text?: string }).text ?? "";
+      else if (block.type !== "image") text += `[${block.type}]`;
+    }
+    return text;
   }
 
   // The memory scope of a chat that is not running anything: its resolved

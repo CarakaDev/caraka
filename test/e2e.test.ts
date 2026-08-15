@@ -306,6 +306,7 @@ async function harness(
     /** The one container id whose command menu Telegram refuses to publish. */
     commandsFailFor?: string;
     editTopicFails?: boolean;
+    sendsImages?: boolean;
     /**
      * Whether this channel can close and reopen a finished thread. Left out by
      * default, because a channel that has neither is what WhatsApp is and what
@@ -392,6 +393,20 @@ async function harness(
       edits.push(text);
       return { message_id: 11, chat: { id: 42, type: "private" } };
     },
+    // Optional on the contract, so `sendsImages: false` is what a channel that
+    // cannot carry one looks like — the absence of the method, not a flag core
+    // branches on.
+    ...(options.sendsImages === false
+      ? {}
+      : {
+          sendImage: async (
+            _chatId: string,
+            image: { bytes: Buffer; mimeType: string; name: string },
+          ) => {
+            calls.push(`sendImage:${image.mimeType}:${image.bytes.byteLength}`);
+            return { message_id: 99 };
+          },
+        }),
     deleteMessage: async () => true,
     createTopic: async (_chatId: string, name: string) => {
       calls.push(`createForumTopic:${name}`);
@@ -5113,4 +5128,111 @@ test("a progress message that cannot be sent fails the session instead of hangin
   h.feed.push(message(42, 42, "and the next one"));
   await h.settle(300);
   assert.ok(h.sent.length > 0, "the next task was answered");
+});
+
+test("an image the agent produced is delivered, and a run that made one says so", async () => {
+  // Until 1.5.7 a non-text content block was turned into the empty string and
+  // discarded, so an agent that drew a chart produced nothing as far as Caraka
+  // was concerned — and the run then reported `run.noOutput`, telling the person
+  // who asked for the chart that nothing had been made. The block was never
+  // hypothetical: the adapter this project pins emits `type: "image"` on the
+  // live path, and so does goose.
+  const png = Buffer.from("89504e470d0a1a0a", "hex");
+  const h = await harness({
+    onPrompt: async (_prompt, route) => {
+      await route.update({
+        sessionId: "agent-session-1",
+        update: {
+          sessionUpdate: "agent_message_chunk",
+          content: { type: "image", data: png.toString("base64"), mimeType: "image/png" },
+        },
+      });
+      return { stopReason: "end_turn" as const };
+    },
+  });
+  h.feed.push(message(42, 42, "draw me a chart"));
+  await h.settle(200);
+  assert.deepEqual(
+    h.calls.filter((call) => call.startsWith("sendImage:")),
+    [`sendImage:image/png:${png.byteLength}`],
+  );
+  // The closing line names the picture instead of denying it.
+  assert.ok(
+    h.sent.some((item) => /1 image and no text/.test(item.text)),
+    h.sent.map((item) => item.text).join(" | "),
+  );
+  await h.finish();
+});
+
+test("an image born inside a tool call is delivered too", async () => {
+  // The path that matters most in practice and the one that was lost twice
+  // over: core declared `tool_call` as `{toolCallId, title}` and did not declare
+  // `tool_call_update` at all, so a picture a Bash tool produced was gone before
+  // any reader existed. An agent that draws a chart draws it inside a tool.
+  const png = Buffer.from("89504e470d0a1a0a", "hex");
+  const h = await harness({
+    onPrompt: async (_prompt, route) => {
+      await route.update({
+        sessionId: "agent-session-1",
+        update: {
+          sessionUpdate: "tool_call_update",
+          toolCallId: "call-1",
+          content: [
+            {
+              type: "content",
+              content: { type: "image", data: png.toString("base64"), mimeType: "image/png" },
+            },
+          ],
+        },
+      });
+      await route.update({
+        sessionId: "agent-session-1",
+        update: {
+          sessionUpdate: "agent_message_chunk",
+          content: { type: "text", text: "there it is" },
+        },
+      });
+      return { stopReason: "end_turn" as const };
+    },
+  });
+  h.feed.push(message(42, 42, "plot it"));
+  await h.settle(200);
+  assert.deepEqual(
+    h.calls.filter((call) => call.startsWith("sendImage:")),
+    [`sendImage:image/png:${png.byteLength}`],
+  );
+  assert.ok(h.sent.some((item) => /there it is/.test(item.text)));
+  await h.finish();
+});
+
+test("a channel that cannot carry an image says so instead of dropping it", async () => {
+  // The method is optional on the contract, so a channel without it is read by
+  // its absence rather than by its id — the rule that keeps `channel.id` an
+  // identity and never a branch. Silence was the old behaviour and is the one
+  // thing that must not come back.
+  const png = Buffer.from("89504e470d0a1a0a", "hex");
+  const h = await harness({
+    sendsImages: false,
+    onPrompt: async (_prompt, route) => {
+      await route.update({
+        sessionId: "agent-session-1",
+        update: {
+          sessionUpdate: "agent_message_chunk",
+          content: { type: "image", data: png.toString("base64"), mimeType: "image/png" },
+        },
+      });
+      return { stopReason: "end_turn" as const };
+    },
+  });
+  h.feed.push(message(42, 42, "draw me a chart"));
+  await h.settle(200);
+  assert.equal(
+    h.calls.some((call) => call.startsWith("sendImage:")),
+    false,
+  );
+  assert.ok(
+    h.sent.some((item) => /cannot carry one/.test(item.text)),
+    h.sent.map((item) => item.text).join(" | "),
+  );
+  await h.finish();
 });
