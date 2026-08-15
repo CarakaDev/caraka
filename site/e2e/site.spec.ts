@@ -446,10 +446,18 @@ test.describe('the comps still decide the layout', () => {
     // on 1.5.6 having a CHANGELOG heading and no card, from inside `npm run
     // verify`, which is the point of that gate reaching `site/` at all.
     // Measured Chromium at 1440x900.
+    //
+    // The per-topic recipe moved one: /guide +427 to 7783. Chapter 05 gained the
+    // annotated group form of `/new` — five terminal lines naming which part of
+    // it is the bot, the folder and the topic name — and two rows, one for what
+    // the card's Yes does and one for what is refused before a card exists. It
+    // is the question the project is asked most often and it was spread across
+    // three chapters; it is answered in one place now, and the README carries
+    // the same recipe in both languages. Measured Chromium at 1440x900.
     const EXPECTED: Record<string, number> = {
       // v1.2 copy, except the two v1.3 moved — measured from the site (see above)
       '/': 6627,
-      '/guide': 7356,
+      '/guide': 7783,
       '/docs': 7519,
       '/compare': 5960,
       '/install': 5465,

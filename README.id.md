@@ -19,7 +19,7 @@
   <a href="README.md">🇬🇧 English</a>
 </p>
 
-> **v1.0.** Telegram, Discord, dan WhatsApp sampai ke coding agent di mesinmu lewat satu kontrak yang sama, dengan tujuh preset agent, memori, lebih dari satu workspace, dan dasbor read-only di loopback. Cuma Claude Code yang pernah dijalankan di sini terhadap biner hidup, tidak ada kredensial Discord maupun nomor WhatsApp yang pernah dipakai di sini, dan tidak satu pun gerbang lapangan pernah dijawab siapa pun, penulisnya termasuk. Lampiran masih belum ada. Registry npm masih memegang 0.2.1 sampai pemilik menerbitkan.
+> **v1.5, belum terbukti.** Telegram, Discord, dan WhatsApp sampai ke coding agent di mesinmu lewat satu kontrak yang sama, dengan sembilan preset agent, memori, lebih dari satu workspace, lampiran, dan dasbor read-only di loopback. Lima dari sembilan agent pernah menyelesaikan satu giliran di sini terhadap biner hidup, lewat enam jalur; tidak ada kredensial Discord maupun nomor WhatsApp yang pernah dipakai di sini, dan tidak satu pun gerbang lapangan pernah dijawab siapa pun, penulisnya termasuk. Lampiran masih belum ada. Registry npm masih memegang 0.2.1 sampai pemilik menerbitkan.
 
 ---
 
@@ -111,7 +111,7 @@ caraka start
 
 ## Memakainya
 
-Kirim teks biasa untuk memberi agent tugas. Sisanya tiga belas perintah:
+Kirim teks biasa untuk memberi agent tugas. Sisanya empat belas perintah:
 
 | | |
 |---|---|
@@ -127,13 +127,14 @@ Kirim teks biasa untuk memberi agent tugas. Sisanya tiga belas perintah:
 | `/memori` | menampilkan isi memori untuk workspace ini |
 | `/yolo <durasi>` | membuka jendela trust Caraka selama durasi yang disebut |
 | `/lock` | menutup jendela trust sekarang |
+| `/close` | menutup topic sesi ini tanpa menghapusnya, jadi transkripnya tetap bisa dibaca |
 | `/help` | menjelaskan cara bekerja di sini, dengan contoh. Di ruangan jawabannya berbeda: apa yang ruangan tolak, apa yang bisa dibaca semua anggotanya, dan apa yang channel-nya antar dan tidak antar |
 
 Permintaan izin tampil sebagai tombol **Setujui sekali** dan **Tolak**. Setiap callback ditandatangani, terikat ke principal chat dan sesi, kedaluwarsa setelah sepuluh menit, serta hanya bisa dipakai sekali. Di channel yang sama sekali tidak punya tombol — WhatsApp — kartunya membawa kode empat karakter yang Caraka bangkitkan dan tidak dicetak di tempat lain, dipakai sekali lewat update database yang sama. Kata biasa tidak pernah menjadi keputusan di channel mana pun.
 
 ## Kenapa bisa sekecil ini
 
-Satu protokol mengerjakan bagian tersulitnya. [ACP](https://agentclientprotocol.com) adalah padanan LSP untuk coding agent: JSON-RPC 2.0 lewat stdio, dibuat Zed, di-co-lead JetBrains, dengan 28+ agent di registry-nya. Menulis **satu** klien ACP itulah yang menjaga pintu ke agent lain tetap terbuka, dan menambah agent di jalur CLI cukup satu berkas YAML di `presets/agents/`, bukan perubahan di inti. Tujuh preset dikirim; enam di antaranya disalin dari riset dan belum pernah dijalankan di sini.
+Satu protokol mengerjakan bagian tersulitnya. [ACP](https://agentclientprotocol.com) adalah padanan LSP untuk coding agent: JSON-RPC 2.0 lewat stdio, dibuat Zed, di-co-lead JetBrains, dengan 28+ agent di registry-nya. Menulis **satu** klien ACP itulah yang menjaga pintu ke agent lain tetap terbuka, dan menambah agent di jalur CLI cukup satu berkas YAML di `presets/agents/`, bukan perubahan di inti. Sembilan preset dikirim; empat di antaranya disalin dari riset dan belum pernah menyelesaikan satu giliran di sini, dan masing-masing menuliskannya di dalam berkasnya sendiri.
 
 ACP juga sudah menyediakan `session/request_permission`, jadi sistem approval bukan sesuatu yang Caraka karang sendiri. Ia hanya merender permintaan izin milik protokol itu menjadi tombol di chat-mu.
 
@@ -144,6 +145,33 @@ Sejak 2026, bot Telegram bisa membuat forum topic **di chat pribadi, tanpa hak a
 Satu sesi = satu topic. Caraka menamainya, menandai keadaannya lewat glif di nama (▸ jalan · ⏸ butuh kamu · ✓ selesai · ✗ gagal · ⊘ dibatalkan), lalu mengirim ringkasan penutup. Warna ikon dipilih saat topic dibuat — `editForumTopic` Telegram bisa mengubah nama dan emoji topic, tetapi tidak warnanya. Daftar topic menjadi papan status yang bisa dibaca sekilas tanpa membuka apa pun.
 
 Discord memetakan sesi yang sama ke satu thread publik. WhatsApp tidak punya keduanya, jadi tugas yang sama berjalan di mode linear di belakang header `[workspace · #id]`, dan `/status` di sana menyebut lima sesi terbaru yang percakapan itu pegang. Bila topic tidak tersedia, Caraka jatuh ke mode linear dengan header sesi. Tidak ada yang gagal keras.
+
+### Satu tugas, satu topic, di dalam grup
+
+Seluruh resepnya satu baris:
+
+```
+/new@kopipagi_bot ~/Project/kopipagi.id Task Kopi Pagi
+```
+
+| Bagian | Artinya |
+|---|---|
+| `/new` | buka sesi baru |
+| `@kopipagi_bot` | bot yang mana. Ini cara Telegram sendiri mengarahkan sebuah perintah garis miring, dan kamu membutuhkannya begitu ada lebih dari satu bot di grup itu |
+| `~/Project/kopipagi.id` | folder di mesinmu tempat agent bekerja |
+| `Task Kopi Pagi` | nama topic-nya |
+
+Kata pertama dibaca sebagai folder **hanya** karena ia path absolut setelah `~/` dikembangkan. Kata pertama yang bukan path masuk ke judul — `/new perbaiki bug login` membuka sesi dengan nama itu, bukan folder bernama `perbaiki`. Judulnya dipotong di 72 karakter, karena itu yang muat di nama topic.
+
+**Pertama kali kamu menyebut sebuah folder lewat path, Caraka tidak menjawab di grup.** Ia mengirim kartu konfirmasi ke percakapan pribadimu dengan bot itu, dan meninggalkan satu kalimat di grup yang menyebut di mana jawabannya diberikan. Tekan **Ya** di sana, lalu tiga hal terjadi sekaligus: entrinya ditulis ke `config.yaml`, topic-nya muncul di grup, dan sesinya terbuka dalam keadaan kosong — belum ada apa pun yang sampai ke coding agent, jadi pesan berikutnyalah tugas yang sebenarnya. Kartu itu kedaluwarsa dalam sepuluh menit, dan kartu yang kedaluwarsa membawa serta tugas yang menunggunya.
+
+Kartu itu ada di japri dan bukan di grup karena dua alasan, dan masing-masing sudah cukup sendiri. Jawabannya bercabang atas isi diskmu — ada atau tidaknya direktori itu — yang kalau di grup ikut terbaca setiap anggota. Dan siapa pun di grup bisa menghabiskan tombol sebuah kartu sebelum kamu sempat melihatnya.
+
+Menyebut folder lewat path adalah bentuk milik **operator**: akun pertama di `allowFrom` channel itu. Anggota allowlist lain menyebut folder lewat slug-nya, dan `/ws` menampilkan daftarnya. Setelah foldernya masuk, chat itu menempel padanya, jadi tugas berikutnya cukup `/new@kopipagi_bot Tugas lain`.
+
+Caraka menolak sebelum menggambar kartu apa pun kalau path-nya bukan direktori, kalau segmen terakhirnya tidak bisa dipakai sebagai slug, kalau slug atau path itu sudah terpakai, atau kalau foldernya **memuat** workspace yang sudah ada — menyetujui `~/Project` tidak lebih kecil daripada menyetujui seluruh disk. Folder yang berada **di dalam** workspace yang sudah ada tetap mendapat kartu, dengan ongkosnya tertulis di situ: dua scope atas satu direktori berarti `/lock` pada salah satunya tidak menutup jendela trust yang lain, dan memori yang disimpan di bawah satu tidak muncul di bawah yang lain.
+
+Empat hal harus benar sebelum sebuah topic bisa muncul sama sekali: grupnya ada di allowlist chat dalam `config.yaml`, `topics: true` berlaku untuk channel itu, grupnya sendiri sebuah forum, dan Caraka admin di sana dengan hak **Kelola topic**. Dua yang terakhir milik pemilik grup, bukan milik Caraka — ia membaca flag yang Telegram kirim dan tidak bisa menyalakannya. Kalau ada yang kurang, tidak ada yang gagal: sesinya berjalan linear di belakang header `[workspace · #id]`. Versi panjangnya, termasuk bunyi tiap penolakan, ada di [caraka.dev/guide](https://caraka.dev/guide).
 
 ## Aman secara default
 
@@ -172,13 +200,13 @@ Keduanya patuh dengan sempurna. Keduanya benar menurut instruksi yang mereka peg
 
 Itulah sebabnya proyek ini punya approval dan jejak audit. Selengkapnya di [docs/brand.md](docs/brand.md).
 
-## Yang tidak diberikan v1.0
+## Yang tidak diberikan v1.5
 
 **Bukti bahwa ini bekerja untuk orang lain.** Setiap fase di [roadmap.md](docs/roadmap.md) membawa kode yang sudah dikirim, dan setiap fase masih memegang satu gerbang yang tidak bisa dijawab dari repositori: seminggu pemakaian harian, lima rekaman setup, uji A/B atas dua puluh tugas, dua puluh developer beta, empat belas hari di nomor WhatsApp sungguhan. Semuanya dipindah melewati rilisnya atas keputusan pemilik, dengan tanggalnya dicatat, bukan dicentang. Sampai di 1.0 berarti kodenya mendarat; ia tidak mengatakan apa pun soal pemakaian.
 
-**Verifikasi hidup untuk sebagian besar permukaannya.** Cuma Claude Code yang pernah dijalankan di sini terhadap biner hidup, dan cuma lewat jalur ACP-nya. Tidak ada kredensial Discord hidup dan tidak ada nomor WhatsApp yang pernah dipakai: setiap pemeriksaan pada keduanya dijawab transport palsu. Enam dari tujuh preset disalin, bukan dijalankan. Lima di antaranya menulis `belum diverifikasi` di dalam berkasnya sendiri; bendera codex disalin dari blok yang terdokumentasi tanpa penanda apa pun.
+**Verifikasi hidup untuk sebagian besar permukaannya.** Lima dari sembilan preset pernah menyelesaikan satu giliran di sini terhadap biner hidup, lewat enam jalur — Claude Code di kedua jalurnya, Codex dan aider di CLI, goose dan opencode lewat ACP — dan run itulah yang membetulkan presetnya: dua di antaranya membawa bendera yang ditolak binernya. Tidak ada kredensial Discord hidup dan tidak ada nomor WhatsApp yang pernah dipakai: setiap pemeriksaan pada keduanya dijawab transport palsu. Empat preset sisanya menulis `belum diverifikasi` di dalam berkasnya sendiri — tiga berhenti di handshake ACP karena giliran penuhnya menuntut akun berbayar, dan yang keempat jalur CLI yang sign-in-nya satu URL OAuth Google dengan jendela enam puluh detik.
 
-**Lampiran**, dan MCP inbox untuk agent IDE. Keduanya masih dispesifikasikan dan belum dibangun.
+**MCP inbox untuk agent IDE.** Masih dispesifikasikan dan belum dibangun. Lampiran sudah mendarat di v1.3: foto sampai ke agent sebagai byte gambar di jalur ACP, atau lewat preset yang menyebut bendera gambarnya. Byte-nya mendarat di bawah home Caraka dengan mode 0700 dan nama yang dibangkitkan, tidak pernah di dalam workspace; apa pun di atas batas 20 MB milik Telegram ditolak sebelum satu byte diambil; dan prompt yang membawa lampiran tidak pernah mengambil auto-approve jendela trust. Di jalur CLI Claude Code ia turun menjadi satu kalimat yang menyebut apa yang datang, karena pembaca jalur itu menolak path di luar direktori proyek.
 
 **Memori** sudah dikirim, di v0.3, lewat [Titen](https://titen.dev) — memori agent yang tidak pernah meratakan kesimpulan dengan buktinya, dengan ekstraksi claim yang deterministik dan tanpa model di dalam loop — atau lewat provider SQLite lokal, atau tidak sama sekali. Titen dan Caraka ditulis oleh orang yang sama: satu mengingat, satu diutus. Adapter Titen di sini baru pernah menjawab fetch yang dimock.
 

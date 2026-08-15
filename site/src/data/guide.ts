@@ -216,6 +216,13 @@ export const chapters: Chapter[] = [
       { t: '  picks that workspace, and the chat sticks to it', tone: d },
       { t: '/new ~/Project/coret Coret', tone: '#FF7A5E' },
       { t: '  names a folder by its path, and offers to add it', tone: d },
+      { t: '', tone: d },
+      { t: 'in a group the same line names the bot too — one task, one topic:', tone: d },
+      { t: '/new@kopipagi_bot ~/Project/kopipagi.id Task Kopi Pagi', tone: '#FF7A5E' },
+      { t: '  /new              open a new session', tone: d },
+      { t: '  @kopipagi_bot     which bot, when the group holds more than one', tone: d },
+      { t: '  ~/Project/…       the folder the agent runs in', tone: d },
+      { t: '  Task Kopi Pagi    what the topic is called', tone: d },
     ],
     rows: [
       {
@@ -235,8 +242,16 @@ export const chapters: Chapter[] = [
         v: 'Caraka offers to add it. The card is drawn in the operator’s own conversation and nowhere else, and the room is told one fixed sentence saying where the answer is given — the same sentence whether that directory exists, is a file, or overlaps something.',
       },
       {
+        k: 'What the card’s Yes does',
+        v: 'Three things at once: the entry is written to config.yaml and stays until you remove it, the topic appears, and the session opens empty. Nothing has reached the coding agent yet, so the message after it is the actual task. The card expires in ten minutes and takes the waiting task with it.',
+      },
+      {
         k: 'Where the session is born',
         v: 'In the room the task came from, not in the conversation where the card was answered.',
+      },
+      {
+        k: 'What is refused before a card exists',
+        v: 'A path that is not a directory, a last segment that cannot be a slug, a slug or path already taken, and a folder that contains a workspace you already have — approving ~/Project is not meaningfully smaller than approving the disk. A folder inside an existing workspace does get a card, carrying the cost: two scopes over one directory, so /lock on one leaves the other’s trust window open and memory under one does not surface under the other.',
       },
       {
         k: 'One run at a time',

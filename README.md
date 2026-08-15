@@ -19,7 +19,7 @@
   <a href="README.id.md">🇮🇩 Bahasa Indonesia</a>
 </p>
 
-> **v1.0.** Telegram, Discord, and WhatsApp reach the coding agent on your machine over one contract, with seven agent presets, memory, more than one workspace, and a read-only dashboard on loopback. Four of the seven agents have been run here against a live binary, no Discord credential and no WhatsApp number has ever been used here, and not one field gate has been answered by anyone, the author included. Attachments are still absent. The npm registry holds 0.2.1 until the owner publishes.
+> **v1.5, unproven.** Telegram, Discord, and WhatsApp reach the coding agent on your machine over one contract, with nine agent presets, memory, more than one workspace, attachments, and a read-only dashboard on loopback. Five of the nine agents have completed a turn here against a live binary, over six routes. No Discord credential and no WhatsApp number has ever been used here, and not one field gate has been answered by anyone, the author included. The registry serves the current release.
 
 ---
 
@@ -80,7 +80,7 @@ port, install a service, or change your own model or provider configuration.
 
 The agent narrates each step and waits for you to approve it, so read what it proposes before you say yes. Create the bot token with [@BotFather](https://t.me/BotFather), and do not paste it into an issue or into an AI chat.
 
-Any coding agent can do the installing. What Caraka then runs is one of the seven it has a preset for, signed in, on Node.js 22+ with Git. Claude Code, Codex, aider, and goose are the ones verified here.
+Any coding agent can do the installing. What Caraka then runs is one of the nine it has a preset for, signed in, on Node.js 22+ with Git. Claude Code, Codex, aider, goose, and opencode are the ones verified here.
 
 Some coding-agent clients can hold an interactive terminal open for the wizard. If yours cannot, run the one `init` command yourself and let the agent continue with `doctor` and `start`. That boundary is what keeps the token out of the conversation transcript.
 
@@ -109,7 +109,7 @@ caraka start
 
 ## Using it
 
-Send ordinary text to give the agent a task. Thirteen commands cover the rest:
+Send ordinary text to give the agent a task. Fourteen commands cover the rest:
 
 | | |
 |---|---|
@@ -125,13 +125,14 @@ Send ordinary text to give the agent a task. Thirteen commands cover the rest:
 | `/memori` | list what memory holds for this workspace |
 | `/yolo <duration>` | open a Caraka trust window for a stated duration |
 | `/lock` | close the trust window now |
+| `/close` | close this session’s topic without deleting it, so the transcript stays readable |
 | `/help` | explain how to work here, with examples. In a room the answer is a different one: what the room refuses, what everyone in it can read, and what the channel does and does not deliver |
 
 Permission requests arrive as **Allow once** and **Reject** buttons. Each callback is signed, bound to the chat principal and the session, expires after ten minutes, and works once. Where a channel has no buttons at all — WhatsApp — the card carries a four-character code Caraka generated and printed nowhere else, spent once against the same database update. A plain word is never a decision on any channel.
 
 ## Why it's small
 
-One protocol does the heavy lifting. [ACP](https://agentclientprotocol.com) is the LSP-equivalent for coding agents: JSON-RPC 2.0 over stdio, created by Zed, co-led by JetBrains, with 28+ agents in its registry. Writing **one** ACP client is what keeps the door open to the rest of them, and adding an agent on the CLI route is one YAML file in `presets/agents/` rather than a change to the core. Seven presets ship; three of them are transcribed from research and have never been run here.
+One protocol does the heavy lifting. [ACP](https://agentclientprotocol.com) is the LSP-equivalent for coding agents: JSON-RPC 2.0 over stdio, created by Zed, co-led by JetBrains, with 28+ agents in its registry. Writing **one** ACP client is what keeps the door open to the rest of them, and adding an agent on the CLI route is one YAML file in `presets/agents/` rather than a change to the core. Nine presets ship; four of them are transcribed from research and have never completed a turn here, and each says so inside its own file.
 
 ACP also ships `session/request_permission`, so the approval system is not something Caraka invents. It renders the protocol's own permission requests as buttons in your chat.
 
@@ -142,6 +143,33 @@ Since 2026, Telegram bots can create forum topics **in a private chat, with no a
 One session = one topic. Caraka names it, marks its state with a glyph in the name (▸ running · ⏸ needs you · ✓ done · ✗ failed · ⊘ cancelled), and posts a closing summary. The icon colour is chosen when the topic is created — Telegram's `editForumTopic` can change a topic's name and emoji afterwards, but not its colour. The topic list becomes a status board you can read at a glance without opening anything.
 
 Discord maps the same session to one public thread. WhatsApp has neither, so the same task runs in linear mode behind a `[workspace · #id]` header, and `/status` there names the five most recent sessions the conversation is holding.
+
+### One task, one topic, in a group
+
+The whole recipe is one line:
+
+```
+/new@kopipagi_bot ~/Project/kopipagi.id Task Kopi Pagi
+```
+
+| Part | What it is |
+|---|---|
+| `/new` | open a new session |
+| `@kopipagi_bot` | which bot. This is Telegram's own way to aim a slash command, and you need it when more than one bot sits in the group |
+| `~/Project/kopipagi.id` | the folder on your machine the agent works in |
+| `Task Kopi Pagi` | what the topic is called |
+
+The folder is read as a folder only because it is an absolute path once `~/` expands. A first word that is not one is part of the title instead — `/new fix the login bug` opens a session by that name, not a folder called `fix`. The title is cut at 72 characters, because that is what a topic name holds.
+
+**The first time you name a folder this way, Caraka does not answer in the group.** It sends a confirm card to your own private chat with the bot, and leaves one line in the group saying that is where the answer is given. Press **Yes** there and three things happen: the entry is written to `config.yaml`, the topic appears in the group, and the session opens empty — nothing has reached the coding agent yet, so your next message is the actual task. The card expires in ten minutes, and an expired card takes the queued task with it.
+
+That card is in a direct message rather than in the group for two reasons, and either one is enough. Its answer branches on what is on your disk — whether that directory exists at all — which every member of the room would otherwise get to read. And anyone in the room can clear a card's buttons before you see it.
+
+Naming a folder by path is the **operator's** form: the first account in that channel's `allowFrom`. Everyone else on the allowlist names folders by slug, and `/ws` lists them. Once the folder is added the chat sticks to it, so the next task is just `/new@kopipagi_bot Another task`.
+
+Caraka refuses before drawing any card when the path is not a directory, when its last segment cannot be used as a slug, when that slug or path is already taken, or when the folder **contains** a workspace you already have — approving `~/Project` is not meaningfully smaller than approving the disk. A folder **inside** an existing workspace does get a card, with the cost printed on it: two scopes over one directory means `/lock` on one does not close the other's trust window, and memory saved under one does not surface under the other.
+
+Four things have to be true before a topic can appear at all: the group is on the chat allowlist in `config.yaml`, `topics: true` is set for that channel, the group itself is a forum, and Caraka is an admin there with **Manage topics**. The last two are the group owner's settings, not Caraka's — it reads the flag Telegram sends and cannot set it. Miss any of them and nothing fails: the session runs linear behind a `[workspace · #id]` header instead. The long version, including what each refusal reads like, is at [caraka.dev/guide](https://caraka.dev/guide).
 
 ## Safe by default
 
@@ -170,13 +198,13 @@ Both obeyed perfectly. Both were right according to the instructions they held. 
 
 That is why this project has approvals and an audit trail. See [docs/brand.md](docs/brand.md).
 
-## What v1.0 does not give you
+## What v1.5 does not give you
 
 **Proof that it works for anyone else.** Every phase of [roadmap.md](docs/roadmap.md) carries shipped code, and every phase still holds a gate that no repository can answer: a week of daily use, five recorded setup sessions, an A/B across twenty tasks, twenty beta developers, fourteen days on a real WhatsApp number. Each one was moved past its release by the owner's decision, with the date written down, rather than ticked. Reaching 1.0 says the code landed; it says nothing about use.
 
-**Live verification of most of the surface.** Four of the seven presets have answered a live binary here — Claude Code on both its routes, Codex and aider on the CLI, goose over ACP — and every one of the four needed the run: two of them shipped flags the binary rejects, and one shipped a security control that had silently stopped applying. The other three got as far as an ACP handshake here and no further, because a full turn needs a paid account nobody here has, and all three say `belum diverifikasi` inside their own files. No live Discord credential and no WhatsApp number has ever been used: every check on both answers a fake transport.
+**Live verification of most of the surface.** Five of the nine presets have answered a live binary here, over six routes — Claude Code on both its routes, Codex and aider on the CLI, goose and opencode over ACP — and the runs were what corrected them: two of them shipped flags the binary rejects, and one shipped a security control that had silently stopped applying. Three of the other four got as far as an ACP handshake and no further, because a full turn needs a paid account nobody here has; the fourth is a CLI route whose only sign-in is a Google OAuth URL with a sixty-second window no unattended run has hit. All four say `belum diverifikasi` inside their own files. No live Discord credential and no WhatsApp number has ever been used: every check on both answers a fake transport.
 
-**Attachments**, and an MCP inbox for IDE agents. Both are still specified and not built.
+**An MCP inbox for IDE agents.** Still specified and not built. Attachments did ship, at v1.3: a photo reaches the agent as image bytes on the ACP route, or through a preset that names an image flag. The bytes land under the Caraka home at 0700 with a generated name and never in the workspace, anything past Telegram’s 20 MB ceiling is refused before a byte is fetched, and a prompt carrying one never takes the trust window’s auto-approve. On the Claude Code CLI route it degrades to a sentence naming what arrived, because that route’s reader refuses a path outside the project directory.
 
 **Memory** did ship, at v0.3, through [Titen](https://titen.dev) — agent memory that never flattens a conclusion into its evidence, with deterministic claim extraction and no model in the loop — or through a local SQLite provider, or not at all. Titen and Caraka are written by the same author: one remembers, one is sent. The Titen adapter answered a live Titen 0.7.3 for the first time on 10 August 2026, and every field it sent was wrong: it had only ever been checked against a mock that agreed with the same wrong document. What it does today is write. Reading back needs claims, which nothing here creates, so a `provider: titen` install stores observations and recalls nothing.
 
