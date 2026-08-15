@@ -437,6 +437,15 @@ test.describe('the comps still decide the layout', () => {
     // never existed, and four cards on /brand/og that previewed sentences the
     // generator had stopped drawing, and not one of those reflowed anything.
     // Measured Chromium at 1440x900 against `npm run build`.
+    //
+    // 1.5.6 moved one: /status +128 to 8855. Its card went on and 1.5.1's came
+    // off into the archive line, which is the trade the five-card bound makes,
+    // and +128 against the ~600 a release cost before the bound is the bound
+    // holding. The fidelity test is what said the sixth card had to move, and
+    // this time it said so before the release rather than after it — it went red
+    // on 1.5.6 having a CHANGELOG heading and no card, from inside `npm run
+    // verify`, which is the point of that gate reaching `site/` at all.
+    // Measured Chromium at 1440x900.
     const EXPECTED: Record<string, number> = {
       // v1.2 copy, except the two v1.3 moved — measured from the site (see above)
       '/': 6627,
@@ -446,7 +455,7 @@ test.describe('the comps still decide the layout', () => {
       '/install': 5465,
       '/security': 6235,
       '/whatsapp-risk': 6857,
-      '/status': 8727,
+      '/status': 8855,
       '/brand/readme': 5557,
       // still measured against the comp
       '/story': 5734,

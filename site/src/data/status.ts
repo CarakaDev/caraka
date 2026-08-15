@@ -20,7 +20,7 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.5.5', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.5.6', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Nine presets load; six routes across five agents have completed a turn
   // against a live binary here — Claude Code over ACP and over its CLI route,
@@ -102,7 +102,7 @@ export const phases: Phase[] = [
   // seventeen more releases shipped inside it, so the page answered "v1.0" to a
   // reader looking at 1.5.5. The gate below is what keeps phase 7 open, not the
   // version, and roadmap.md now lists what shipped between the two numbers.
-  { n: '7', title: 'Public release · v1.0 → v1.5.5', dur: '2 weeks', live: true, ...shipped,
+  { n: '7', title: 'Public release · v1.0 → v1.5.6', dur: '2 weeks', live: true, ...shipped,
     q: 'Is it ready to be trusted by strangers?',
     gate: 'Every goal in prd.md is met and measured. Fifteen agents are not covered: nine presets ship and five have completed a turn against a live binary here, over six routes — Claude Code over ACP and over its CLI route, Codex and aider on the CLI, goose and opencode over ACP. Four have never run here at all. Taking the release to the Indonesian developer community and to the ACP ecosystem is the step nothing in a repository can perform.',
     range: r(7, 3, 26) },
@@ -133,6 +133,19 @@ export const releases = [
         'Watch the dashboard swap a panel in a real browser with the CSP live',
         'Run fourteen days on a real WhatsApp number with no ban and no manual relink, or publish the honest finding that makes Cloud API the default',
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
+      ] },
+    ] },
+  { v: '1.5.6', state: 'unproven', date: '15 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'CHANGED', tone: '#FFD67E', items: [
+        'The release gate now reads this page. The test that fails on a version with a changelog heading and no card here has existed for several releases, but the gate a release runs never touched the site, so 1.4.2 and 1.5.0 both went out with their own version missing from it. CI said so hours after the push, and 1.5.0 was fixed sixteen hours later. The check runs before publish now, and it caught this release',
+        'The release line is held by a test rather than by sweeping. Every MIT · vX.Y, unproven on this site and the status badge on both READMEs must equal the version in package.json. That badge is the one a reader clicks to reach roadmap.md, and it read v1.0 for seventeen releases while four other surfaces read v1.5',
+        'Forty-one claims in roadmap.md and on this site now match the code. Seven presets became nine and four agents over five routes became five over six, because opencode and antigravity landed in 1.4.0 and no count moved with them. The install and guide pages said init scans PATH for the nine presets when it scans seven binaries and three presets are never looked for. The UI kit printed caraka ws add as the exact command for an empty state, and no such verb has ever existed',
+        'roadmap.md records what shipped after v1.0. The phase list stopped at phase 7, so seventeen releases appeared nowhere in it and this page answered v1.0 to a reader looking at 1.5.5',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'No file that npm ships changed. The package carries bin, dist, presets and the dashboard assets; the documentation and the changelog are not among them, and src did not move. Installing this over 1.5.5 changes nothing you can run. It exists so the newest tag in the registry belongs to a repository whose account of itself is accurate',
+        'Eleven boxes in roadmap.md are still open and not one was ticked. Every one is a field gate no repository can close, and what was wrong was the prose inside them rather than their state',
       ] },
     ] },
   { v: '1.5.5', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
@@ -198,24 +211,13 @@ export const releases = [
         'After /close, ordinary members cannot post in that topic. That is what closing means on Telegram; the next session starts with /new, and an admin who wants to continue can reopen the topic from their own client',
       ] },
     ] },
-  { v: '1.5.1', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
-    groups: [
-      { label: 'FIXED', tone: '#FFD67E', items: [
-        'The folder form refused the only layout most people have. 1.5.0 refused a proposed folder that overlapped an existing workspace in either direction, and only one of those directions is dangerous. A path that CONTAINS a workspace widens a grant \u2014 that is the rooted allowlist an earlier decision rejected with measurements, one trust window away from every repository beneath it. A path INSIDE a workspace grants nothing new: the outer one already reaches it, so the inner one is a narrower key rather than a wider one',
-        'Refusing the inner direction made the feature useless for the commonest setup, because init writes one workspace at the directory it was run in \u2014 and on the first installation to try this, that was the parent of every folder its owner works in. A folder inside a workspace draws a card now; a folder that contains one is still refused, still with case folded, and still re-checked when the card is pressed',
-        'The card says what nesting costs rather than the rule deciding on the operator\u2019s behalf: one directory with two scopes means /lock on one does not close the other\u2019s trust window, and memory saved under one does not surface under the other. That is worth reading before pressing yes, and it was never a reason to refuse',
-      ] },
-      { label: 'LIMITED', tone: '#FFD67E', items: [
-        '/lock still closes only the workspace it resolves, so a window open on the outer workspace survives a /lock in the inner one. Its own concern and its own fix',
-        'Merging two scopes over one directory is not attempted. Nested workspaces stay two keys: two trust windows, two memory scopes',
-      ] },
-    ] },
-  { v: '1.5.0 → 0.0.0', state: 'in CHANGELOG.md', date: '7–14 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
+  { v: '1.5.1 → 0.0.0', state: 'in CHANGELOG.md', date: '7–14 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
     groups: [
       { label: 'WHERE THE FULL ENTRIES ARE', tone: '#FFD67E', items: [
         'CHANGELOG.md in the repository, linked at the foot of this page. It carries every release below at the length it was written in; what is here is one line each, and nothing has been dropped from the history',
       ] },
       { label: 'SHIPPED', tone: '#8EEE98', items: [
+        '1.5.1 · 14 August 2026 — the folder form refused the only layout most people have',
         '1.5.0 · 14 August 2026 — a session got its own topic, and a finished one closed it',
         '1.4.2 · 14 August 2026 — a group could not open a topic, because init had read a private-chat setting as the answer for every container',
         '1.4.1 · 14 August 2026 — a setting that describes direct messages was switching topics off in groups',

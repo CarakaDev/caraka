@@ -168,7 +168,7 @@ Lima baris mesin fase ini tercentang saat `v0.6.0` dirilis. Yang tersisa adalah 
 - [x] `SECURITY.md`, `CONTRIBUTING.md`, lisensi MIT, repo publik
 - [x] Artikel pembanding jujur: "Kapan pakai OpenClaw, kapan pakai Caraka" — `docs/openclaw-vs-caraka.md` dan pasangan Inggrisnya, ditulis supaya memilih OpenClaw adalah kesimpulan yang ia tawarkan. Halaman `/compare` di situs (`site/src/pages/compare.astro`, isinya `site/src/data/compare.ts`) sudah lebih dulu memuat tabel "kalau kamu mau X, pakai Y" yang mengarahkan tiga kebutuhan ke OpenClaw dan Hermes
 - [x] Kontribusi balik: catatan integrasi ke ekosistem ACP & Titen — `docs/integrasi-ekosistem.md` dan pasangan Inggrisnya: yang klien ini butuhkan dari ACP dan dari Titen, yang tidak bisa ia sebut dengan kosakata protokolnya sendiri, dan penyebutan bahwa separuh pasangan itu ditulis penulis yang juga menulis separuh lainnya. Mengirimkannya ke hulu belum dilakukan
-- [ ] Peluncuran: komunitas dev Indonesia → ekosistem ACP/MCP → publik — belum dimulai pada 15 Agustus 2026. Yang dulu ditulis mendahuluinya sudah lewat: baris ini pernah berbunyi "registry npm masih memegang 1.1.2, jadi apa pun yang diumumkan hari ini menunjuk ke versi yang bukan versi ini". Empat belas versi menyusul kalimat itu; registry memegang `1.5.5` pada 15 Agustus 2026, sama dengan `package.json` dan sama dengan judul teratas `CHANGELOG.md`, jadi pengumuman hari ini menunjuk ke versi ini. `npm publish` tetap milik pemilik untuk setiap rilis berikutnya. Yang tersisa adalah peluncurannya sendiri, satu-satunya langkah di baris ini yang tidak bisa dikerjakan dari repositori. Langkah pasca-rilis sejak keputusan pemilik 8 Agustus 2026
+- [ ] Peluncuran: komunitas dev Indonesia → ekosistem ACP/MCP → publik — belum dimulai pada 15 Agustus 2026. Yang dulu ditulis mendahuluinya sudah lewat: baris ini pernah berbunyi "registry npm masih memegang 1.1.2, jadi apa pun yang diumumkan hari ini menunjuk ke versi yang bukan versi ini". Empat belas versi menyusul kalimat itu, dan registry memegang `1.5.5` pada 15 Agustus 2026 — satu rilis di belakang `package.json`, yang menunggu `npm publish` milik pemilik, dan chip npm di situs sengaja ikut menunggu di sana (`site/src/data/readme.ts`). Jaraknya satu rilis, bukan empat belas, jadi pengumuman hari ini sudah menunjuk ke baris rilis ini. `npm publish` tetap milik pemilik untuk setiap rilis berikutnya. Yang tersisa adalah peluncurannya sendiri, satu-satunya langkah di baris ini yang tidak bisa dikerjakan dari repositori. Langkah pasca-rilis sejak keputusan pemilik 8 Agustus 2026
 
 **Definition of done:** seluruh sasaran G1–G6 di `prd.md` terpenuhi dan terukur.
 
@@ -178,7 +178,7 @@ Peluncuran ke komunitas dev Indonesia dan ke ekosistem ACP belum dijalankan; ia 
 
 ## Sesudah v1.0 — yang sudah dikirim
 
-Fase 7 tidak pernah ditutup, dan tujuh belas rilis mendarat di dalamnya. Daftar fase di atas berhenti di `v1.0` karena itu memang rencananya; yang di bawah ini adalah apa yang terjadi sesudah rencana itu habis. Tidak ada satu pun yang membuka fase baru — semuanya jatuh di dalam gerbang Fase 7 yang masih terbuka, dan tidak satu pun menjawabnya.
+Fase 7 tidak pernah ditutup, dan delapan belas rilis mendarat di dalamnya. Daftar fase di atas berhenti di `v1.0` karena itu memang rencananya; yang di bawah ini adalah apa yang terjadi sesudah rencana itu habis. Tidak ada satu pun yang membuka fase baru — semuanya jatuh di dalam gerbang Fase 7 yang masih terbuka, dan tidak satu pun menjawabnya.
 
 Bentuknya berubah di 1.3.0. Sampai 1.2.0 rilis datang dari spesifikasi yang ditulis lebih dulu; sejak 1.3.0 sebagian besar datang dari laporan pemakaian sungguhan di instalasi orang lain — isu #9, #10, dan #11 masing-masing menghasilkan rilisnya sendiri. Itu bukan perubahan proses yang diputuskan, melainkan yang terjadi begitu ada yang memakai.
 
@@ -186,6 +186,7 @@ Setiap entri di bawah dicatat panjang lengkap di [`../CHANGELOG.md`](../CHANGELO
 
 | Versi | Tanggal | Apa |
 |---|---|---|
+| `1.5.6` | 15 Agu 2026 | Tidak ada yang bergerak di runtime; yang bergerak adalah semua yang menjelaskannya, dan gerbang yang selama ini membiarkan sebuah rilis terbit sambil salah menjelaskan dirinya |
 | `1.5.5` | 14 Agu 2026 | Dua laporan dari satu instalasi: satu request yang jatuh membuat sesi tergantung selamanya, dan id rollout yang sudah tidak ada membuatnya rusak permanen |
 | `1.5.4` | 14 Agu 2026 | Sembilan kalimat menyebut `Claude` apa adanya, dan instalasi yang menjalankan codex membacanya di setiap tugas |
 | `1.5.3` | 14 Agu 2026 | Instalasi yang config-nya `agent: codex` menjalankan Claude, dan mengatakannya |
@@ -204,7 +205,7 @@ Setiap entri di bawah dicatat panjang lengkap di [`../CHANGELOG.md`](../CHANGELO
 | `1.1.1` | 10 Agu 2026 | Satu preset salah dengan cara yang hanya bisa ditunjukkan dengan menjalankannya |
 | `1.1.0` | 8 Agu 2026 | Empat kotak yang terbuka sejak spesifikasi, ditutup dengan kode: gerbang mode kebijakan di jalur run, pairing deep-link, `doctor --fix`, dan `uninstall` |
 
-Yang tidak bergerak sama sekali di tujuh belas rilis itu: tidak satu pun gerbang lapangan terjawab. Tidak ada minggu dogfood, tidak ada lima rekaman setup, tidak ada A/B memori atas dua puluh tugas, tidak ada dua puluh developer beta, tidak ada empat belas hari di nomor sungguhan, dan peluncurannya belum dimulai. Itulah sebabnya baris keadaan rilis di situs berbunyi satu kata — `unproven` — dan bukan kata kematangan yang harus diperoleh gerbang-gerbang itu.
+Yang tidak bergerak sama sekali di delapan belas rilis itu: tidak satu pun gerbang lapangan terjawab. Tidak ada minggu dogfood, tidak ada lima rekaman setup, tidak ada A/B memori atas dua puluh tugas, tidak ada dua puluh developer beta, tidak ada empat belas hari di nomor sungguhan, dan peluncurannya belum dimulai. Itulah sebabnya baris keadaan rilis di situs berbunyi satu kata — `unproven` — dan bukan kata kematangan yang harus diperoleh gerbang-gerbang itu.
 
 ---
 

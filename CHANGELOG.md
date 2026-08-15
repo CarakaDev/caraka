@@ -4,6 +4,22 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.6] — 2026-08-15
+
+Nothing in the runtime moved. What moved is everything that describes it, and the gate that had been letting a release go out describing itself wrongly.
+
+### Changed
+
+- **`npm run verify` ends with the site's own test run.** `site/test/fidelity.test.js` fails on a version that has a `## [x.y.z]` heading in this file and no line on `/status`, and it has done so for several releases. What it could not do is stop one, because the gate a release actually runs — `prepublishOnly` calling `verify` — never touched `site/`. Two releases went out with their own version missing from the page: 1.4.2 and 1.5.0. CI caught both, hours after the push, and 1.5.0 was fixed sixteen hours later. The check now runs where the heading is written.
+- **The release line is held by a test instead of by sweeping.** Every `vX.Y, unproven` on the site, and the status badge on both READMEs, must equal the version in `package.json`. That badge is the one a reader clicks to reach `docs/roadmap.md`, and it read `v1.0` for seventeen releases while four other surfaces read `v1.5`. `site/AGENTS.md` had named four surfaces that must agree; the badge was the fifth and was unnamed, which is the condition that file already records as the cause of the previous drift.
+- **Forty-one claims in `docs/roadmap.md` and on caraka.dev now match the code.** Nine `spec/*.md` citations pointed at files that moved to `done/` when 1.0.0 shipped. Seven presets became nine, and four agents over five routes became five over six — `opencode` and `antigravity` landed in 1.4.0 and no count moved with them, including the header of the `presets` job in CI. `has_topics_enabled` had stopped being the bot-wide gate in 1.4.1. `uninstallTargets` names eight paths, not seven. The security checklist closed on 8 August, the date its own rows carry. On the site, `/install` and `/guide` said `init` scans PATH for the nine presets when `knownBinaries` holds seven and three presets are never looked for; the UI kit printed `caraka ws add` as the exact command for an empty state and no such verb has ever existed; `/compare` called the core capped at roughly 8,000 lines when it measures 10,179 and the project records each overrun rather than raising the ceiling.
+- **`docs/roadmap.md` records what shipped after v1.0.** The phase list stopped at Fase 7, so the seventeen releases between 1.0.0 and 1.5.5 appeared nowhere in it, and `/status` answered `v1.0` to a reader looking at 1.5.5. Those seventeen now have a section, one line each, and the phase row reads `v1.0 → v1.5.6`. The gate is what keeps phase 7 open, not the version.
+
+### Limited
+
+- **No file that npm ships changed.** `files` carries `assets/dashboard`, `bin`, `dist` and `presets`; `docs/` and this changelog are not among them, and `src/` did not move, so `dist/` rebuilds identically. Installing this over 1.5.5 changes nothing you can run. It exists so the newest tag in the registry belongs to a repository whose account of itself is accurate.
+- Eleven boxes in `docs/roadmap.md` are still open and none of them was ticked. Every one is a field gate no repository can close — a dogfood week, five recorded setup sessions, a memory A/B over twenty tasks, twenty beta developers, fourteen days on a real WhatsApp number, and the launch itself. What was wrong was the prose inside them, not their state.
+
 ## [1.5.5] — 2026-08-14
 
 Two reports from the same installation, both reproduced here before either was touched.
