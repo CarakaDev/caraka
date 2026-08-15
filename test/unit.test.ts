@@ -5542,6 +5542,14 @@ test("a downloaded attachment lands under the run directory at 0700, named by Ca
     // The URL that carried the bot token was built and spent inside the adapter.
     assert.ok(asked.some((url) => url.includes("/file/bot")));
     // AC-5.1: the run finished, so its directory went with it, and `inbox` stays.
+    // Polled rather than read once. The teardown that removes the run's own
+    // directory belongs to the run, and the `delay(120)` above waits for the
+    // prompt, not for that — the two are only ordered on a machine fast enough
+    // to make it look that way. CI run 31869377134 on 15 August 2026 read the
+    // directory first and failed on `['b3a6b0331a21']`, a name that was about to
+    // go. The bound is what keeps this a test: a directory that genuinely leaks
+    // still fails, one second later.
+    for (let i = 0; i < 100 && (await readdir(runDirectory)).length > 0; i++) await delay(10);
     assert.deepEqual(await readdir(runDirectory), []);
   } finally {
     if (oldHome === undefined) delete process.env.CARAKA_HOME;
