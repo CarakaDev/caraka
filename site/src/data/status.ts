@@ -97,7 +97,12 @@ export const phases: Phase[] = [
     q: "Can we ship WhatsApp without burning anyone's number?",
     gate: 'Fourteen days of real use with no ban and no manual relink, or an honest finding that makes Cloud API the recommended default. No number has been linked, so the answer is open.',
     range: r(6, 3, 26) },
-  { n: '7', title: 'Public release · v1.0', dur: '2 weeks', live: true, ...shipped,
+  // The title carries both ends of the phase because the phase never closed.
+  // v1.0 published on 8 August 2026 and this row read `v1.0` for a week while
+  // seventeen more releases shipped inside it, so the page answered "v1.0" to a
+  // reader looking at 1.5.5. The gate below is what keeps phase 7 open, not the
+  // version, and roadmap.md now lists what shipped between the two numbers.
+  { n: '7', title: 'Public release · v1.0 → v1.5.5', dur: '2 weeks', live: true, ...shipped,
     q: 'Is it ready to be trusted by strangers?',
     gate: 'Every goal in prd.md is met and measured. Fifteen agents are not covered: nine presets ship and five have completed a turn against a live binary here, over six routes — Claude Code over ACP and over its CLI route, Codex and aider on the CLI, goose and opencode over ACP. Four have never run here at all. Taking the release to the Indonesian developer community and to the ACP ecosystem is the step nothing in a repository can perform.',
     range: r(7, 3, 26) },

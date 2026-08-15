@@ -69,7 +69,7 @@ export const chapters: Chapter[] = [
       },
       {
         k: 'A coding agent, signed in',
-        v: 'init scans PATH for the nine presets and one of them is enough. Claude Code over the official ACP adapter is the shortest route, and five of the nine have completed a turn against a live binary here.',
+        v: 'init scans PATH for the seven agent binaries it knows and one of them is enough. Nine presets ship, Claude Code over the official ACP adapter is the shortest route, and five of the nine have completed a turn against a live binary here.',
       },
       {
         k: 'A bot of your own',

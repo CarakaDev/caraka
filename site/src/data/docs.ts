@@ -100,7 +100,7 @@ export const chapters: Chapter[] = [
     cards: [
       { tag: 'SHIPPED · ACP v1', tone: '#FF7A5E', title: 'Official adapter', body: '@agentclientprotocol/sdk 1.3.0 and claude-agent-acp 0.63.0 are pinned runtime dependencies.', bg: '#12100F', border: '#2B1612', range: r(0, 4, 26) },
       { tag: 'SESSION', tone: '#8EEE98', title: 'New and load', body: 'Each chat route stores the ACP session id. A missing old session is replaced without breaking the route.', bg: '#0C1116', border: '#171C22', range: r(1, 4, 26) },
-      { tag: 'CLI FALLBACK', tone: '#8EEE98', title: 'Seven presets, one YAML each', body: 'An agent without ACP is spawned from a preset in presets/agents/ and answers in one text update. The MCP inbox is still roadmap work.', bg: '#0C1116', border: '#171C22', range: r(2, 4, 26) },
+      { tag: 'CLI FALLBACK', tone: '#8EEE98', title: 'Nine presets, one YAML each', body: 'An agent without ACP is spawned from a preset in presets/agents/ and answers in one text update. The MCP inbox is still roadmap work.', bg: '#0C1116', border: '#171C22', range: r(2, 4, 26) },
     ],
     note: 'No model abstraction or agent loop exists in Caraka. ACP transports prompts, updates, permission requests, and cancellation.',
   },

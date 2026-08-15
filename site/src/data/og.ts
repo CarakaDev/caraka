@@ -22,7 +22,7 @@ export const matrix = [
 
 export const legend = [
   { aksara: 'ꦲꦤꦕꦫꦏ', gloss: 'two envoys', ink: '#F6F9FC' },
-  { aksara: 'ꦢꦠꦱꦮꦭ', gloss: 'a difference', ink: '#D2D8DF' },
+  { aksara: 'ꦢꦠꦱꦮꦭ', gloss: 'they disagreed', ink: '#D2D8DF' },
   { aksara: 'ꦥꦝꦗꦪꦚ', gloss: 'equally strong', ink: '#B2BCC6' },
   { aksara: 'ꦩꦒꦧꦛꦔ', gloss: 'both fell', ink: '#7A848F' },
 ]
@@ -53,7 +53,7 @@ export const threats = Array.from({ length: 15 }, (_, i) => {
 })
 
 // Comp lines 549-554 script a Gemini install offer and a `/mulai` greeting;
-// init offers no Gemini install and /mulai is not one of the eight commands, so
+// init offers no Gemini install and /mulai is not one of the shipped commands, so
 // the lines follow the generator's wizard transcript
 // (site/scripts/gen-assets.mjs:455-462).
 export const term = [
@@ -84,7 +84,7 @@ export const phases = [
   { n: '4', glyph: '●', name: 'Abstraction', tone: '#E2452C', ink: '#F6F9FC', fill: '100%' },
   { n: '5', glyph: '●', name: 'Closed beta', tone: '#E2452C', ink: '#F6F9FC', fill: '100%' },
   { n: '6', glyph: '●', name: 'WhatsApp', tone: '#E2452C', ink: '#F6F9FC', fill: '100%' },
-  { n: '7', glyph: '◐', name: 'Public 1.0', tone: '#E2452C', ink: '#F6F9FC', fill: '100%' },
+  { n: '7', glyph: '◐', name: 'Public release', tone: '#E2452C', ink: '#F6F9FC', fill: '100%' },
 ]
 
 export const meta =

@@ -178,7 +178,7 @@ export const term = [
   { t: '$ npx caraka init        # your coding agent hands this one to you', tone: '#5D666F', range: r(0, 2.4, 22) },
   { t: '', tone: '#5D666F', range: r(1, 2.4, 22) },
   // comp:535 reads `caraka · v0.1.0`; `VERSION` in src/cli.ts reads the
-  // `version` in package.json, which is 1.3.3.
+  // `version` in package.json, which is what the line below carries.
   { t: 'caraka · v1.5.5', tone: '#F6F9FC', mark: 'ꦕꦫꦏ', markTone: '#E2452C', range: r(2, 2.4, 22) },
   { t: '', tone: '#5D666F', range: r(3, 2.4, 22) },
   { t: 'agent · found on PATH', tone: '#7A848F', mark: '✔', markTone: '#8EEE98', range: r(4, 2.4, 22) },

@@ -18,7 +18,7 @@ export const SITE = {
 /**
  * The links in the fixed header. `SiteHeader.astro` renders exactly this, on
  * every page, and `MobileMenu.astro` reads the same array — so a route added
- * here reaches all eight headers and nothing else is edited.
+ * here reaches all ten headers and nothing else is edited.
  *
  * Two entries are not in any comp. Guide has none, because the comps were drawn
  * when four content routes were all there were. Home is here so the page being

@@ -266,7 +266,7 @@ a:focus-visible > .hv-tick { background: #FF7A5E; width: 22px; }
    be.
 
    It lives in global.css rather than a page stylesheet because the header is
-   the one element all eight pages share, and `ck-nav-ping` is a name no comp
+   the one element all ten pages share, and `ck-nav-ping` is a name no comp
    uses — the rule in site/AGENTS.md guards against the nine keyframe names that
    carry different values per mockup, and this is not one of them. */
 .ck-nav {
@@ -399,11 +399,12 @@ a:focus-visible > .hv-tick { background: #FF7A5E; width: 22px; }
 @media (max-width: 940px) {
   .ck-menu { display: block; }
 
-  /* Seven pages carry `display: flex` inline on their nav, which beats the
-     comps' own `@media (max-width: 620px) { [data-navlinks] { display: none } }`
-     — which is why those headers overflow by 82–141px today and drop the
-     GitHub link off the right edge. !important is the only thing that reaches
-     an inline declaration. */
+  /* All ten pages carry `display: flex` inline on their nav, written once by
+     SiteHeader.astro, and an inline declaration beats the comps' own
+     `@media (max-width: 620px) { [data-navlinks] { display: none } }`. That is
+     why the seven headers this was first measured against overflowed by
+     82–141px and dropped the GitHub link off the right edge. !important is the
+     only thing that reaches an inline declaration. */
   [data-navlinks] { display: none !important; }
 }
 

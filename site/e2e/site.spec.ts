@@ -426,6 +426,17 @@ test.describe('the comps still decide the layout', () => {
     // landing footer had room in its wrap, and /install's had four. Measured 14
     // August 2026, Chromium at 1440x900, against `rm -rf dist && npm run
     // build`, twice, identical both times.
+    //
+    // The 15 August 2026 accuracy sweep moved one: /brand/readme −24 to 5557.
+    // Its repo card said Claude Code is "the shortest of the five routes proven
+    // here", conflating the five agents with the six routes they were proven
+    // over; "six" is one character shorter in that wrap and the paragraph came
+    // back a line. Thirteen other routes held, and that is the finding worth
+    // recording — the same sweep corrected the preset count on /docs, the
+    // PATH-scan sentence on /install and /guide, a command on the UI kit that
+    // never existed, and four cards on /brand/og that previewed sentences the
+    // generator had stopped drawing, and not one of those reflowed anything.
+    // Measured Chromium at 1440x900 against `npm run build`.
     const EXPECTED: Record<string, number> = {
       // v1.2 copy, except the two v1.3 moved — measured from the site (see above)
       '/': 6627,
@@ -436,7 +447,7 @@ test.describe('the comps still decide the layout', () => {
       '/security': 6235,
       '/whatsapp-risk': 6857,
       '/status': 8727,
-      '/brand/readme': 5581,
+      '/brand/readme': 5557,
       // still measured against the comp
       '/story': 5734,
       '/brand': 10216,

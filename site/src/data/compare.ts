@@ -109,7 +109,7 @@ export const complaints = [
     tag: 'STABILITY',
     quote: 'Every patch would make it worse. A fix for one thing would unfix the other.',
     src: 'Composio, May 2026',
-    answer: 'A core capped at roughly 8,000 lines is small enough that one person can read it in a day. Fewer moving parts is the only reliable way to make a patch predictable.',
+    answer: 'A core budgeted at roughly 8,000 lines — over it today, with every overrun written down rather than the ceiling raised — is still small enough that one person can read it in a day. Fewer moving parts is the only reliable way to make a patch predictable.',
     range: r(4, 4, 28),
   },
   {

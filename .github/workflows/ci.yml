@@ -63,7 +63,7 @@ jobs:
       - run: npm run check
 
   # Every shipped preset, as far as a runner can take one. What a runner cannot
-  # do is let any of them answer, and the seven fail that in three separate
+  # do is let any of them answer, and the nine fail that in four separate
   # ways. The live smoke stays `node scripts/smoke-cli.mjs <id>` on a machine
   # that has the agent, and this is the standing list of why it is not here:
   #
@@ -87,6 +87,13 @@ jobs:
   #                        one.
   #   cursor, amp          a Cursor login and an Amp API key, both from paid
   #                        accounts. Same handshake, same wall.
+  #   opencode,            the two that landed in 1.4.0 on 14 August 2026, and
+  #   antigravity          the fourth way. opencode passed here against 1.18.18
+  #                        over ACP, and needs the same signed-in model account
+  #                        the first group does. antigravity is a 206 MB Go
+  #                        binary whose only sign-in is a Google OAuth URL with
+  #                        a sixty-second paste window — no unattended run has
+  #                        hit it, on a runner or on this machine.
   #
   # So this job stops where honesty does: the loader, the schema, the route
   # every preset declares, and the parsers, against files rather than agents.

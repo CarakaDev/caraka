@@ -1,6 +1,6 @@
 /* Caraka — /brand/og at phone widths.
    ---------------------------------------------------------------------------
-   The comp is a fixed 1424px reference board holding nine 1200×630 cards: no
+   The comp is a fixed 1424px reference board holding eight 1200×630 cards: no
    min(), no clamp(), nothing that yields. Everything below turns the board into
    one column, and nothing below applies above 940px — the whole file is one
    media query, so the desktop render is byte-for-byte what it was.

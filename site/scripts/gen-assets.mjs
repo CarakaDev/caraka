@@ -503,7 +503,7 @@ const PHASES = [
   ['4', 'Abstraction', KESUMBA_500, WHITE, '100%', false],
   ['5', 'Closed beta', KESUMBA_500, WHITE, '100%', false],
   ['6', 'WhatsApp', KESUMBA_500, WHITE, '100%', false],
-  ['7', 'Public 1.0', KESUMBA_500, WHITE, '100%', true],
+  ['7', 'Public release', KESUMBA_500, WHITE, '100%', true],
 ]
 
 const motifPhases = () =>
