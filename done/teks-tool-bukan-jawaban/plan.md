@@ -1,7 +1,7 @@
 # Plan — teks-tool-bukan-jawaban
 
 **Spec:** [`spec.md`](./spec.md)
-· **Tanggal:** 16 Agustus 2026 · **Status:** terverifikasi; publish menunggu persetujuan
+· **Tanggal:** 16 Agustus 2026 · **Status:** selesai
 
 ## Langkah
 
@@ -29,8 +29,8 @@
   `imagesOf` tetap membaca kedua sumber dan tes yang sudah ada dijalankan.
 - Memakai satu string lagi tanpa batas akan menggandakan pertumbuhan memori.
   Kedua string memakai batas 240.000 karakter yang sama dengan buffer sekarang.
-- Publish dan restart tidak dapat dibatalkan dengan satu edit. Keduanya menunggu
-  persetujuan pemilik setelah commit dan push siap.
+- Publish dan restart tidak dapat dibatalkan dengan satu edit. Keduanya baru
+  dijalankan setelah pemilik menyetujuinya, sesudah commit dan push siap.
 
 ## Pemetaan bukti
 
@@ -87,3 +87,22 @@ Tarball kering npm:
 caraka@1.5.8 · 88 entries · 266320 bytes packed
 dist/core/gateway.js included
 ```
+
+Publikasi dan runtime lokal:
+
+```text
+npm publish: + caraka@1.5.8
+registry latest: 1.5.8
+tarball HTTP: 200
+tarball dist/core/gateway.js: preview buffer and agent_message_chunk gate present
+global CLI: 1.5.8
+gateway PID: 2013404 → 3845025
+ACP child: running from global caraka@1.5.8
+doctor: agent, config, Telegram, approval, allowlist, memory, and thread detection ready
+startup: Caraka is live: telegram → claude-code (/home/ramaaditya/Project)
+fatal startup marker: absent
+```
+
+Dua baris doctor yang tetap bertanda silang adalah pengaturan Threaded Mode dan
+izin user membuat thread di DM pada BotFather. Keduanya sudah mati sebelum
+rilis, tidak memengaruhi topic milik grup, dan bukan kegagalan proses baru.

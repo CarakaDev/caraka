@@ -16,8 +16,8 @@ export const badges = [
   // and the registry itself lagged too on 13 August 2026, answering 1.3.0 for
   // roughly a minute after `npm publish` printed `+ caraka@1.3.1`. Wait for
   // `curl -s https://registry.npmjs.org/caraka` to name the new one before
-  // touching this line. It gave `dist-tags.latest` 1.5.7 on 15 August 2026.
-  { k: 'npm', v: 'v1.5.7', tone: '#E2452C', ink: '#FFEDE7' },
+  // touching this line. It gave `dist-tags.latest` 1.5.8 on 16 August 2026.
+  { k: 'npm', v: 'v1.5.8', tone: '#E2452C', ink: '#FFEDE7' },
   { k: 'license', v: 'MIT', tone: '#8EEE98', ink: '#05300C' },
   { k: 'node', v: '≥22', tone: '#E2452C', ink: '#FFEDE7' },
   { k: 'protocol', v: 'ACP', tone: '#FF7A5E', ink: '#2B0D06' },
@@ -44,7 +44,7 @@ export const projects = [
     name: 'caraka',
     desc: 'The envoy. A thin bridge from Telegram, Discord, or WhatsApp to the coding agent already on your machine — sessions as topics, threads, or a header, approval before every write, nothing executed without a human in between.',
     // Comp line 271 says pre-alpha. 1.5.8 is the release in the CHANGELOG, and
-    // the chip above shows the registry instead, which is what it lags behind.
+    // the chip above shows the registry instead, after publication catches up.
     status: 'v1.5, unproven',
     tone: '#FFD67E',
   },

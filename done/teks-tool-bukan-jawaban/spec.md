@@ -1,6 +1,6 @@
 # Spec — teks-tool-bukan-jawaban
 
-**Tanggal:** 16 Agustus 2026 · **Status:** terverifikasi; AC-3 menunggu persetujuan publish
+**Tanggal:** 16 Agustus 2026 · **Status:** selesai
 
 ## Latar
 
