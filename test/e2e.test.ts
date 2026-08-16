@@ -356,6 +356,7 @@ async function harness(
   const feed = new Feed();
   const sent: Sent[] = [];
   const edits: string[] = [];
+  const deleted: Array<number | string> = [];
   const calls: string[] = [];
   let messageId = 100;
 
@@ -407,7 +408,10 @@ async function harness(
             return { message_id: 99 };
           },
         }),
-    deleteMessage: async () => true,
+    deleteMessage: async (_chatId: string, messageId: number | string) => {
+      deleted.push(messageId);
+      return true;
+    },
     createTopic: async (_chatId: string, name: string) => {
       calls.push(`createForumTopic:${name}`);
       if (!options.topics) throw new Error("topics unavailable");
@@ -520,6 +524,7 @@ async function harness(
     feed,
     sent,
     edits,
+    deleted,
     calls,
     prompts,
     carried,
@@ -5202,6 +5207,50 @@ test("an image born inside a tool call is delivered too", async () => {
     [`sendImage:image/png:${png.byteLength}`],
   );
   assert.ok(h.sent.some((item) => /there it is/.test(item.text)));
+  await h.finish();
+});
+
+test("tool text stays in the progress draft and out of the final answer", async () => {
+  const transcript = "Mem0 frontmatter and shell output";
+  const answer = "The backlog has seven open items.";
+  const h = await harness({
+    onPrompt: async (_prompt, route) => {
+      await route.update({
+        sessionId: "agent-session-1",
+        update: {
+          sessionUpdate: "tool_call_update",
+          toolCallId: "call-1",
+          content: [{ type: "content", content: { type: "text", text: transcript } }],
+        },
+      });
+      // The edit throttle is part of the real path. Waiting through it proves the
+      // second preview still carries the tool transcript beside the agent answer.
+      await delay(1_550);
+      await route.update({
+        sessionId: "agent-session-1",
+        update: {
+          sessionUpdate: "agent_message_chunk",
+          content: { type: "text", text: answer },
+        },
+      });
+      return { stopReason: "end_turn" as const };
+    },
+  });
+  h.feed.push(message(42, 42, "list the backlog"));
+  await h.settle(1_750);
+
+  assert.ok(
+    h.edits.some((text) => text.includes(transcript)),
+    "the tool text reached the draft",
+  );
+  assert.ok(
+    h.edits.some((text) => text.includes(answer)),
+    "the agent answer reached the draft",
+  );
+  const result = h.sent.find((item) => item.text.includes(answer));
+  assert.ok(result, "the agent answer reached the final message");
+  assert.equal(result?.text.includes(transcript), false, "the tool text left with the draft");
+  assert.equal(h.deleted.length, 1, "the progress draft was deleted after the final send");
   await h.finish();
 });
 

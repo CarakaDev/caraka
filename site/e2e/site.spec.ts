@@ -460,6 +460,9 @@ test.describe('the comps still decide the layout', () => {
     // fidelity test named the missing card before the release rather than after
     // it, from inside `npm run verify`, for the second release running.
     // Measured Chromium at 1440x900.
+    // 1.5.8 moved one: /status −212 to 8793. Its shorter patch card replaced
+    // 1.5.3's full card, while 1.5.3 joined the archive line. Measured Chromium
+    // at 1440x900.
     const EXPECTED: Record<string, number> = {
       // v1.2 copy, except the two v1.3 moved — measured from the site (see above)
       '/': 6627,
@@ -469,7 +472,7 @@ test.describe('the comps still decide the layout', () => {
       '/install': 5465,
       '/security': 6235,
       '/whatsapp-risk': 6857,
-      '/status': 9005,
+      '/status': 8793,
       '/brand/readme': 5557,
       // still measured against the comp
       '/story': 5734,

@@ -168,7 +168,7 @@ Lima baris mesin fase ini tercentang saat `v0.6.0` dirilis. Yang tersisa adalah 
 - [x] `SECURITY.md`, `CONTRIBUTING.md`, lisensi MIT, repo publik
 - [x] Artikel pembanding jujur: "Kapan pakai OpenClaw, kapan pakai Caraka" — `docs/openclaw-vs-caraka.md` dan pasangan Inggrisnya, ditulis supaya memilih OpenClaw adalah kesimpulan yang ia tawarkan. Halaman `/compare` di situs (`site/src/pages/compare.astro`, isinya `site/src/data/compare.ts`) sudah lebih dulu memuat tabel "kalau kamu mau X, pakai Y" yang mengarahkan tiga kebutuhan ke OpenClaw dan Hermes
 - [x] Kontribusi balik: catatan integrasi ke ekosistem ACP & Titen — `docs/integrasi-ekosistem.md` dan pasangan Inggrisnya: yang klien ini butuhkan dari ACP dan dari Titen, yang tidak bisa ia sebut dengan kosakata protokolnya sendiri, dan penyebutan bahwa separuh pasangan itu ditulis penulis yang juga menulis separuh lainnya. Mengirimkannya ke hulu belum dilakukan
-- [ ] Peluncuran: komunitas dev Indonesia → ekosistem ACP/MCP → publik — belum dimulai pada 15 Agustus 2026. Yang dulu ditulis mendahuluinya sudah lewat: baris ini pernah berbunyi "registry npm masih memegang 1.1.2, jadi apa pun yang diumumkan hari ini menunjuk ke versi yang bukan versi ini". Empat belas versi menyusul kalimat itu, dan pada 15 Agustus 2026 registry memegang `1.5.7` — sama dengan `package.json`, sama dengan judul teratas `CHANGELOG.md`, dan sama dengan chip npm di situs, yang melacak registry dan bukan berkas mana pun di sini (`site/src/data/readme.ts`). Jaraknya nol, jadi pengumuman hari ini menunjuk ke versi ini. `npm publish` tetap milik pemilik untuk setiap rilis berikutnya. Yang tersisa adalah peluncurannya sendiri, satu-satunya langkah di baris ini yang tidak bisa dikerjakan dari repositori. Langkah pasca-rilis sejak keputusan pemilik 8 Agustus 2026
+- [ ] Peluncuran: komunitas dev Indonesia → ekosistem ACP/MCP → publik — belum dimulai pada 16 Agustus 2026. Registry dan chip npm masih memegang `1.5.7`; `package.json` dan judul teratas `CHANGELOG.md` sudah memegang `1.5.8` yang menunggu persetujuan pemilik untuk diterbitkan. Chip itu melacak registry, bukan berkas mana pun di sini (`site/src/data/readme.ts`), jadi jaraknya sengaja satu sampai `npm publish` selesai dan registry mengonfirmasi versi baru. Yang tersisa setelahnya adalah peluncuran ke komunitas, satu-satunya langkah di baris ini yang tidak bisa dikerjakan dari repositori. Langkah pasca-rilis sejak keputusan pemilik 8 Agustus 2026
 
 **Definition of done:** seluruh sasaran G1–G6 di `prd.md` terpenuhi dan terukur.
 
@@ -178,7 +178,7 @@ Peluncuran ke komunitas dev Indonesia dan ke ekosistem ACP belum dijalankan; ia 
 
 ## Sesudah v1.0 — yang sudah dikirim
 
-Fase 7 tidak pernah ditutup, dan delapan belas rilis mendarat di dalamnya. Daftar fase di atas berhenti di `v1.0` karena itu memang rencananya; yang di bawah ini adalah apa yang terjadi sesudah rencana itu habis. Tidak ada satu pun yang membuka fase baru — semuanya jatuh di dalam gerbang Fase 7 yang masih terbuka, dan tidak satu pun menjawabnya.
+Fase 7 tidak pernah ditutup, dan dua puluh rilis mendarat di dalamnya. Daftar fase di atas berhenti di `v1.0` karena itu memang rencananya; yang di bawah ini adalah apa yang terjadi sesudah rencana itu habis. Tidak ada satu pun yang membuka fase baru — semuanya jatuh di dalam gerbang Fase 7 yang masih terbuka, dan tidak satu pun menjawabnya.
 
 Bentuknya berubah di 1.3.0. Sampai 1.2.0 rilis datang dari spesifikasi yang ditulis lebih dulu; sejak 1.3.0 sebagian besar datang dari laporan pemakaian sungguhan di instalasi orang lain — isu #9, #10, dan #11 masing-masing menghasilkan rilisnya sendiri. Itu bukan perubahan proses yang diputuskan, melainkan yang terjadi begitu ada yang memakai.
 
@@ -186,6 +186,8 @@ Setiap entri di bawah dicatat panjang lengkap di [`../CHANGELOG.md`](../CHANGELO
 
 | Versi | Tanggal | Apa |
 |---|---|---|
+| `1.5.8` | 16 Agu 2026 | Draft progres terhapus; transkrip tool-nya sudah tersalin ke jawaban final |
+| `1.5.7` | 15 Agu 2026 | Nama topic yang sudah terpasang ditulis lagi, satu 429 menahan run, dan gambar buatan agent belum pernah sampai ke chat |
 | `1.5.6` | 15 Agu 2026 | Tidak ada yang bergerak di runtime; yang bergerak adalah semua yang menjelaskannya, dan gerbang yang selama ini membiarkan sebuah rilis terbit sambil salah menjelaskan dirinya |
 | `1.5.5` | 14 Agu 2026 | Dua laporan dari satu instalasi: satu request yang jatuh membuat sesi tergantung selamanya, dan id rollout yang sudah tidak ada membuatnya rusak permanen |
 | `1.5.4` | 14 Agu 2026 | Sembilan kalimat menyebut `Claude` apa adanya, dan instalasi yang menjalankan codex membacanya di setiap tugas |

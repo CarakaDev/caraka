@@ -4,6 +4,19 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.8] — 2026-08-16
+
+The progress draft was deleted. Its tool transcript had already been copied into the final answer.
+
+### Fixed
+
+- **Text produced inside a tool call leaves with the progress draft.** 1.5.7 taught the shared block reader to see tool-call content so an image made by a tool could reach the chat. `agentText` then reused that reader without asking which update the block came from, so Mem0 recall, shell output, and every other textual tool result were appended to the same `output` later sent as the Rich Message result. Telegram did delete the edited progress message in `finally`; the transcript that remained was a second, final message carrying the same bytes.
+- **Preview and answer are separate buffers.** Every text block still reaches the temporary preview, while only `agent_message_chunk` fills the answer sent after the run. Images continue through the shared block reader from both agent messages and tool calls. The regression test watches all three points: tool text appears in the edited preview, does not appear in the final result, and the progress message is deleted after that result is sent.
+
+### Limited
+
+- `Memory saved: …` remains in the final answer. It is written by Caraka after the agent finishes and names the observation the run stored; it is not a streaming fragment or tool output.
+
 ## [1.5.7] — 2026-08-15
 
 Two reports, and the second one turned out to be three layers deep.

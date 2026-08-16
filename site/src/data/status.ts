@@ -20,7 +20,7 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.5.7', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.5.8', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Nine presets load; six routes across five agents have completed a turn
   // against a live binary here — Claude Code over ACP and over its CLI route,
@@ -102,7 +102,7 @@ export const phases: Phase[] = [
   // seventeen more releases shipped inside it, so the page answered "v1.0" to a
   // reader looking at 1.5.5. The gate below is what keeps phase 7 open, not the
   // version, and roadmap.md now lists what shipped between the two numbers.
-  { n: '7', title: 'Public release · v1.0 → v1.5.7', dur: '2 weeks', live: true, ...shipped,
+  { n: '7', title: 'Public release · v1.0 → v1.5.8', dur: '2 weeks', live: true, ...shipped,
     q: 'Is it ready to be trusted by strangers?',
     gate: 'Every goal in prd.md is met and measured. Fifteen agents are not covered: nine presets ship and five have completed a turn against a live binary here, over six routes — Claude Code over ACP and over its CLI route, Codex and aider on the CLI, goose and opencode over ACP. Four have never run here at all. Taking the release to the Indonesian developer community and to the ACP ecosystem is the step nothing in a repository can perform.',
     range: r(7, 3, 26) },
@@ -133,6 +133,16 @@ export const releases = [
         'Watch the dashboard swap a panel in a real browser with the CSP live',
         'Run fourteen days on a real WhatsApp number with no ban and no manual relink, or publish the honest finding that makes Cloud API the default',
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
+      ] },
+    ] },
+  { v: '1.5.8', state: 'unproven', date: '16 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'FIXED', tone: '#FFD67E', items: [
+        'Text produced inside a tool call leaves with the progress draft. 1.5.7 taught the shared block reader to see tool-call content so an image made by a tool could reach the chat, then the text reader reused it and appended Mem0 recall, shell output and every other textual tool result to the answer sent as the final Rich Message',
+        'Preview and answer are separate buffers. Every text block still reaches the temporary preview, while only agent message chunks fill the answer that survives it. Images continue through the shared reader from both messages and tool calls, and the progress draft is still deleted after the final result is sent',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'Memory saved remains in the final answer. Caraka writes it after the agent finishes to name the observation the run stored; it is not a streaming fragment or tool output',
       ] },
     ] },
   { v: '1.5.7', state: 'unproven', date: '15 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
@@ -196,28 +206,13 @@ export const releases = [
         'The name printed is the preset id \u2014 codex, opencode, claude-code \u2014 the same string caraka doctor prints. It is not a display name, and there is no mapping from one to the other',
       ] },
     ] },
-  { v: '1.5.3', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
-    groups: [
-      { label: 'FIXED', tone: '#FFD67E', items: [
-        'An installation whose config said agent: codex ran Claude, and said so. Reported from outside as issue #9 by an installation upgraded 1.3.2 to 1.5.1: doctor answered that codex was ready, the service still started Claude, printed telegram \u2192 Claude, and failed the first task with an authentication Claude had never had on that machine',
-        'One cause in three places \u2014 an empty agent id resolved against the product default without the workspace it belonged to ever being asked: the warm-up driver at start-up, every run whose session row was written before its workspace named an agent, and the banner, where Claude was fixed text in both catalogs and could never have said anything else',
-        'The order is now the session\u2019s agent, then the workspace\u2019s agent:, then the product default, written once and read by both places that pick a driver. Sessions created after a workspace names its agent were never affected, so what the bug hit was exactly the installations that had been running longest',
-        'The line printed when Caraka comes up names the agent actually selected, as the preset id doctor prints',
-      ] },
-      { label: 'CHANGED', tone: '#8EEE98', items: [
-        'Nothing is written to the database for this. Old session rows keep their empty agent and are read against their workspace every time, so changing a workspace\u2019s agent: tomorrow applies to sessions created before today too',
-      ] },
-      { label: 'LIMITED', tone: '#FFD67E', items: [
-        'A workspace naming an agent that is not installed now fails at start-up with that agent\u2019s error rather than reaching the first task. That is the intent of the warm-up, but an installation with a typo in agent: sees a different message than before',
-        'No defaultAgent key was added to the config. The reporter offered it as one of four possibilities; a single workspace\u2019s agent: already is that key, and a second global one is only somewhere for the two to disagree',
-      ] },
-    ] },
-  { v: '1.5.2 → 0.0.0', state: 'in CHANGELOG.md', date: '7–14 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
+  { v: '1.5.3 → 0.0.0', state: 'in CHANGELOG.md', date: '7–14 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
     groups: [
       { label: 'WHERE THE FULL ENTRIES ARE', tone: '#FFD67E', items: [
         'CHANGELOG.md in the repository, linked at the foot of this page. It carries every release below at the length it was written in; what is here is one line each, and nothing has been dropped from the history',
       ] },
       { label: 'SHIPPED', tone: '#8EEE98', items: [
+        '1.5.3 · 14 August 2026 — an installation whose config said agent: codex ran Claude, and said so',
         '1.5.2 · 14 August 2026 — the topic closed after every turn, because done was read as the end of a session',
         '1.5.1 · 14 August 2026 — the folder form refused the only layout most people have',
         '1.5.0 · 14 August 2026 — a session got its own topic, and a finished one closed it',

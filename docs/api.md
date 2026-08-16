@@ -231,4 +231,4 @@ type PermissionRequest = {
 };
 ```
 
-Bentuknya subset wire ACP: driver ACP meneruskannya apa adanya tanpa terjemahan, driver CLI memfabrikasi satu `agent_message_chunk` per giliran. Jalur CLI karena itu tanpa streaming, dan `/commands` serta `/usage` di jalur itu terdegradasi ke jawaban kosong — update-nya tidak pernah datang.
+Bentuknya subset wire ACP: driver ACP meneruskannya apa adanya tanpa terjemahan, driver CLI memfabrikasi satu `agent_message_chunk` per giliran. Teks `agent_message_chunk` mengisi preview dan hasil final; teks di dalam tool call hanya mengisi preview yang dihapus setelah hasil final dikirim, sementara blok gambarnya tetap dikirim sebagai gambar. Jalur CLI karena itu tanpa streaming, dan `/commands` serta `/usage` di jalur itu terdegradasi ke jawaban kosong — update-nya tidak pernah datang.

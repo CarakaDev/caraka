@@ -48,6 +48,8 @@ Two more constraints shape every review:
 
   The retry is 24 of them and covers three channels, because `fetchWithRetry` routes through it and Telegram calls it directly. `pangkas-berulang` measured this exact kind of folding at −35 lines rather than +400 and warned against forcing two protocols into one shape; the line held here, and Telegram kept its own body-level error reading rather than being pushed through a status-reading helper. The ceiling stays ~8,000.
 
+  On 16 August 2026 `src/` measures **10,498 lines**. `teks-tool-bukan-jawaban` added 9, measured from the 10,489 the tree held when it started. It repairs the boundary 1.5.7 crossed while adding outbound images: one block reader serves images born in both agent messages and tools, then the text reader reused it and promoted every tool transcript into the final answer. One second string keeps that transcript in the progress draft while `agent_message_chunk` alone fills the answer that survives it. The ceiling stays ~8,000.
+
 - **Graceful degradation.** Nothing hard-fails when a capability is missing. Topics unavailable falls back to linear mode. Memory down still replies. ACP absent falls back to the CLI driver. A rejected rich message falls back to MarkdownV2.
 
 ## Repository map

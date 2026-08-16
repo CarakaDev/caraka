@@ -1366,6 +1366,7 @@ export class Gateway {
     // workspace behind it. Reported as issue #11 with the audit trail showing
     // an `error` row carrying no session id at all.
     let progress: MessageRef | undefined;
+    let preview = "";
     let output = "";
     // Counted rather than appended, because an image is delivered as itself.
     // What it is needed for is the closing line: a turn that produced only a
@@ -1437,9 +1438,11 @@ export class Gateway {
             // there is no channel here that puts two images in one.
             for (const image of Gateway.imagesOf(notification))
               if (await this.sendImage(session, image)) pictures += 1;
-            const text = this.agentText(notification);
+            const text = this.updateText(notification);
             if (!text) return;
-            output = `${output}${text}`.slice(-240_000);
+            preview = `${preview}${text}`.slice(-240_000);
+            const answer = this.agentText(notification);
+            if (answer) output = `${output}${answer}`.slice(-240_000);
             // A channel that cannot rewrite a message gets the ack and then
             // silence until the result: the alternative is one new message per
             // update, which is a wall of text and, on a channel with an
@@ -1456,7 +1459,7 @@ export class Gateway {
               .editText(
                 session.chatId,
                 progress.message_id,
-                this.scrub(`${header}${output.slice(-room)}`),
+                this.scrub(`${header}${preview.slice(-room)}`),
               )
               .catch(() => undefined);
           },
@@ -1733,7 +1736,7 @@ export class Gateway {
    * uses the same shape for an image it cannot encode (`[image: …]`), so the
    * form is borrowed rather than invented.
    */
-  private agentText(notification: AgentUpdate) {
+  private updateText(notification: AgentUpdate) {
     let text = "";
     for (const block of Gateway.blocksOf(notification)) {
       // An image is not described here because it is delivered as itself, in its
@@ -1744,6 +1747,12 @@ export class Gateway {
       else if (block.type !== "image") text += `[${block.type}]`;
     }
     return text;
+  }
+
+  private agentText(notification: AgentUpdate) {
+    return notification.update.sessionUpdate === "agent_message_chunk"
+      ? this.updateText(notification)
+      : "";
   }
 
   // The memory scope of a chat that is not running anything: its resolved
