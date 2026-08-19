@@ -136,17 +136,25 @@ Tiap instance juga butuh bot sendiri. Dua poller pada satu token sama-sama meman
 Di Telegram:
 
 ```text
-/new [judul] mulai sesi baru, judul opsional
-/status      lihat keadaan sesi
-/stop        batalkan tugas aktif
-/commands    daftar perintah yang dilaporkan Claude
-/usage       pemakaian terakhir yang dilaporkan Claude
-/yolo 30m    tawarkan jendela trust berdurasi
-/lock        tutup jendela trust seketika
-/help        tampilkan bantuan
+/new [folder] [judul]  sesi baru, keduanya opsional
+/status                keadaan sesi ini
+/stop                  batalkan tugas yang berjalan
+/ws                    daftar workspace dan path-nya
+/switch <preset>       jalankan sesi ini di preset agent lain
+/commands              yang ditawarkan agent sendiri, termasuk skill-nya
+/usage                 konteks dan biaya yang dilaporkan agent
+/ingat <catatan>       simpan catatan untuk workspace ini
+/memori                daftar catatan itu
+/lupakan <id>          hapus salah satunya
+/yolo 30m              tawarkan jendela trust berdurasi
+/lock                  tutup jendela trust seketika
+/close                 selesaikan sesi ini dan tutup topic-nya
+/help                  tampilkan bantuan
 ```
 
-Pesan selain command diteruskan ke Claude apa adanya. Jika topic mode bot aktif di BotFather, sesi baru mendapat topic. Kegagalan membuat topic tidak menghentikan gateway; balasan memakai header `[workspace · #id]`.
+Keempat belas itu milik Caraka dan didaftarkan ke aplikasi chat, jadi menu perintahnya menawarkan semuanya. `/commands` adalah daftar lain: isinya apa pun yang dilaporkan coding agent untuk sesi ini, dan di rute ACP skill milik agent ikut sampai di sana. Caraka tidak menambahkan apa pun sendiri dan tidak menyimpan registry skill.
+
+Pesan selain command diteruskan ke coding agent apa adanya. Jika topic mode bot aktif di BotFather, sesi baru mendapat topic. Kegagalan membuat topic tidak menghentikan gateway; balasan memakai header `[workspace · #id]`.
 
 ## Approval
 

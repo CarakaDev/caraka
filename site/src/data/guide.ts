@@ -259,7 +259,7 @@ export const chapters: Chapter[] = [
       },
     ],
     note:
-      'Fourteen commands are registered, so your chat app offers them in its own menu: /new /status /stop /ws /switch /commands /usage /ingat /lupakan /memori /yolo /lock /close /help. Send /help in your own conversation with the bot for what each one does; the answer in a room is a shorter, different one.',
+      'Fourteen commands are registered, so your chat app offers them in its own menu: /new /status /stop /ws /switch /commands /usage /ingat /lupakan /memori /yolo /lock /close /help. Send /help in your own conversation with the bot for what each one does; the answer in a room is a shorter, different one. Those fourteen are all Caraka has. What the coding agent offers is a separate list you read with /commands, and on the ACP route the agent puts its own skills in it — Caraka repeats that list and adds nothing.',
   },
   {
     no: '06',

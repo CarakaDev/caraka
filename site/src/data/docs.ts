@@ -78,7 +78,11 @@ export const chapters: Chapter[] = [
       { k: '/status', v: 'Show idle, running, awaiting_approval, done, failed, or cancelled.' },
       { k: '/ws', v: 'List the configured workspaces and their paths, answering in General.' },
       { k: '/switch <preset>', v: 'Rebind this session to another loaded agent preset from its next task on.' },
-      { k: '/commands', v: 'List the slash commands Claude reported for this session, or say it has reported none yet.' },
+      // Named Claude as fixed text until 19 August 2026, four releases after
+      // the product strings stopped doing it. Issue #14 asked for a /skill
+      // listing the agent's skills; on the ACP route the agent reports them
+      // here as commands, so this row is the answer and it says so.
+      { k: '/commands', v: 'List the slash commands the agent reported for this session, its skills among them on the ACP route, or say it has reported none yet. Caraka keeps no list of its own.' },
       { k: '/usage', v: 'Report the context and cost from the agent’s last usage update, or say none has arrived.' },
       { k: '/ingat <note>', v: 'Save a note to memory for this workspace, or say memory is off.' },
       { k: '/lupakan <id>', v: 'Delete one memory item by its id.' },

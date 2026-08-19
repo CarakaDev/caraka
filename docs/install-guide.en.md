@@ -134,17 +134,25 @@ Each instance also needs a bot of its own. Two pollers on one token both call `g
 In Telegram:
 
 ```text
-/new [title] start a new session, title optional
-/status      see the state of the session
-/stop        cancel the running task
-/commands    the commands Claude reports
-/usage       the last usage Claude reported
-/yolo 30m    offer a timed trust window
-/lock        close the trust window at once
-/help        show help
+/new [folder] [title]  a fresh session, both optional
+/status                what this session is doing
+/stop                  cancel the running task
+/ws                    list the workspaces and their paths
+/switch <preset>       run this session on another agent preset
+/commands              what the agent itself offers, its skills included
+/usage                 the context and cost the agent reported
+/ingat <note>          save a note for this workspace
+/memori                list those notes
+/lupakan <id>          delete one of them
+/yolo 30m              offer a timed trust window
+/lock                  close the trust window at once
+/close                 finish this session and close its topic
+/help                  show help
 ```
 
-Anything that is not a command goes to Claude as it is. If the bot's topic mode is on in BotFather, a new session gets a topic. Failing to create the topic does not stop the gateway; replies carry the header `[workspace · #id]`.
+Those fourteen are Caraka's own, and they are the ones registered with the chat app, so its command menu offers them. `/commands` is a different list: it is whatever the coding agent reported for this session, and on the ACP route the agent's skills arrive in it too. Caraka adds nothing of its own there and keeps no registry of skills.
+
+Anything that is not a command goes to the coding agent as it is. If the bot's topic mode is on in BotFather, a new session gets a topic. Failing to create the topic does not stop the gateway; replies carry the header `[workspace · #id]`.
 
 ## Approval
 

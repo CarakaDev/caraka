@@ -103,7 +103,13 @@ const en = {
   "ws.added": "{slug} now points at {path}. Tasks in this chat go there.",
   "switch.unknown": "That is not a loaded preset. Loaded: {list}",
   "switch.done": "This session switches to {agent} on its next task.",
-  "help.commandsEmpty": "{agent} has not sent its command list for this session yet.",
+  // Issue #14 asked for a `/skill` listing every skill. Skills are the agent's,
+  // and on the ACP route the agent sends them here as commands — the adapter
+  // this package installs says so in as many words, and refreshes the list when
+  // it finds more. So the answer is this command, and the sentence that used to
+  // end at "yet" now says where the list comes from and what is in it.
+  "help.commandsEmpty":
+    "{agent} has not reported a command list for this session. Caraka adds none of its own: commands and skills both come from the agent, and one on the ACP route reports them once a session is running.",
   "help.commands": "{agent} commands for this session:\n{list}",
   "help.unknownCommand":
     "Caraka does not know /{name}. Send /commands for the list the agent reported.",
@@ -460,7 +466,8 @@ const id: Record<MessageKey, string> = {
   "ws.added": "{slug} sekarang menunjuk {path}. Tugas di chat ini masuk ke sana.",
   "switch.unknown": "Itu bukan preset yang termuat. Yang termuat: {list}",
   "switch.done": "Sesi ini beralih ke {agent} pada tugas berikutnya.",
-  "help.commandsEmpty": "{agent} belum mengirim daftar perintah untuk sesi ini.",
+  "help.commandsEmpty":
+    "{agent} belum melaporkan daftar perintah untuk sesi ini. Caraka tidak menambahkan apa pun dari dirinya: perintah dan skill sama-sama datang dari agent, dan agent di rute ACP melaporkannya begitu sesi berjalan.",
   "help.commands": "Perintah {agent} untuk sesi ini:\n{list}",
   "help.unknownCommand": "Caraka tidak mengenal /{name}. Kirim /commands untuk daftar dari agent.",
   "usage.none": "Agent belum melaporkan pemakaian untuk sesi ini.",
