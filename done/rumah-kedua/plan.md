@@ -80,17 +80,26 @@ Situs, dijalankan dari `site/` sesuai `CLAUDE.md`:
 ```
 npm run check   → lint, astro check, vitest — exit 0
 npm run e2e     → 142 tes lintas chromium, firefox, webkit, dan dua profil telepon
-                  140 passed · 2 skipped
 ```
 
 `site.spec.ts` yang mengukur tinggi dokumen merah lebih dulu, dan angkanya
 dipakai apa adanya: `/docs` +88 ke 7607, `/guide` +47 ke 7830, `/status` −16 ke
 8777. Ketiganya adalah prosa yang ditambahkan rilis ini, dan yang ketiga adalah
-kartu 1.5.9 yang menggantikan kartu 1.5.4 yang lebih panjang.
+kartu 1.5.9 yang menggantikan kartu 1.5.4 yang lebih panjang. Sesudah angkanya
+diperbarui, tes itu hijau.
 
-Satu tes lain, `motion › scroll progress advances` di webkit, merah dua kali
-saat suite dijalankan berbarengan dengan proses lain di mesin ini dan hijau
-setiap kali dijalankan sendiri, dengan maupun tanpa perubahan rilis ini
-(`npx playwright test --project=webkit -g "scroll progress advances"`). Ia
-menunggu 600 md sesudah menggulir lalu membaca `--ck-sp`; yang merah adalah
-mesin yang sibuk, bukan halamannya.
+Yang tidak hijau di setiap kali jalan adalah tiga tes lain, dan ketiganya diuji
+sendiri-sendiri sebelum ditulis di sini:
+
+| Tes | Kapan merah | Sendiri |
+|---|---|---|
+| `motion › scroll progress advances` (webkit) | dua kali, saat suite jalan 12 worker berbarengan dengan `npm run verify` | hijau |
+| `no overflow › …` (mobile-safari, empat lebar) | sekali, 12 worker; tiap tes butuh ~20 dtk terhadap batas 30 dtk | hijau, 19–21 dtk |
+| `header menu › the page behind it does not scroll` (mobile-chrome) | dua kali, 4 worker | hijau, `--repeat-each=3` dan bersama empat tes menu lainnya |
+
+Ketiganya membaca keadaan sesudah penantian tetap — 600 md, 700 md, satu klik —
+dan mesin yang jenuh melewati penantian itu. Berkas yang mereka uji
+(`MobileMenu.astro`, `ck.js`, `mobile.spec.ts`, seluruh `styles/`) tidak
+disentuh rilis ini: `git diff 1739c7c HEAD --` pada keempatnya kosong. CI
+menjalankan suite yang sama di runner bersih, dan itu yang dipakai sebagai
+jawaban terakhirnya.
