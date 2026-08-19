@@ -160,7 +160,7 @@ export const mandatory = [
   // Was "Only private chats from the paired Telegram principal can reach
   // Claude", which v0.2 makes false; the comp line it ported (336) asked for
   // groups behind an explicit opt-in, and the two allowlists are that opt-in.
-  'A message reaches Claude only when its chat is on the chat allowlist and its sender is on the sender allowlist.',
+  'A message reaches the coding agent only when its chat is on the chat allowlist and its sender is on the sender allowlist.',
   // docs/security.md §4 control 6, which was a sentence until v1.1 put a gate
   // under it (src/core/gateway.ts, in front of both the card and the trust
   // window). The mode is read from the config and the container, never from
@@ -209,7 +209,7 @@ export const inScope = [
   'Forging, replaying, or reusing an approval nonce',
   // A group message reaching Claude is the shipped behaviour now, so the
   // reportable failure is a chat or sender that is on neither list.
-  'A message from a chat or sender outside the allowlists reaching Claude',
+  'A message from a chat or sender outside the allowlists reaching the coding agent',
   'A write or a command running in a conversation the config leaves read-only',
   'Secret leakage through Caraka messages or audit entries',
   'Caraka opening an undocumented network listener',

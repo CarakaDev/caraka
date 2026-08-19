@@ -48,7 +48,7 @@ interface Chapter {
 export const chapters: Chapter[] = [
   {
     no: '01', id: 'quickstart', href: '#quickstart', label: 'Quickstart', title: 'Quickstart',
-    intro: 'Install from the repository you want Claude to work in. The wizard checks local prerequisites, validates the Telegram bot, then pairs one private operator.',
+    intro: 'Install from the repository you want the coding agent to work in. The wizard checks local prerequisites, validates the Telegram bot, then pairs one private operator.',
     term: [
       { t: '$ claude auth status', tone: d },
       { t: '$ npx caraka init', tone: d },
@@ -99,8 +99,13 @@ export const chapters: Chapter[] = [
     note: 'One run at a time per workspace and the rest queued FIFO; past 20 messages a minute the sender waits, and a run is cancelled at 30 minutes. A group or guild channel is served once its id reaches the chat allowlist, and since v1.3 a message there becomes a task only when it addresses Caraka — a mention, a reply to one of its own messages, or a command — inside a session topic as well as outside one. A channel that cannot report addressing is answered rather than left silent. More than one workspace is supported, and @slug in front of a message picks which.',
   },
   {
-    no: '03', id: 'agent', href: '#agent', label: 'Agent', title: 'Claude over ACP',
-    intro: 'Caraka starts the official Claude ACP adapter as a subprocess. The agent owns the model, tools, sandbox, authentication, and repository context.',
+    // comp:216 titles this Claude over ACP, and v0.4 made that one route of
+    // several: six of the nine presets declare an `acp:` block and the ACP
+    // client takes its spawn command from whichever one is selected. The
+    // official Claude adapter is still the pinned dependency and still the
+    // shortest path, which is what the first card says.
+    no: '03', id: 'agent', href: '#agent', label: 'Agent', title: 'The agent over ACP',
+    intro: 'Caraka starts an ACP adapter as a subprocess, spawned from the preset the session runs on. The agent owns the model, tools, sandbox, authentication, and repository context.',
     cards: [
       { tag: 'SHIPPED · ACP v1', tone: '#FF7A5E', title: 'Official adapter', body: '@agentclientprotocol/sdk 1.3.0 and claude-agent-acp 0.63.0 are pinned runtime dependencies.', bg: '#12100F', border: '#2B1612', range: r(0, 4, 26) },
       { tag: 'SESSION', tone: '#8EEE98', title: 'New and load', body: 'Each chat route stores the ACP session id. A missing old session is replaced without breaking the route.', bg: '#0C1116', border: '#171C22', range: r(1, 4, 26) },
@@ -129,7 +134,7 @@ export const chapters: Chapter[] = [
   },
   {
     no: '05', id: 'security', href: '#security', label: 'Security', title: 'Secrets & audit',
-    intro: 'The bridge accepts untrusted chat input, so identity checks and scrubbing happen before Claude or disk receives data.',
+    intro: 'The bridge accepts untrusted chat input, so identity checks and scrubbing happen before the coding agent or disk receives data.',
     // The v0.1 line here read "Non-private updates are rejected", which the
     // group work made false: src/core/gateway.ts:161-165 checks the chat against
     // one allowlist and the sender against another, and serves only a message

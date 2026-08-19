@@ -28,12 +28,12 @@ Caraka does one thing: it connects a chat app to the coding agent already instal
 
 The list of what is unproven in Caraka is more useful than its version number, and all of it is written in the **Limited** section of each release:
 
-- Live verification still covers Claude Code only. Seven agent presets ship, but the ACP commands for gemini, cursor, goose, and amp, along with every aider flag, are transcribed from research and marked `# belum diverifikasi` inside their files. The codex flags are copied verbatim from the documented block and have never been run here.
+- Live verification covers five of the nine agent presets that ship, over six routes: Claude Code on ACP and on its CLI route, Codex and aider on the CLI, goose and opencode over ACP. The runs are what corrected them — two shipped flags the binary rejects. The other four say `# belum diverifikasi` inside their own files: gemini, cursor, and amp answered an ACP handshake and stopped at a paid account, and antigravity has never got past its OAuth window.
 - Every Discord check answers a mocked `fetch` and a mocked `WebSocket`, so the real payload shapes and the real 429 behaviour stay unproven.
 - No live WhatsApp number was ever linked to this code, and no live Cloud API webhook was ever received.
 - The Titen memory adapter has only ever answered a mocked fetch; its routes were read from the Titen v0.7.0 source, a pre-1.0 surface that can move.
 - The phase 5 beta gate is still open. Twenty beta developers have not been recruited, so neither of its Definition of Done numbers can be answered by anyone but the people who would use it.
-- The core has passed its own ceiling: 8,349 lines against the ~8,000 written in `AGENTS.md`. v1.0 sat at the line with 7,880; v1.1 added the policy-mode gate and three commands and went over it. One simplification pass gave back 73 lines and stopped there, because a normalised block scan no longer finds repetition — the rest would cost a feature or the comments, and both were refused.
+- The core has passed its own ceiling and kept going: 10,552 lines on 19 August 2026 against the ~8,000 written in `AGENTS.md`. v1.0 sat at the line with 7,880; v1.1 went over it, and `AGENTS.md` records every release since with the measurement and what it bought rather than moving the ceiling. One simplification pass gave back 73 lines and a second measured the five folding candidates four specs had promised at 35 lines in the wrong direction.
 
 **You need WhatsApp on a number that matters.** Caraka's `baileys` provider uses an unofficial route, and its own risk page (`docs/whatsapp-risiko.md`) is written so that you can decide against it. The fourteen-day field test that gates phase 6 has not been run. The recommendation that stands today is `cloud-api`, Meta's official route.
 
@@ -41,7 +41,7 @@ The list of what is unproven in Caraka is more useful than its version number, a
 
 OpenClaw can already use a coding-agent CLI as a model backend, and its documentation is honest about where that route sits: *"Tools are disabled (no tool calls). Text in → text out… Designed as a safety net rather than a primary path."* For an assistant that carries its own tool layer, that placement makes sense, because the coding agent's tools are not needed there.
 
-For Caraka that route is the whole product. Through ACP, the JSON-RPC protocol created by Zed and co-led by JetBrains with 28+ agents in its registry, the coding agent keeps its own tools, its own sandbox, and its own repository context, and its permission requests (`session/request_permission`) are rendered as buttons in chat. Since `0.4` that route stopped being Claude-shaped: seven presets ship as YAML files, a generic CLI driver runs agents that do not speak ACP yet, and selection falls from ACP to CLI when the adapter is not on the machine. One test loads a preset from a single YAML file and proves a full turn through to the channel without `src/core/` being touched.
+For Caraka that route is the whole product. Through ACP, the JSON-RPC protocol created by Zed and co-led by JetBrains with 28+ agents in its registry, the coding agent keeps its own tools, its own sandbox, and its own repository context, and its permission requests (`session/request_permission`) are rendered as buttons in chat. Since `0.4` that route stopped being Claude-shaped: nine presets ship as YAML files, a generic CLI driver runs agents that do not speak ACP yet, and selection falls from ACP to CLI when the adapter is not on the machine. One test loads a preset from a single YAML file and proves a full turn through to the channel without `src/core/` being touched.
 
 What does not come down to the CLI route is the permission hook. ACP sends `session/request_permission` and Caraka renders it as a card; the CLI driver has no equivalent, so on that route the only brake is the agent's own. That is why the codex preset keeps `--sandbox read-only` as a security control, and why `--yes-always` was removed from the aider preset: auto-approval without a sandbox is execution without anyone's consent.
 
@@ -49,7 +49,7 @@ Of OpenClaw's nine large layers, the research behind Caraka found only three nee
 
 The difference shows up on the bill. OpenClaw's loop burns tokens outside your coding-agent subscription, and each heartbeat is one full agent turn. Composio, using OpenClaw since January 2026, wrote: *"Agentic tasks consume a massive amount of tokens. And if you want to use it like a personal assistant, the cost will skyrocket pretty fast."* That complaint comes from early 2026 releases and may have improved since; the date is named so you can judge for yourself. Caraka has no loop, so tokens burn only in the subscription you already pay for.
 
-On machine weight, Caraka's figures are targets stated in `docs/prd.md`: package under 15 MB, idle RAM under 80 MB, cold start under 2 seconds, core at or below 8,000 lines. The RAM and cold-start measurement item in phase 0 of the roadmap is unchecked, so the first three are not yet entitled to be called results. Only the last one is measured, and it reads 7,996.
+On machine weight, Caraka's figures are targets stated in `docs/prd.md`: package under 15 MB, idle RAM under 80 MB, cold start under 2 seconds, core at or below 8,000 lines. The RAM and cold-start measurement item in phase 0 of the roadmap is unchecked, so the first three are not yet entitled to be called results. The last one is measured and it is missed: 10,552 lines on 19 August 2026, with each overrun recorded in `AGENTS.md`.
 
 ## Approval and attack surface
 

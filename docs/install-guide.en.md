@@ -1,7 +1,7 @@
 # Caraka installation guide
 
 **Date:** 7 August 2026 · **Bahasa Indonesia:** [`install-guide.md`](install-guide.md)
-**Scope of this guide:** private Telegram → Claude Code, one operator, one workspace. Discord, WhatsApp, the other six presets, and `workspaces[]` all ship in v1.0, but each one is written by hand into `config.yaml`; the `init` wizard sets up only the path above.
+**Scope of this guide:** private Telegram → Claude Code, one operator, one workspace. Discord, WhatsApp, the other eight presets, and `workspaces[]` all ship in v1.0, but each one is written by hand into `config.yaml`; the `init` wizard sets up only the path above.
 
 ## Prerequisites
 
@@ -212,7 +212,7 @@ Using it through `npx` creates no global installation. The config and the audit 
 
 ## The limits of this release
 
-Not yet available: several operators, attachments, and the MCP inbox. Shipped but never verified live: Discord, WhatsApp, and the six presets other than Claude Code — every check on them answers a fake transport or a preset file that has never been run here. Memory has been there since v0.3: the `local` provider works with nothing installed, and Titen is offered during `init`. Those limits are written down so that installing does not promise a roadmap feature as a feature you already have.
+Not yet available: several operators and the MCP inbox. Shipped but never verified live: Discord, WhatsApp, and the four presets of the nine that have never answered a live binary — every check on them answers a fake transport or a preset file that has never been run here. Memory has been there since v0.3: the `local` provider works with nothing installed, and Titen is offered during `init`. Those limits are written down so that installing does not promise a roadmap feature as a feature you already have.
 
 **Background service.** This release installs no service, and Caraka will never install one by itself. The package has no `postinstall` hook and Caraka's output never contains the word `sudo`. What it has is `caraka service --print systemd|launchd|schtasks`, which **prints** the unit to stdout for you to install yourself, then prints the manual steps.
 

@@ -19,7 +19,7 @@
   <a href="README.md">🇬🇧 English</a>
 </p>
 
-> **v1.5, belum terbukti.** Telegram, Discord, dan WhatsApp sampai ke coding agent di mesinmu lewat satu kontrak yang sama, dengan sembilan preset agent, memori, lebih dari satu workspace, lampiran, dan dasbor read-only di loopback. Lima dari sembilan agent pernah menyelesaikan satu giliran di sini terhadap biner hidup, lewat enam jalur; tidak ada kredensial Discord maupun nomor WhatsApp yang pernah dipakai di sini, dan tidak satu pun gerbang lapangan pernah dijawab siapa pun, penulisnya termasuk. Lampiran masih belum ada. Registry npm masih memegang 0.2.1 sampai pemilik menerbitkan.
+> **v1.5, belum terbukti.** Telegram, Discord, dan WhatsApp sampai ke coding agent di mesinmu lewat satu kontrak yang sama, dengan sembilan preset agent, memori, lebih dari satu workspace, lampiran, dan dasbor read-only di loopback. Lima dari sembilan agent pernah menyelesaikan satu giliran di sini terhadap biner hidup, lewat enam jalur; tidak ada kredensial Discord maupun nomor WhatsApp yang pernah dipakai di sini, dan tidak satu pun gerbang lapangan pernah dijawab siapa pun, penulisnya termasuk. Registry menyajikan rilis yang berlaku.
 
 ---
 

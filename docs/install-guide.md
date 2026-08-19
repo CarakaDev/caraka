@@ -1,7 +1,7 @@
 # Panduan instalasi Caraka
 
 **Tanggal:** 7 Agustus 2026 · **English:** [`install-guide.en.md`](install-guide.en.md)
-**Lingkup panduan ini:** Telegram pribadi → Claude Code, satu operator, satu workspace. Discord, WhatsApp, enam preset lainnya, dan `workspaces[]` sama-sama terkirim di v1.0, tetapi semuanya ditulis tangan ke `config.yaml`; wizard `init` hanya memasang jalur di atas.
+**Lingkup panduan ini:** Telegram pribadi → Claude Code, satu operator, satu workspace. Discord, WhatsApp, delapan preset lainnya, dan `workspaces[]` sama-sama terkirim di v1.0, tetapi semuanya ditulis tangan ke `config.yaml`; wizard `init` hanya memasang jalur di atas.
 
 ## Prasyarat
 
@@ -214,7 +214,7 @@ Pemakaian lewat `npx` tidak membuat instalasi global. Config dan audit sengaja t
 
 ## Batas rilis ini
 
-Belum tersedia: banyak operator, lampiran, dan inbox MCP. Yang terkirim tetapi belum pernah diverifikasi hidup: Discord, WhatsApp, dan enam preset selain Claude Code — setiap pemeriksaan pada ketiganya dijawab transport palsu atau berkas preset yang belum pernah dijalankan di sini. Memori hadir sejak v0.3: provider `local` bekerja tanpa apa pun, Titen ditawarkan saat `init`. Batas itu dicatat agar instalasi tidak menjanjikan fitur roadmap sebagai fitur yang sudah tersedia.
+Belum tersedia: banyak operator dan inbox MCP. Yang terkirim tetapi belum pernah diverifikasi hidup: Discord, WhatsApp, dan empat dari sembilan preset yang belum pernah menjawab biner hidup — setiap pemeriksaan pada keenamnya dijawab transport palsu atau berkas preset yang belum pernah dijalankan di sini. Memori hadir sejak v0.3: provider `local` bekerja tanpa apa pun, Titen ditawarkan saat `init`. Batas itu dicatat agar instalasi tidak menjanjikan fitur roadmap sebagai fitur yang sudah tersedia.
 
 **Service latar.** Rilis ini tidak memasang service, dan Caraka tidak akan pernah memasangnya sendiri. Paket tidak punya hook `postinstall` dan keluaran Caraka tidak pernah memuat kata `sudo`. Yang ada adalah `caraka service --print systemd|launchd|schtasks`, yang **mencetak** unit ke stdout untuk kamu pasang sendiri, lalu mencetak langkah manualnya.
 
