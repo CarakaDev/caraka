@@ -290,7 +290,13 @@ const en = {
   "cli.unknownError": "unknown error",
   "cli.running": "Caraka is live: {channels} → {agent} ({workspace})",
   "cli.allowlistEmpty": "The {channel} allowlist is empty. Run `caraka init` again.",
-  "cli.alreadyRunning": "Caraka is already running (PID {pid}). Stop it with `caraka stop`.",
+  // The PID alone is what the reporter of issue #13 read, and it named a bot
+  // that was not the one being started: two installations in two folders are
+  // one process to this check, because both resolve to the same `~/.caraka`.
+  // The home is printed rather than assumed, since `CARAKA_HOME` may already
+  // have moved it.
+  "cli.alreadyRunning":
+    "Caraka is already running (PID {pid}) on {home}. Stop it with `caraka stop`, or give this one a data directory of its own: CARAKA_HOME=~/.caraka-two caraka start.",
   "cli.notRunning": "Caraka is not running.",
   "cli.stopSent": "SIGTERM sent to PID {pid}.",
   "cli.statusRunning": "Running · PID {pid} · workspace {workspace} · channels {channels}",
@@ -622,7 +628,8 @@ const id: Record<MessageKey, string> = {
   "cli.unknownError": "kesalahan tidak dikenal",
   "cli.running": "Caraka aktif: {channels} → {agent} ({workspace})",
   "cli.allowlistEmpty": "Allowlist {channel} kosong. Jalankan `caraka init` lagi.",
-  "cli.alreadyRunning": "Caraka sudah berjalan (PID {pid}). Hentikan dengan `caraka stop`.",
+  "cli.alreadyRunning":
+    "Caraka sudah berjalan (PID {pid}) di {home}. Hentikan dengan `caraka stop`, atau beri yang ini direktori datanya sendiri: CARAKA_HOME=~/.caraka-dua caraka start.",
   "cli.notRunning": "Caraka tidak berjalan.",
   "cli.stopSent": "SIGTERM dikirim ke PID {pid}.",
   "cli.statusRunning": "Berjalan · PID {pid} · workspace {workspace} · channel {channels}",

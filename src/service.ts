@@ -44,6 +44,12 @@ WantedBy=default.target
 #   3. systemctl --user enable --now caraka.service
 #   4. systemctl --user status caraka.service
 #
+# A second Caraka on this machine needs a second unit and its own data
+# directory, or the two share one config, one database, one secrets directory,
+# and one PID file (issue #13). Save it as caraka-<name>.service and add, under
+# [Service]:
+#   Environment=CARAKA_HOME=%h/.caraka-<name>
+#
 # Optional, and a separate decision: loginctl enable-linger $USER
 # Lingering keeps the unit running after you log out, which means Caraka can act
 # on your machine at a time when nobody is at it.`;

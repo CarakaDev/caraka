@@ -179,7 +179,7 @@ export const chapters: Chapter[] = [
       { t: '  adapter: claude-agent-acp', tone: g },
       { t: '  adapterVersion: 0.63.0', tone: g },
     ],
-    note: 'CARAKA_HOME changes the local data directory. CARAKA_TELEGRAM_TOKEN, CARAKA_DISCORD_TOKEN, and the three CARAKA_WHATSAPP_ variables are available for controlled automation, but a 0600 file under ~/.caraka/secrets is the safer default, and no CARAKA_ variable is passed down to an agent subprocess. Choosing the baileys provider needs acknowledgeRisk: true written by hand, and start refuses without it. The interface language, English or Indonesian, is asked once during init and never guessed from an incoming message.',
+    note: 'CARAKA_HOME changes the local data directory, and it is what makes a second instance on one host possible: config, database, secrets, and the PID file all hang off it, so two gateways started without it collide on the PID of the first (issue #13). CARAKA_TELEGRAM_TOKEN, CARAKA_DISCORD_TOKEN, and the three CARAKA_WHATSAPP_ variables are available for controlled automation, but a 0600 file under ~/.caraka/secrets is the safer default, and no CARAKA_ variable is passed down to an agent subprocess. Choosing the baileys provider needs acknowledgeRisk: true written by hand, and start refuses without it. The interface language, English or Indonesian, is asked once during init and never guessed from an incoming message.',
   },
   {
     no: '07', id: 'cli', href: '#cli', label: 'CLI', title: 'CLI reference',
@@ -191,7 +191,7 @@ export const chapters: Chapter[] = [
       { k: 'npx caraka init [--workspace PATH]', v: 'Check prerequisites, choose the interface language, validate the bot, pair one Telegram principal over a deep link that works once and expires in five minutes, and write private config.' },
       { k: 'npx caraka doctor', v: 'Read-only checks for runtime, config, the workspace, the agents found on PATH, secret file modes, the allowlist of each configured channel, memory, and topic capability.' },
       { k: 'npx caraka doctor --fix', v: 'Repair the three kinds of drift install-flow.md writes a correct value for — a directory Caraka owns that is not 0700, a file it wrote that is not 0600, a PID file naming a process that is gone — then run the checks, so the rows report the state you are left with. An unreadable config, a missing workspace, and an empty allowlist are printed with the reason they were left alone.' },
-      { k: 'npx caraka start', v: 'Run the gateway in the foreground for every channel the config names.' },
+      { k: 'npx caraka start', v: 'Run the gateway in the foreground for every channel the config names. It refuses while a live PID sits in the data directory, and the refusal names that directory, because two installations in two folders are one process to that check until CARAKA_HOME separates them.' },
       { k: 'npx caraka stop', v: 'Send SIGTERM to the PID the running gateway wrote to ~/.caraka/caraka.pid.' },
       { k: 'npx caraka status', v: 'Report whether the gateway runs, with its PID, workspace, and configured channels. No token, and nothing anyone wrote in chat.' },
       { k: 'npx caraka dashboard [--port n]', v: 'Serve a read-only page on 127.0.0.1:7718 that reads the same database the gateway writes: seven panels covering sessions, runs, approvals, audit, policy, memory, and the two beta numbers. It answers GET only, and it works while the gateway is stopped.' },

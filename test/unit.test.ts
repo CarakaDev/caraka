@@ -1860,6 +1860,9 @@ test("printed service units install nothing and never say sudo", async () => {
   assert.ok(systemd?.includes("RestartSec=5"));
   assert.ok(systemd?.includes("RestartPreventExitStatus=78"));
   assert.match(systemd ?? "", /Optional[\s\S]*loginctl enable-linger/);
+  // `rumah-kedua` AC-2.3: the unit is where a second instance is set up, so it
+  // is where the variable that separates the two is named (issue #13).
+  assert.ok(systemd?.includes("Environment=CARAKA_HOME=%h/.caraka-<name>"));
   assert.match(systemd ?? "", /Lingering keeps the unit running after you log out/);
   assert.ok(launchd?.includes("~/Library/LaunchAgents"));
   assert.ok(launchd?.includes("0600"));

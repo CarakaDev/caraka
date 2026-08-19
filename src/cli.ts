@@ -857,7 +857,7 @@ async function start(args: string[] = []) {
     // 78 is EX_CONFIG. The printed systemd unit names it in
     // `RestartPreventExitStatus`, so a second poller never restarts into a
     // conflict with the first.
-    console.error(t("cli.alreadyRunning", { pid: running }));
+    console.error(t("cli.alreadyRunning", { pid: running, home: loaded.paths.root }));
     process.exitCode = 78;
     return;
   }

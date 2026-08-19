@@ -112,6 +112,27 @@ npx caraka stop
 
 `start` menulis PID-nya ke `~/.caraka/caraka.pid` dengan mode `0600` dan menghapusnya saat berhenti. Menjalankan `start` kedua kali saat yang pertama masih hidup berhenti dengan exit code `78` tanpa memulai poller kedua.
 
+### Lebih dari satu instance di satu mesin
+
+Semua path yang dipakai Caraka menggantung pada satu direktori, `~/.caraka` kecuali `CARAKA_HOME` menyebut yang lain. Dua gateway yang dijalankan tanpa variabel itu berbagi satu config, satu database, satu direktori `secrets/`, dan satu PID file, jadi yang kedua membaca PID milik yang pertama lalu berhenti dengan exit code `78` — meski keduanya dimaksudkan untuk repositori yang berbeda.
+
+Beri tiap instance rumahnya sendiri, dan pakai rumah itu di setiap perintah untuk instance tersebut:
+
+```bash
+export CARAKA_HOME=~/.caraka-dua
+npx caraka init --workspace /path/ke/repositori/lain
+npx caraka start
+```
+
+`status`, `stop`, `doctor`, dan `uninstall` membaca variabel yang sama, jadi shell tanpa variabel itu sedang berbicara dengan instance pertama. Di systemd, simpan unit kedua sebagai `caraka-dua.service` dan taruh variabelnya di sana:
+
+```ini
+[Service]
+Environment=CARAKA_HOME=%h/.caraka-dua
+```
+
+Tiap instance juga butuh bot sendiri. Dua poller pada satu token sama-sama memanggil `getUpdates`, dan Telegram menjawab yang kedua dengan 409 yang mengakhirinya.
+
 Di Telegram:
 
 ```text

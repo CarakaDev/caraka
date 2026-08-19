@@ -110,6 +110,27 @@ npx caraka stop
 
 `start` writes its PID to `~/.caraka/caraka.pid` with mode `0600` and removes it on stop. Running `start` a second time while the first is still alive quits with exit code `78` and never begins a second poller.
 
+### More than one instance on one machine
+
+Every path Caraka uses hangs off one directory, `~/.caraka` unless `CARAKA_HOME` names another. Two gateways started without it share a config, a database, a `secrets/` directory, and that PID file, so the second reads the first one's PID and stops with exit code `78` — even when the two are meant for different repositories.
+
+Give each instance a home of its own and use it on every command for that instance:
+
+```bash
+export CARAKA_HOME=~/.caraka-two
+npx caraka init --workspace /path/to/the/other/repository
+npx caraka start
+```
+
+`status`, `stop`, `doctor`, and `uninstall` read the same variable, so a shell without it is talking to the first instance. Under systemd, save a second unit as `caraka-two.service` and put the variable in it:
+
+```ini
+[Service]
+Environment=CARAKA_HOME=%h/.caraka-two
+```
+
+Each instance also needs a bot of its own. Two pollers on one token both call `getUpdates`, and Telegram answers the second with a 409 that ends it.
+
 In Telegram:
 
 ```text
