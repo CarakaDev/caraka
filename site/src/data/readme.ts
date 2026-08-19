@@ -16,8 +16,8 @@ export const badges = [
   // and the registry itself lagged too on 13 August 2026, answering 1.3.0 for
   // roughly a minute after `npm publish` printed `+ caraka@1.3.1`. Wait for
   // `curl -s https://registry.npmjs.org/caraka` to name the new one before
-  // touching this line. It gave `dist-tags.latest` 1.5.8 on 16 August 2026.
-  { k: 'npm', v: 'v1.5.8', tone: '#E2452C', ink: '#FFEDE7' },
+  // touching this line. It gave `dist-tags.latest` 1.5.9 on 19 August 2026.
+  { k: 'npm', v: 'v1.5.9', tone: '#E2452C', ink: '#FFEDE7' },
   { k: 'license', v: 'MIT', tone: '#8EEE98', ink: '#05300C' },
   { k: 'node', v: '≥22', tone: '#E2452C', ink: '#FFEDE7' },
   { k: 'protocol', v: 'ACP', tone: '#FF7A5E', ink: '#2B0D06' },
