@@ -236,7 +236,13 @@ export class Telegram implements Channel {
   // and it means nothing to any other channel, so it belongs here rather than
   // in the contract.
   async start(signal?: AbortSignal) {
-    await this.deleteWebhook(false, signal);
+    // Swallowed for the same reason `getMe` below is, and with a stronger one:
+    // `updates()` already answers a transport failure by sleeping two seconds
+    // and asking again, forever, so a network that arrives late is met by a
+    // process that is still alive. A webhook that really is still set is not
+    // hidden by this — `getUpdates` answers 409, `updates()` rethrows it, and
+    // `caraka start` ends on that sentence with exit code 78 (issue #12).
+    await this.deleteWebhook(false, signal).catch(() => undefined);
     // One `getMe`, two answers: the name a mention has to spell, and whether
     // privacy mode is off, which decides which readiness sentence is true. A
     // failure here does not stop the start — with no name nothing is reported

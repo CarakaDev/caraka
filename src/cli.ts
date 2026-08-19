@@ -406,7 +406,17 @@ async function init(args: string[]) {
     throw new Error(t("cli.tokenRejected"));
   }
   if (!bot.username) throw new Error(t("cli.botNoUsername"));
-  await telegram.deleteWebhook();
+  // Kept fatal on purpose. What follows is a five-minute wait on `getUpdates`
+  // for the pairing message, and a leftover webhook makes that wait answer 409
+  // rather than pair, so swallowing this trades one fast sentence for five
+  // silent minutes. What it gets instead is the sentence: the reporter of
+  // issue #12 read `deleteWebhook could not be reached` on a VPS whose network
+  // was still coming up, and it named neither the cause nor the way out.
+  try {
+    await telegram.deleteWebhook();
+  } catch {
+    throw new Error(t("cli.networkUnreachable"));
+  }
 
   const pairing = pairingCode();
   console.log(t("cli.pairOpen", { url: pairing.link(bot.username) }));

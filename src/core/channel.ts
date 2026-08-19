@@ -163,8 +163,17 @@ export function evict(
   }
 }
 
-/** How long to wait before the one retry a dropped request gets. */
-const RETRY_PAUSE_MS = 500;
+/**
+ * The pauses between the attempts a dropped request gets, and therefore its
+ * count: three attempts, two pauses. 500ms was measured for the run path on
+ * `transport-goyah`, where the burst it answers is four `ECONNRESET`s inside
+ * thirty calls at 420–466ms each. The boot path is the same transport with a
+ * longer burst: a fresh VPS reached `getMe` and lost the `deleteWebhook` two
+ * hundred milliseconds behind it, twice (issue #12). The second pause is the
+ * whole of the fix, and the ladder still ends — a transport that is down is
+ * not a transport that is flaky.
+ */
+const RETRY_PAUSES_MS = [500, 1500];
 
 /**
  * How long a caller may be held waiting out 429s before the refusal is handed
@@ -176,9 +185,9 @@ const RETRY_PAUSE_MS = 500;
 const RETRY_BUDGET_SECONDS = 60;
 
 /**
- * Run `send` once more if the transport drops it. One retry, not a loop: a
- * transport that is down is not a transport that is flaky, and retrying it
- * forever only moves the hang somewhere else.
+ * Run `send` again if the transport drops it, up to the ladder above. Two
+ * retries, not a loop: a transport that is down is not a transport that is
+ * flaky, and retrying it forever only moves the hang somewhere else.
  *
  * Only a *thrown* send is retried. Every channel here answers a refusal by
  * returning it or by throwing its own error class after reading the body, so a
@@ -195,14 +204,16 @@ export async function retrySend<T>(
   sleep: (ms: number) => Promise<unknown> = (ms) => delay(ms),
   signal?: AbortSignal,
 ): Promise<T> {
-  try {
-    return await send();
-  } catch (error) {
-    // A run that was cancelled aborted its own requests; trying again is work
-    // on a task somebody already stopped.
-    if (signal?.aborted) throw error;
-    await sleep(RETRY_PAUSE_MS);
-    return await send();
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await send();
+    } catch (error) {
+      // A run that was cancelled aborted its own requests; trying again is work
+      // on a task somebody already stopped.
+      const pause = RETRY_PAUSES_MS[attempt];
+      if (signal?.aborted || pause === undefined) throw error;
+      await sleep(pause);
+    }
   }
 }
 

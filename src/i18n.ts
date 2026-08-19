@@ -229,6 +229,11 @@ const en = {
   "cli.tokenPrompt": "Telegram bot token from @BotFather (not shown): ",
   "cli.tokenEmpty": "Telegram token is empty.",
   "cli.tokenRejected": "Telegram rejected the token. Copy a new one from @BotFather and try again.",
+  // The token was already accepted one call earlier, so this is the network and
+  // nothing else. On a machine that has just booted it is usually gone by the
+  // time the command is typed again (issue #12).
+  "cli.networkUnreachable":
+    "Telegram could not be reached. The token is fine — the connection is not up yet. Wait a moment and run `caraka init` again.",
   "cli.botNoUsername": "The Telegram bot has no username.",
   "cli.cancelled": "Installation cancelled.",
   "cli.pairOpen": "\nOpen this link and press Start:\n{url}",
@@ -564,6 +569,8 @@ const id: Record<MessageKey, string> = {
   "cli.tokenPrompt": "Token bot Telegram dari @BotFather (tidak ditampilkan): ",
   "cli.tokenEmpty": "Token Telegram kosong.",
   "cli.tokenRejected": "Token Telegram ditolak. Salin token baru dari @BotFather lalu coba lagi.",
+  "cli.networkUnreachable":
+    "Telegram tidak dapat dihubungi. Tokennya benar, koneksinya yang belum siap. Tunggu sebentar lalu jalankan `caraka init` lagi.",
   "cli.botNoUsername": "Bot Telegram tidak memiliki username.",
   "cli.cancelled": "Instalasi dibatalkan.",
   "cli.pairOpen": "\nBuka tautan ini dan tekan Start:\n{url}",

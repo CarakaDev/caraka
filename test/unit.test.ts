@@ -981,6 +981,30 @@ test("Telegram can discard pairing updates explicitly", async () => {
   assert.equal(body.drop_pending_updates, true);
 });
 
+test("a deleteWebhook that never left still starts the poller", async () => {
+  // `awal-dingin` AC-2.1, from issue #12: a fresh VPS lost the call two hundred
+  // milliseconds after `getMe` answered, and `caraka start` ended there. It is
+  // `updates()` that heals a late network, by sleeping two seconds and asking
+  // again, and it never got to run. The retry ladder is real time here, so this
+  // waits out its two pauses once.
+  const asked: string[] = [];
+  const fetcher: typeof fetch = async (input) => {
+    const method = String(input).split("/").pop() ?? "";
+    asked.push(method);
+    if (method === "deleteWebhook") throw new TypeError("fetch failed");
+    return new Response(JSON.stringify({ ok: true, result: { id: 1, username: "caraka_bot" } }), {
+      headers: { "content-type": "application/json" },
+    });
+  };
+  const telegram = new Telegram("fake-token", fetcher);
+  await telegram.start();
+  assert.equal(asked.filter((method) => method === "deleteWebhook").length, 3, "the full ladder");
+  assert.equal(asked.at(-1), "getMe", "start carried on past the drop");
+  // The name only `getMe` can supply reaches the readiness sentence, which is
+  // what proves start finished rather than returned early.
+  assert.match(await telegram.readiness(true), /caraka_bot/);
+});
+
 test("config keeps token out of YAML and secret files private", async () => {
   const oldHome = process.env.CARAKA_HOME;
   const root = await mkdtemp(join(tmpdir(), "caraka-config-"));
@@ -6475,19 +6499,34 @@ test("a transport that drops one request is tried again, and a Bot API answer is
     return "answered";
   };
   assert.equal(await retrySend(flaky, sleep), "answered");
-  assert.equal(calls, 2, "one retry, not none and not two");
+  assert.equal(calls, 2, "one retry, and no second one once it answered");
   assert.deepEqual(waits, [500], "one pause, and it is the one the source names");
 
-  // AC-3: two rejections give up, and the second error is what comes out.
+  // `awal-dingin` AC-1.1 to AC-1.3: the ladder is three attempts and two
+  // pauses, and a burst that outlives the first 500ms is the whole reason the
+  // second rung exists (issue #12).
+  waits.length = 0;
   let dead = 0;
   await assert.rejects(
     retrySend(async () => {
       dead += 1;
       throw new TypeError(`fetch failed ${dead}`);
     }, sleep),
-    /fetch failed 2/,
+    /fetch failed 3/,
   );
-  assert.equal(dead, 2, "exactly two attempts");
+  assert.equal(dead, 3, "exactly three attempts");
+  assert.deepEqual(waits, [500, 1500], "two pauses, growing");
+
+  // The rung is reached, not skipped: a send that fails twice still answers.
+  waits.length = 0;
+  let late = 0;
+  const slow = async () => {
+    late += 1;
+    if (late < 3) throw new TypeError("fetch failed");
+    return "answered late";
+  };
+  assert.equal(await retrySend(slow, sleep), "answered late");
+  assert.deepEqual(waits, [500, 1500]);
 
   // AC-4: an answer is not a transport failure. `retrySend` only ever sees a
   // throw, so a channel that resolves with a refusal never reaches the retry —
