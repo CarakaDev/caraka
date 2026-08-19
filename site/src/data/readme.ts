@@ -43,7 +43,7 @@ export const projects = [
   {
     name: 'caraka',
     desc: 'The envoy. A thin bridge from Telegram, Discord, or WhatsApp to the coding agent already on your machine — sessions as topics, threads, or a header, approval before every write, nothing executed without a human in between.',
-    // Comp line 271 says pre-alpha. 1.5.8 is the release in the CHANGELOG, and
+    // Comp line 271 says pre-alpha. 1.5.9 is the release in the CHANGELOG, and
     // the chip above shows the registry instead, after publication catches up.
     status: 'v1.5, unproven',
     tone: '#FFD67E',

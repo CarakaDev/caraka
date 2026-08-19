@@ -1,6 +1,6 @@
 {
   "name": "caraka",
-  "version": "1.5.8",
+  "version": "1.5.9",
   "description": "Send the task. Caraka runs it. — a thin bridge from Telegram to the coding agent already installed on your machine.",
   "keywords": [
     "acp",

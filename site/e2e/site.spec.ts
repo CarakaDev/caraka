@@ -463,16 +463,25 @@ test.describe('the comps still decide the layout', () => {
     // 1.5.8 moved one: /status −212 to 8793. Its shorter patch card replaced
     // 1.5.3's full card, while 1.5.3 joined the archive line. Measured Chromium
     // at 1440x900.
+    //
+    // 1.5.9 moved three, and only one of them is the release: /status −16 to
+    // 8777, its card replacing 1.5.4's longer one while 1.5.4 joined the
+    // archive line. The other two are prose that answers the three issues this
+    // release closes. /docs +88 to 7607: the CARAKA_HOME note now says what the
+    // variable is for, the `start` row says its refusal names the data
+    // directory, and the /commands row says the agent's skills arrive in that
+    // list. /guide +47 to 7830: the fourteen-command note now says where the
+    // agent's own list ends and Caraka's begins. Measured Chromium at 1440x900.
     const EXPECTED: Record<string, number> = {
       // v1.2 copy, except the two v1.3 moved — measured from the site (see above)
       '/': 6627,
-      '/guide': 7783,
-      '/docs': 7519,
+      '/guide': 7830,
+      '/docs': 7607,
       '/compare': 5960,
       '/install': 5465,
       '/security': 6235,
       '/whatsapp-risk': 6857,
-      '/status': 8793,
+      '/status': 8777,
       '/brand/readme': 5557,
       // still measured against the comp
       '/story': 5734,

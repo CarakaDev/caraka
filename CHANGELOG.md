@@ -4,6 +4,32 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.9] — 2026-08-19
+
+Three reports from outside, and only one of them was a bug.
+
+### Fixed
+
+- **One dropped request at boot no longer ends `caraka init`** ([issue #12]). On a freshly provisioned VPS the first two attempts stopped at `Telegram deleteWebhook could not be reached`, and the fifth went through. The call one line above it is `getMe`, whose own failure says the token was rejected — the reporter never saw that sentence, so the token was accepted and the request two hundred milliseconds behind it was lost twice. `retrySend` gave a thrown send exactly one more attempt, 500ms later, which is the ladder `transport-goyah` measured for the run path and never for the boot path. It is three attempts now, at 500ms and 1500ms, and `fetchWithRetry` routes Discord and WhatsApp through the same rungs.
+- **A `deleteWebhook` that never left no longer stops the gateway.** `Telegram.start()` raised it into `Gateway.run()`, which ends the process. One line below, `getMe` had been swallowing its own failure since v0.5 for a weaker reason: `updates()` already answers a transport failure by sleeping two seconds and asking again, forever, so a network that arrives late is met by a process still alive to meet it. A webhook that really is still set is not hidden by this — `getUpdates` answers 409, `updates()` rethrows it, and `caraka start` ends on that sentence with exit code 78.
+- **`init` says which of the two it was.** The first `deleteWebhook` stays fatal, because what follows it is a five-minute wait for the pairing message and a leftover webhook makes that wait answer 409 rather than pair. What changed is the sentence: it names the connection rather than the method, says the token was already accepted, and names the command to run again.
+
+### Changed
+
+- **The refusal that names a running PID now names the directory it read it from** ([issue #13]). Several Caraka instances on one VPS, one folder each, and the second `start` quit with the first one's PID. Every path hangs off `~/.caraka` unless `CARAKA_HOME` names another, so two installations are one process to that check — and nothing on screen said so. The sentence prints the directory in use, which is `CARAKA_HOME`'s value where it is set, and names the variable with an example. The printed systemd unit carries the same line as a comment, because a second instance needs a second unit and that is where it is written.
+- **Running more than one instance is documented** in both install guides: a home per instance, the four commands that read the same variable, the systemd form, and the fact the reporter would have hit next — two pollers on one bot token, and Telegram ending the second with a 409.
+- **`/commands` says where its list comes from** ([issue #14], which asked for a `/skill` listing every available skill). Skills are the agent's, not Caraka's, and on the ACP route the agent already sends them here: `getAvailableSlashCommands()` in `@agentclientprotocol/claude-agent-acp` maps whatever `supportedCommands()` returns, and its `commands_changed` branch re-sends the list when skills are discovered mid-session. So the command asked for exists and is called `/commands`; what did not exist was any sentence saying so. The empty answer used to end at "yet". It now names the agent as the source, says skills are in the list, and says when it arrives. No `/skill`, and no registry of skills on Caraka's side — that is the marketplace `AGENTS.md` and `docs/blueprint.md` both refuse.
+- **Six claims that had stopped being true.** `README.id.md` closed with two sentences its English twin does not have: that attachments were still missing, three lines after the same paragraph listed them as shipped, and that the registry held `0.2.1`, twenty releases ago. Both install guides listed attachments as unavailable and counted six presets other than Claude Code where nine ship. Both `openclaw-vs-caraka` files said seven presets and live verification of Claude Code alone, where five agents have completed a turn here over six routes, and recorded the core at 8,349 lines against a paragraph naming 7,996 as the only measured figure — both written on 8 August, both now carrying today's measurement and its date. Four sentences on the site named Claude where the agent is whichever preset the session runs on; `bypassPermissions` keeps the name, because that mode is Claude's.
+
+### Limited
+
+- The ladder is longer, so a transport that is genuinely down holds one call for two seconds rather than half of one. What waits at the end of it most often is the `updates()` loop, which already sleeps two seconds between attempts, so its failure cycle goes from about 2.5 seconds to about 4.
+- Nothing keys the PID lock by workspace. Two gateways on one `~/.caraka` would also share a config, a database, and a secrets directory, and the PID lock is the only thing refusing that today. Loosening it without separating the other three would trade one visible collision for three invisible ones.
+
+[issue #12]: https://github.com/CarakaDev/caraka/issues/12
+[issue #13]: https://github.com/CarakaDev/caraka/issues/13
+[issue #14]: https://github.com/CarakaDev/caraka/issues/14
+
 ## [1.5.8] — 2026-08-16
 
 The progress draft was deleted. Its tool transcript had already been copied into the final answer.

@@ -20,7 +20,7 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.5.8', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.5.9', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Nine presets load; six routes across five agents have completed a turn
   // against a live binary here — Claude Code over ACP and over its CLI route,
@@ -102,7 +102,7 @@ export const phases: Phase[] = [
   // seventeen more releases shipped inside it, so the page answered "v1.0" to a
   // reader looking at 1.5.5. The gate below is what keeps phase 7 open, not the
   // version, and roadmap.md now lists what shipped between the two numbers.
-  { n: '7', title: 'Public release · v1.0 → v1.5.8', dur: '2 weeks', live: true, ...shipped,
+  { n: '7', title: 'Public release · v1.0 → v1.5.9', dur: '2 weeks', live: true, ...shipped,
     q: 'Is it ready to be trusted by strangers?',
     gate: 'Every goal in prd.md is met and measured. Fifteen agents are not covered: nine presets ship and five have completed a turn against a live binary here, over six routes — Claude Code over ACP and over its CLI route, Codex and aider on the CLI, goose and opencode over ACP. Four have never run here at all. Taking the release to the Indonesian developer community and to the ACP ecosystem is the step nothing in a repository can perform.',
     range: r(7, 3, 26) },
@@ -133,6 +133,21 @@ export const releases = [
         'Watch the dashboard swap a panel in a real browser with the CSP live',
         'Run fourteen days on a real WhatsApp number with no ban and no manual relink, or publish the honest finding that makes Cloud API the default',
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
+      ] },
+    ] },
+  { v: '1.5.9', state: 'unproven', date: '19 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'FIXED', tone: '#FFD67E', items: [
+        'One dropped request at boot no longer ends caraka init. On a fresh VPS the first two attempts stopped at Telegram deleteWebhook could not be reached and the fifth went through. The call one line above it is getMe, whose own failure names a rejected token \u2014 the reporter never saw that sentence, so the token was accepted and the request two hundred milliseconds behind it was lost twice. A thrown send got exactly one more attempt, 500ms later; it gets three now, at 500ms and 1500ms, and Discord and WhatsApp route through the same rungs',
+        'A deleteWebhook that never left no longer stops the gateway. The poll loop already answers a transport failure by sleeping two seconds and asking again, forever, so a network that arrives late is met by a process still alive to meet it. A webhook that really is still set is not hidden by this: getUpdates answers 409, the loop rethrows it, and start ends on that sentence with exit code 78',
+      ] },
+      { label: 'CHANGED', tone: '#FFD67E', items: [
+        'The refusal that names a running PID now names the directory it read it from, and names CARAKA_HOME with an example. Several instances on one VPS, one folder each, and the second start quit with the first one\u2019s PID: every path hangs off one directory unless that variable moves it, so two installations are one process to that check. Both install guides now carry the whole recipe, including the one the reporter would have hit next \u2014 two pollers on one bot token, and Telegram ending the second with a 409',
+        'The /commands answer says where its list comes from. Issue #14 asked for a /skill listing every skill; skills belong to the agent, and on the ACP route the agent already sends them here as commands. The command asked for exists and is called /commands. What did not exist was a sentence saying so, and Caraka still keeps no registry of skills',
+        'Six claims that had stopped being true. The Indonesian README said attachments were missing and the registry held 0.2.1; both install guides counted six presets where nine ship; both OpenClaw comparisons recorded the core at 8,349 lines against a paragraph naming 7,996 as the only measured figure, both written on 8 August. Four sentences on this site named Claude where the agent is whichever preset the session runs on',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'A transport that is genuinely down now holds one call for two seconds rather than half of one, and nothing keys the PID lock by workspace \u2014 that lock is the only thing refusing two gateways one config, one database and one secrets directory',
       ] },
     ] },
   { v: '1.5.8', state: 'unproven', date: '16 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
@@ -187,31 +202,13 @@ export const releases = [
         'Only the resume failure that names the id Caraka just sent is retried. A run that died halfway may already have written files, and repeating its prompt would repeat them. The id is the signal because we are the ones who sent it, so no preset has to guess at nine agents\u2019 error sentences',
       ] },
     ] },
-  { v: '1.5.4', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
-    groups: [
-      { label: 'FIXED', tone: '#FFD67E', items: [
-        'Nine sentences said Claude outright, and an installation running codex read them on every task. 1.5.3 made the right agent run and did not change what Caraka says while it works, so the line a person watches on every single task still read Claude sedang bekerja \u2014 and so did the approval card, the first line of every new session, and the failure report, which is the exact sentence the reporter of issue #9 pasted into it',
-        'Six sentences now name the agent that is running: the working line, the no-output line, the failure report, the approval card header, the first line of a new session, and both /commands answers. One reader answers for all six, so they cannot disagree with each other',
-        'Three that cannot reach the name no longer guess one. channel.empty is sent by three channels that never learn which agent answered, and help.unknownCommand runs where there is no session; both say the agent, which is what the usage line has always said',
-        'The scope of this was found by its own test. The spec was written against the two sentences anybody had noticed; the test written for its last criterion found nine, and three of the seven it missed are on paths every task crosses',
-      ] },
-      { label: 'ADDED', tone: '#8EEE98', items: [
-        'The working line carries the brand, in the form this project already used: the start-up line has printed Caraka is live: telegram \u2192 codex since the arrow meant carried from, to, and the working line means exactly that. It reads \u25cc Caraka \u2192 codex \u00b7 lumaku\u2026 \u2014 lumaku is Javanese for is on its way, the language of the aksara on the mark, and a verb belonging to Caraka rather than to the agent. Both catalogs carry it unchanged, because it is a brand word rather than one to translate',
-        'The arrow stops there. The approval card still reads codex asks for permission and the failure report still reads codex could not finish the task: what asks and what fails is the agent, and an arrow on those two would claim both for Caraka',
-      ] },
-      { label: 'CHANGED', tone: '#8EEE98', items: [
-        'Three catalog lines keep the name on purpose and the test says why: two are the Claude ACP adapter\u2019s own errors, and bypassPermissions is the name of a mode Claude Code has and the other eight presets do not',
-      ] },
-      { label: 'LIMITED', tone: '#FFD67E', items: [
-        'The name printed is the preset id \u2014 codex, opencode, claude-code \u2014 the same string caraka doctor prints. It is not a display name, and there is no mapping from one to the other',
-      ] },
-    ] },
-  { v: '1.5.3 → 0.0.0', state: 'in CHANGELOG.md', date: '7–14 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
+  { v: '1.5.4 → 0.0.0', state: 'in CHANGELOG.md', date: '7–14 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
     groups: [
       { label: 'WHERE THE FULL ENTRIES ARE', tone: '#FFD67E', items: [
         'CHANGELOG.md in the repository, linked at the foot of this page. It carries every release below at the length it was written in; what is here is one line each, and nothing has been dropped from the history',
       ] },
       { label: 'SHIPPED', tone: '#8EEE98', items: [
+        '1.5.4 · 14 August 2026 — nine sentences said Claude outright, on paths every task crosses, and the working line took the brand',
         '1.5.3 · 14 August 2026 — an installation whose config said agent: codex ran Claude, and said so',
         '1.5.2 · 14 August 2026 — the topic closed after every turn, because done was read as the end of a session',
         '1.5.1 · 14 August 2026 — the folder form refused the only layout most people have',
