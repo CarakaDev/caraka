@@ -54,6 +54,12 @@ Two more constraints shape every review:
 
   Forty of the 74 lines added are comment, against 34 that are not, and they carry the two readings that would otherwise be made again: why swallowing a failed `deleteWebhook` is safe at `start` and not at `init` — the poll loop retries forever on one side and a five-minute pairing wait sits silent on the other — and why the 500ms rung measured for the run path was never a measurement for the boot path. No deletion paid for it, and none was available: `pangkas-berulang` already measured the five standing candidates at −35 lines rather than +400. The ceiling stays ~8,000.
 
+  On 3 September 2026 `src/` measures **10,621 lines**, 2,621 over the ceiling. `proses-tak-berakhir` added 69, measured from the 10,552 the tree held when it started. Its plan wrote no estimate, and the shape of the 69 is the reason: 87 lines went in and 18 came out. Two `spawn` calls with their option blocks became one `spawnAgent`, and two `kill` calls became `endTree` — the folding `pangkas-berulang` measured at a loss elsewhere, which came out ahead here because what held the two copies apart was nothing.
+
+  Forty-nine of the 87 are comment. They carry the reading that hid this bug from v0.1 to 1.5.9: `git` does not read a password from stdin, it opens `/dev/tty`, and a pipe on fd 0 does not close that door. Every one of them is a fact about the operating system rather than about this code, which is the class of comment that stops a wrong reading from being written a second time.
+
+  The finding is where the report pointed and where the bug was. The reporter measured CPU and RAM and asked for a resource limit; nothing here limits a resource. What the machine was holding was one process tree per attempt, each of them waiting on a terminal with nobody at it, and each surviving every kill Caraka could send. The `cgroup` the issue asks for would have capped the symptom and left the tree. And one third of this release is a key that had been documented in two languages for several releases with no code behind it, found by reading the paragraph the reporter would have read next. No deletion paid for the 69 beyond the 18 above. The ceiling stays ~8,000.
+
 - **Graceful degradation.** Nothing hard-fails when a capability is missing. Topics unavailable falls back to linear mode. Memory down still replies. ACP absent falls back to the CLI driver. A rejected rich message falls back to MarkdownV2.
 
 ## Repository map

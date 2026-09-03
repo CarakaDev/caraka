@@ -4,6 +4,29 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.10] — 2026-09-03
+
+One report, and the machine it came from needed a restart to recover.
+
+### Fixed
+
+- **A run no longer hangs on a terminal with nobody at it** ([issue #15]). The reporter asked the bot for a `git clone` on a VPS. The run started, never ended, and `git` was waiting for a password: it does not read credentials from stdin, it opens `/dev/tty`, and the stdio pipes Caraka spawns an agent with do not close that door. Started from a shell, `tmux`, or `screen`, the agent and every process under it inherited a controlling terminal, so the prompt went somewhere no one reads and the run sat there. Every agent now leads its own process group, which is also a session with no controlling terminal, and `GIT_TERMINAL_PROMPT=0` turns the common case into `fatal: could not read Username for 'https://github.com': terminal prompts disabled`. Measured on the same machine, in the same terminal: `Username for 'https://github.com':` and still waiting after ten seconds, against exit 128 after 467ms. A preset that wants the prompt back still gets it — `env:` is written after this.
+- **Cancelling a run ends what the agent started.** The 30-minute limit did fire, and what it signalled was the agent's own pid. A hung `git` is not the agent but a grandchild — `caraka → claude → bash → git` — so each attempt left a tree behind with nothing that could end it, and restarting Caraka reached none of them because they were no longer its children. Only restarting the machine swept them. The signal goes to the group now, on both routes, on the timeout, on `/stop`, and on shutdown, which is the half of FR-DRV-09 that said "cleanup of child processes" and only ever cleaned one.
+
+### Changed
+
+- **`runner.timeoutMinutes` is read.** Both troubleshooting files have told operators to raise the run limit with that key for several releases, and no code ever read it. An unknown key is stripped rather than refused, so the file still loaded, the number was never used, and nothing said so. The default stays 30 minutes and stays written in one place. One run at a time per workspace, so a large number means one stuck run holds its workspace that long.
+- **Both troubleshooting files carry the `git` credential error**, what it means, and the two commands that fix it on the machine rather than in Caraka.
+
+### Limited
+
+- **Windows cancellation is unchanged.** `detached` there opens a console window and there is no negative pid to signal, so the signal still reaches the agent alone. `GIT_TERMINAL_PROMPT=0` applies, so the half that caused the hang is closed; a descendant that hangs for another reason survives. No machine running this gate is Windows, so nothing about that platform is claimed.
+- **Ctrl-C no longer reaches the agent through the terminal.** A group of its own means SIGINT from the terminal stops at Caraka. What ends the agent is `gateway.stop()`, which already cancels every active run and stops every driver before the process exits.
+- **A descendant that calls `setsid` still escapes**, and so does one that ignores SIGTERM after the agent itself has exited: the pid that names the group is then nobody's, and signalling a number the system may reuse is worse than the process left behind.
+- **Nothing here limits CPU or memory.** The report asked for that, and it is the operator's `cgroup`, `ulimit`, or systemd unit. A cap would have held the symptom at a ceiling and left every tree alive.
+
+[issue #15]: https://github.com/CarakaDev/caraka/issues/15
+
 ## [1.5.9] — 2026-08-19
 
 Three reports from outside, and only one of them was a bug.

@@ -472,6 +472,16 @@ test.describe('the comps still decide the layout', () => {
     // directory, and the /commands row says the agent's skills arrive in that
     // list. /guide +47 to 7830: the fourteen-command note now says where the
     // agent's own list ends and Caraka's begins. Measured Chromium at 1440x900.
+    //
+    // 1.5.10 moved one: /status +106 to 8883. Its card went on and 1.5.5's came
+    // off into the archive line, and this is the widest that trade has come out
+    // since the five-card bound was set — one release describing a process tree
+    // against one describing a dropped send. Measured Chromium at 1440x900, and
+    // measured by a script rather than by this suite: port 4321 on the machine
+    // that owns these numbers belongs to another project's dev server, so the
+    // `webServer` block cannot bind it. The script makes the same measurement
+    // this test makes, and every other route in the table came back at the
+    // figure already written here, which is what says the two agree.
     const EXPECTED: Record<string, number> = {
       // v1.2 copy, except the two v1.3 moved — measured from the site (see above)
       '/': 6627,
@@ -481,7 +491,7 @@ test.describe('the comps still decide the layout', () => {
       '/install': 5465,
       '/security': 6235,
       '/whatsapp-risk': 6857,
-      '/status': 8777,
+      '/status': 8883,
       '/brand/readme': 5557,
       // still measured against the comp
       '/story': 5734,

@@ -20,7 +20,7 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.5.9', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.5.10', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Nine presets load; six routes across five agents have completed a turn
   // against a live binary here — Claude Code over ACP and over its CLI route,
@@ -102,7 +102,7 @@ export const phases: Phase[] = [
   // seventeen more releases shipped inside it, so the page answered "v1.0" to a
   // reader looking at 1.5.5. The gate below is what keeps phase 7 open, not the
   // version, and roadmap.md now lists what shipped between the two numbers.
-  { n: '7', title: 'Public release · v1.0 → v1.5.9', dur: '2 weeks', live: true, ...shipped,
+  { n: '7', title: 'Public release · v1.0 → v1.5.10', dur: '2 weeks', live: true, ...shipped,
     q: 'Is it ready to be trusted by strangers?',
     gate: 'Every goal in prd.md is met and measured. Fifteen agents are not covered: nine presets ship and five have completed a turn against a live binary here, over six routes — Claude Code over ACP and over its CLI route, Codex and aider on the CLI, goose and opencode over ACP. Four have never run here at all. Taking the release to the Indonesian developer community and to the ACP ecosystem is the step nothing in a repository can perform.',
     range: r(7, 3, 26) },
@@ -133,6 +133,20 @@ export const releases = [
         'Watch the dashboard swap a panel in a real browser with the CSP live',
         'Run fourteen days on a real WhatsApp number with no ban and no manual relink, or publish the honest finding that makes Cloud API the default',
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
+      ] },
+    ] },
+  { v: '1.5.10', state: 'unproven', date: '3 September 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'FIXED', tone: '#FFD67E', items: [
+        'A run no longer hangs on a terminal with nobody at it. The reporter asked the bot for a git clone on a VPS; the run started and never ended, because git was waiting for a password. It does not read credentials from stdin \u2014 it opens /dev/tty, and the stdio pipes an agent is spawned with do not close that door \u2014 so from a shell, tmux or screen the agent and everything under it inherited a terminal, and the prompt went where nobody reads. Every agent now leads its own process group, which is a session with no controlling terminal, and GIT_TERMINAL_PROMPT=0 names the cause out loud. Measured on one machine in one terminal: still waiting after ten seconds, against exit 128 after 467ms',
+        'Cancelling a run ends what the agent started. The thirty-minute limit did fire, and it signalled the agent\u2019s own pid \u2014 but a hung git is a grandchild, caraka to claude to bash to git, so every attempt left a tree behind with nothing that could end it. Restarting Caraka reached none of them, because they were no longer its children, and only restarting the machine swept them. The signal goes to the group now, on both routes and on shutdown',
+      ] },
+      { label: 'CHANGED', tone: '#FFD67E', items: [
+        'runner.timeoutMinutes is read. Both troubleshooting files have told operators to raise the run limit with that key for several releases while no code read it: an unknown key is stripped rather than refused, so the file loaded, the number was never used, and nothing said so. The default stays thirty minutes, and one run at a time per workspace means a large number holds a workspace that long',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'Windows cancellation is unchanged \u2014 detached opens a console window there and there is no negative pid to signal \u2014 and no machine running this gate is Windows, so nothing about that platform is claimed. Ctrl-C also stops at Caraka now rather than reaching the agent through the terminal; what ends the agent is the shutdown path that already cancelled every run',
+        'Nothing here limits CPU or memory. The report asked for that, and it belongs to the operator\u2019s cgroup, ulimit or systemd unit. A cap would have held the symptom at a ceiling and left every process tree alive',
       ] },
     ] },
   { v: '1.5.9', state: 'unproven', date: '19 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
@@ -190,24 +204,13 @@ export const releases = [
         'Eleven boxes in roadmap.md are still open and not one was ticked. Every one is a field gate no repository can close, and what was wrong was the prose inside them rather than their state',
       ] },
     ] },
-  { v: '1.5.5', state: 'unproven', date: '14 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
-    groups: [
-      { label: 'FIXED', tone: '#FFD67E', items: [
-        'One dropped request stranded a session for good. A transient transport failure \u2014 four ECONNRESETs in a burst of thirty calls, each at 420 to 466ms, measured by the person who reported it \u2014 aborted the task while Caraka was sending its own progress line. That send sat above the run\u2019s try block, so the failure skipped every catch and finally: nothing wrote failed, nothing released the queue, and the session stayed running. One run at a time per workspace means that locks the workspace behind it',
-        'A dropped request is now tried once more, after half a second. Discord and WhatsApp got it through the shared helper without either adapter changing; Telegram calls it directly, because Telegram answers 200 for its own errors and puts the code in the body, which a status-reading helper cannot fold in. A refusal is an answer, not a dropped request, and is never retried',
-        'A stored session id the agent no longer has is replaced, once. The CLI driver hands the agent\u2019s own id back on every later turn, and when that rollout is gone from disk \u2014 an update, a cleanup, a moved HOME \u2014 the agent refuses and nothing cleared the id, so every turn after repeated the same doomed resume and the session was broken for good. Caraka drops the id and runs the turn again as a fresh session, and says so, because the fresh session does not carry the earlier turns',
-      ] },
-      { label: 'LIMITED', tone: '#FFD67E', items: [
-        'A retried write can arrive twice. Telegram has no idempotency key, and a request that arrived with a lost answer cannot be told apart from one that never left. The trade is one rare duplicate progress line against a session stuck running behind a locked workspace',
-        'Only the resume failure that names the id Caraka just sent is retried. A run that died halfway may already have written files, and repeating its prompt would repeat them. The id is the signal because we are the ones who sent it, so no preset has to guess at nine agents\u2019 error sentences',
-      ] },
-    ] },
-  { v: '1.5.4 → 0.0.0', state: 'in CHANGELOG.md', date: '7–14 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
+  { v: '1.5.5 → 0.0.0', state: 'in CHANGELOG.md', date: '7–14 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
     groups: [
       { label: 'WHERE THE FULL ENTRIES ARE', tone: '#FFD67E', items: [
         'CHANGELOG.md in the repository, linked at the foot of this page. It carries every release below at the length it was written in; what is here is one line each, and nothing has been dropped from the history',
       ] },
       { label: 'SHIPPED', tone: '#8EEE98', items: [
+        '1.5.5 · 14 August 2026 — a dropped send stranded a session as running for good, and a stored rollout the agent no longer had broke every turn after it',
         '1.5.4 · 14 August 2026 — nine sentences said Claude outright, on paths every task crosses, and the working line took the brand',
         '1.5.3 · 14 August 2026 — an installation whose config said agent: codex ran Claude, and said so',
         '1.5.2 · 14 August 2026 — the topic closed after every turn, because done was read as the end of a session',
