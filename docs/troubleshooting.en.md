@@ -63,6 +63,26 @@ That is the default timeout. Raise it if the task genuinely warrants it:
 runner:
   timeoutMinutes: 60
 ```
+This key is read from 1.5.10 onward. Before that it was in this document and not
+in the code: an unknown key is stripped without a warning, so the file still
+loaded and the number was never used. One run at a time per workspace, so a
+large number means one stuck run holds its workspace for that long.
+
+**`fatal: could not read Username for 'https://github.com': terminal prompts disabled`**
+The agent ran `git` against a repository that needs credentials, and this machine
+does not have them. Before 1.5.10 `git` waited for an answer on a terminal nobody
+reads, so the run hung until the 30-minute limit and every process it left behind
+stayed alive after that. It now fails in seconds and names the reason.
+
+The fix is on the machine, not in Caraka. Install one credential helper for the
+account the agent uses:
+```bash
+gh auth login                 # then: gh auth setup-git
+git config --global credential.helper store   # alternative, stores the token as-is
+```
+For SSH remotes, use a key with no passphrase or one already loaded into
+`ssh-agent`, and have the host in `known_hosts` — with no terminal, `ssh` also
+fails rather than waiting.
 
 ---
 

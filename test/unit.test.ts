@@ -73,6 +73,7 @@ import {
   channelBlocks,
   defaultConfig,
   loadConfig,
+  runLimitMs,
   saveConfig,
   workspaces,
   type Workspace,
@@ -98,7 +99,7 @@ import {
   writesOrExecutes,
   type PolicyMode,
 } from "../src/core/security.js";
-import { claudeEnvironment, ClaudeAcp } from "../src/drivers/claude-acp.js";
+import { claudeEnvironment, ClaudeAcp, endTree, spawnAgent } from "../src/drivers/claude-acp.js";
 import { CliDriver, failureReason, parseOutput } from "../src/drivers/cli.js";
 import { loadPresets, lockedAdapter, presetSchema, resolveCommand } from "../src/drivers/preset.js";
 import { catalogs, defaultLanguage, translator } from "../src/i18n.js";
@@ -246,7 +247,13 @@ test("a spawned agent inherits nothing Caraka named to itself", () => {
     CLAUDE_CONFIG_DIR: "/tmp/c",
     PATH: "/usr/bin",
   });
-  assert.deepEqual(Object.keys(env).sort(), ["CLAUDE_CONFIG_DIR", "PATH"]);
+  // AC-1.3 and AC-1.5: nothing of Caraka's crosses, and the one name that is
+  // added is the one that stops a child waiting for a human (issue #15).
+  assert.deepEqual(Object.keys(env).sort(), ["CLAUDE_CONFIG_DIR", "GIT_TERMINAL_PROMPT", "PATH"]);
+  assert.equal(env.GIT_TERMINAL_PROMPT, "0");
+  // An operator who turned it on in their own shell still gets a run that
+  // cannot block: what Caraka writes is written last.
+  assert.equal(claudeEnvironment({ GIT_TERMINAL_PROMPT: "1" }).GIT_TERMINAL_PROMPT, "0");
 });
 
 test("the startup scrubber is seeded with the secrets this process loaded", () => {
@@ -2395,6 +2402,8 @@ test("the CLI driver spawns the preset command and resumes with the extracted id
     // AC-9.1 on a process that really ran: no CARAKA_* name crossed at all.
     assert.deepEqual(turn1?.caraka, []);
     assert.equal(turn1?.env.FAKE_EXTRA, "yes");
+    // AC-1.3 on a process that really ran.
+    assert.equal(turn1?.env.GIT_TERMINAL_PROMPT, "0");
     assert.equal(turn1?.stdin, "");
     assert.deepEqual(turn2?.argv, ["resume", "t-1", "task two"]);
   } finally {
@@ -2452,6 +2461,60 @@ test("a cancelled CLI run gets SIGTERM, then SIGKILL after the grace", async () 
   const result = await run;
   assert.equal(result.stopReason, "cancelled");
   assert.ok(Date.now() - cancelledAt >= 80, "the process outlived SIGTERM until the grace ran out");
+});
+
+test("cancelling a run ends what the agent started, not just the agent", async () => {
+  // AC-1.1, AC-2.1, AC-2.3, and the whole of issue #15. A `git` that hangs
+  // waiting for a password is a grandchild — `caraka → claude → bash → git` —
+  // and a signal aimed at the agent's own pid never reached it. The stub starts
+  // one child of its own, in its own group, and ignores SIGTERM, so nothing but
+  // a signal to the group can end the pair.
+  if (process.platform === "win32") return; // there is no negative pid to signal
+  const root = await mkdtemp(join(tmpdir(), "caraka-cli-tree-"));
+  const pidFile = join(root, "grandchild.pid");
+  const driver = new CliDriver(
+    cliPreset({ env: { FAKE_GRANDCHILD: pidFile } }),
+    undefined,
+    undefined,
+    80,
+  );
+  const sid = await driver.session(null, root);
+  const run = driver.prompt(sid, "hang", textRoute([]));
+  while (!existsSync(pidFile)) await delay(10);
+  const grandchild = Number(await readFile(pidFile, "utf8"));
+  assert.ok(grandchild > 0, "the stub wrote no pid");
+  assert.equal(processAlive(grandchild), true);
+  await driver.cancel(sid);
+  assert.equal((await run).stopReason, "cancelled");
+  // Polled rather than slept on: the signal is delivered at once, and what
+  // takes an unknown moment is the process table catching up.
+  for (let waited = 0; waited < 2000 && processAlive(grandchild); waited += 10) await delay(10);
+  assert.equal(processAlive(grandchild), false, "the agent's own child outlived the run");
+});
+
+test("ending a tree that has already gone is not an error", async () => {
+  // AC-2.4. `process.kill` on a group with nothing left in it throws ESRCH, and
+  // an unhandled one there would end a shutdown early.
+  const child = spawnAgent(process.execPath, ["-e", ""], process.env);
+  await new Promise((resolve) => child.once("close", resolve));
+  endTree(child, "SIGTERM");
+  endTree(child, "SIGKILL");
+});
+
+test("a preset that wants the terminal prompt back gets it", async () => {
+  // AC-1.4. What Caraka writes is a default, not a fence: `preset.env` is
+  // written after it at both spawn sites.
+  const root = await mkdtemp(join(tmpdir(), "caraka-cli-prompt-"));
+  const record = join(root, "record.jsonl");
+  const driver = new CliDriver(
+    cliPreset({ env: { FAKE_RECORD: record, GIT_TERMINAL_PROMPT: "1" } }),
+  );
+  const sid = await driver.session(null, root);
+  await driver.prompt(sid, "task", textRoute([]));
+  const written = JSON.parse((await readFile(record, "utf8")).trim()) as {
+    env: Record<string, string | null>;
+  };
+  assert.equal(written.env.GIT_TERMINAL_PROMPT, "1");
 });
 
 test("a CLI run that exits non-zero answers with scrubbed stderr", async () => {
@@ -2664,6 +2727,34 @@ test("workspace.driver is optional, constrained to the two routes, and loads bac
       stringify({ ...config, workspace: { ...config.workspace, driver: "warp" } }),
     );
     await assert.rejects(loadConfig());
+  } finally {
+    if (oldHome === undefined) delete process.env.CARAKA_HOME;
+    else process.env.CARAKA_HOME = oldHome;
+  }
+});
+
+test("runner.timeoutMinutes is read, and its absence leaves the default alone", async () => {
+  // AC-3.1, AC-3.2, AC-3.3. Both troubleshooting files have named this key for
+  // several releases while no code read it: an unknown key is stripped, not
+  // refused, so an operator who raised the limit changed nothing and was told
+  // nothing (issue #15).
+  const oldHome = process.env.CARAKA_HOME;
+  const root = await mkdtemp(join(tmpdir(), "caraka-runlimit-"));
+  process.env.CARAKA_HOME = root;
+  try {
+    const config = defaultConfig(root, "caraka_test_bot", "42", true);
+    const paths = await saveConfig(config, "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi");
+    // AC-3.2: nothing chose, so nothing is passed and the gateway keeps its 30.
+    assert.equal(runLimitMs((await loadConfig()).config), undefined);
+    await writeFile(paths.config, stringify({ ...config, runner: { timeoutMinutes: 90 } }));
+    // AC-3.1.
+    assert.equal(runLimitMs((await loadConfig()).config), 90 * 60_000);
+    // AC-3.3: a limit of zero minutes and a fractional one are both refused,
+    // rather than read as "cancel every run at once".
+    for (const timeoutMinutes of [0, -5, 1.5]) {
+      await writeFile(paths.config, stringify({ ...config, runner: { timeoutMinutes } }));
+      await assert.rejects(loadConfig(), /timeoutMinutes/);
+    }
   } finally {
     if (oldHome === undefined) delete process.env.CARAKA_HOME;
     else process.env.CARAKA_HOME = oldHome;
@@ -3595,6 +3686,7 @@ test("the Discord token is seeded into the scrubber and never inherited by an ag
   for (const secret of secrets) assert.equal(scrub(`x ${secret} y`).includes(secret), false);
   assert.deepEqual(Object.keys(claudeEnvironment({ CARAKA_DISCORD_TOKEN: "x", PATH: "/bin" })), [
     "PATH",
+    "GIT_TERMINAL_PROMPT",
   ]);
 });
 
@@ -5784,6 +5876,28 @@ test("the ACP driver reads image support off initialize and sends bytes, never a
     .filter((line) => !line.trimStart().startsWith("//") && !line.trimStart().startsWith("*"))
     .join("\n");
   assert.equal(/\buri\s*:/.test(code), false, "the ACP driver writes a uri");
+});
+
+test("stopping the ACP route ends the adapter's tree", async () => {
+  // AC-2.5. The default route spawns an adapter, and what a tool call starts is
+  // a grandchild of Caraka. Shutdown used to signal the adapter alone and leave
+  // the rest running with nothing left that could end it (issue #15).
+  if (process.platform === "win32") return; // there is no negative pid to signal
+  const root = await mkdtemp(join(tmpdir(), "caraka-acp-tree-"));
+  const pidFile = join(root, "child.pid");
+  const driver = new ClaudeAcp(undefined, {
+    command: process.execPath,
+    args: [stubAcpAgent],
+    env: { FAKE_ACP_CHILD: pidFile },
+  });
+  await driver.start();
+  while (!existsSync(pidFile)) await delay(10);
+  const child = Number(await readFile(pidFile, "utf8"));
+  assert.ok(child > 0, "the stub wrote no pid");
+  assert.equal(processAlive(child), true);
+  await driver.stop();
+  for (let waited = 0; waited < 2000 && processAlive(child); waited += 10) await delay(10);
+  assert.equal(processAlive(child), false, "the adapter's own child outlived the driver");
 });
 
 test("the route pair Discord and WhatsApp both wrote out is now one pair", async () => {

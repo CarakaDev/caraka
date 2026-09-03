@@ -3,12 +3,12 @@
 // and the whole answer becomes one text update, which the gateway already
 // treats the same as a slow stream.
 
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import type { AgentDriver, DriverRoute } from "../core/driver.js";
 import { createScrubber } from "../core/security.js";
 import { translator, type Translate } from "../i18n.js";
-import { claudeEnvironment } from "./claude-acp.js";
+import { claudeEnvironment, endTree, spawnAgent } from "./claude-acp.js";
 import type { AgentPreset } from "./preset.js";
 
 // `docs/design.md:278` names SIGTERM → SIGKILL; the 5-second grace is set by
@@ -148,11 +148,12 @@ export class CliDriver implements AgentDriver {
       else for (const file of files) argv.push(image, file);
     }
     if (viaArg) argv.push(prompt);
-    const child = spawn(this.command, argv, {
-      cwd: state.cwd,
-      stdio: ["pipe", "pipe", "pipe"],
-      env: { ...claudeEnvironment(), ...this.preset.env },
-    });
+    const child = spawnAgent(
+      this.command,
+      argv,
+      { ...claudeEnvironment(), ...this.preset.env },
+      state.cwd,
+    );
     this.children.set(sessionId, child);
     const collected = { stdout: "", stderr: "" };
     child.stdout.setEncoding("utf8");
@@ -232,9 +233,13 @@ export class CliDriver implements AgentDriver {
     const child = this.children.get(sessionId);
     if (!child) return;
     this.cancelling.add(sessionId);
-    child.kill("SIGTERM");
+    // The group, not the process: what hangs a run is usually something the
+    // agent started, and that is a grandchild here (issue #15). The escalation
+    // still reads the agent's own exit, because that is the process whose pid
+    // names the group — once it is gone, the number may belong to somebody else.
+    endTree(child, "SIGTERM");
     const timer = setTimeout(() => {
-      if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
+      if (child.exitCode === null && child.signalCode === null) endTree(child, "SIGKILL");
     }, this.killGraceMs);
     timer.unref();
   }

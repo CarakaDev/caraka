@@ -23,9 +23,54 @@ export type AcpSpawn = {
  * both.
  */
 export function claudeEnvironment(source: NodeJS.ProcessEnv = process.env) {
-  return Object.fromEntries(
-    Object.entries(source).filter(([key]) => !key.startsWith("CARAKA_")),
-  ) as NodeJS.ProcessEnv;
+  return {
+    ...Object.fromEntries(Object.entries(source).filter(([key]) => !key.startsWith("CARAKA_"))),
+    // Nobody is at the terminal a run inherits. `git` does not read credentials
+    // from stdin: it opens `/dev/tty`, which the stdio pipes below do not close,
+    // so a clone needing a password wrote `Username for 'https://github.com':`
+    // to a terminal no one reads and waited there for good (issue #15). Zero
+    // turns that into `fatal: could not read Username …: terminal prompts
+    // disabled` in about a second. Credential helpers still answer; only the
+    // prompt is refused. Both call sites write `preset.env` after this, so a
+    // preset that wants the prompt back still wins.
+    GIT_TERMINAL_PROMPT: "0",
+  } as NodeJS.ProcessEnv;
+}
+
+/**
+ * Whether a spawned agent gets a process group of its own, and therefore
+ * whether ending it signals a group or a process. One constant answers both
+ * questions, in one file, because they cannot be allowed to disagree: a child
+ * spawned into Caraka's own group and then signalled at `-pid` would end
+ * Caraka. Windows is false on both counts — `detached` there opens a console
+ * window, and there is no negative pid to signal.
+ */
+const ownGroup = process.platform !== "win32";
+
+/**
+ * How both routes start an agent. The group is what lets a cancel reach further
+ * than the agent itself: a hung `git` is a grandchild at least
+ * (`caraka → claude → bash → git`), and a signal to the agent never touched it
+ * (issue #15). A new group is also a new session, so nothing under it has a
+ * controlling terminal left to block on.
+ */
+export function spawnAgent(command: string, args: string[], env: NodeJS.ProcessEnv, cwd?: string) {
+  return spawn(command, args, { cwd, env, stdio: ["pipe", "pipe", "pipe"], detached: ownGroup });
+}
+
+/**
+ * The agent and everything it started, signalled together. Only a child from
+ * `spawnAgent` may be passed here; that is what makes the group above the right
+ * thing to signal.
+ */
+export function endTree(child: ChildProcessWithoutNullStreams, signal: NodeJS.Signals) {
+  if (child.pid === undefined) return;
+  try {
+    if (ownGroup) process.kill(-child.pid, signal);
+    else child.kill(signal);
+  } catch {
+    // A process or a group that has already gone is the outcome asked for.
+  }
 }
 
 /**
@@ -81,10 +126,7 @@ export class ClaudeAcp implements AgentDriver {
       spec = { command: process.execPath, args: [entry], env: {} };
     }
     // Held locally so the listener below is attached in this tick.
-    const child = spawn(spec.command, spec.args, {
-      stdio: ["pipe", "pipe", "pipe"],
-      env: { ...claudeEnvironment(), ...spec.env },
-    });
+    const child = spawnAgent(spec.command, spec.args, { ...claudeEnvironment(), ...spec.env });
     this.child = child;
     // An `"error"` event with no listener is thrown, printed, and ends the
     // process, and `spawn` defers ENOENT, EACCES, EAGAIN, EMFILE, and ENFILE to
@@ -181,7 +223,10 @@ export class ClaudeAcp implements AgentDriver {
     this.routes.clear();
     this.connection?.close();
     this.connection = undefined;
-    if (this.child && !this.child.killed) this.child.kill("SIGTERM");
+    // The adapter's whole tree, not the adapter: what the coding agent started
+    // for a tool call is a grandchild here, and shutting down used to leave it
+    // running with nothing left to end it (issue #15).
+    if (this.child) endTree(this.child, "SIGTERM");
     this.child = undefined;
   }
 }

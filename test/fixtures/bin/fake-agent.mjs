@@ -6,7 +6,11 @@
 //   FAKE_EXIT         exit with this status (default 0)
 //   FAKE_IGNORE_TERM  ignore SIGTERM and stay alive, so only SIGKILL ends it
 //   FAKE_READY        write this file once the SIGTERM handler is installed
+//   FAKE_GRANDCHILD   start one child of this process, write its pid to this
+//                     file, and ignore SIGTERM — what a coding agent running a
+//                     tool looks like from Caraka's side
 //   FAKE_LOST_ROLLOUT when argv names a resume, fail naming the id it was handed
+import { spawn } from "node:child_process";
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 
 let stdin = "";
@@ -27,13 +31,24 @@ if (process.env.FAKE_RECORD) {
       caraka: Object.keys(process.env).filter((key) => key.startsWith("CARAKA_")),
       env: {
         FAKE_EXTRA: process.env.FAKE_EXTRA ?? null,
+        // What Caraka wrote, or what a preset overwrote it with (AC-1.4).
+        GIT_TERMINAL_PROMPT: process.env.GIT_TERMINAL_PROMPT ?? null,
       },
       stdin,
     })}\n`,
   );
 }
 
-if (process.env.FAKE_IGNORE_TERM === "1") {
+if (process.env.FAKE_GRANDCHILD) {
+  // Not detached: it belongs to this process's group, which is the whole point
+  // — a signal aimed at this pid alone leaves it running.
+  const grandchild = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], {
+    stdio: "ignore",
+  });
+  process.on("SIGTERM", () => {});
+  setInterval(() => {}, 1000);
+  writeFileSync(process.env.FAKE_GRANDCHILD, String(grandchild.pid));
+} else if (process.env.FAKE_IGNORE_TERM === "1") {
   process.on("SIGTERM", () => {});
   setInterval(() => {}, 1000);
   if (process.env.FAKE_READY) writeFileSync(process.env.FAKE_READY, "ready");

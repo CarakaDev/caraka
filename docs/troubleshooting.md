@@ -63,6 +63,28 @@ Timeout bawaan. Naikkan bila memang wajar untuk tugasnya:
 runner:
   timeoutMinutes: 60
 ```
+Kunci ini baru dibaca sejak 1.5.10. Sebelum itu ia ada di dokumen ini dan tidak
+ada di kode: kunci yang tidak dikenal dibuang tanpa peringatan, jadi berkasnya
+tetap termuat dan angkanya tidak pernah dipakai. Satu run aktif per workspace,
+jadi angka yang besar berarti satu run yang macet memegang workspace-nya selama
+itu.
+
+**`fatal: could not read Username for 'https://github.com': terminal prompts disabled`**
+Agent menjalankan `git` untuk sebuah repositori yang butuh kredensial, dan mesin
+ini tidak punya kredensial itu. Sebelum 1.5.10 `git` menunggu jawaban di terminal
+yang tidak dibaca siapa pun, jadi runnya menggantung sampai batas 30 menit dan
+setiap proses yang tertinggal tetap hidup sesudahnya. Sekarang `git` gagal dalam
+hitungan detik dan menyebut sebabnya.
+
+Perbaikannya di sisi mesin, bukan di Caraka. Pasang satu credential helper untuk
+akun yang dipakai agent:
+```bash
+gh auth login                 # lalu: gh auth setup-git
+git config --global credential.helper store   # alternatif, menyimpan token apa adanya
+```
+Untuk remote SSH, pastikan kuncinya tanpa passphrase atau sudah dimuat di
+`ssh-agent`, dan host-nya sudah ada di `known_hosts` — tanpa terminal, `ssh` juga
+gagal, bukan menunggu.
 
 ---
 

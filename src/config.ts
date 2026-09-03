@@ -128,6 +128,15 @@ const configShape = {
     adapter: z.literal("claude-agent-acp"),
     adapterVersion: z.literal("0.63.0"),
   }),
+  // Both troubleshooting files have told operators to raise the run limit with
+  // this key for several releases, and nothing read it: an unknown key is
+  // stripped by a zod object rather than refused, so the file still loaded and
+  // the number was never used (issue #15). FR-DRV-09 says "default 30 minutes",
+  // and that word is what this key owes. The 30 itself stays where it was, in
+  // `RUN_LIMIT_MS`, so absence here has exactly one meaning. No upper bound: the
+  // number belongs to whoever runs the machine, and a ceiling invented at this
+  // line would have no source.
+  runner: z.object({ timeoutMinutes: z.number().int().positive() }).optional(),
   // Absent in every file written before v0.3. Nobody chose a memory provider
   // then, and `local` works with no extra process, so absence reads as `local`.
   memory: z
@@ -209,6 +218,15 @@ export function workspaces(config: CarakaConfig): [Workspace, ...Workspace[]] {
   if (first) return [canonical(first), ...rest.map(canonical)];
   const { name, path, driver } = config.workspace;
   return [{ slug: name, path: resolve(path), ...(driver ? { driver } : {}) }];
+}
+
+/**
+ * The run limit in milliseconds, or `undefined` when the file names none. The
+ * absence is passed on rather than resolved here, so the 30 minutes FR-DRV-09
+ * calls the default is written in one place, `RUN_LIMIT_MS` in the gateway.
+ */
+export function runLimitMs(config: CarakaConfig) {
+  return config.runner && config.runner.timeoutMinutes * 60_000;
 }
 
 /**

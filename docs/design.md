@@ -263,7 +263,8 @@ Aturan keras:
 ## 8. Concurrency & lifecycle
 
 - **1 run aktif per workspace**; pesan berikutnya masuk antrean FIFO per workspace dengan ack "diantrekan (#n)". Dibangun v0.4, di level aplikasi (satu slot per workspace dalam proses gateway).
-- Run punya timeout (default 30 mnt) dan dapat dibatalkan (`session/cancel` untuk ACP, `SIGTERM` → `SIGKILL` setelah 5 detik untuk CLI).
+- Run punya timeout (default 30 mnt, diubah lewat `runner.timeoutMinutes` sejak 1.5.10) dan dapat dibatalkan (`session/cancel` untuk ACP, `SIGTERM` → `SIGKILL` setelah 5 detik untuk CLI).
+- Sinyal itu dikirim ke **grup proses** agent, bukan ke proses agent. Di luar Windows setiap agent dijalankan dengan `detached`, jadi ia memimpin grupnya sendiri dan tidak punya terminal pengendali. Yang menggantung sebuah run biasanya bukan agent-nya melainkan sesuatu yang dijalankan agent — `caraka → claude → bash → git` — dan sinyal ke pid agent tidak pernah menyentuhnya (issue #15).
 - Pool proses ber-idle-shutdown yang dulu tertulis di sini belum dibangun (dicatat 8 Agustus 2026, `driver-v04`): proses CLI keluar sendiri di akhir giliran, dan adapter ACP tetap satu anak proses per driver yang dihentikan saat shutdown.
 - Restart gateway memulihkan sesi dari SQLite; penandaan run terputus sebagai `interrupted` juga belum dibangun — perilaku restart v0.3 bertahan.
 
