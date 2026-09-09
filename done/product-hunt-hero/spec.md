@@ -1,6 +1,6 @@
 # Spec — product-hunt-hero
 
-**Status:** berjalan · **Tanggal:** 9 September 2026
+**Status:** selesai · **Tanggal:** 9 September 2026
 
 ## Latar
 

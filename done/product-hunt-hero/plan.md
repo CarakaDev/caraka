@@ -54,4 +54,11 @@
   terkait dan berubah antar-run: satu tes attachment pada percobaan pertama
   serta satu tes approval pada percobaan kedua. Masing-masing suite lulus saat
   dijalankan sendiri; tidak ada source akar yang diubah.
-- Deploy dan smoke produksi diisi setelah publikasi.
+- `CLOUDFLARE_ACCOUNT_ID=... npm run deploy`: exit 0; Wrangler deployed
+  `caraka-site` to `caraka.dev/*` with version
+  `275b5888-abf1-4f90-9448-d065c2ea9258`.
+- Production smoke `https://caraka.dev/`: HTTP 200, 80052 bytes, Product Hunt
+  href true after HTML unescape, target blank true, rel noopener true, alt true,
+  and dimensions true.
+- Commit `c8342af95cfb9ed0fe8a59d4247b9fe3dbe2b4b9` was pushed to
+  `origin/fix/proses-tak-berakhir` before deploy.
