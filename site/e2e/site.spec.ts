@@ -185,6 +185,24 @@ test.describe('copy button', () => {
   })
 })
 
+test.describe('landing hero', () => {
+  test('shows the Product Hunt featured badge', async ({ page }) => {
+    await page.goto('/')
+    await settle(page)
+
+    const badge = page.locator('#hero a[href="https://www.producthunt.com/products/caraka?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-caraka"]')
+    await expect(badge).toHaveCount(1)
+    await expect(badge).toHaveAttribute('target', '_blank')
+    await expect(badge).toHaveAttribute('rel', 'noopener noreferrer')
+
+    const image = badge.locator('img')
+    await expect(image).toHaveAttribute('alt', 'Caraka - Run your coding agent from Telegram, Discord, or WhatsApp | Product Hunt')
+    await expect(image).toHaveAttribute('width', '250')
+    await expect(image).toHaveAttribute('height', '54')
+    await expect(image).toHaveAttribute('src', 'https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1242567&theme=dark&t=1788939154946')
+  })
+})
+
 test.describe('keyboard access', () => {
   test('the first tab stop is the skip link, and it lands on the content', async ({ page }) => {
     // AC-5.1 — the landing page opens behind a fixed header and a 2.6s veil.
@@ -482,9 +500,11 @@ test.describe('the comps still decide the layout', () => {
     // `webServer` block cannot bind it. The script makes the same measurement
     // this test makes, and every other route in the table came back at the
     // figure already written here, which is what says the two agree.
+    // The Product Hunt badge adds 83px to /, moving it from 6627 to 6710.
+    // Measured Chromium at 1440x900 after the badge was added.
     const EXPECTED: Record<string, number> = {
       // v1.2 copy, except the two v1.3 moved — measured from the site (see above)
-      '/': 6627,
+      '/': 6710,
       '/guide': 7830,
       '/docs': 7607,
       '/compare': 5960,
