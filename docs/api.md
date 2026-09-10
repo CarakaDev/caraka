@@ -49,7 +49,7 @@ Dua amandemen 8 Agustus 2026 (pekerjaan `driver-v04`) membentuk tabel ini. Perta
 
 `imageArg` dan `imageMode` kembali pada 13 Agustus 2026, dengan pembacanya: `CliDriver` menyusun argv dari keduanya dan menyetel `acceptsFiles` dari ada atau tidaknya `imageArg` (`done/lampiran-chat/spec.md`). Yang memakainya hari ini hanya `codex.yaml` dengan `-i`; `claude-code.yaml` sengaja tidak diberi flag, dan alasannya ada di berkas itu. Empat field lain tetap di luar tabel sampai ada yang membacanya.
 
-Arti `acceptsFiles` menyempit pada 10 September 2026 (`spec/lampiran-masuk.md` AC-3.5). Ia menjawab satu pertanyaan saja: apakah route ini bisa membawa berkas di dalam prompt. Ia tidak lagi menentukan apakah sebuah lampiran diunduh, karena lampiran sekarang ditulis di dalam workspace dan tool berkas agent boleh membukanya lewat path di kedua rute.
+Arti `acceptsFiles` menyempit pada 10 September 2026 (`done/lampiran-masuk/spec.md` AC-3.5). Ia menjawab satu pertanyaan saja: apakah route ini bisa membawa berkas di dalam prompt. Ia tidak lagi menentukan apakah sebuah lampiran diunduh, karena lampiran sekarang ditulis di dalam workspace dan tool berkas agent boleh membukanya lewat path di kedua rute.
 
 **Menerima preset baru** butuh tiga hal: perintahnya sudah diuji sendiri oleh pengirim, agent-nya berjalan non-interaktif dan kembali saat selesai, dan flag yang belum diuji ditandai `# belum diverifikasi` beserta sumbernya di dalam berkas. Job `presets` di CI menjaga skemanya; smoke hidup tetap per mesin.
 

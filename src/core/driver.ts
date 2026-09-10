@@ -97,7 +97,7 @@ export interface AgentDriver {
    * Whether this route can carry a file inside the prompt itself. Left unset
    * means it cannot, and core hands the path over in the `<lampiran>` block
    * instead. It does not decide whether an attachment is downloaded
-   * (`spec/lampiran-masuk.md` AC-3.5).
+   * (`done/lampiran-masuk/spec.md` AC-3.5).
    */
   readonly acceptsFiles?: boolean;
 

@@ -49,7 +49,7 @@ export function createScrubber(secrets: string[] = []) {
 // The mime allowlist, and the extension each entry is written under. Four image
 // mimes since v1.5, and five document mimes from 10 September 2026, when the
 // download moved inside the workspace: a path the agent's own file tool may open
-// is a reader, and until that move there was none (`spec/lampiran-masuk.md`).
+// is a reader, and until that move there was none (`done/lampiran-masuk/spec.md`).
 // Nothing whose extension a runtime executes is on this list. The file lands in
 // the directory the agent works in, and `writesOrExecutes` below guards a tool
 // call rather than what lies in the cwd.

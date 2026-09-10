@@ -80,7 +80,7 @@ const RUN_LIMIT_MS = 30 * 60_000;
 // tool may open it on every route. `.caraka-inbox` and not `.caraka`, because
 // the second name is this product's home and a later per-workspace config will
 // take it, while this directory is deleted whole when the run ends
-// (`spec/lampiran-masuk.md`).
+// (`done/lampiran-masuk/spec.md`).
 const INBOX_DIRECTORY = ".caraka-inbox";
 // Where a file the agent wants delivered is picked up. Inside the workspace for
 // the reason the inbox is: the CLI route cannot reach outside the project
