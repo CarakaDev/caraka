@@ -78,6 +78,10 @@ export function endTree(child: ChildProcessWithoutNullStreams, signal: NodeJS.Si
  * URL: `claude-agent-acp` forwards an `ImageContent` whose `uri` starts with
  * `http` to the model as the image source (`acp-agent.js:5366-5373`), and a
  * Telegram download URL carries the bot token (AC-7.7).
+ *
+ * Only an image ever arrives here. Core decides that in `takeAttachments` with
+ * `isImageAttachment`, because the mime below is rebuilt from the extension: a
+ * `.pdf` in this array would be sent to the model as `image/pdf`.
  */
 async function imageBlock(file: string) {
   // The extension was generated from the mime allowlist in `core/security.ts`, so

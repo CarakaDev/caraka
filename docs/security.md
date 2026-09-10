@@ -344,12 +344,39 @@ dibaca dan dibatalkan di byte yang melewati plafon, tanpa menulis apa pun ke
 disk. Keduanya menjawab dengan satu kalimat yang menyebut ukurannya dan
 batasnya — pesan jelas, bukan diam-diam dibuang.
 
-Lampiran yang diunduh duduk di `~/.caraka/inbox/<run>/` dengan mode 0700, satu
-subdirektori per run, dihapus saat run selesai dan disapu lagi saat gateway
-mulai. Nama berkasnya dibangkitkan Caraka, tidak satu karakter pun dari
-`file_name` kiriman pengirim, dan hanya empat mime gambar yang punya ekstensi di
-daftar izin (`src/core/security.ts`). Lampiran jenis lain diklasifikasi,
-diaudit, dan dijawab satu kalimat.
+Lampiran yang diunduh duduk di `<workspace>/.caraka-inbox/<run>/` dengan mode
+0700 pada kedua direktori, satu subdirektori per run. **Sejak 10 September 2026
+letaknya di dalam workspace, bukan lagi di `~/.caraka/inbox/`.** Alasannya satu:
+path di luar direktori proyek adalah path yang tool berkas agent boleh menolak.
+Di jalur CLI Claude Code, Read dilaporkan menjawab EPERM untuk path seperti itu
+dan `additionalDirectories` dilaporkan tidak menutupnya
+(anthropics/claude-code#29013), jadi sebelum pindah tidak ada satu rute pun yang
+bisa membaca lampiran lewat path.
+
+Caraka menulis `.gitignore` berisi `*` di `<workspace>/.caraka-inbox/`. Pola itu
+mencakup berkas `.gitignore` itu sendiri, jadi selama run berjalan direktori itu
+tidak muncul di `git status` dan tidak ikut `git add -A`. Yang **tidak** disentuh
+adalah `.gitignore` milik workspace: berkas itu dilacak git, dan satu baris
+tambahan di sana muncul di setiap `git status` operator sesudahnya.
+
+Seluruh direktori `.caraka-inbox` dihapus saat run selesai, gagal, atau
+dibatalkan, dan disapu lagi saat gateway mulai untuk setiap workspace yang config
+sebut. Konsekuensinya ditulis apa adanya: nama `.caraka-inbox` di dalam workspace
+bukan milik operator lagi. Tidak ada berkas penanda yang membedakan direktori
+milik Caraka dari direktori bernama sama milik orang lain, dan isinya hilang pada
+`caraka start` berikutnya. Baris `~/.caraka/inbox` tetap disapu juga, karena ia
+menyapu sisa yang ditinggalkan versi 1.5.x.
+
+Nama berkasnya dibangkitkan Caraka, tidak satu karakter pun dari `file_name`
+kiriman pengirim. Daftar izin (`src/core/security.ts`) memuat sembilan mime:
+`image/jpeg`, `image/png`, `image/gif`, `image/webp`, `application/pdf`,
+`text/plain`, `text/markdown`, `text/csv`, dan `application/json`. Tidak ada satu
+pun mime yang ekstensinya dijalankan runtime di daftar itu, karena berkasnya
+duduk di direktori kerja agent. `application/octet-stream` juga tidak, karena ia
+tidak menyebut format apa pun, jadi tidak ada ekstensi yang bisa dipilih darinya
+tanpa membaca nama kiriman pengirim. Lampiran jenis lain diklasifikasi, diaudit,
+dan dijawab satu kalimat yang menyebut mime-nya dan cara lain memasukkan
+berkasnya.
 
 ---
 
@@ -390,7 +417,7 @@ Kejujuran adalah bagian dari postur keamanan:
 - Kami **tidak** melihat satu pun keputusan izin selama jendela `--bypass` terbuka, jadi kami tidak mengaudit isinya. Yang tercatat hanya jendelanya.
 - Kami **tidak** bisa menyembunyikan pekerjaan dari anggota grup yang kamu masukkan ke allowlist.
 - Kami **tidak** memasang autentikasi pada dasbor lokal. Selama `caraka dashboard` berjalan, siapa pun di mesin itu yang dapat mencapai `127.0.0.1` dapat membacanya, termasuk pengguna lokal lain yang tidak punya izin baca atas `~/.caraka/caraka.db`. Batas yang sebenarnya adalah izin berkas database itu, dan dasbor melebarkannya selama ia hidup. Yang **tidak** termasuk dalam batas itu adalah peramban: dasbor hanya menjawab request yang datang dengan literal alamat atau `localhost` di header `Host`, sehingga halaman web yang mengarahkan namanya sendiri ke 127.0.0.1 tidak bisa membaca panel mana pun sebagai origin-nya sendiri.
-- Kami **tidak** bisa memberi label pada gambar. Kontrol utama T3 adalah label "data, bukan instruksi", dan implementasinya pembungkus teks — piksel tidak bisa membawanya, dan instruksi di dalam gambar bisa dirender begitu samar sehingga manusia yang meneruskan tangkapan layar itu tidak membacanya sementara model tetap membacanya. Untuk run yang membawa lampiran, T3 karena itu turun ke kontrol cadangannya sendirian, yaitu daftar risiko tinggi ditambah kartu approval: run seperti itu tidak pernah memakai jalur auto-approve jendela trust, jadi setiap permintaan izin yang bisa disetujui tetap butuh satu ketukan. Tingkat keberhasilan injeksi lewat gambar tidak diukur di mesin ini, jadi tidak ada angkanya di sini.
+- Kami **tidak** bisa memberi label pada gambar, dan sejak 10 September 2026 juga tidak pada dokumen. Kontrol utama T3 adalah label "data, bukan instruksi", dan implementasinya pembungkus teks — piksel tidak bisa membawanya, dan instruksi di dalam gambar bisa dirender begitu samar sehingga manusia yang meneruskan tangkapan layar itu tidak membacanya sementara model tetap membacanya. Dokumen punya lubang yang berbeda dengan akibat yang sama: blok `<lampiran>` menyebut path, sedangkan yang dibaca model adalah isi berkas yang tidak lewat pembungkus mana pun. Untuk run yang membawa lampiran, T3 karena itu turun ke kontrol cadangannya sendirian, yaitu daftar risiko tinggi ditambah kartu approval: run seperti itu tidak pernah memakai jalur auto-approve jendela trust, jadi setiap permintaan izin yang bisa disetujui tetap butuh satu ketukan. Tingkat keberhasilan injeksi lewat gambar tidak diukur di mesin ini, jadi tidak ada angkanya di sini.
 - Kami **tidak** mengklaim scrubber melihat setiap rahasia. Ia mengenali bentuk yang ada di daftar §6 dan nilai yang di-seed saat proses mulai. Yang di luar daftar itu lewat kalau proses ini tidak memuatnya: AWS secret access key yang hanya empat puluh karakter base64, kunci OpenAI lama yang hanya `sk-` lalu apa saja, baris `.env` yang namanya berakhir di luar lima kata itu. Yang lolos ditulis sebagai baris test di `test/unit.test.ts`, bukan disimpan sebagai asumsi.
 - Kami **tidak** melakukan audit keamanan pihak ketiga (belum); status ini akan dinyatakan terbuka sampai berubah.
 

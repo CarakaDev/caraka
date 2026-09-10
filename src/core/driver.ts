@@ -94,9 +94,10 @@ export interface AgentDriver {
   readonly asksPermission?: boolean;
 
   /**
-   * Whether this route can put a file in front of the agent. Left unset means it
-   * cannot, and core answers the sender with one sentence rather than downloading
-   * bytes nothing will read (AC-2.4).
+   * Whether this route can carry a file inside the prompt itself. Left unset
+   * means it cannot, and core hands the path over in the `<lampiran>` block
+   * instead. It does not decide whether an attachment is downloaded
+   * (`spec/lampiran-masuk.md` AC-3.5).
    */
   readonly acceptsFiles?: boolean;
 

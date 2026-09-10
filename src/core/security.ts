@@ -47,13 +47,22 @@ export function createScrubber(secrets: string[] = []) {
 }
 
 // The mime allowlist, and the extension each entry is written under. Four image
-// mimes and nothing else, because an image is the only attachment with a reader
-// on every agent route this repository has (`spec/lampiran-chat.md`).
+// mimes since v1.5, and five document mimes from 10 September 2026, when the
+// download moved inside the workspace: a path the agent's own file tool may open
+// is a reader, and until that move there was none (`spec/lampiran-masuk.md`).
+// Nothing whose extension a runtime executes is on this list. The file lands in
+// the directory the agent works in, and `writesOrExecutes` below guards a tool
+// call rather than what lies in the cwd.
 const ATTACHMENT_EXTENSIONS: Record<string, string> = {
   "image/jpeg": ".jpg",
   "image/png": ".png",
   "image/gif": ".gif",
   "image/webp": ".webp",
+  "application/pdf": ".pdf",
+  "text/plain": ".txt",
+  "text/markdown": ".md",
+  "text/csv": ".csv",
+  "application/json": ".json",
 };
 
 /**
@@ -72,6 +81,18 @@ const ATTACHMENT_EXTENSIONS: Record<string, string> = {
 export function attachmentName(kind: string, mime?: string) {
   const extension = mime ? ATTACHMENT_EXTENSIONS[mime] : kind === "image" ? ".jpg" : undefined;
   return extension ? `${randomUUID()}${extension}` : null;
+}
+
+/**
+ * Whether this attachment is an image, asked in one place so the answer cannot
+ * drift from the table above. Only an image may cross to `driver.prompt` as a
+ * file: the ACP route reads the mime back off the extension
+ * (`drivers/claude-acp.ts` `imageBlock`) and the codex flag is `--image`, so a
+ * `.pdf` handed to either arrives as a picture. A compressed Telegram photo
+ * reports no mime at all, which is the same fallback `attachmentName` makes.
+ */
+export function isImageAttachment(kind: string, mime?: string) {
+  return mime ? mime.startsWith("image/") : kind === "image";
 }
 
 function signature(key: Buffer, prefix: string, id: string, decision: "allow" | "reject") {

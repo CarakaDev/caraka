@@ -40,14 +40,16 @@ Skema Zod-nya (`src/drivers/preset.ts`) memuat persis field yang dibaca loader d
 | `output` | `json` \| `jsonl` \| `text` | format keluaran giliran pertama |
 | `resumeOutput` | sama | format giliran lanjutan bila berbeda |
 | `sessionIdFields[]` | string[] | kunci yang dibaca untuk menemukan id sesi |
-| `imageArg` | string | flag yang membawa path gambar ke argv, dibaca `src/drivers/cli.ts`. Tanpa field ini route ini tidak menerima berkas sama sekali (`acceptsFiles` bernilai false), dan gateway menjawab pengirimnya satu kalimat |
+| `imageArg` | string | flag yang membawa path gambar ke argv, dibaca `src/drivers/cli.ts`. Tanpa field ini route ini tidak bisa membawa berkas di dalam prompt (`acceptsFiles` bernilai false), dan gateway menyerahkan path-nya di blok `<lampiran>` |
 | `imageMode` | `repeat` \| `join` | cara lebih dari satu path disusun, dibaca `src/drivers/cli.ts`: `repeat` mengulang flag per path, `join` satu flag dengan path digabung koma. Default `repeat` |
 | `env` | map | env tambahan untuk proses agent |
 | `acp` | `{command, args[], env, asksPermission}` | spawn adapter ACP; `command` di-resolve terhadap `PATH`, kecuali adapter terkunci `claude-agent-acp` yang diselesaikan sebagai modul, dan di Windows hanya kandidat berakhiran `.exe` atau `.com` yang diterima. `asksPermission` menyatakan bahwa adapter ini pernah terlihat mengirim `session/request_permission` di mesin nyata; default `false`, dan run `read-only` menolak route yang tidak menyatakannya (§5 `security.md`) |
 
 Dua amandemen 8 Agustus 2026 (pekerjaan `driver-v04`) membentuk tabel ini. Pertama, blok `acp:` masuk: tabel lama hanya mengenal field jalur CLI, padahal spawn ACP dikeraskan di kode driver — dan `{command, args, env}` terbukti cukup, vscode-acp berbicara ke sembilan agent berbeda hanya dengan tiga field itu per agent. Satu preset boleh memuat kedua jalur; pemilihan otomatis jatuh dari ACP ke CLI (FR-DRV-07). Kedua, field `sessionMode`, `systemPromptArg`, `systemPromptWhen`, `modelArg`/`modelAliases`, `imageArg`/`imageMode`, dan `serialize` keluar dari tabel: belum ada satu pun pembacanya di `src/`, dan skema yang menerima field tanpa pembaca menjanjikan perilaku yang tidak ada. Masing-masing kembali saat ada driver yang membacanya.
 
-`imageArg` dan `imageMode` kembali pada 13 Agustus 2026, dengan pembacanya: `CliDriver` menyusun argv dari keduanya dan menyetel `acceptsFiles` dari ada atau tidaknya `imageArg` (`spec/lampiran-chat.md`). Yang memakainya hari ini hanya `codex.yaml` dengan `-i`; `claude-code.yaml` sengaja tidak diberi flag, dan alasannya ada di berkas itu. Empat field lain tetap di luar tabel sampai ada yang membacanya.
+`imageArg` dan `imageMode` kembali pada 13 Agustus 2026, dengan pembacanya: `CliDriver` menyusun argv dari keduanya dan menyetel `acceptsFiles` dari ada atau tidaknya `imageArg` (`done/lampiran-chat/spec.md`). Yang memakainya hari ini hanya `codex.yaml` dengan `-i`; `claude-code.yaml` sengaja tidak diberi flag, dan alasannya ada di berkas itu. Empat field lain tetap di luar tabel sampai ada yang membacanya.
+
+Arti `acceptsFiles` menyempit pada 10 September 2026 (`spec/lampiran-masuk.md` AC-3.5). Ia menjawab satu pertanyaan saja: apakah route ini bisa membawa berkas di dalam prompt. Ia tidak lagi menentukan apakah sebuah lampiran diunduh, karena lampiran sekarang ditulis di dalam workspace dan tool berkas agent boleh membukanya lewat path di kedua rute.
 
 **Menerima preset baru** butuh tiga hal: perintahnya sudah diuji sendiri oleh pengirim, agent-nya berjalan non-interaktif dan kembali saat selesai, dan flag yang belum diuji ditandai `# belum diverifikasi` beserta sumbernya di dalam berkas. Job `presets` di CI menjaga skemanya; smoke hidup tetap per mesin.
 
@@ -80,7 +82,7 @@ Mengembalikan pesan yang belum diproses dan menandainya terambil.
 { "messages": [
   { "id": "msg_01J...", "session_id": "a91", "workspace": "toko-api",
     "text": "kenapa checkout 500 di staging?",
-    "attachments": [{ "kind": "image", "path": "~/.caraka/inbox/a91/6f3c.png", "mime": "image/png" }],
+    "attachments": [{ "kind": "image", "path": ".caraka-inbox/a91/6f3c.png", "mime": "image/png" }],
     "ts": 1786100000000 } ] }
 ```
 

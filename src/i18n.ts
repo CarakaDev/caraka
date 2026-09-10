@@ -11,11 +11,16 @@ const en = {
   "run.noOutput": "{agent} finished without text output.",
   "run.imageOnly": "{agent} finished with {count} image and no text.",
   "run.timeout": "Run passed {minutes} minutes and was cancelled.",
-  // What a sender is told when an attachment cannot reach the agent this session
-  // runs on. It names the kind rather than the file, because the file has no name
-  // Caraka is willing to repeat, and it names the way in that does work.
+  // What a sender is told when an attachment has no file behind it, or when this
+  // chat app has no way to fetch one. It names the kind rather than the file,
+  // because the file has no name Caraka is willing to repeat.
   "attach.unsupported":
-    "Caraka cannot hand a {kind} to this agent; send the task as text, or put the file in the workspace and name its path.",
+    "Caraka cannot fetch a {kind} on this chat app; send the task as text, or put the file in the workspace and name its path.",
+  // The mime is the sender's own word for the file, so it is quoted back: a
+  // person who sent three files learns which one was refused. The list is the
+  // allowlist in `core/security.ts`, written out because a person cannot read it.
+  "attach.mime":
+    "Caraka does not take {mime} files; send text, markdown, csv, json, pdf, or an image, or put the file in the workspace and name its path.",
   // 20 MB is the getFile ceiling (`docs/security.md` §9). It is written into the
   // sentence rather than passed in, because the ceiling belongs to the adapter
   // that reported the file as too big and core stores no channel's number.
@@ -408,7 +413,9 @@ const id: Record<MessageKey, string> = {
   "run.imageOnly": "{agent} selesai dengan {count} gambar dan tanpa teks.",
   "run.timeout": "Run melewati {minutes} menit dan dibatalkan.",
   "attach.unsupported":
-    "Caraka tidak bisa menyerahkan {kind} ke agent ini; kirim tugasnya sebagai teks, atau taruh berkasnya di workspace lalu sebut path-nya.",
+    "Caraka tidak bisa mengambil {kind} di aplikasi chat ini; kirim tugasnya sebagai teks, atau taruh berkasnya di workspace lalu sebut path-nya.",
+  "attach.mime":
+    "Caraka tidak menerima berkas {mime}; kirim teks, markdown, csv, json, pdf, atau gambar, atau taruh berkasnya di workspace lalu sebut path-nya.",
   "attach.tooBig":
     "Lampiran itu {size} MB dan Caraka mengunduh paling banyak 20 MB; kirim yang lebih kecil, atau taruh berkasnya di workspace lalu sebut path-nya.",
   "attach.outUnsupported":
