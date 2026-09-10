@@ -31,11 +31,31 @@ Target versi: **Bot API 10.2** dengan degradasi otomatis ke jalur lama bila serv
 | Menandai sesi selesai | `editForumTopic` lalu `closeForumTopic` — lihat catatan di bawah | pesan penutup saja |
 | Hasil terstruktur (diff, tabel, test) | `sendRichMessage` dengan input Markdown | teks polos yang sudah di-scrub dan dipecah |
 | Streaming progres | `sendRichMessageDraft` + `InputRichBlockThinking` | `editMessageText` teks polos |
+| Status kerja di header | `sendChatAction` `typing`, dengan `message_thread_id` topic sesi | tidak ada; teks progres yang tumbuh sudah menjadi satu-satunya tanda |
 | Approval | `InlineKeyboardButton` | tolak permission bila callback tidak tersedia; teks tidak pernah menjadi approval |
 | Approval di grup | kartu yang sama, terbaca seluruh anggota | kalimat pengungkapan saat pairing grup (§6) |
 | Lampiran keluar | `sendDocument` / `sendPhoto` | tautan file |
 | Voice note masuk | unduh file → transcriber user (opsional) | tolak dengan pesan jelas |
 | Lapisan izin kedua | access whitelist @BotFather (**belum terverifikasi**, §6) | allowlist kita saja |
+
+### Status kerja dan teks yang tumbuh, bersamaan
+
+Halaman `sendChatAction` menyatakan statusnya bertahan lima detik atau kurang,
+dan bahwa klien menghapusnya "when a message arrives from your bot". Ia tidak
+menyatakan apa yang dilakukan sebuah `editMessageText`. Kalau edit ikut
+menghapusnya, run yang cerewet menulis ulang pesannya tiap 1,5 detik dan status
+di header hanya sempat terlihat di sela-sela, sementara run yang diam
+menampilkannya penuh.
+
+Pengukurannya belum diambil. Ia butuh satu bot sungguhan, satu topic, satu run
+yang mengeluarkan teks terus-menerus, dan pengamatan header selama sekitar satu
+menit — tidak ada test otomatis yang bisa menjawabnya. Hasilnya ditulis di sini
+apa adanya begitu ada. Yang tidak dilakukan sebagai jawaban adalah mempercepat
+detak: 4 detik sudah membawa satu chat dengan lima run bersamaan ke 75
+panggilan per menit, dan bagian Biaya di `done/typing-indicator/spec.md`
+menghitungnya.
+
+---
 
 ### Sesi ditutup di grup, dan tidak ditutup di DM
 

@@ -73,6 +73,10 @@ type SessionFacts = {
 // bot before it is written down as a fact.
 const BUTTON_TEXT_LIMIT = 64;
 const RUN_LIMIT_MS = 30 * 60_000;
+// 4 seconds, because the shortest window among the channels is the 5 the
+// Telegram chat action holds. The number and its sources are in
+// `done/typing-indicator/spec.md`.
+const TYPING_MS = 4_000;
 const RATE_WINDOW_MS = 60_000;
 const RATE_LIMIT = 20;
 const STARTUP_NOTICE_MS = 60 * 60_000;
@@ -213,6 +217,9 @@ export class Gateway {
     private readonly memoryTimeoutMs = MEMORY_TIMEOUT_MS,
     // The loaded preset ids, for `/switch` to check an argument against.
     private readonly agents: string[] = [],
+    // The beat's cadence, a seam the way `runLimitMs` is one: a test shortens
+    // it rather than waiting four seconds for one call.
+    private readonly typingMs = TYPING_MS,
   ) {
     this.config = config;
     this.workspaces = workspaces(config);
@@ -1376,12 +1383,41 @@ export class Gateway {
     let lastEdit = 0;
     let agentId = session.agentSessionId;
     let timeout: NodeJS.Timeout | undefined;
+    let beat: NodeJS.Timeout | undefined;
     let compiled: { id: string; block: string } | undefined;
     try {
       progress = await this.sendToSession(
         session,
         `${this.header(session)}${this.t("run.working", { agent })}`,
       );
+      // After the ack and never before it: Telegram clears the status when a
+      // message from the bot arrives, and the Cloud API clears it "once you
+      // respond".
+      //
+      // One call in flight at a time: `call()` in telegram.ts has no request
+      // timeout and waits out a 429 in full, so without this guard the next
+      // beat queues up behind a hanging one.
+      let ticking = false;
+      const tick = () => {
+        if (ticking) return;
+        ticking = true;
+        void this.channelOf(session.chatId)
+          .typing?.(session.chatId, session.threadId)
+          // The first failure ends the beat. A bot without
+          // SEND_MESSAGES_IN_THREADS would answer 403 every four seconds for
+          // the length of the run, and that pattern is what Discord's ceiling
+          // of 10,000 invalid requests punishes.
+          .catch(() => {
+            if (beat) clearInterval(beat);
+            beat = undefined;
+          })
+          .finally(() => {
+            ticking = false;
+          });
+      };
+      tick();
+      beat = setInterval(tick, this.typingMs);
+      beat.unref?.();
       // The session's own agent, on the workspace's own route (AC-5.4): the
       // registry behind `driverFor` decides what serves this pair.
       const driver = await this.driver(this.agentFor(workspace, session), workspace.driver);
@@ -1493,6 +1529,7 @@ export class Gateway {
         await this.setState(session, "failed");
     } finally {
       if (timeout) clearTimeout(timeout);
+      if (beat) clearInterval(beat);
       this.active.delete(workspace.slug);
       // Whether the run finished, failed, or was cancelled, the bytes go with it.
       // A message that carried no attachment can have produced no file, so an

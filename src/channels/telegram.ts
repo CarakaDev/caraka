@@ -422,6 +422,20 @@ export class Telegram implements Channel {
   }
 
   /**
+   * `typing` and none of the other nine actions: the run answers with text.
+   * The status holds for five seconds at most and Telegram clears it the moment
+   * a message from the bot arrives, so the caller repeats it and sends the ack
+   * first. `call()` hands back `body.result`, which here is `True`.
+   */
+  typing(chatId: string, threadId = "") {
+    return this.call("sendChatAction", {
+      chat_id: chatId,
+      action: "typing",
+      ...(threadId ? { message_thread_id: Number(threadId) } : {}),
+    });
+  }
+
+  /**
    * `sendPhoto` for a still and `sendAnimation` for a GIF, because Telegram
    * refuses an animation on the photo method and the inbound allowlist admits
    * both. Neither is `sendDocument`: a chart the agent drew is meant to be seen

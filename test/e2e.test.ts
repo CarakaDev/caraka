@@ -335,6 +335,14 @@ async function harness(
     acceptsFiles?: boolean;
     /** The downloader a channel declares, when the case is about one. */
     fetchAttachment?: Channel["fetchAttachment"];
+    /**
+     * Whether this channel can show a working status. Left out by default, so
+     * every other test in this file is a channel without one and proves that
+     * core runs unchanged (AC-3.1). `"fails"` rejects and `"hangs"` never
+     * settles.
+     */
+    typing?: boolean | "fails" | "hangs";
+    typingMs?: number;
   } = {},
 ) {
   const root = options.root ?? (await mkdtemp(join(tmpdir(), "caraka-e2e-")));
@@ -463,6 +471,20 @@ async function harness(
         topics: translator()(threads ? "group.topicsOn" : "group.topicsOff"),
       }),
     ...(options.fetchAttachment ? { fetchAttachment: options.fetchAttachment } : {}),
+    // On `calls` beside the sends, because the order between the ack and the
+    // first beat is the whole of AC-1.2 and two arrays hold no order.
+    ...(options.typing
+      ? {
+          typing: async (_chatId: string, threadId: string) => {
+            calls.push(`typing:${threadId}`);
+            return options.typing === "hangs"
+              ? new Promise(() => {})
+              : options.typing === "fails"
+                ? Promise.reject(new Error("403"))
+                : true;
+          },
+        }
+      : {}),
   } as unknown as Channel;
 
   const prompts: string[] = [];
@@ -502,6 +524,7 @@ async function harness(
     options.memory,
     options.memoryTimeoutMs ?? 500,
     options.agents ?? [],
+    options.typingMs ?? 4_000,
   );
   const running = gateway.run();
   const buttons = () => {
@@ -5283,5 +5306,167 @@ test("a channel that cannot carry an image says so instead of dropping it", asyn
     h.sent.some((item) => /cannot carry one/.test(item.text)),
     h.sent.map((item) => item.text).join(" | "),
   );
+  await h.finish();
+});
+
+// ---- The working status (spec typing-indicator) ---------------------------
+
+/** Every beat this run produced, in the one list that also holds the sends. */
+function beats(h: { calls: string[] }) {
+  return h.calls.filter((call) => call.startsWith("typing:"));
+}
+
+test("the status beats through a run, in the session's thread, and stops with it", async () => {
+  // AC-1.1 to AC-1.4. The cadence is a seam, so the run lasts about twelve
+  // beats instead of eight seconds.
+  const h = await harness({
+    topics: true,
+    typing: true,
+    typingMs: 10,
+    onPrompt: async () => {
+      await delay(120);
+      return { stopReason: "end_turn" as const };
+    },
+  });
+  h.feed.push(message(42, 42, "ship it"));
+  await h.settle(300);
+
+  // AC-1.4: the thread the session got, never an empty string.
+  assert.ok(beats(h).length >= 2, `beats: ${beats(h).length}`);
+  assert.ok(beats(h).length <= 13, `beats: ${beats(h).length}`);
+  for (const beat of beats(h)) assert.equal(beat, "typing:7001");
+
+  // AC-1.2: the ack first. Telegram clears the status when a message from the
+  // bot arrives, so a beat before the ack would be a status wiped by it.
+  const ack = h.calls.findIndex((call) => call.startsWith("sendText:") && call.includes("lumaku"));
+  const first = h.calls.findIndex((call) => call.startsWith("typing:"));
+  assert.ok(ack >= 0 && first > ack, `ack ${ack}, first beat ${first}`);
+  assert.ok(first < h.calls.findIndex((call) => call.startsWith("sendResult:")));
+
+  // AC-1.3: `finally` closes it, so nothing beats on after the run.
+  assert.equal(
+    (h.store.db.prepare("SELECT state FROM sessions").get() as { state: string }).state,
+    "done",
+  );
+  const settled = beats(h).length;
+  await h.settle(80);
+  assert.equal(beats(h).length, settled, "the interval outlived the run");
+  await h.finish();
+});
+
+test("a run that fails and a run that is stopped both take the status with them", async () => {
+  // AC-1.3 on the other two ways out of `runTask`: the `catch` that reports
+  // rather than rethrows, and a `/stop` that comes back as `cancelled`.
+  const failing = await harness({
+    topics: true,
+    typing: true,
+    typingMs: 10,
+    onPrompt: async () => {
+      await delay(80);
+      throw new Error("the agent died");
+    },
+  });
+  failing.feed.push(message(42, 42, "ship it"));
+  await failing.settle(250);
+  assert.equal(
+    (failing.store.db.prepare("SELECT state FROM sessions").get() as { state: string }).state,
+    "failed",
+  );
+  const afterFail = beats(failing).length;
+  assert.ok(afterFail >= 1);
+  await failing.settle(80);
+  assert.equal(beats(failing).length, afterFail);
+  await failing.finish();
+
+  const stopped = await harness({
+    topics: true,
+    typing: true,
+    typingMs: 10,
+    onPrompt: async () => {
+      await delay(200);
+      return { stopReason: "cancelled" as const };
+    },
+  });
+  stopped.feed.push(message(42, 42, "ship it"));
+  await stopped.settle(60);
+  stopped.feed.push(message(42, 42, "/stop"));
+  await stopped.settle(300);
+  const afterStop = beats(stopped).length;
+  assert.ok(afterStop >= 1);
+  await stopped.settle(80);
+  assert.equal(beats(stopped).length, afterStop);
+  await stopped.finish();
+});
+
+test("a status that is refused, and one that never answers, leave the run alone", async () => {
+  // AC-2.1 and AC-2.2. The run is the same run either way, message for message.
+  const shape = async (typing?: boolean | "fails" | "hangs") => {
+    const h = await harness({
+      topics: true,
+      typingMs: 10,
+      ...(typing ? { typing } : {}),
+      onPrompt: async () => {
+        await delay(120);
+        return { stopReason: "end_turn" as const };
+      },
+    });
+    h.feed.push(message(42, 42, "ship it"));
+    await h.settle(300);
+    const state = (h.store.db.prepare("SELECT state FROM sessions").get() as { state: string })
+      .state;
+    // The startup notice names the temporary workspace, and each harness gets
+    // its own, so that one line is masked rather than the root shared — a
+    // shared root would be a shared database.
+    const withoutBeats = h.calls
+      .filter((call) => !call.startsWith("typing:"))
+      .map((call) => (call.includes("Caraka is up on") ? "sendText:startup" : call));
+    const audit = audits(h.store, "run.finish").map((row) => row.result);
+    await h.finish();
+    return {
+      state,
+      withoutBeats,
+      audit,
+      texts: h.sent.map((item) => (item.text.includes("Caraka is up on") ? "startup" : item.text)),
+      beats: beats(h),
+    };
+  };
+
+  const plain = await shape();
+  const refused = await shape("fails");
+  const hanging = await shape("hangs");
+
+  // AC-2.1: one 403 ends the beat, and everything else is unchanged.
+  assert.equal(refused.state, "done");
+  assert.deepEqual(refused.withoutBeats, plain.withoutBeats);
+  assert.deepEqual(refused.texts, plain.texts);
+  assert.deepEqual(refused.audit, plain.audit);
+  assert.deepEqual(refused.beats, ["typing:7001"], "the beat stopped at the first failure");
+
+  // AC-2.2: a call that never settles is never joined by a second, and the run
+  // finishes anyway — about twelve cadences went by.
+  assert.equal(hanging.state, "done");
+  assert.deepEqual(hanging.beats, ["typing:7001"]);
+  assert.deepEqual(hanging.withoutBeats, plain.withoutBeats);
+
+  // AC-3.1 and AC-3.2: the channel with no such method is the baseline above,
+  // and it says nothing about the absence anywhere.
+  assert.deepEqual(plain.beats, []);
+  for (const text of plain.texts) assert.doesNotMatch(text, /typing|mengetik/i);
+});
+
+test("nothing announces a channel that cannot show a status", async () => {
+  // AC-3.2. Not in the audit trail, and not in the readiness sentence either:
+  // no absent capability is announced there today.
+  const h = await harness({ topics: true });
+  h.feed.push(message(42, 42, "ship it"));
+  await h.settle(200);
+  const actions = h.store.db.prepare("SELECT DISTINCT action FROM audit").all() as Array<{
+    action: string;
+  }>;
+  for (const row of actions) assert.doesNotMatch(row.action, /typing/i);
+  const details = h.store.db.prepare("SELECT details FROM audit").all() as Array<{
+    details: string;
+  }>;
+  for (const row of details) assert.doesNotMatch(row.details ?? "", /typing|mengetik/i);
   await h.finish();
 });

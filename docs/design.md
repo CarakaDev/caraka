@@ -307,7 +307,7 @@ resumeThread?(chatId, threadId): Promise<unknown>;   // pasangannya, saat sesi l
 
 Keduanya opsional karena kemampuannya bisa absen di dalam satu channel: `closeForumTopic` Telegram didokumentasikan hanya untuk forum supergroup, jadi di grup sesi ditutup dan di percakapan pribadi panggilannya dijawab galat yang ditelan; Discord menyetel `archived: true` lalu `archived: false`. Core menandai sesi selesai dengan cara yang sama di setiap kasus, dan channel tanpa keduanya — WhatsApp — berhenti di penggantian nama.
 
-Lima kemampuan yang dulu ditulis di sini — `edit`, `files`, `typing`, `rich`, `ephemeral` — tetap rencana. Tidak satu pun punya pembaca di core, dan `docs/api.md` §4 sendiri mensyaratkan deklarasi yang jujur.
+Empat kemampuan yang dulu ditulis di sini — `edit`, `files`, `rich`, `ephemeral` — tetap rencana. Tidak satu pun punya pembaca di core, dan `docs/api.md` §4 sendiri mensyaratkan deklarasi yang jujur. `typing` keluar dari daftar ini pada 10 September 2026: ia terpasang sebagai method opsional `typing?(chatId, threadId?)`, bukan field, karena core hanya perlu tahu method-nya ada.
 
 Core tetap **tidak pernah** bercabang berdasarkan `channel.id` — ia hanya membaca `caps` lalu menurunkan kualitas secara anggun.
 

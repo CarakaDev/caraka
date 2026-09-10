@@ -18,6 +18,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import {
   containerOf,
   drainInbox,
+  evict,
   fetchWithRetry,
   routeOf,
   splitMarkdown,
@@ -62,6 +63,9 @@ export const RECONNECT_STABLE_MS = 60_000;
 
 // Past this many pieces the answer travels as one file (`docs/ui-ux.md` §5).
 const FILE_AFTER_CHUNKS = 3;
+// How many inbound message ids to keep. The same bound `discord.ts` and
+// `whatsapp-baileys.ts` each keep for what they sent.
+const REMEMBERED = 500;
 // Nothing Meta sends is anywhere near this large, and reading a body without a
 // bound is the point of sending a large one.
 const WEBHOOK_BODY_LIMIT = 1 << 20;
@@ -87,6 +91,8 @@ export type WhatsAppTransport = {
   sendFile?(to: string, name: string, body: string): Promise<{ id: string }>;
   /** Absent when the provider has no edit at all; `caps.edit` says so too. */
   edit?(to: string, messageId: string, text: string): Promise<unknown>;
+  /** Absent when the provider has no way of showing a status. */
+  typing?(messageId: string): Promise<unknown>;
   stop?(): void;
 };
 
@@ -180,6 +186,10 @@ export class WhatsApp implements Channel {
   private readonly inbox: InboundEvent[] = [];
   private readonly sends: number[] = [];
   private readonly lastEdit = new Map<string, number>();
+  // `typing_indicator` rides on a read receipt, so it needs the id of an
+  // inbound message. That id stops here for the reason `fetchAttachment` stops
+  // in its adapter: no channel-owned message identifier crosses into core.
+  private readonly lastInbound = new Map<string, string>();
   // One chain, so the ceiling and the gap mean something. Parallel sends would
   // make both of them decorative.
   private queue: Promise<unknown> = Promise.resolve();
@@ -299,6 +309,23 @@ export class WhatsApp implements Channel {
     return this.emit(containerOf(this.id, chatId), (to) =>
       edit(to, key, text.slice(-MESSAGE_LIMIT)),
     );
+  }
+
+  // One call per inbound message. The window is 25 seconds and whether resending
+  // the same id renews it is undocumented, so the id is spent once and every
+  // beat after that stops here at no cost.
+  //
+  // Not through `emit()`: this is a read receipt rather than a message, and the
+  // ceiling of 12 per 60 seconds exists for real messages on the route that
+  // carries a ban risk.
+  async typing(chatId: string) {
+    const send = this.wire().typing;
+    if (!send) return undefined;
+    const to = containerOf(this.id, chatId);
+    const id = this.lastInbound.get(to);
+    if (!id) return undefined;
+    this.lastInbound.delete(to);
+    return send(id);
   }
 
   // Nothing is deleted and nothing is answered: WhatsApp has no ephemeral reply
@@ -428,6 +455,8 @@ export class WhatsApp implements Channel {
       return;
     }
     this.seen.add(from);
+    evict(this.lastInbound, REMEMBERED);
+    this.lastInbound.set(from, id);
     this.inbox.push({
       message: {
         message_id: id,
@@ -488,6 +517,15 @@ export class WhatsApp implements Channel {
           document: { id: media?.id ?? "", filename: name, caption: this.t("whatsapp.asFile") },
         });
       },
+      // `post()` is not reused: it reads `messages[0].id` off the reply, and
+      // this reply is `{"success": true}`.
+      typing: (messageId) =>
+        this.graph(`/${phone}/messages`, {
+          messaging_product: "whatsapp",
+          status: "read",
+          message_id: messageId,
+          typing_indicator: { type: "text" },
+        }),
       // No edit endpoint exists, and `caps.edit` already says so, so core never
       // asks. Leaving the method off is the honest shape.
     };

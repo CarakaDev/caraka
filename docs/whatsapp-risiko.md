@@ -110,7 +110,7 @@ Yang harus kamu sediakan sebagai gantinya:
 
 Angka harga di atas berumur; ia tercatat dalam riset kami tertanggal 7 Agustus 2026. Periksa daftar harga Meta sendiri sebelum menghitung anggaran.
 
-Cloud API adalah jawaban yang benar bila nomor itu milik bisnismu, atau bila kehilangannya berarti kehilangan pelanggan, dan kamu menerima verifikasinya, nomor khususnya, tagihan per pesannya, serta satu endpoint yang harus kamu jaga. Config yang sama bekerja untuk keduanya: yang berubah hanya `provider`, dan satu-satunya perbedaan yang dilihat core adalah `caps.edit`, karena Cloud API tidak punya endpoint edit dan progres di sana berhenti di satu ack.
+Cloud API adalah jawaban yang benar bila nomor itu milik bisnismu, atau bila kehilangannya berarti kehilangan pelanggan, dan kamu menerima verifikasinya, nomor khususnya, tagihan per pesannya, serta satu endpoint yang harus kamu jaga. Config yang sama bekerja untuk keduanya: yang berubah hanya `provider`, dan satu-satunya perbedaan yang dilihat core adalah `caps.edit`, karena Cloud API tidak punya endpoint edit. Sejak 10 September 2026 progres di sana adalah satu ack ditambah 25 detik status mengetik: satu read receipt ber-`typing_indicator` per pesan masuk, tidak lewat `emit()`, jadi ia tidak mengurangi plafon 12 pesan per 60 detik dan tidak menambah jeda acak. `baileys` tidak mendapat status apa pun.
 
 Bila yang sebenarnya kamu inginkan hanya menjalankan coding agent dari chat, dan nomor WhatsApp bukan bagian dari kebutuhannya, Telegram sudah terkirim sejak `0.1.0`: Bot API resmi, gratis, tanpa risiko ban, dan long-polling yang tidak membuka port apa pun.
 

@@ -441,6 +441,13 @@ export interface Channel {
    */
   resumeThread?(chatId: string, threadId: string): Promise<unknown>;
 
+  /**
+   * Show a working status in the chat header. Optional the way `finishThread?`
+   * is optional: absent means silence, and no caller branches. The return value
+   * is not read by core; what core reads is that the method exists at all.
+   */
+  typing?(chatId: string, threadId?: string): Promise<unknown>;
+
   answerCallback(id: string, text: string, alert?: boolean): Promise<unknown>;
 
   clearKeyboard(chatId: string, messageId: number | string): Promise<unknown>;

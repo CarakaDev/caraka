@@ -1,6 +1,6 @@
 # Plan — typing-indicator
 
-**Spec:** `spec/typing-indicator.md` · **Tanggal:** 14 Agustus 2026
+**Spec:** `done/typing-indicator/spec.md` · **Tanggal:** 14 Agustus 2026
 
 Sembilan langkah. Satu sampai lima adalah kodenya, dan urutannya terikat:
 kontraknya lebih dulu, lalu satu-satunya pemanggil, lalu tiga adapter yang tidak
@@ -368,7 +368,117 @@ yang dibutuhkan hanya satu slot `typing` di transport Baileys ditambah jitter.
 Yang tidak boleh terjadi adalah menambahkannya tanpa verifikasi itu, karena
 harga kesalahannya adalah push notification yang mati di ponsel pemilik nomor.
 
+## Yang berbeda dari plan saat dikerjakan
+
+Dikerjakan 10 September 2026, terhadap pohon di `6ba109f`, bukan `b2fe39f`.
+Nomor baris di plan tidak lagi cocok, jadi setiap anchor dicari sebagai tempat
+dan bukan sebagai baris.
+
+**Empat penyimpangan, masing-masing dengan alasannya.**
+
+1. **`typingMs` menjadi parameter konstruktor kesembilan, bukan yang mengikuti
+   `runLimitMs`.** Sejak plan ditulis, `agents` menjadi parameter terakhir.
+   Menyisipkan `typingMs` di tengah akan menggeser tiga argumen di lima
+   pemanggil `new Gateway(…)`, jadi ia diletakkan sesudah `agents`. Bentuknya
+   tetap sama dengan `runLimitMs`: satu default dan satu konstanta.
+
+2. **`CHANGELOG.md` tidak disentuh.** Langkah 8 memintanya "mengikuti bentuk
+   rilis yang berlaku", dan bentuk itu adalah judul `## [x.y.z]`. `npm run
+   verify` berakhir dengan vitest `site/`, yang membandingkan judul terbaru
+   `CHANGELOG.md` dengan `site/src/data/status.ts` dan `package.json`. Menulis
+   judul di sini berarti merilis satu dari tiga fitur di branch ini, dan
+   gerbangnya akan merah sampai versinya dinaikkan di tiga tempat. Judulnya
+   ditulis oleh commit rilis di ujung branch.
+
+3. **`site/CLAUDE.md` ternyata symlink ke `site/AGENTS.md`.** Satu suntingan
+   memenuhi AC-7.3 untuk keduanya.
+
+4. **`docs/telegram-integration.md` mendapat catatan bahwa pengukurannya belum
+   diambil, bukan hasilnya.** Bagian Risiko meminta satu bot sungguhan, satu
+   topic, dan satu menit pengamatan header; tidak ada test yang bisa
+   menggantikannya dan tidak ada bot yang berjalan di gerbang ini. Yang ditulis
+   adalah pertanyaannya, cara mengukurnya, dan bahwa jawabannya bukan detak yang
+   lebih cepat.
+
+**Satu tambahan kecil di luar plan.** Tiga pemanggil `harness()` di test AC-2.1
+dibandingkan daftar `calls`-nya satu terhadap satu, dan tiap harness mendapat
+direktori sementara sendiri, jadi kalimat notifikasi startup menyebut nama
+workspace yang berbeda di tiap daftar. Baris itu ditutupi sebelum dibandingkan,
+bukan direktorinya disatukan: satu direktori berarti satu basis data untuk tiga
+run.
+
+**Ukuran.** `src/` 10.621 → **10.727**, +106, di dalam rentang 70–150 yang plan
+tulis. 48 dari 106 baris adalah komentar. `test/` 12.190 → 12.532, +342,
+terhadap perkiraan 60–110 — perkiraan itu jauh meleset, dan penyebabnya bisa
+disebut: AC-2.1 dan AC-2.2 menuntut dua run dibandingkan pesan demi pesan, jadi
+satu helper `shape()` menjalankan harness tiga kali dan mengembalikan lima
+bentuk untuk dibandingkan, dan AC-1.3 menuntut tiga jalan keluar `runTask`
+diperiksa masing-masing. Perkiraan test di plan dihitung dari jumlah test, bukan
+dari apa yang tiap test harus bandingkan.
+
 ## Keluaran gerbang
 
-Ditempel di sini sesudah `npm run verify` hijau, sebelum kedua berkas pindah ke
-`done/typing-indicator/`. Klaim tanpa keluaran perintah tidak dihitung.
+`npm run verify` dijalankan di host SSH `rama-tuf` lewat rsync, 10 September
+2026, dari `~/caraka-gate-media`. Keluar dengan status **0**.
+
+```
+> caraka@1.5.10 verify
+> npm run scan:secrets && npm run lint && npm run typecheck && npm run build && npm test && npm run e2e && npm --prefix site run test
+
+> caraka@1.5.10 scan:secrets
+> bash scripts/scan-secrets.sh
+
+clean: 327 tracked files, no credentials
+
+> caraka@1.5.10 lint
+> oxlint src test scripts && oxfmt --check src test scripts bin package.json tsconfig.json
+
+Found 0 warnings and 0 errors.
+Finished in 22ms on 30 files with 96 rules using 16 threads.
+Checking formatting...
+
+All matched files use the correct format.
+Finished in 67ms on 34 files using 16 threads.
+
+> caraka@1.5.10 typecheck
+> tsc -p tsconfig.json --noEmit
+
+> caraka@1.5.10 build
+> node -e "require('node:fs').rmSync('dist', { recursive: true, force: true })" && tsc -p tsconfig.json
+
+> caraka@1.5.10 test
+> node --import tsx --test test/unit.test.ts
+
+... 177 baris test lain lulus ...
+✔ Telegram asks for the typing action, in the session's own topic (0.554317ms)
+✔ Discord posts the typing route with no body and no content type (0.247674ms)
+✔ the Cloud API shows one status per inbound message, and Baileys shows none (4.269318ms)
+✔ core never waits on the working status (0.976467ms)
+ℹ tests 181
+ℹ pass 181
+ℹ fail 0
+
+> caraka@1.5.10 e2e
+> node --import tsx --test test/e2e.test.ts
+
+... 108 baris test lain lulus ...
+✔ the status beats through a run, in the session's thread, and stops with it (382.910422ms)
+✔ a run that fails and a run that is stopped both take the status with them (776.488102ms)
+✔ a status that is refused, and one that never answers, leave the run alone (909.162381ms)
+✔ nothing announces a channel that cannot show a status (202.832687ms)
+ℹ tests 112
+ℹ pass 112
+ℹ fail 0
+
+> caraka-site@0.0.1 test
+> vitest run
+
+ ✓ test/og-glyphs.test.js (3 tests) 2ms
+ ✓ test/fidelity.test.js (32 tests) 23ms
+
+ Test Files  2 passed (2)
+      Tests  35 passed (35)
+
+EXIT=0
+```
+

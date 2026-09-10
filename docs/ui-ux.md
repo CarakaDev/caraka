@@ -168,6 +168,7 @@ Kolom Telegram dan Discord terpasang sejak v0.5, kolom WhatsApp sejak v0.6. Sel 
 | Hasil | `sendRichMessage`, jatuh ke pesan biasa bila ditolak | pesan markdown biasa | teks; lewat tiga pecahan menjadi satu berkas `.md` |
 | Approval | tombol, terikat principal | tombol, terikat principal — role tidak pernah mengotorisasi (ADR-0008) | kode sekali pakai di kartu, `ok A7F3` / `no A7F3`, terikat principal dan sesi (ADR-0009) |
 | Progres | edit pesan, ekor 3.900 karakter | edit pesan, ekor sepanjang `caps.maxChars` | `baileys` mengedit pesan, maks 1 update / 30 dtk; `cloud-api` tidak punya endpoint edit, jadi `caps.edit` false dan progres berhenti di satu ack |
+| Indikator kerja | `sendChatAction` `typing` di topic sesi, tiap 4 dtk selama run | `POST /channels/<id thread>/typing`, tiap 4 dtk selama run | `cloud-api` satu read receipt ber-`typing_indicator` per pesan masuk, jendela 25 dtk; `baileys` tidak ada |
 | Batas | 30.000 karakter per rich message, 4.096 per pesan biasa | 2.000 | 4.096 |
 | Diff panjang | dipecah pada batas block | dipecah; lewat tiga pecahan dikirim sebagai satu berkas `.md` | sama, lewat `splitMarkdown` yang sama |
 

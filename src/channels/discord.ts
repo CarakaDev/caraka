@@ -274,6 +274,16 @@ export class Discord implements Channel {
     return { message_id: sent.id };
   }
 
+  /**
+   * The status holds ten seconds. No body and therefore no `content-type`,
+   * which is what this route asks for, and a 204 that `call()` already answers
+   * as `undefined`. A thread is a channel with an id of its own, so the id of
+   * the session's thread is the route.
+   */
+  typing(chatId: string, threadId = "") {
+    return this.call("POST", `/channels/${threadId || containerOf(this.id, chatId)}/typing`);
+  }
+
   async sendResult(chatId: string, markdown: string, threadId = ""): Promise<MessageRef[]> {
     const channel = threadId || containerOf(this.id, chatId);
     const chunks = splitMarkdown(markdown, MESSAGE_LIMIT, this.t("channel.empty"));

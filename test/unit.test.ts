@@ -6766,3 +6766,160 @@ test("a failure that does not name the stored id is not retried", async () => {
   assert.equal(lines.length, 1, "one attempt, because nothing said the id was gone");
   await driver.stop();
 });
+
+// ---- The working status (spec typing-indicator) ---------------------------
+
+test("Telegram asks for the typing action, in the session's own topic", async () => {
+  // AC-4.1 and AC-4.2. A real adapter with a stub fetcher: the e2e harness uses
+  // a fake channel, which can only prove that core called something.
+  const requests: Array<{ method: string; body: Record<string, unknown> }> = [];
+  const fetcher: typeof fetch = async (input, init) => {
+    requests.push({
+      method: String(input).split("/").at(-1) ?? "",
+      body: JSON.parse(String(init?.body)) as Record<string, unknown>,
+    });
+    return new Response(JSON.stringify({ ok: true, result: true }), {
+      headers: { "content-type": "application/json" },
+    });
+  };
+  const telegram = new Telegram("fake-token", fetcher);
+  await telegram.typing("-1001234", "7001");
+  assert.deepEqual(
+    requests.map((request) => request.method),
+    ["sendChatAction"],
+  );
+  assert.deepEqual(requests[0]?.body, {
+    chat_id: "-1001234",
+    action: "typing",
+    // A number on the wire, the way every other topic call sends it.
+    message_thread_id: 7001,
+  });
+  assert.equal(typeof requests[0]?.body.message_thread_id, "number");
+
+  // The other nine values on that page. `record_video_note` in particular
+  // renders as a camera in the header, which is not what a text answer is.
+  for (const other of [
+    "upload_photo",
+    "record_video",
+    "upload_video",
+    "record_voice",
+    "upload_voice",
+    "upload_document",
+    "choose_sticker",
+    "find_location",
+    "record_video_note",
+  ])
+    assert.notEqual(requests[0]?.body.action, other);
+
+  // A session with no topic sends the pair without the field, not with an
+  // empty one.
+  await telegram.typing("42");
+  assert.deepEqual(requests[1]?.body, { chat_id: "42", action: "typing" });
+});
+
+test("Discord posts the typing route with no body and no content type", async () => {
+  // AC-5.1 and AC-5.2. The route takes neither, and a thread is a channel with
+  // an id of its own, so the session's thread id is the route.
+  const seen: Array<{ url: string; init: RequestInit | undefined }> = [];
+  const fetcher: typeof fetch = async (input, init) => {
+    seen.push({ url: String(input), init });
+    return new Response(null, { status: 204 });
+  };
+  const discord = new Discord({
+    token: "MTIzNDU2Nzg5MDEyMzQ1Njc4.GhIjKl.fake-token-not-a-real-secret-value",
+    appId: "app-1",
+    fetcher,
+    base: "https://discord.test",
+    socketFor: () => undefined as unknown as Socket,
+  });
+  assert.equal(await discord.typing("discord:9001", "7001"), undefined);
+  assert.equal(seen[0]?.url, "https://discord.test/channels/7001/typing");
+  assert.equal(seen[0]?.init?.method, "POST");
+  assert.equal(seen[0]?.init?.body, undefined);
+  assert.equal(
+    Object.keys(seen[0]?.init?.headers ?? {})
+      .map((name) => name.toLowerCase())
+      .includes("content-type"),
+    false,
+  );
+
+  // Without a thread the parent channel is the route, and the stored prefix
+  // comes off before the id goes on the wire.
+  await discord.typing("discord:9001");
+  assert.equal(seen[1]?.url, "https://discord.test/channels/9001/typing");
+});
+
+test("the Cloud API shows one status per inbound message, and Baileys shows none", async () => {
+  // AC-6.1 to AC-6.4. The transport under test is the real `cloud()` one, so
+  // the four fields below are the four that reach Meta.
+  const bodies: Array<{ url: string; body: Record<string, unknown> }> = [];
+  const slept: number[] = [];
+  const fetcher: typeof fetch = async (input, init) => {
+    bodies.push({
+      url: String(input),
+      body: JSON.parse(String(init?.body)) as Record<string, unknown>,
+    });
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { "content-type": "application/json" },
+    });
+  };
+  const cloud = new WhatsApp({
+    provider: "cloud-api",
+    allowFrom: ["628111"],
+    phoneNumberId: "pn-1",
+    token: "fake-graph-token",
+    base: "https://graph.test",
+    fetcher,
+    random: () => 0,
+    sleep: async (ms: number) => void slept.push(ms),
+  });
+  await cloud.start();
+  cloud.receive("628111", "wamid.HBgN", "halo");
+  await cloud.typing("whatsapp:628111");
+  assert.deepEqual(bodies, [
+    {
+      url: "https://graph.test/pn-1/messages",
+      body: {
+        messaging_product: "whatsapp",
+        status: "read",
+        message_id: "wamid.HBgN",
+        typing_indicator: { type: "text" },
+      },
+    },
+  ]);
+  // AC-6.2: the id is spent, so every beat after the first stops inside the
+  // adapter.
+  assert.equal(await cloud.typing("whatsapp:628111"), undefined);
+  assert.equal(bodies.length, 1);
+  // AC-6.4: not a message. No queue, no jitter, and none of the outbound
+  // ceiling — which the send below still pays.
+  assert.deepEqual(slept, []);
+  await cloud.sendText("whatsapp:628111", "done");
+  assert.deepEqual(slept, [JITTER_MIN_MS]);
+
+  // AC-6.3: the linked device is offered nothing to call.
+  const linked = recordingWhatsApp({ provider: "baileys" });
+  linked.channel.receive("628111", "wamid.LINKED", "halo");
+  assert.equal(await linked.channel.typing("whatsapp:628111"), undefined);
+  assert.deepEqual(linked.wrote, []);
+  assert.deepEqual(linked.slept, []);
+
+  // And no presence node is spelled anywhere under `src/`, comments included:
+  // `Baileys#866` says `composing` may need an `available` presence first, and
+  // that presence is reported to kill push notifications on the owner's phone.
+  const root = new URL("../src/", import.meta.url);
+  const files = (await readdir(root, { recursive: true })).filter((name) => name.endsWith(".ts"));
+  assert.ok(files.length > 20, `the sweep read ${files.length} files`);
+  for (const name of files) {
+    const source = await readFile(new URL(name, root), "utf8");
+    assert.equal(source.includes("sendPresenceUpdate"), false, name);
+    assert.equal(source.includes("presenceSubscribe"), false, name);
+  }
+});
+
+test("core never waits on the working status", async () => {
+  // AC-2.3. The beat is fired and forgotten: an awaited call would put the
+  // whole run behind a 429 that `call()` waits out in full.
+  const source = await readFile(new URL("../src/core/gateway.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(source, /await[^;\n]*\.typing/);
+});
