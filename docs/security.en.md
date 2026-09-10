@@ -291,6 +291,7 @@ The principle: **inherit, do not rebuild.**
 | Telegram and Discord outbound | reactive: wait for `retry_after` on a 429, then retry |
 | Incoming attachment size | 20 MB |
 | Outgoing file size | 20 MiB (spec-set) |
+| Outgoing files per turn | 10 (spec-set) |
 
 Exceeding a limit → a clear message plus a queue, not a silent drop.
 

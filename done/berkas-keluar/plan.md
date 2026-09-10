@@ -1010,3 +1010,81 @@ tidak lewat harness, jadi blok berlabel bocor ke assertion masing-masing; satu
 test memakai prompt utuh sebagai kunci peta; dan dua test baru menganggap
 `readdir` punya urutan. Yang terakhir itu temuan tentang test-nya, bukan tentang
 kodenya.
+
+## Perbaikan sesudah review (11 September 2026)
+
+Satu review menaikkan sembilan temuan atas kode yang sudah masuk, dan satu agent
+kedua gagal membantahnya. Delapan dikerjakan, satu ditolak. Semuanya ada di
+`src/core/gateway.ts`, `src/i18n.ts`, dan test.
+
+| Temuan | Yang dikerjakan |
+|---|---|
+| `readFile` tanpa `.catch()` di `emptyOutbox` | Berkas yang lolos `stat` dan gagal dibuka sekarang ditolak satu kalimat. Sebelumnya penolakan itu lolos ke `catch` `runTask`: jawaban agent dibuang, sesi jadi `failed`, dan `error.report` membawa path absolut direktori keluar ke chat. |
+| Jumlah entri tanpa plafon | `OUTBOX_FILES` = 10 per giliran. Kelebihannya dikatakan satu kali, lalu berhenti. Satu entri berarti satu pesan keluar, dan pada WhatsApp seribu entri berarti sekitar 83 menit dengan workspace terkunci. |
+| `mkdir` dan `writeFile` di `openOutbox` tanpa penjaga | `openOutbox` menjawab string kosong. Workspace yang tidak bisa ditulis Caraka sekarang jalan seperti sebelum rilis ini: tidak ada direktori keluar, tidak ada baris yang menyebutnya, tidak ada `emptyOutbox`, dan tidak ada errno di chat. |
+| Temuan keempat, isu yang sama dari sudut lain | Ditutup oleh perbaikan di atas. Catatannya dipakai: baris `direktori keluar` sekarang hanya ditulis kalau direktorinya ada, karena `relative(path, "")` menjawab terhadap cwd proses. |
+| `stat` gagal dilipat jadi `Infinity` | `stat` menjawab `null`, dan entri tanpa ukuran memakai kalimat sendiri, `attach.outGone`. Kata `Infinity` tidak bisa lagi sampai ke chat, dan penolakannya tidak lagi menyamakan berkas yang hilang dengan berkas yang terlalu besar. |
+| Temuan keenam dan kedelapan, isu yang sama | Ditutup oleh `attach.outGone` yang sama. |
+| `Math.round` terhadap plafon MiB | `Math.ceil`, di jalur keluar dan di jalur masuk. Berkas 20.971.521 byte dulu terbaca "20 MB dan yang keluar paling banyak 20 MB", jadi alasannya membantah penolakannya sendiri. |
+| Komentar `ponytail:` yang plan ini catat tapi tidak ada | Ditulis di atas `closingLine`, menyebut plafonnya dan jalan naiknya. |
+
+Empat test baru dan satu test yang diubah menjaga delapan perbaikan itu:
+
+- berkas di bawah plafon dengan mode `0o000`: satu penolakan, sesi `done`, dan
+  tidak ada path di kalimat mana pun;
+- direktori keluar tanpa bit telusur: `readdir` masih menyebut entrinya dan
+  `stat` menjawab EACCES, jadi kalimatnya adalah kalimat tidak-terbaca dan bukan
+  kalimat ukuran;
+- dua belas berkas: sepuluh terkirim dan satu kalimat kelebihan;
+- workspace mode `0o500`: run selesai `done` dan blok berlabel tidak menyebut
+  direktori apa pun;
+- test plafon sekarang memakai 20 MiB + 1 byte, yaitu ukuran yang dulu membuat
+  kalimatnya membantah diri sendiri, dan masih membuktikan urutan baca lewat
+  mode `0o000`.
+
+Satu temuan ditolak, dan alasannya ada di laporan: tidak ada yang ditolak. Kesembilan
+temuan terbukti benar terhadap pohon ini.
+
+`src/` mengukur **11.207 baris**, +68 dari 11.139.
+
+## Keluaran gerbang — 11 September 2026
+
+`rsync` ke `rama-tuf:caraka-gate-media/`, lalu `npm run verify` di sana.
+
+```
+> caraka@1.5.10 scan:secrets
+clean: 331 tracked files, no credentials
+
+> caraka@1.5.10 lint
+Found 0 warnings and 0 errors.
+
+> caraka@1.5.10 typecheck
+> caraka@1.5.10 build
+> caraka@1.5.10 test
+ℹ tests 191
+ℹ pass 191
+ℹ fail 0
+ℹ duration_ms 7122.605472
+
+> caraka@1.5.10 e2e
+ℹ tests 136
+ℹ pass 136
+ℹ fail 0
+ℹ duration_ms 62187.151235
+
+> caraka-site@0.0.1 test
+> vitest run
+
+ RUN  v4.1.10 /home/ramaaditya/caraka-gate-media/site
+
+ ✓ test/og-glyphs.test.js (3 tests) 3ms
+ ✓ test/fidelity.test.js (32 tests) 26ms
+
+ Test Files  2 passed (2)
+      Tests  35 passed (35)
+   Start at  00:14:18
+   Duration  179ms (transform 88ms, setup 0ms, import 116ms, tests 28ms, environment 0ms)
+```
+
+Satu putaran merah mendahului yang hijau: `oxfmt --check` menolak `src/i18n.ts`,
+dan dua kunci katalog baru dipendekkan oleh formatter.

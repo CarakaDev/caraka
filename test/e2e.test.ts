@@ -5556,6 +5556,13 @@ async function outboxRun(
     text?: string;
     fails?: boolean;
     settleMs?: number;
+    /**
+     * Whether the directory loses its search bit once the entries are in it.
+     * `readdir` still lists them off the directory's own read bit and `stat`
+     * answers EACCES, which is the one deterministic stand-in for an entry that
+     * was listed and cannot be measured.
+     */
+    sealed?: boolean;
   } = {},
 ) {
   const root = await mkdtemp(join(tmpdir(), "caraka-outbox-"));
@@ -5577,6 +5584,7 @@ async function outboxRun(
           if (entry.mode !== undefined) await chmod(path, entry.mode);
         }
       }
+      if (options.sealed) await chmod(directory, 0o400);
       if (options.fails) throw new Error("the agent died");
       return { stopReason: "end_turn" as const };
     },
@@ -5794,8 +5802,11 @@ test("a file past the ceiling is measured and refused, and no byte of it is read
     // about is invisible and the test would pass without checking anything.
     return;
   }
+  // One byte past the ceiling, which is also the size that used to make the
+  // sentence contradict itself: `Math.round` printed 20 for everything in the
+  // first half MiB past 20 MiB, so the file's size and the limit read the same.
   const { h } = await outboxRun(
-    [{ name: "huge.png", body: Buffer.alloc(21 * 1024 * 1024), mode: 0o000 }],
+    [{ name: "huge.png", body: Buffer.alloc(20 * 1024 * 1024 + 1), mode: 0o000 }],
     { settleMs: 900 },
   );
   assert.deepEqual(delivered(h), []);
@@ -5805,6 +5816,86 @@ test("a file past the ceiling is measured and refused, and no byte of it is read
   const session = h.store.sessionFor("42", "");
   assert.equal(session?.state, "done");
   assert.equal(audits(h.store, "attachment.out")[0]?.result, "refused");
+  await h.finish();
+});
+
+test("a file under the ceiling that cannot be opened refuses, and the answer still arrives", async () => {
+  // The read is the last thing that can fail and it used to fail the run: the
+  // rejection left `emptyOutbox`, the agent's finished answer was thrown away,
+  // the session went `failed`, and the errno sentence carried the outbox path
+  // into the chat.
+  if (process.getuid?.() === 0) {
+    // Under root `readFile` succeeds on mode 0o000, so there is nothing to fail.
+    return;
+  }
+  const { h } = await outboxRun([{ name: "chart.png", body: "x", mode: 0o000 }]);
+  assert.deepEqual(delivered(h), []);
+  assert.match(refusals(h)[0]?.text ?? "", /chart\.png/);
+  assert.equal(h.store.sessionFor("42", "")?.state, "done");
+  const said = h.sent.map((item) => item.text).join(" | ");
+  assert.equal(/caraka-keluar|EACCES|permission denied/.test(said), false, said);
+  await h.finish();
+});
+
+test("an entry that cannot be measured is refused as unreadable, not as a size", async () => {
+  // A file listed and then gone, or written by another uid, has no size to
+  // report. The sentinel that stood in for one reached the chat as the word
+  // `Infinity` where the megabytes belong.
+  if (process.getuid?.() === 0) {
+    // Root needs no search bit, so `stat` succeeds and the branch is invisible.
+    return;
+  }
+  const { h, seen } = await outboxRun([{ name: "laporan.csv", body: "a,b" }], { sealed: true });
+  assert.deepEqual(delivered(h), []);
+  const sentence = refusals(h)[0]?.text ?? "";
+  assert.match(sentence, /laporan\.csv/);
+  assert.equal(/Infinity|MB/.test(sentence), false, sentence);
+  assert.equal(h.store.sessionFor("42", "")?.state, "done");
+  await chmod(seen.directory, 0o700);
+  await h.finish();
+});
+
+test("more files than one turn sends says so once and stops there", async () => {
+  // Every entry costs one outbound message, sent in order inside the run, and
+  // the run holds the workspace until the last one lands. Twelve entries used to
+  // be twelve messages; on a paced channel a build directory was an hour of them.
+  const entries = Array.from({ length: 12 }, (_, index) => ({
+    name: `chart-${index}.png`,
+    body: "x",
+  }));
+  const { h } = await outboxRun(entries, { settleMs: 700 });
+  assert.equal(delivered(h).length, 10);
+  assert.equal(
+    h.sent.filter((item) => /12 files were waiting/.test(item.text)).length,
+    1,
+    h.sent.map((item) => item.text).join(" | "),
+  );
+  await h.finish();
+});
+
+test("a workspace Caraka cannot write into runs anyway, with no outbox named", async () => {
+  // `read-only` is a first-class mode here, so a tree Caraka may read and not
+  // write is a setup this product invites. Every message in one — plain text
+  // included — used to end `failed` with the errno of a `mkdir` nobody asked for.
+  if (process.getuid?.() === 0) {
+    // Root writes into a directory with no write bit, so there is nothing to
+    // refuse.
+    return;
+  }
+  const root = await mkdtemp(join(tmpdir(), "caraka-outbox-beku-"));
+  const locked = join(root, "beku");
+  await mkdir(locked);
+  await chmod(locked, 0o500);
+  const h = await harness({ root, workspaces: [{ slug: "beku", path: locked }] });
+  h.feed.push(message(42, 42, "apa isi repo ini"));
+  await h.settle(400);
+  assert.equal(h.store.sessionFor("42", "")?.state, "done");
+  const said = h.sent.map((item) => item.text).join(" | ");
+  assert.equal(/caraka-keluar|EACCES|EROFS|permission denied/.test(said), false, said);
+  // Nothing names a directory that was never made, so the labelled block is not
+  // written at all for a message that carried no attachment.
+  assert.equal(/direktori keluar/.test(h.rawPrompts[0] ?? ""), false, h.rawPrompts[0]);
+  await chmod(locked, 0o700);
   await h.finish();
 });
 

@@ -37,6 +37,12 @@ const en = {
   "attach.outType": "Caraka did not send {name}; it can send {kinds}.",
   "attach.outTooBig": "Caraka did not send {name}; it is {size} MB and at most 20 MB goes out.",
   "attach.outRefused": "{name} was produced, and this channel did not accept it.",
+  // A file that was there when the directory was read and is not there now, or
+  // is there and cannot be opened. The person is told which file and that it
+  // could not be read, never the errno and never where it sat.
+  "attach.outGone": "Caraka did not send {name}; it could not be read after the turn ended.",
+  "attach.outMany":
+    "{count} files were waiting, and Caraka sends at most {max} after one turn; ask for the rest one batch at a time.",
   "permission.header": "⏸ {agent} asks for permission",
   "permission.fallbackTitle": "Tool operation",
   "permission.ttl": "Valid for 10 minutes",
@@ -430,6 +436,10 @@ const id: Record<MessageKey, string> = {
   "attach.outTooBig":
     "Caraka tidak mengirim {name}; ukurannya {size} MB dan yang keluar paling banyak 20 MB.",
   "attach.outRefused": "{name} sudah dihasilkan, dan channel ini tidak menerimanya.",
+  "attach.outGone":
+    "Caraka tidak mengirim {name}; berkasnya tidak terbaca setelah giliran selesai.",
+  "attach.outMany":
+    "Ada {count} berkas, dan Caraka mengirim paling banyak {max} setelah satu giliran; minta sisanya sebagian-sebagian.",
   "permission.header": "⏸ {agent} meminta izin",
   "permission.fallbackTitle": "Operasi tool",
   "permission.ttl": "Berlaku 10 menit",

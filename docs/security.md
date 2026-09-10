@@ -294,6 +294,7 @@ Prinsip: **warisi, jangan bangun ulang.**
 | Outbound Telegram & Discord | reaktif: tunggu `retry_after` pada 429, lalu ulangi |
 | Ukuran lampiran masuk | 20 MB |
 | Ukuran berkas keluar | 20 MiB (spec-set) |
+| Jumlah berkas keluar per giliran | 10 (spec-set) |
 
 Melebihi batas → pesan jelas + antrean, bukan diam-diam dibuang.
 

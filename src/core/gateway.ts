@@ -98,6 +98,12 @@ const OUTBOX_DIRECTORY = ".caraka-keluar";
 // §9), so §9 keeps one number and one sentence. Spec-set: no vendor document
 // stands behind it.
 const OUTBOX_LIMIT = 20 * 1024 * 1024;
+// How many entries one turn may answer for. Each one costs an outbound message,
+// sent in order inside the run, and the run holds the workspace until the last
+// one lands: one approved `cp -r build/* ` into the outbox is hundreds of
+// entries, and on WhatsApp a pace of 12 a minute turns that into an hour of
+// messages with the workspace shut behind it. Spec-set, like the ceiling above.
+const OUTBOX_FILES = 10;
 // 4 seconds, because the shortest window among the channels is the 5 the
 // Telegram chat action holds. The number and its sources are in
 // `done/typing-indicator/spec.md`.
@@ -1346,14 +1352,24 @@ export class Gateway {
    * `.gitignore` holding `*` goes in at creation, so `git status` in the user's
    * own repository stays quiet while the run lasts. The file never leaves: a
    * name that starts with a dot is skipped below.
+   *
+   * A workspace Caraka cannot write into answers the empty string, the way
+   * `takeAttachments` answers one sentence for a directory it could not make. A
+   * checkout owned by another user, a read-only mount, a full separate mount:
+   * `read-only` is a first-class mode here, so "let the agent read this tree and
+   * answer questions" is a setup this product invites, and every message in it,
+   * plain text included, would otherwise end `failed` with the errno of a
+   * `mkdir` nobody asked for. The empty string travels: no line names a
+   * directory that does not exist, and nothing is read after the turn.
    */
   private async openOutbox(workspace: Workspace, session: Session) {
     const root = join(workspace.path, OUTBOX_DIRECTORY);
     await rm(root, { recursive: true, force: true }).catch(() => undefined);
     const directory = join(root, session.id);
-    await mkdir(directory, { recursive: true, mode: 0o700 });
-    await writeFile(join(directory, ".gitignore"), "*\n", { mode: 0o600 });
-    return directory;
+    return await mkdir(directory, { recursive: true, mode: 0o700 })
+      .then(() => writeFile(join(directory, ".gitignore"), "*\n", { mode: 0o600 }))
+      .then(() => directory)
+      .catch(() => "");
   }
 
   /**
@@ -1371,14 +1387,35 @@ export class Gateway {
    * `takeAttachments` reads its own: the extension decides the mime, `stat`
    * decides the size, and only a file that passed both is opened. The count that
    * comes back is images, because that is what the closing line is about.
+   *
+   * Neither `stat` nor the read is a promise the filesystem keeps. An entry
+   * `readdir` listed can be gone by the time its turn comes — the loop waits out
+   * a send per earlier file, so the gap is seconds, and the spec says a process
+   * the agent left may outlive the turn — and a file another uid wrote is
+   * stattable and unreadable. Both answer the same sentence and neither ends the
+   * run: the answer the agent already gave is still owed to the person who
+   * asked.
    */
   private async emptyOutbox(session: Session, directory: string) {
     let images = 0;
-    const entries = await readdir(directory, { withFileTypes: true }).catch(() => []);
+    // Names Caraka wrote itself, `.gitignore` among them, dropped before the
+    // count below rather than inside the loop. No sentence for them: the person
+    // in the chat did not ask about a file they cannot see.
+    const listed = await readdir(directory, { withFileTypes: true }).catch(() => []);
+    const entries = listed.filter((entry) => !entry.name.startsWith("."));
+    // Said once, for the whole overflow, and the rest go with the run. One
+    // message per entry is what makes a count a cost here.
+    if (entries.length > OUTBOX_FILES) {
+      await this.sendToSession(
+        session,
+        `${this.header(session)}${this.t("attach.outMany", {
+          count: entries.length,
+          max: OUTBOX_FILES,
+        })}`,
+      );
+      entries.length = OUTBOX_FILES;
+    }
     for (const entry of entries) {
-      // Names Caraka wrote itself, `.gitignore` among them. No sentence: the
-      // person in the chat did not ask about a file they cannot see.
-      if (entry.name.startsWith(".")) continue;
       // The name reaches the chat, so it goes through the outbound scrubber like
       // every other string. The extension is read off the entry rather than off
       // the scrubbed copy, so a redaction inside a name cannot change what the
@@ -1396,16 +1433,27 @@ export class Gateway {
       const path = join(directory, entry.name);
       const size = await stat(path)
         .then((it) => it.size)
-        .catch(() => Infinity);
+        .catch(() => null);
+      if (size === null) {
+        await this.refuseFile(session, name, this.t("attach.outGone", { name }));
+        continue;
+      }
+      // `ceil` and not `round`: the file is above the ceiling by definition here,
+      // and rounding printed the ceiling itself as the file's own size for
+      // everything in the first half MiB past it.
       if (size > OUTBOX_LIMIT) {
         await this.refuseFile(
           session,
           name,
-          this.t("attach.outTooBig", { name, size: Math.round(size / 1_048_576) }),
+          this.t("attach.outTooBig", { name, size: Math.ceil(size / 1_048_576) }),
         );
         continue;
       }
-      const bytes = await readFile(path);
+      const bytes = await readFile(path).catch(() => null);
+      if (!bytes) {
+        await this.refuseFile(session, name, this.t("attach.outGone", { name }));
+        continue;
+      }
       if (await this.sendAttachment(session, { bytes, mimeType: mime, name }))
         images += mime.startsWith("image/") ? 1 : 0;
     }
@@ -1464,7 +1512,10 @@ export class Gateway {
         refuse(
           entry,
           "tooBig",
-          this.t("attach.tooBig", { size: Math.round((entry.size ?? 0) / 1_048_576) }),
+          // `ceil` for the reason the outbound twin uses it: the adapter marked
+          // this one past its ceiling, and rounding printed the ceiling itself
+          // as the attachment's own size for the first half MiB past it.
+          this.t("attach.tooBig", { size: Math.ceil((entry.size ?? 0) / 1_048_576) }),
         );
         continue;
       }
@@ -1529,10 +1580,13 @@ export class Gateway {
     const delivered = files.length + lines.length;
     // The one line that says where a file the agent wants delivered goes. A
     // name, not an instruction: the block is labelled reference data, and core
-    // reads the directory whether or not the agent read the line.
-    lines.push(
-      `- direktori keluar, berkas di sini dikirim ke chat sesudah giliran ini: ${relative(workspace.path, outbox)}`,
-    );
+    // reads the directory whether or not the agent read the line. Nothing is
+    // named when there is no directory: `relative(path, "")` answers against the
+    // process cwd, which is not a place inside the workspace at all.
+    if (outbox)
+      lines.push(
+        `- direktori keluar, berkas di sini dikirim ke chat sesudah giliran ini: ${relative(workspace.path, outbox)}`,
+      );
     return {
       // Written by Caraka from end to end, so there is nothing here to strip the
       // way `memoryLines` strips a provider's `</memory>`.
@@ -1705,8 +1759,9 @@ export class Gateway {
         carried.files,
       );
       // Read once, after the turn ended, and before the closing line: what came
-      // out of the outbox is part of what this run produced.
-      pictures += await this.emptyOutbox(session, outbox);
+      // out of the outbox is part of what this run produced. Nothing to read
+      // when the workspace refused the directory.
+      if (outbox) pictures += await this.emptyOutbox(session, outbox);
       const cancelled = result.stopReason === "cancelled";
       const memoryLine = await this.finishMemory(prompt, output, compiled, !cancelled, scope);
       // The closing summary goes first and the state change second, because a
@@ -1939,6 +1994,10 @@ export class Gateway {
    * What is said when a run appended no text. A run that delivered pictures said
    * `run.noOutput` until 1.5.7, which was false in the one case the feature
    * exists for.
+   *
+   * ponytail: the count is pictures, so a run that delivered a PDF and appended
+   * no text still reads as no output. Upgrade path is a fourth key counting
+   * files rather than images, and `emptyOutbox` returning both numbers.
    */
   private closingLine(cancelled: boolean, pictures: number, agent: string) {
     if (cancelled) return this.t("run.cancelled", { agent });

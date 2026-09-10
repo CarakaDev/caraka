@@ -6294,7 +6294,7 @@ test("no channel's limit and no channel's method name is written in core", async
   assert.equal(gateway.match(/\d+\s*\*\s*1024\s*\*\s*1024/g)?.length, 1);
 });
 
-test("the three outbound refusals are in both catalogs and name nothing internal", () => {
+test("the outbound refusals are in both catalogs and name nothing internal", () => {
   // AC-4.5 and AC-4.6. Each sentence names the file the person asked for, and
   // never the directory it was read from or the call that would have carried it.
   for (const catalog of [catalogs.en, catalogs.id]) {
@@ -6304,7 +6304,18 @@ test("the three outbound refusals are in both catalogs and name nothing internal
     assert.match(catalog["attach.outTooBig"], /\{size\} MB/);
     assert.match(catalog["attach.outTooBig"], /20 MB/);
     assert.match(catalog["attach.outRefused"], /\{name\}/);
-    for (const key of ["attach.outType", "attach.outTooBig", "attach.outRefused"] as const)
+    // An entry with no size to report names the file and no number: the sentinel
+    // that stood in for one used to render as the word `Infinity`.
+    assert.match(catalog["attach.outGone"], /\{name\}/);
+    assert.doesNotMatch(catalog["attach.outGone"], /MB|\{size\}/);
+    assert.match(catalog["attach.outMany"], /\{count\}[\s\S]*\{max\}/);
+    for (const key of [
+      "attach.outType",
+      "attach.outTooBig",
+      "attach.outRefused",
+      "attach.outGone",
+      "attach.outMany",
+    ] as const)
       assert.doesNotMatch(
         catalog[key],
         /caraka-keluar|sendPhoto|sendAnimation|sendDocument|\/media|files\[0\]/,
