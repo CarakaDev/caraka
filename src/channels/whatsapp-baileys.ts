@@ -289,12 +289,23 @@ export async function connectBaileys(options: BaileysOptions): Promise<WhatsAppT
       const sent = await live().sendMessage(jidOf(to), { text });
       return { id: remember(sent?.key) };
     },
-    sendFile: async (to, name, body) => {
-      const sent = await live().sendMessage(jidOf(to), {
-        document: Buffer.from(body, "utf8"),
-        mimetype: "text/markdown",
-        fileName: name,
-      });
+    sendFile: async (to, file, caption = "") => {
+      // `AnyMediaMessageContent` in the pinned v6.7.22 carries `image` with a
+      // caption, and `document` with `mimetype`, `fileName`, and a caption. No
+      // Baileys document names a size limit, so the ceiling this path answers to
+      // is core's 20 MiB.
+      const image = file.mimeType === "image/jpeg" || file.mimeType === "image/png";
+      const sent = await live().sendMessage(
+        jidOf(to),
+        image
+          ? { image: file.bytes, ...(caption ? { caption } : {}) }
+          : {
+              document: file.bytes,
+              mimetype: file.mimeType,
+              fileName: file.name,
+              ...(caption ? { caption } : {}),
+            },
+      );
       return { id: remember(sent?.key) };
     },
     edit: async (to, messageId, text) => {

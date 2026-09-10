@@ -391,7 +391,7 @@ export interface Channel {
   sendResult(chatId: string, markdown: string, threadId?: string): Promise<MessageRef[]>;
 
   /**
-   * Put an image in the chat. Optional, the way `fetchAttachment?` and
+   * Put one file in the chat. Optional, the way `fetchAttachment?` and
    * `finishThread?` declare a capability rather than a branch — a channel that
    * cannot do it does not implement it, and core reads the absence rather than
    * reading `channel.id` (hard rule 1).
@@ -400,16 +400,19 @@ export interface Channel {
    * adapter that took a path would be a file-read primitive reachable from agent
    * output. The caption is text core has already scrubbed; the bytes are not
    * scrubbable and never will be — a secret rendered into a picture leaves as a
-   * picture, and `docs/security.md` says so rather than pretending otherwise.
+   * picture, and `docs/security.md` §12 says so rather than pretending otherwise.
    *
-   * Every limit here belongs to the channel and is checked by the adapter, not
-   * by core: Telegram takes 10 MB and 1024 caption characters, Discord 10 MiB
-   * with the caption as the message body, and the caption is truncated rather
-   * than the send refused.
+   * The mime picks the wire method and the adapter picks it, so core names none
+   * of them. Every limit is the channel's own and is checked there: Telegram
+   * documents 10 MB on `sendPhoto` and 50 MB on the other two, Discord "20 MiB
+   * for all users, but may be higher for users depending on their Nitro status
+   * or by the server's Boost Tier" (docs.discord.com/developers/reference), and
+   * the Cloud API 5 MB for a JPEG or a PNG against 100 MB for a document. The
+   * caption is truncated rather than the send refused.
    */
-  sendImage?(
+  sendAttachment?(
     chatId: string,
-    image: { bytes: Buffer; mimeType: string; name: string },
+    file: { bytes: Buffer; mimeType: string; name: string },
     caption?: string,
     threadId?: string,
   ): Promise<MessageRef | undefined>;

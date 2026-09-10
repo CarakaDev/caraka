@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { statSync } from "node:fs";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { homedir, hostname } from "node:os";
 import { basename, isAbsolute, join, relative, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -48,6 +48,8 @@ import {
   insideWorkspace,
   isHighRisk,
   isImageAttachment,
+  OUTBOUND_KINDS,
+  outboundMime,
   parseDuration,
   resolvePolicyMode,
   shortCode,
@@ -80,6 +82,22 @@ const RUN_LIMIT_MS = 30 * 60_000;
 // take it, while this directory is deleted whole when the run ends
 // (`spec/lampiran-masuk.md`).
 const INBOX_DIRECTORY = ".caraka-inbox";
+// Where a file the agent wants delivered is picked up. Inside the workspace for
+// the reason the inbox is: the CLI route cannot reach outside the project
+// directory, Read is reported to answer EPERM there, and `additionalDirectories`
+// is reported not to close it (`presets/agents/claude-code.yaml`,
+// anthropics/claude-code#29013). A tool that writes stands at the same boundary,
+// so an outbox under `~/.caraka` would be born dead on the most used route.
+//
+// `.caraka-keluar` and not `.caraka/keluar`: a workspace may be the home
+// directory, and `<home>/.caraka` is the directory that holds `caraka.db` and
+// `secrets/`.
+const OUTBOX_DIRECTORY = ".caraka-keluar";
+// Core's own ceiling, because core reads the file into a Buffer before any
+// adapter sees it. The same 20 MiB the inbound path uses (`docs/security.md`
+// §9), so §9 keeps one number and one sentence. Spec-set: no vendor document
+// stands behind it.
+const OUTBOX_LIMIT = 20 * 1024 * 1024;
 // 4 seconds, because the shortest window among the channels is the 5 the
 // Telegram chat action holds. The number and its sources are in
 // `done/typing-indicator/spec.md`.
@@ -1316,6 +1334,94 @@ export class Gateway {
   }
 
   /**
+   * This run's outbox, empty, with every other run's leftovers removed beside
+   * it. One directory per run and never a shared one: two runs in one workspace
+   * are refused by FR-SESS-04, but a run that crashed and a run that starts are
+   * not the same run, and the second must not inherit the first one's files.
+   *
+   * This is the whole of the sweep. `start()` scans no workspace for a leftover
+   * outbox: a boot that walked every configured path would be reading
+   * directories nobody is waiting on, and the run that needs one clears it here.
+   *
+   * `.gitignore` holding `*` goes in at creation, so `git status` in the user's
+   * own repository stays quiet while the run lasts. The file never leaves: a
+   * name that starts with a dot is skipped below.
+   */
+  private async openOutbox(workspace: Workspace, session: Session) {
+    const root = join(workspace.path, OUTBOX_DIRECTORY);
+    await rm(root, { recursive: true, force: true }).catch(() => undefined);
+    const directory = join(root, session.id);
+    await mkdir(directory, { recursive: true, mode: 0o700 });
+    await writeFile(join(directory, ".gitignore"), "*\n", { mode: 0o600 });
+    return directory;
+  }
+
+  /**
+   * Everything this run left in its outbox, one file per message, and the
+   * directory read exactly once. There is no in-band signal for a file that is
+   * still being written, and a write-then-rename convention would be a protocol
+   * imposed on the agent, so the read waits for the turn to end instead.
+   *
+   * `withFileTypes` carries `lstat` semantics, so a symlink answers false to
+   * `isFile()` and is never opened. That is what closes
+   * `.caraka-keluar/x -> ~/.ssh/id_ed25519`; `insideWorkspace` cannot, because
+   * it runs on `resolve()` output and is blind to a link (`docs/security.md` §7).
+   *
+   * Every reason to refuse is read before a byte is asked for, the way
+   * `takeAttachments` reads its own: the extension decides the mime, `stat`
+   * decides the size, and only a file that passed both is opened. The count that
+   * comes back is images, because that is what the closing line is about.
+   */
+  private async emptyOutbox(session: Session, directory: string) {
+    let images = 0;
+    const entries = await readdir(directory, { withFileTypes: true }).catch(() => []);
+    for (const entry of entries) {
+      // Names Caraka wrote itself, `.gitignore` among them. No sentence: the
+      // person in the chat did not ask about a file they cannot see.
+      if (entry.name.startsWith(".")) continue;
+      // The name reaches the chat, so it goes through the outbound scrubber like
+      // every other string. The extension is read off the entry rather than off
+      // the scrubbed copy, so a redaction inside a name cannot change what the
+      // file is.
+      const name = this.scrub(entry.name);
+      const mime = entry.isFile() ? outboundMime(entry.name) : null;
+      if (!mime) {
+        await this.refuseFile(
+          session,
+          name,
+          this.t("attach.outType", { name, kinds: OUTBOUND_KINDS }),
+        );
+        continue;
+      }
+      const path = join(directory, entry.name);
+      const size = await stat(path)
+        .then((it) => it.size)
+        .catch(() => Infinity);
+      if (size > OUTBOX_LIMIT) {
+        await this.refuseFile(
+          session,
+          name,
+          this.t("attach.outTooBig", { name, size: Math.round(size / 1_048_576) }),
+        );
+        continue;
+      }
+      const bytes = await readFile(path);
+      if (await this.sendAttachment(session, { bytes, mimeType: mime, name }))
+        images += mime.startsWith("image/") ? 1 : 0;
+    }
+    return images;
+  }
+
+  /**
+   * One refused entry: the audit row first, then the sentence, and no bytes in
+   * between. The row carries the name and no sha256, because nothing was read.
+   */
+  private async refuseFile(session: Session, name: string, sentence: string) {
+    this.note(session, "attachment.out", "refused", { name });
+    await this.sendToSession(session, `${this.header(session)}${sentence}`);
+  }
+
+  /**
    * The attachments of this message, on disk inside the workspace under this
    * run's own directory. Inside, because a path outside the project directory is
    * a path the agent's file tool may refuse: on the Claude Code CLI route Read
@@ -1334,6 +1440,7 @@ export class Gateway {
     message: InboundMessage,
     driver: AgentDriver,
     workspace: Workspace,
+    outbox: string,
   ) {
     const channel = this.channelOf(session.chatId);
     const root = join(workspace.path, INBOX_DIRECTORY);
@@ -1415,6 +1522,17 @@ export class Gateway {
         files.push(written);
       else lines.push(`- ${entry.kind} ${entry.mime ?? ""} ${relative(workspace.path, written)}`);
     }
+    // Read before the outbox line joins them: what was delivered is what the
+    // sender attached, and the line below is Caraka's own. Counting it would
+    // put every ordinary text run on the carries-a-file path, where the trust
+    // window stops auto-approving and an empty message stops being cancelled.
+    const delivered = files.length + lines.length;
+    // The one line that says where a file the agent wants delivered goes. A
+    // name, not an instruction: the block is labelled reference data, and core
+    // reads the directory whether or not the agent read the line.
+    lines.push(
+      `- direktori keluar, berkas di sini dikirim ke chat sesudah giliran ini: ${relative(workspace.path, outbox)}`,
+    );
     return {
       // Written by Caraka from end to end, so there is nothing here to strip the
       // way `memoryLines` strips a provider's `</memory>`.
@@ -1424,7 +1542,7 @@ export class Gateway {
       files,
       // What reached the agent by either road. `files` alone stopped answering
       // this question the moment a document could arrive without one.
-      delivered: files.length + lines.length,
+      delivered,
       refused,
     };
   }
@@ -1458,6 +1576,9 @@ export class Gateway {
     let timeout: NodeJS.Timeout | undefined;
     let beat: NodeJS.Timeout | undefined;
     let compiled: { id: string; block: string } | undefined;
+    // Declared here so the `finally` can read it. Empty for a run that failed
+    // before the directory existed, and the deletion below is guarded on that.
+    let outbox = "";
     try {
       progress = await this.sendToSession(
         session,
@@ -1509,7 +1630,12 @@ export class Gateway {
       // The files are taken before the run goes on the map, so a run that carries
       // one is on it as such before the first permission question can be read
       // against a trust window (AC-6.2).
-      const carried = await this.takeAttachments(session, message, driver, workspace);
+      // Created before the block is built, because its name goes inside the
+      // block. Both calls run before the run goes on the map, so a run that
+      // carries a file is on the map as such before the first permission
+      // question can be read against a trust window.
+      outbox = await this.openOutbox(workspace, session);
+      const carried = await this.takeAttachments(session, message, driver, workspace, outbox);
       this.active.set(workspace.slug, {
         local: session,
         agentId,
@@ -1548,7 +1674,7 @@ export class Gateway {
             // about it should not arrive after it. Each one is its own message:
             // there is no channel here that puts two images in one.
             for (const image of Gateway.imagesOf(notification))
-              if (await this.sendImage(session, image)) pictures += 1;
+              if (await this.sendAttachment(session, image)) pictures += 1;
             const text = this.updateText(notification);
             if (!text) return;
             preview = `${preview}${text}`.slice(-240_000);
@@ -1578,6 +1704,9 @@ export class Gateway {
         },
         carried.files,
       );
+      // Read once, after the turn ended, and before the closing line: what came
+      // out of the outbox is part of what this run produced.
+      pictures += await this.emptyOutbox(session, outbox);
       const cancelled = result.stopReason === "cancelled";
       const memoryLine = await this.finishMemory(prompt, output, compiled, !cancelled, scope);
       // The closing summary goes first and the state change second, because a
@@ -1615,6 +1744,15 @@ export class Gateway {
         await rm(join(workspace.path, INBOX_DIRECTORY), { recursive: true, force: true }).catch(
           () => undefined,
         );
+      // The outbox goes with the run whether it finished, failed, or was
+      // cancelled, and the root goes with it rather than staying behind empty.
+      // An empty `outbox` means the run never reached the line that creates it,
+      // and nothing is deleted for a run that wrote nothing.
+      if (outbox)
+        await rm(join(workspace.path, OUTBOX_DIRECTORY), {
+          recursive: true,
+          force: true,
+        }).catch(() => undefined);
       // Nothing to delete when the send that would have created it failed.
       if (progress)
         await this.channelOf(session.chatId)
@@ -1809,33 +1947,39 @@ export class Gateway {
   }
 
   /**
-   * One image, into the session's own conversation. A channel that cannot carry
+   * One file, into the session's own conversation. A channel that cannot carry
    * one does not implement the method, and the answer is a sentence naming what
    * arrived rather than silence — the same degradation the inbound path already
    * gives a file it cannot forward.
    */
-  private async sendImage(
+  private async sendAttachment(
     session: Session,
-    image: { bytes: Buffer; mimeType: string; name: string },
+    file: { bytes: Buffer; mimeType: string; name: string },
   ) {
     const channel = this.channelOf(session.chatId);
-    if (!channel.sendImage) {
+    if (!channel.sendAttachment) {
       await this.sendToSession(
         session,
-        `${this.header(session)}${this.t("attach.outUnsupported", { agent: this.agentOf(session), mime: image.mimeType })}`,
+        `${this.header(session)}${this.t("attach.outUnsupported", { agent: this.agentOf(session), mime: file.mimeType })}`,
       );
       return false;
     }
     const sent = await channel
-      .sendImage(session.chatId, image, "", session.threadId)
+      .sendAttachment(session.chatId, file, "", session.threadId)
       .catch(() => undefined);
-    this.store.audit(
-      "attachment.out",
-      sent ? "sent" : "failed",
-      { mime: image.mimeType, size: image.bytes.byteLength },
-      session.principal,
-      session.id,
-    );
+    if (!sent)
+      await this.sendToSession(
+        session,
+        `${this.header(session)}${this.t("attach.outRefused", { name: file.name })}`,
+      );
+    this.note(session, "attachment.out", sent ? "sent" : "failed", {
+      name: file.name,
+      mime: file.mimeType,
+      size: file.bytes.byteLength,
+      // Only where the bytes left. A refusal has nothing to hash and says
+      // nothing, so the row cannot be read as evidence a file went out.
+      ...(sent ? { sha256: createHash("sha256").update(file.bytes).digest("hex") } : {}),
+    });
     return sent !== undefined;
   }
 

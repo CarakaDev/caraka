@@ -1,5 +1,5 @@
 import { createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
-import { isAbsolute, relative, resolve } from "node:path";
+import { extname, isAbsolute, relative, resolve } from "node:path";
 
 const fixedSecretPatterns: Array<[RegExp, string]> = [
   [
@@ -81,6 +81,48 @@ const ATTACHMENT_EXTENSIONS: Record<string, string> = {
 export function attachmentName(kind: string, mime?: string) {
   const extension = mime ? ATTACHMENT_EXTENSIONS[mime] : kind === "image" ? ".jpg" : undefined;
   return extension ? `${randomUUID()}${extension}` : null;
+}
+
+// Extension → the mime it is sent under. Nine pairs and no more: the four images
+// the inbound allowlist already carries, and five text-shaped documents every
+// channel here documents a slot for. No archive and no Office file — an archive
+// is the cheapest exfiltration wrapper there is, and no agent in this repository
+// produces a `.docx` (`done/berkas-keluar/spec.md`).
+const OUTBOUND_MIMES: Record<string, string> = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".pdf": "application/pdf",
+  ".txt": "text/plain",
+  ".md": "text/markdown",
+  ".csv": "text/csv",
+};
+
+/**
+ * The sendable extensions in one string, so the table and the sentence that
+ * lists them cannot drift apart.
+ */
+export const OUTBOUND_KINDS = Object.keys(OUTBOUND_MIMES).join(" ");
+
+/**
+ * The mime one outbound file is sent under, read off its extension and off
+ * nothing else. Null means the extension is outside the table, and core answers
+ * with one sentence rather than opening the file.
+ *
+ * No magic byte is read. A second table that reads the bytes can disagree with
+ * this one, and the question then becomes which of the two is right. An
+ * extension that lies produces a wrong mime and a refusal from the channel,
+ * which is a sentence of its own.
+ *
+ * A separator cannot appear in a `readdir` entry name. The check is here anyway,
+ * because this is the function that decides a name reaches a chat, and the cost
+ * of being wrong is somebody's path in somebody's conversation.
+ */
+export function outboundMime(name: string) {
+  if (name.includes("/") || name.includes("\\")) return null;
+  return OUTBOUND_MIMES[extname(name).toLowerCase()] ?? null;
 }
 
 /**

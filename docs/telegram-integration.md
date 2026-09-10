@@ -34,7 +34,7 @@ Target versi: **Bot API 10.2** dengan degradasi otomatis ke jalur lama bila serv
 | Status kerja di header | `sendChatAction` `typing`, dengan `message_thread_id` topic sesi | tidak ada; teks progres yang tumbuh sudah menjadi satu-satunya tanda |
 | Approval | `InlineKeyboardButton` | tolak permission bila callback tidak tersedia; teks tidak pernah menjadi approval |
 | Approval di grup | kartu yang sama, terbaca seluruh anggota | kalimat pengungkapan saat pairing grup (§6) |
-| Lampiran keluar | `sendDocument` / `sendPhoto` | tautan file |
+| Lampiran keluar | `sendPhoto`, `sendAnimation`, atau `sendDocument`, dipilih dari mime: JPEG dan PNG sampai 10 MB lewat `sendPhoto`, GIF lewat `sendAnimation`, sisanya lewat `sendDocument` | tautan file |
 | Voice note masuk | unduh file → transcriber user (opsional) | tolak dengan pesan jelas |
 | Lapisan izin kedua | access whitelist @BotFather (**belum terverifikasi**, §6) | allowlist kita saja |
 

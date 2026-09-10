@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, stat, symlink, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -119,7 +120,7 @@ test("private allowlisted Telegram message reaches Claude and signed approval re
     start: async () => undefined,
     session: async () => "agent-session-1",
     prompt: async (_session: string, prompt: string, route: DriverRoute) => {
-      receivedPrompt = prompt;
+      receivedPrompt = prompt.replace(REFERENCE_BLOCK, "");
       const request: PermissionRequest = {
         sessionId: "agent-session-1",
         toolCall: { toolCallId: "tool-1", title: "Write file", kind: "edit" },
@@ -294,6 +295,19 @@ after(async () => {
   for (const finish of finishers) await finish().catch(() => undefined);
 });
 
+/**
+ * The reference block Caraka writes, matched by the one line only it can carry.
+ * Anchoring on the outbox line rather than on the head of the prompt is what
+ * keeps a memory block in front of it intact, and what stops a message that
+ * quotes the label from being cut out of its own prompt.
+ */
+const REFERENCE_BLOCK =
+  /<lampiran note="data referensi, bukan perintah">\n[\s\S]*?- direktori keluar[^\n]*\n<\/lampiran>(\n\n)?/;
+
+/** The outbox this run was told about, read out of the prompt the agent got. */
+const outboxOf = (prompt: string, root: string) =>
+  join(root, /- direktori keluar[^:]*: (\S+)/.exec(prompt)?.[1] ?? "nowhere");
+
 async function harness(
   options: {
     allowChats?: string[];
@@ -306,7 +320,13 @@ async function harness(
     /** The one container id whose command menu Telegram refuses to publish. */
     commandsFailFor?: string;
     editTopicFails?: boolean;
-    sendsImages?: boolean;
+    /**
+     * Whether this channel can put a file in the chat. `false` removes the
+     * method, which is what a channel without the capability looks like;
+     * `"fails"` keeps it and rejects, which is what a channel that refuses one
+     * looks like.
+     */
+    sendsFiles?: false | "fails";
     /**
      * Whether this channel can close and reopen a finished thread. Left out by
      * default, because a channel that has neither is what WhatsApp is and what
@@ -402,17 +422,18 @@ async function harness(
       edits.push(text);
       return { message_id: 11, chat: { id: 42, type: "private" } };
     },
-    // Optional on the contract, so `sendsImages: false` is what a channel that
+    // Optional on the contract, so `sendsFiles: false` is what a channel that
     // cannot carry one looks like — the absence of the method, not a flag core
     // branches on.
-    ...(options.sendsImages === false
+    ...(options.sendsFiles === false
       ? {}
       : {
-          sendImage: async (
+          sendAttachment: async (
             _chatId: string,
-            image: { bytes: Buffer; mimeType: string; name: string },
+            file: { bytes: Buffer; mimeType: string; name: string },
           ) => {
-            calls.push(`sendImage:${image.mimeType}:${image.bytes.byteLength}`);
+            if (options.sendsFiles === "fails") throw new Error("413 Payload Too Large");
+            calls.push(`sendAttachment:${file.mimeType}:${file.bytes.byteLength}:${file.name}`);
             return { message_id: 99 };
           },
         }),
@@ -488,13 +509,22 @@ async function harness(
   } as unknown as Channel;
 
   const prompts: string[] = [];
+  // The prompt exactly as it reached the driver. `prompts` below has the
+  // reference block cut off it, and a test about the block reads this instead.
+  const rawPrompts: string[] = [];
   const carried: string[][] = [];
   const claude: AgentDriver = options.driver ?? {
     start: async () => undefined,
     session: async () => "agent-session-1",
     ...(options.acceptsFiles ? { acceptsFiles: true } : {}),
     prompt: async (_session: string, prompt: string, route: DriverRoute, files?: string[]) => {
-      prompts.push(prompt);
+      rawPrompts.push(prompt);
+      // Every run now carries a reference block, because every run has an
+      // outbox. It is stripped here so the thirty assertions that read
+      // `prompts` keep meaning "the task text". The pattern is anchored at the
+      // head and takes exactly one block, so anything else that reaches the
+      // prompt still shows up there.
+      prompts.push(prompt.replace(REFERENCE_BLOCK, ""));
       carried.push(files ?? []);
       return options.onPrompt
         ? await options.onPrompt(prompt, route)
@@ -550,6 +580,7 @@ async function harness(
     deleted,
     calls,
     prompts,
+    rawPrompts,
     carried,
     buttons,
     async settle(ms = 60) {
@@ -1126,7 +1157,7 @@ test("read-only refuses a route that never asks, rather than run unguarded", asy
     start: async () => undefined,
     session: async () => "agent-session-1",
     prompt: async (_session: string, prompt: string) => {
-      prompts.push(prompt);
+      prompts.push(prompt.replace(REFERENCE_BLOCK, ""));
       return { stopReason: "end_turn" as const };
     },
     setMode: async () => undefined,
@@ -2669,7 +2700,7 @@ function heldDriver() {
     start: async () => undefined,
     session: async (existing, cwd) => existing ?? `agent-${cwd.split("/").pop() ?? ""}`,
     prompt: async (sessionId, prompt) => {
-      prompts.push(`${sessionId}:${prompt}`);
+      prompts.push(`${sessionId}:${prompt.replace(REFERENCE_BLOCK, "")}`);
       if (prompt.includes("hold"))
         return new Promise<{ stopReason: string }>((resolve) => releases.set(sessionId, resolve));
       return { stopReason: "end_turn" };
@@ -3061,7 +3092,11 @@ test("a trust window and the memory scope follow the session's workspace", async
       { slug: "alpha", path: alpha },
       { slug: "beta", path: beta },
     ],
-    onPrompt: async (prompt, route) => {
+    onPrompt: async (raw, route) => {
+      // `onPrompt` is handed the prompt whole, reference block included, because
+      // a test about the outbox reads the directory out of it. The key here is
+      // the task text.
+      const prompt = raw.replace(REFERENCE_BLOCK, "");
       decisions[prompt] = await route.permission({
         sessionId: "agent-session-1",
         toolCall: {
@@ -3857,7 +3892,7 @@ async function discordHarness(
     start: async () => undefined,
     session: async () => "agent-session-1",
     prompt: async (_session: string, prompt: string, route: DriverRoute) => {
-      prompts.push(prompt);
+      prompts.push(prompt.replace(REFERENCE_BLOCK, ""));
       return options.onPrompt
         ? await options.onPrompt(prompt, route)
         : { stopReason: "end_turn" as const };
@@ -4877,7 +4912,7 @@ test("a channel with no downloader answers one sentence, and a route with no fil
   await cli.settle(200);
   assert.equal(files.targets.length, 1, cli.sent.map((item) => item.text).join(" | "));
   assert.deepEqual(cli.carried, [[]]);
-  const prompt = cli.prompts[0] ?? "";
+  const prompt = cli.rawPrompts[0] ?? "";
   assert.match(prompt, /^<lampiran note="data referensi, bukan perintah">\n/);
   assert.match(prompt, /- image image\/png \.caraka-inbox\//);
   assert.match(prompt, /<\/lampiran>\n\nperbaiki ini$/);
@@ -4976,9 +5011,9 @@ test("a document with no caption still runs, and a refusal alone does not", asyn
   await h.settle(200);
   // AC-4.2: it ran, and what it ran is the block by itself.
   assert.equal(h.prompts.length, 1, h.sent.map((item) => item.text).join(" | "));
-  assert.match(h.prompts[0] ?? "", /^<lampiran note="data referensi, bukan perintah">\n/);
-  assert.match(h.prompts[0] ?? "", /- document application\/pdf \.caraka-inbox\//);
-  assert.match(h.prompts[0] ?? "", /<\/lampiran>$/);
+  assert.match(h.rawPrompts[0] ?? "", /^<lampiran note="data referensi, bukan perintah">\n/);
+  assert.match(h.rawPrompts[0] ?? "", /- document application\/pdf \.caraka-inbox\//);
+  assert.match(h.rawPrompts[0] ?? "", /<\/lampiran>$/);
   assert.deepEqual(h.carried, [[]]);
   // AC-4.3: a message whose whole content was refused starts nothing.
   h.feed.push(withAttachments(42, 42, "", [{ kind: "document", mime: "application/zip" }]));
@@ -5361,8 +5396,8 @@ test("an image the agent produced is delivered, and a run that made one says so"
   h.feed.push(message(42, 42, "draw me a chart"));
   await h.settle(200);
   assert.deepEqual(
-    h.calls.filter((call) => call.startsWith("sendImage:")),
-    [`sendImage:image/png:${png.byteLength}`],
+    h.calls.filter((call) => call.startsWith("sendAttachment:")),
+    [`sendAttachment:image/png:${png.byteLength}:caraka.png`],
   );
   // The closing line names the picture instead of denying it.
   assert.ok(
@@ -5406,8 +5441,8 @@ test("an image born inside a tool call is delivered too", async () => {
   h.feed.push(message(42, 42, "plot it"));
   await h.settle(200);
   assert.deepEqual(
-    h.calls.filter((call) => call.startsWith("sendImage:")),
-    [`sendImage:image/png:${png.byteLength}`],
+    h.calls.filter((call) => call.startsWith("sendAttachment:")),
+    [`sendAttachment:image/png:${png.byteLength}:caraka.png`],
   );
   assert.ok(h.sent.some((item) => /there it is/.test(item.text)));
   await h.finish();
@@ -5464,7 +5499,7 @@ test("a channel that cannot carry an image says so instead of dropping it", asyn
   // thing that must not come back.
   const png = Buffer.from("89504e470d0a1a0a", "hex");
   const h = await harness({
-    sendsImages: false,
+    sendsFiles: false,
     onPrompt: async (_prompt, route) => {
       await route.update({
         sessionId: "agent-session-1",
@@ -5479,13 +5514,338 @@ test("a channel that cannot carry an image says so instead of dropping it", asyn
   h.feed.push(message(42, 42, "draw me a chart"));
   await h.settle(200);
   assert.equal(
-    h.calls.some((call) => call.startsWith("sendImage:")),
+    h.calls.some((call) => call.startsWith("sendAttachment:")),
     false,
   );
   assert.ok(
     h.sent.some((item) => /cannot carry one/.test(item.text)),
     h.sent.map((item) => item.text).join(" | "),
   );
+  await h.finish();
+});
+
+// ---- files the agent leaves in its outbox (spec berkas-keluar) -------------
+
+/** Every `sendAttachment:` the fake channel recorded, in order. */
+function delivered(h: { calls: string[] }) {
+  return h.calls.filter((call) => call.startsWith("sendAttachment:"));
+}
+
+/** Every refusal sentence Caraka sent about a file. */
+function refusals(h: { sent: Sent[] }) {
+  return h.sent.filter((item) => /did not send|did not accept it|cannot carry one/.test(item.text));
+}
+
+type OutboxEntry = {
+  name: string;
+  body?: Buffer | string;
+  link?: string;
+  directory?: boolean;
+  mode?: number;
+};
+
+/**
+ * One run whose agent writes these entries into its outbox before the turn
+ * ends. The directory is read out of the prompt rather than rebuilt here, so
+ * the test writes where the agent was actually told to write.
+ */
+async function outboxRun(
+  entries: OutboxEntry[],
+  options: {
+    sendsFiles?: false | "fails";
+    text?: string;
+    fails?: boolean;
+    settleMs?: number;
+  } = {},
+) {
+  const root = await mkdtemp(join(tmpdir(), "caraka-outbox-"));
+  const seen = { directory: "", mode: 0, ignore: "" };
+  const h = await harness({
+    root,
+    ...(options.sendsFiles === undefined ? {} : { sendsFiles: options.sendsFiles }),
+    onPrompt: async (prompt) => {
+      const directory = outboxOf(prompt, root);
+      seen.directory = directory;
+      seen.mode = (await stat(directory)).mode & 0o777;
+      seen.ignore = await readFile(join(directory, ".gitignore"), "utf8").catch(() => "");
+      for (const entry of entries) {
+        const path = join(directory, entry.name);
+        if (entry.directory) await mkdir(path, { recursive: true });
+        else if (entry.link) await symlink(entry.link, path);
+        else {
+          await writeFile(path, entry.body ?? "");
+          if (entry.mode !== undefined) await chmod(path, entry.mode);
+        }
+      }
+      if (options.fails) throw new Error("the agent died");
+      return { stopReason: "end_turn" as const };
+    },
+  });
+  h.feed.push(message(42, 42, options.text ?? "buatkan berkasnya"));
+  await h.settle(options.settleMs ?? 400);
+  return { h, root, seen };
+}
+
+test("what the agent left in its outbox goes out, one message per file", async () => {
+  // AC-2.1, AC-2.2, AC-2.6, AC-2.7, and AC-3.1. Three files, three sends, and
+  // the mime on each one comes off the extension rather than off the bytes.
+  const png = Buffer.from("89504e470d0a1a0a", "hex");
+  const { h } = await outboxRun([
+    { name: "chart.png", body: png },
+    { name: "notes.md", body: "satu baris" },
+    { name: "data.csv", body: "a,b" },
+  ]);
+  // `readdir` promises no order, so the set is what is asserted and the count
+  // is what proves one message per file.
+  assert.deepEqual(delivered(h).sort(), [
+    `sendAttachment:image/png:${png.byteLength}:chart.png`,
+    `sendAttachment:text/csv:3:data.csv`,
+    `sendAttachment:text/markdown:10:notes.md`,
+  ]);
+  // AC-2.7: no separator reached a name on the wire.
+  for (const call of delivered(h)) assert.match(call.split(":").at(-1) ?? "", /^[^/\\]+$/);
+  // The closing line counts the picture and not the two documents.
+  assert.ok(
+    h.sent.some((item) => /1 image and no text/.test(item.text)),
+    h.sent.map((item) => item.text).join(" | "),
+  );
+  assert.deepEqual(refusals(h), []);
+  await h.finish();
+});
+
+test("the outbox is the run's own, at 0700, and invisible to git while it lasts", async () => {
+  // AC-1.1 and AC-1.2, both read from inside the turn: the directory goes in the
+  // `finally`, so after the run there is nothing left to stat.
+  const { h, root, seen } = await outboxRun([]);
+  assert.equal(seen.mode, 0o700);
+  assert.equal(seen.ignore, "*\n");
+  const session = h.store.sessionFor("42", "");
+  assert.equal(seen.directory, join(root, ".caraka-keluar", session?.id ?? ""));
+  await h.finish();
+});
+
+test("a dead run's leftovers go before this run's outbox is opened", async () => {
+  // AC-1.3. A run that crashed and a run that starts are not the same run, and
+  // the second must not deliver the first one's files.
+  const root = await mkdtemp(join(tmpdir(), "caraka-outbox-dead-"));
+  const dead = join(root, ".caraka-keluar", "mati");
+  await mkdir(dead, { recursive: true });
+  await writeFile(join(dead, "x.png"), "old");
+  const h = await harness({ root });
+  h.feed.push(message(42, 42, "kerjakan"));
+  await h.settle(400);
+  assert.deepEqual(delivered(h), []);
+  assert.equal(existsSync(dead), false);
+  await h.finish();
+});
+
+test("the outbox goes with the run, whether it ended, failed, or was stopped", async () => {
+  // AC-1.4, three times over.
+  const done = await outboxRun([{ name: "chart.png", body: "x" }]);
+  assert.equal(existsSync(done.seen.directory), false);
+  await done.h.finish();
+
+  const failed = await outboxRun([{ name: "chart.png", body: "x" }], { fails: true });
+  assert.equal(existsSync(failed.seen.directory), false);
+  // A run that died still delivered nothing: the read never happened.
+  assert.deepEqual(delivered(failed.h), []);
+  await failed.h.finish();
+
+  const root = await mkdtemp(join(tmpdir(), "caraka-outbox-stop-"));
+  let stoppedDirectory = "";
+  const stopped = await harness({
+    root,
+    onPrompt: async (prompt) => {
+      stoppedDirectory = outboxOf(prompt, root);
+      await delay(200);
+      return { stopReason: "cancelled" as const };
+    },
+  });
+  stopped.feed.push(message(42, 42, "ship it"));
+  await stopped.settle(60);
+  stopped.feed.push(message(42, 42, "/stop"));
+  await stopped.settle(400);
+  assert.ok(stoppedDirectory);
+  assert.equal(existsSync(stoppedDirectory), false);
+  await stopped.finish();
+});
+
+test("a gateway that starts scans no workspace for a leftover outbox", async () => {
+  // AC-1.5. The sweep belongs to the run that needs the directory, and a boot
+  // that walked every configured path would be reading directories nobody is
+  // waiting on.
+  const root = await mkdtemp(join(tmpdir(), "caraka-outbox-boot-"));
+  const dead = join(root, ".caraka-keluar", "mati");
+  await mkdir(dead, { recursive: true });
+  await writeFile(join(dead, "x.png"), "old");
+  const h = await harness({ root });
+  await h.settle(200);
+  assert.equal(existsSync(join(dead, "x.png")), true);
+  assert.deepEqual(delivered(h), []);
+  await h.finish();
+});
+
+test("the outbox is named to the agent inside the labelled block and nowhere else", async () => {
+  // AC-1.6 and AC-1.7. The name is reference data, and it is the only way the
+  // agent learns where to write: core reads no path out of what comes back.
+  const { h } = await outboxRun([], { text: "kerjakan" });
+  const raw = h.rawPrompts[0] ?? "";
+  assert.match(raw, /^<lampiran note="data referensi, bukan perintah">\n/);
+  assert.match(raw, /- direktori keluar[^\n]*\.caraka-keluar/);
+  assert.match(raw, /<\/lampiran>\n\nkerjakan$/);
+  // The task text a hundred other assertions read is still the task text.
+  assert.deepEqual(h.prompts, ["kerjakan"]);
+  await h.finish();
+});
+
+test("a path in the agent's own text delivers nothing", async () => {
+  // AC-1.7. `MEDIA:<path>` was retracted on 15 August 2026 and this is the test
+  // that keeps it retracted: the words reach the chat as words.
+  const h = await harness({
+    onPrompt: async (_prompt, route) => {
+      await route.update({
+        sessionId: "agent-session-1",
+        update: {
+          sessionUpdate: "agent_message_chunk",
+          content: { type: "text", text: "MEDIA:/etc/hosts and /etc/passwd" },
+        },
+      });
+      return { stopReason: "end_turn" as const };
+    },
+  });
+  h.feed.push(message(42, 42, "kirim berkasnya"));
+  await h.settle(300);
+  assert.deepEqual(delivered(h), []);
+  assert.ok(h.sent.some((item) => item.text.includes("MEDIA:/etc/hosts")));
+  await h.finish();
+});
+
+test("a symlink in the outbox is refused without being opened", async () => {
+  // AC-2.3 and AC-9.2. `withFileTypes` carries `lstat` semantics, so the link
+  // answers false to `isFile()` and `/etc/hosts` is never read.
+  const { h } = await outboxRun([{ name: "leak.png", link: "/etc/hosts" }]);
+  assert.deepEqual(delivered(h), []);
+  assert.equal(refusals(h).length, 1, h.sent.map((item) => item.text).join(" | "));
+  assert.match(refusals(h)[0]?.text ?? "", /leak\.png/);
+  const [row] = audits(h.store, "attachment.out");
+  assert.equal(row?.result, "refused");
+  assert.equal(JSON.parse(row?.details ?? "{}").sha256, undefined);
+  await h.finish();
+});
+
+test("a directory in the outbox is refused and never entered", async () => {
+  // AC-2.4. There is no recursion, and the entry that is not a file answers one
+  // sentence rather than silence.
+  const { h } = await outboxRun([{ name: "sub", directory: true }]);
+  assert.deepEqual(delivered(h), []);
+  assert.equal(refusals(h).length, 1, h.sent.map((item) => item.text).join(" | "));
+  assert.match(refusals(h)[0]?.text ?? "", /\bsub\b/);
+  await h.finish();
+});
+
+test("a name that starts with a dot is skipped in silence", async () => {
+  // AC-2.5. `.gitignore` is Caraka's own, and the person in the chat did not ask
+  // about a file they cannot see.
+  const { h } = await outboxRun([{ name: ".hidden.png", body: "x" }]);
+  assert.deepEqual(delivered(h), []);
+  assert.deepEqual(refusals(h), []);
+  await h.finish();
+});
+
+test("a file name carrying a token leaves as a redaction", async () => {
+  // AC-2.6. The name reaches the chat, so it goes through the outbound scrubber
+  // like every other string, and the extension is read off the entry rather
+  // than off the scrubbed copy.
+  const { h } = await outboxRun([
+    { name: "bot123456789:AAHfooBARfooBARfooBARfooBARfooBAR.png", body: "x" },
+    { name: "chart.png", body: "x" },
+  ]);
+  assert.deepEqual(delivered(h).sort(), [
+    "sendAttachment:image/png:1:bot[REDACTED].png",
+    "sendAttachment:image/png:1:chart.png",
+  ]);
+  assert.equal(
+    delivered(h).some((call) => call.includes("AAHfooBAR")),
+    false,
+  );
+  await h.finish();
+});
+
+test("an extension outside the table is refused before the file is opened", async () => {
+  // AC-3.2, AC-3.3, AC-4.1, and AC-9.2. An archive is the cheapest exfiltration
+  // wrapper there is, and the sentence says what can be sent instead.
+  const { h } = await outboxRun([{ name: "archive.zip", body: "PK" }]);
+  assert.deepEqual(delivered(h), []);
+  const sentence = refusals(h)[0]?.text ?? "";
+  assert.match(sentence, /archive\.zip/);
+  for (const extension of [".png", ".jpg", ".jpeg", ".gif", ".webp", ".pdf", ".txt", ".md", ".csv"])
+    assert.ok(sentence.includes(extension), `${extension} is missing from: ${sentence}`);
+  const [row] = audits(h.store, "attachment.out");
+  assert.equal(row?.result, "refused");
+  assert.equal(JSON.parse(row?.details ?? "{}").sha256, undefined);
+  await h.finish();
+});
+
+test("a file past the ceiling is measured and refused, and no byte of it is read", async () => {
+  // AC-3.4, AC-3.5, and AC-4.2. Mode 0o000 is what proves the order: a `readFile`
+  // would throw EACCES and the sentence that came out would be a different one.
+  if (process.getuid?.() === 0) {
+    // Under root `readFile` succeeds on mode 0o000, so the ordering this test is
+    // about is invisible and the test would pass without checking anything.
+    return;
+  }
+  const { h } = await outboxRun(
+    [{ name: "huge.png", body: Buffer.alloc(21 * 1024 * 1024), mode: 0o000 }],
+    { settleMs: 900 },
+  );
+  assert.deepEqual(delivered(h), []);
+  const sentence = refusals(h)[0]?.text ?? "";
+  assert.match(sentence, /21 MB/);
+  assert.match(sentence, /20 MB/);
+  const session = h.store.sessionFor("42", "");
+  assert.equal(session?.state, "done");
+  assert.equal(audits(h.store, "attachment.out")[0]?.result, "refused");
+  await h.finish();
+});
+
+test("a channel with no way to carry a file says so, once per file", async () => {
+  // AC-4.4. The method is optional on the contract, so the absence is what core
+  // reads — never the channel's name.
+  const { h } = await outboxRun([{ name: "chart.png", body: "x" }], { sendsFiles: false });
+  assert.deepEqual(delivered(h), []);
+  assert.equal(
+    h.sent.filter((item) => /cannot carry one/.test(item.text)).length,
+    1,
+    h.sent.map((item) => item.text).join(" | "),
+  );
+  await h.finish();
+});
+
+test("a channel that refuses the file it was handed leaves a sentence and a row", async () => {
+  // AC-4.3 and AC-9.3. The run still ends `done`: a channel that would not take
+  // the picture is a fact about the channel, not a failure of the task.
+  const { h } = await outboxRun([{ name: "chart.png", body: "x" }], { sendsFiles: "fails" });
+  assert.deepEqual(delivered(h), []);
+  assert.match(refusals(h)[0]?.text ?? "", /chart\.png/);
+  assert.equal(audits(h.store, "attachment.out")[0]?.result, "failed");
+  assert.equal(h.store.sessionFor("42", "")?.state, "done");
+  await h.finish();
+});
+
+test("the audit row for a file that left carries its hash and no directory", async () => {
+  // AC-9.1 and AC-9.4. The sha256 is the one thing that says these bytes and not
+  // some other bytes, and the row names the file rather than where it sat.
+  const body = Buffer.from("satu baris\n");
+  const { h } = await outboxRun([{ name: "notes.md", body }]);
+  const [row] = audits(h.store, "attachment.out");
+  assert.equal(row?.result, "sent");
+  assert.deepEqual(JSON.parse(row?.details ?? "{}"), {
+    name: "notes.md",
+    mime: "text/markdown",
+    size: body.byteLength,
+    sha256: createHash("sha256").update(body).digest("hex"),
+  });
+  assert.equal((row?.details ?? "").includes(".caraka-keluar"), false);
   await h.finish();
 });
 

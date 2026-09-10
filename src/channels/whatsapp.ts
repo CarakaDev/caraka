@@ -63,6 +63,12 @@ export const RECONNECT_STABLE_MS = 60_000;
 
 // Past this many pieces the answer travels as one file (`docs/ui-ux.md` §5).
 const FILE_AFTER_CHUNKS = 3;
+// The Supported media types table gives 5 MB for `image/jpeg` and `image/png`
+// against 100 MB for a document, so a larger picture travels as a document
+// rather than not travelling.
+const CLOUD_IMAGE_LIMIT = 5 * 1_000_000;
+// Caption limit on both an image message and a document message.
+const CAPTION_LIMIT = 1024;
 // How many inbound message ids to keep. The same bound `discord.ts` and
 // `whatsapp-baileys.ts` each keep for what they sent.
 const REMEMBERED = 500;
@@ -88,7 +94,17 @@ function sameSecret(supplied: string, expected: string) {
 export type WhatsAppTransport = {
   start?(): Promise<void>;
   send(to: string, text: string): Promise<{ id: string }>;
-  sendFile?(to: string, name: string, body: string): Promise<{ id: string }>;
+  /**
+   * Bytes with a mime, and the provider picks which of its own message types
+   * carries them. It took a markdown string until 10 September 2026: the only
+   * caller was `sendResult` past three pieces, and it now hands over a buffer of
+   * the same text with the same caption.
+   */
+  sendFile?(
+    to: string,
+    file: { bytes: Buffer; mimeType: string; name: string },
+    caption?: string,
+  ): Promise<{ id: string }>;
   /** Absent when the provider has no edit at all; `caps.edit` says so too. */
   edit?(to: string, messageId: string, text: string): Promise<unknown>;
   /** Absent when the provider has no way of showing a status. */
@@ -288,13 +304,42 @@ export class WhatsApp implements Channel {
     const sendFile = this.wire().sendFile;
     if (chunks.length > FILE_AFTER_CHUNKS && sendFile) {
       const sent = await this.emit(containerOf(this.id, chatId), (to) =>
-        sendFile(to, "caraka-output.md", markdown),
+        sendFile(
+          to,
+          {
+            bytes: Buffer.from(markdown, "utf8"),
+            mimeType: "text/markdown",
+            name: "caraka-output.md",
+          },
+          this.t("whatsapp.asFile"),
+        ),
       );
       return [{ message_id: sent.id }];
     }
     const sent: MessageRef[] = [];
     for (const chunk of chunks) sent.push(await this.sendText(chatId, chunk));
     return sent;
+  }
+
+  /**
+   * One file, through the one way out every other send takes: the rolling
+   * ceiling of 12 per 60 seconds, the random gap, and the refusal to write to
+   * someone who has never written here. A file is exempt from none of them — a
+   * ban costs the whole number, not one message.
+   *
+   * The thread id is unused because there are no threads here, the way
+   * `sendText` ignores it.
+   */
+  async sendAttachment(
+    chatId: string,
+    file: { bytes: Buffer; mimeType: string; name: string },
+    caption = "",
+    _threadId = "",
+  ): Promise<MessageRef | undefined> {
+    const sendFile = this.wire().sendFile;
+    if (!sendFile) return undefined;
+    const sent = await this.emit(containerOf(this.id, chatId), (to) => sendFile(to, file, caption));
+    return { message_id: sent.id };
   }
 
   // At most one rewrite per message every 30 seconds (`docs/ui-ux.md` §5). The
@@ -503,19 +548,36 @@ export class WhatsApp implements Channel {
     };
     return {
       send: (to, text) => post({ to, type: "text", text: { body: text, preview_url: false } }),
-      sendFile: async (to, name, body) => {
+      sendFile: async (to, file, caption = "") => {
         const form = new FormData();
         form.append("messaging_product", "whatsapp");
-        form.append("type", "text/markdown");
-        form.append("file", new Blob([body], { type: "text/markdown" }), name);
+        form.append("type", file.mimeType);
+        form.append(
+          "file",
+          new Blob([new Uint8Array(file.bytes)], { type: file.mimeType }),
+          file.name,
+        );
         const media = await this.graph<{ id?: string }>(`/${phone}/media`, undefined, {
           body: form,
         });
-        return post({
-          to,
-          type: "document",
-          document: { id: media?.id ?? "", filename: name, caption: this.t("whatsapp.asFile") },
-        });
+        const id = media?.id ?? "";
+        // A document keeps the file name; an image message has no field for one.
+        // So a picture past the image ceiling, and anything that is not a JPEG or
+        // a PNG, goes as a document — which is also the only way a GIF leaves
+        // here, because `image/gif` is in no table on that page.
+        const image =
+          (file.mimeType === "image/jpeg" || file.mimeType === "image/png") &&
+          file.bytes.byteLength <= CLOUD_IMAGE_LIMIT;
+        const cut = caption.slice(0, CAPTION_LIMIT);
+        return post(
+          image
+            ? { to, type: "image", image: { id, ...(cut ? { caption: cut } : {}) } }
+            : {
+                to,
+                type: "document",
+                document: { id, filename: file.name, ...(cut ? { caption: cut } : {}) },
+              },
+        );
       },
       // `post()` is not reused: it reads `messages[0].id` off the reply, and
       // this reply is `{"success": true}`.

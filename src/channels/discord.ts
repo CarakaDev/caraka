@@ -40,6 +40,12 @@ const NAME_LIMIT = 100;
 const BUTTON_LABEL_LIMIT = 80;
 // `docs/ui-ux.md`: one Discord message carries 2.000 characters.
 const MESSAGE_LIMIT = 2000;
+// "The default limit is 20 MiB for all users, but may be higher for users
+// depending on their Nitro status or by the server's Boost Tier"
+// (docs.discord.com/developers/reference). The default is the number a bot can
+// count on; the higher tier is a thing this file cannot read. A file past it is
+// refused before the request, so a rejected multipart body is never uploaded.
+const UPLOAD_LIMIT = 20 * 1024 * 1024;
 // Past this many pieces the answer travels as one file instead of a wall of
 // messages. Three is a reading decision, not a platform limit.
 const FILE_AFTER_CHUNKS = 3;
@@ -320,16 +326,21 @@ export class Discord implements Channel {
    * is cut at the channel's own outbound ceiling for the reason Telegram's is:
    * losing the tail of a sentence is smaller than losing the picture.
    *
+   * One file per message, `files[0]` and nothing else, even though this endpoint
+   * takes `files[n]`: the other two channels here take one, and core sends one
+   * message per file on all three.
+   *
    * `allowed_mentions: { parse: [] }` rides along for the same reason it does
    * everywhere else in this file: text that came from an agent must not be able
    * to ping a room.
    */
-  async sendImage(
+  async sendAttachment(
     chatId: string,
-    image: { bytes: Buffer; mimeType: string; name: string },
+    file: { bytes: Buffer; mimeType: string; name: string },
     caption = "",
     threadId = "",
-  ): Promise<MessageRef> {
+  ): Promise<MessageRef | undefined> {
+    if (file.bytes.byteLength > UPLOAD_LIMIT) return undefined;
     const channel = threadId || containerOf(this.id, chatId);
     const form = new FormData();
     form.append(
@@ -337,13 +348,13 @@ export class Discord implements Channel {
       JSON.stringify({
         ...(caption ? { content: caption.slice(0, this.caps.maxChars) } : {}),
         allowed_mentions: { parse: [] },
-        attachments: [{ id: 0, filename: image.name }],
+        attachments: [{ id: 0, filename: file.name }],
       }),
     );
     form.append(
       "files[0]",
-      new Blob([new Uint8Array(image.bytes)], { type: image.mimeType }),
-      image.name,
+      new Blob([new Uint8Array(file.bytes)], { type: file.mimeType }),
+      file.name,
     );
     const sent = await this.call<{ id: string }>(
       "POST",

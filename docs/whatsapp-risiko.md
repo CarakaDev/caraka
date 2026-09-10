@@ -53,7 +53,7 @@ Empat sinyal yang dilaporkan, dan posisi Caraka terhadapnya. Empat dari lima bar
 |---|---|---|
 | Reply-ratio | di bawah 10% dihitung risiko tinggi | Caraka hanya membalas. Rasionya mendekati 100%, dan tidak ada permukaan untuk memulai percakapan |
 | Jarak contact-graph | mengirim ke orang yang tidak punya hubungan denganmu | `emit()` di `src/channels/whatsapp.ts` menolak menulis ke nomor yang belum pernah menulis lebih dulu dan tidak ada di `allowFrom`, lalu menulis satu baris audit |
-| Timing | pola pengiriman yang terlalu rapi untuk manusia | jeda acak seragam 1.200–3.500 md antar-outbound, dengan plafon 12 pesan per jendela bergulir 60 detik. Kelebihan diantrekan, tidak dijatuhkan |
+| Timing | pola pengiriman yang terlalu rapi untuk manusia | jeda acak seragam 1.200–3.500 md antar-outbound, dengan plafon 12 pesan per jendela bergulir 60 detik. Kelebihan diantrekan, tidak dijatuhkan. Sejak 10 September 2026 berkas keluar memakai jalur yang sama: satu berkas mengambil satu slot dari 12 pesan per 60 detik dan menunggu jeda acaknya, dan tidak dikecualikan dari keduanya — sebuah ban memakan seluruh angkanya, bukan satu pesan |
 | Reconnect | logout berulang dan 401 sesudah menyambung ulang | backoff 5 detik ×2 berjitter penuh, plafon 300 detik, berhenti di percobaan keenam. Jawaban logged-out atau 401 tidak pernah disambung ulang sama sekali |
 | Asal traffic | IP datacenter atau VPS | **tidak ditangani.** Caraka berjalan di mesinmu; kalau mesin itu VPS, sinyal itu ada dan tidak bisa dibereskan dari dalam program |
 

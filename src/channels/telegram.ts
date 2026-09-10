@@ -127,6 +127,18 @@ function topicName(name: string, fallback: string) {
 // reported nothing.
 const DOWNLOAD_LIMIT = 20 * 1024 * 1024;
 
+// sendPhoto: "The photo must be at most 10 MB in size." Read as decimal, which
+// is the smaller of the two readings and therefore the safe one: a file between
+// 10,000,000 and 10,485,760 bytes goes as a document rather than being handed to
+// a method that may refuse it.
+const PHOTO_LIMIT = 10 * 1_000_000;
+// Form field → method, so the field name and the endpoint cannot drift apart.
+const SEND_METHOD = {
+  photo: "sendPhoto",
+  animation: "sendAnimation",
+  document: "sendDocument",
+} as const;
+
 // Slot → the neutral word core reads. Seven of the eight file slots pair one to
 // one; `photo` is the eighth and is read below, because it arrives as a list.
 const MEDIA_SLOTS = [
@@ -436,32 +448,37 @@ export class Telegram implements Channel {
   }
 
   /**
-   * `sendPhoto` for a still and `sendAnimation` for a GIF, because Telegram
-   * refuses an animation on the photo method and the inbound allowlist admits
-   * both. Neither is `sendDocument`: a chart the agent drew is meant to be seen
-   * without a tap.
+   * `sendPhoto` for a still, `sendAnimation` for a GIF, `sendDocument` for
+   * everything else, and the mime is the whole of the decision. A JPEG or a PNG
+   * past the photo ceiling goes as a document rather than being refused: the
+   * picture then arrives behind one tap instead of not arriving.
    *
-   * The caption is cut at 1024, which is Telegram's limit and not this
-   * project's — the alternative is a refusal, and losing the tail of a sentence
-   * is smaller than losing the picture it describes.
+   * `image/webp` falls to `sendDocument`. The `sendPhoto` page does not name
+   * webp among what it takes, and a sticker is not what an agent produces.
+   *
+   * The caption is cut at 1024, which is Telegram's number for all three methods
+   * and not this project's — the alternative is a refusal, and losing the tail of
+   * a sentence is smaller than losing the file it describes.
    */
-  async sendImage(
+  async sendAttachment(
     chatId: string,
-    image: { bytes: Buffer; mimeType: string; name: string },
+    file: { bytes: Buffer; mimeType: string; name: string },
     caption = "",
     threadId = "",
   ) {
-    const animated = image.mimeType === "image/gif";
+    const still = file.mimeType === "image/jpeg" || file.mimeType === "image/png";
+    const slot =
+      still && file.bytes.byteLength <= PHOTO_LIMIT
+        ? "photo"
+        : file.mimeType === "image/gif"
+          ? "animation"
+          : "document";
     const form = new FormData();
     form.append("chat_id", chatId);
     if (threadId) form.append("message_thread_id", threadId);
     if (caption) form.append("caption", caption.slice(0, 1024));
-    form.append(
-      animated ? "animation" : "photo",
-      new Blob([new Uint8Array(image.bytes)], { type: image.mimeType }),
-      image.name,
-    );
-    return this.call<TelegramMessage>(animated ? "sendAnimation" : "sendPhoto", form);
+    form.append(slot, new Blob([new Uint8Array(file.bytes)], { type: file.mimeType }), file.name);
+    return this.call<TelegramMessage>(SEND_METHOD[slot], form);
   }
 
   async sendPlain(chatId: string, text: string, threadId = "") {

@@ -31,6 +31,12 @@ const en = {
   // about the channel, not about the run.
   "attach.outUnsupported":
     "{agent} produced a {mime}, and this channel cannot carry one; ask for the file to be written into the workspace instead.",
+  // The three outbound refusals. Each one names the file the person asked for
+  // and nothing else: not the directory it was read from, not the method that
+  // would have carried it, not a limit belonging to a channel they did not pick.
+  "attach.outType": "Caraka did not send {name}; it can send {kinds}.",
+  "attach.outTooBig": "Caraka did not send {name}; it is {size} MB and at most 20 MB goes out.",
+  "attach.outRefused": "{name} was produced, and this channel did not accept it.",
   "permission.header": "⏸ {agent} asks for permission",
   "permission.fallbackTitle": "Tool operation",
   "permission.ttl": "Valid for 10 minutes",
@@ -420,6 +426,10 @@ const id: Record<MessageKey, string> = {
     "Lampiran itu {size} MB dan Caraka mengunduh paling banyak 20 MB; kirim yang lebih kecil, atau taruh berkasnya di workspace lalu sebut path-nya.",
   "attach.outUnsupported":
     "{agent} menghasilkan {mime}, dan channel ini tidak bisa membawanya; minta berkasnya ditulis ke dalam workspace saja.",
+  "attach.outType": "Caraka tidak mengirim {name}; yang bisa dikirim {kinds}.",
+  "attach.outTooBig":
+    "Caraka tidak mengirim {name}; ukurannya {size} MB dan yang keluar paling banyak 20 MB.",
+  "attach.outRefused": "{name} sudah dihasilkan, dan channel ini tidak menerimanya.",
   "permission.header": "⏸ {agent} meminta izin",
   "permission.fallbackTitle": "Operasi tool",
   "permission.ttl": "Berlaku 10 menit",
