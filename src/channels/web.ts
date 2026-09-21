@@ -223,8 +223,8 @@ export class WebChannel implements Channel {
   }
   private callback(_device: unknown, input: { messageId: string; buttonId: string }) {
     const entry = this.callbacks.get(input.buttonId);
-    if (!entry || entry.messageId !== input.messageId || this.inbox.length >= WEB_INBOX_LIMIT)
-      return false;
+    if (!entry || entry.messageId !== input.messageId) return false;
+    if (this.inbox.length >= WEB_INBOX_LIMIT) return "full" as const;
     this.callbacks.delete(input.buttonId);
     this.inbox.push({
       callback_query: {
@@ -242,10 +242,8 @@ export class WebChannel implements Channel {
     return true;
   }
   private stop(_device: unknown, roomId: string) {
-    if (
-      this.inbox.length >= WEB_INBOX_LIMIT ||
-      !this.options.store.db.prepare("SELECT id FROM web_rooms WHERE id = ?").get(roomId)
-    )
+    if (this.inbox.length >= WEB_INBOX_LIMIT) return "full" as const;
+    if (!this.options.store.db.prepare("SELECT id FROM web_rooms WHERE id = ?").get(roomId))
       return false;
     this.inbox.push({
       message: {

@@ -398,6 +398,48 @@ test("web bounds JSON, event subscribers, and its inbox before message storage",
   );
 });
 
+test("web reports saturated callbacks and stops as retryable", async (t) => {
+  const f = await fixture();
+  t.after(async () => {
+    await f.channel.close();
+    f.store.close();
+    await rm(f.home, { recursive: true, force: true });
+  });
+  const paired = await post(f.base, "/api/pair", {
+    code: f.channel.createPairCode(),
+    name: "Phone",
+  });
+  const cookie = paired.headers.get("set-cookie")?.split(";")[0] ?? "";
+  const created = await post(
+    f.base,
+    "/api/messages",
+    { clientId: "busy-room", workspace: "main", text: "task" },
+    cookie,
+  );
+  const roomId = ((await created.json()) as { roomId: string }).roomId;
+  const card = await f.channel.sendText("web:" + roomId, "Approval", "", {
+    inline_keyboard: [[{ text: "Allow", callback_data: "allow" }]],
+  });
+  const state = (await (await fetch(f.base + "/api/state", { headers: { cookie } })).json()) as {
+    messages: Array<{ id: string; buttons: Array<{ id: string }> }>;
+  };
+  const buttonId = state.messages.find((entry) => entry.id === card.message_id)?.buttons[0]?.id;
+  assert.equal(typeof buttonId, "string");
+  const inbox = (f.channel as unknown as { inbox: unknown[] }).inbox;
+  inbox.push(...Array.from({ length: WEB_INBOX_LIMIT - inbox.length }, () => ({})));
+  assert.equal(
+    (await post(f.base, "/api/callback", { messageId: card.message_id, buttonId }, cookie)).status,
+    429,
+  );
+  assert.equal((await post(f.base, "/api/stop", { roomId }, cookie)).status, 429);
+  inbox.length = 0;
+  assert.equal(
+    (await post(f.base, "/api/callback", { messageId: card.message_id, buttonId }, cookie)).status,
+    202,
+  );
+  assert.equal((await post(f.base, "/api/stop", { roomId }, cookie)).status, 202);
+});
+
 test("web sends SSE frames, validates health Host, records input attachments, and preserves devices after restart", async (t) => {
   const f = await fixture();
   t.after(async () => {
@@ -450,6 +492,12 @@ test("web sends SSE frames, validates health Host, records input attachments, an
       inline_keyboard: [[{ text: "Allow", callback_data: "allow" }]],
     },
   );
+  const liveState = (await (
+    await fetch(f.base + "/api/state", { headers: { cookie } })
+  ).json()) as { messages: Array<{ id: string; buttons: Array<{ id: string }> }> };
+  const staleButtonId = liveState.messages.find((entry) => entry.id === staleCard.message_id)
+    ?.buttons[0]?.id;
+  assert.equal(typeof staleButtonId, "string");
   await f.channel.close();
   f.store.close();
   const store = new Store(join(f.home, "caraka.db"), createScrubber([]));
@@ -474,6 +522,17 @@ test("web sends SSE frames, validates health Host, records input attachments, an
   assert.deepEqual(
     restored.messages.find((entry) => entry.id === staleCard.message_id)?.buttons,
     [],
+  );
+  assert.equal(
+    (
+      await post(
+        restarted.url,
+        "/api/callback",
+        { messageId: staleCard.message_id, buttonId: staleButtonId },
+        cookie,
+      )
+    ).status,
+    409,
   );
   await restarted.close();
   store.close();

@@ -66,8 +66,9 @@ gets `401 { "error": "authentication" }`.
   429 when the bounded Gateway inbox is full.
 - `POST /api/callback` accepts `{ messageId, buttonId }`. It returns 202 only
   while that opaque button is live. It returns 409 after use, expiry, or restart.
+  It returns 429 when the Gateway inbox is full and keeps the callback live.
 - `POST /api/stop` accepts `{ roomId }`. It returns 202 for a recorded room and
-  forwards `/stop` through Gateway.
+  forwards `/stop` through Gateway. It returns 429 when the Gateway inbox is full.
 - `POST /api/files?name=NAME` accepts raw bytes up to 20 MiB. It returns
   `{ id, name }`. `GET /api/files/ID` requires the device cookie.
 - `GET /api/events` is SSE. It first sends `ready`, then sends `invalidate`.

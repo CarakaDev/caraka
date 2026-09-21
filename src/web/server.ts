@@ -35,8 +35,8 @@ type Hooks = {
       files?: string[];
     },
   ): Promise<{ roomId: string; replay: boolean }>;
-  callback(device: Device, input: { messageId: string; buttonId: string }): boolean;
-  stop(device: Device, roomId: string): boolean;
+  callback(device: Device, input: { messageId: string; buttonId: string }): boolean | "full";
+  stop(device: Device, roomId: string): boolean | "full";
   invalidated(): void;
 };
 
@@ -237,23 +237,19 @@ export class WebServer {
       const body = await this.json(request);
       if (!body || typeof body.messageId !== "string" || typeof body.buttonId !== "string")
         return this.send(response, 400, { error: "body" });
-      return this.send(
-        response,
-        this.input.hooks.callback(device, { messageId: body.messageId, buttonId: body.buttonId })
-          ? 202
-          : 409,
-        {},
-      );
+      const result = this.input.hooks.callback(device, {
+        messageId: body.messageId,
+        buttonId: body.buttonId,
+      });
+      return this.send(response, result === "full" ? 429 : result ? 202 : 409, {});
     }
     if (method === "POST" && url.pathname === "/api/stop") {
       const device = this.authenticated(request, response, true);
       if (!device) return;
       const body = await this.json(request);
-      return this.send(
-        response,
-        typeof body?.roomId === "string" && this.input.hooks.stop(device, body.roomId) ? 202 : 404,
-        {},
-      );
+      const result =
+        typeof body?.roomId === "string" ? this.input.hooks.stop(device, body.roomId) : false;
+      return this.send(response, result === "full" ? 429 : result ? 202 : 404, {});
     }
     if (method === "POST" && url.pathname === "/api/logout") {
       const device = this.authenticated(request, response, true);
