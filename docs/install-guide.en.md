@@ -10,29 +10,12 @@ For another installed, signed-in agent, use its shipped preset identifier. For e
 Run `npx caraka start` in one terminal. Run `npx caraka web pair` in a separate terminal.
 This path does not need a Telegram account. Read [the Web/PWA guide](web-guide.en.md) before you configure HTTPS exposure.
 
-## Optional Telegram chat setup
 
-The remainder of this guide documents the optional Telegram route. It needs a bot token. The Web/PWA route above does not.
-
-## Prerequisites
-
-Caraka uses software that is already on your machine:
-
-| Requirement | Check | Fix |
-|---|---|---|
-| Node.js 22+ | `node --version` | install Node LTS from [nodejs.org](https://nodejs.org) |
-| Git | `git --version` | install Git for your operating system |
-| Claude Code | `claude --version` | `npm install --global @anthropic-ai/claude-code` |
-| Claude login | `claude auth status` | `claude auth login` |
-| Telegram bot | token from BotFather | open [@BotFather](https://t.me/BotFather), then run `/newbot` |
-
-Docker, a cloud account, a domain, a webhook, and an open port are not needed.
-
-## The fastest route: let the coding agent install it
+## Let a coding agent install Web/PWA
 
 If a coding agent is already running on the machine that holds the repository,
-paste this prompt into it. It checks the prerequisites, installs what is
-missing, then hands the token part back to you.
+paste this prompt into it. It checks the selected agent and configures Web/PWA
+without changing the repository.
 
 ```text
 Install Caraka Web/PWA for the repository in my current working directory.
@@ -56,14 +39,30 @@ Start `npx caraka start` in one local terminal. In a separate local terminal, ru
 Do not enable a provider, open a port, install a service, or change your own model or provider configuration.
 ```
 
-**The token is still typed in your own terminal and never enters the agent's
-conversation.** The wizard hides the input and writes the token straight to
-`~/.caraka/secrets/telegram.token`. Chat transcripts, tool logs, and terminal
-history can be kept by the coding agent's client, so moving the token through
-chat throws that protection away. The prompt above forbids it outright.
+The prompt selects the installed, authenticated agent and configures Web/PWA only.
+It does not configure Telegram. The foreground start command keeps its terminal,
+so the pairing command runs in a separate terminal.
 
 This prompt and the full reasoning behind it are in
 [the installation prompt for a coding agent](install-with-ai.md).
+
+## Optional Telegram chat setup
+
+The remainder of this guide documents the optional Telegram route. It needs a bot token. The Web/PWA route above does not.
+
+## Prerequisites
+
+Caraka uses software that is already on your machine:
+
+| Requirement | Check | Fix |
+|---|---|---|
+| Node.js 22+ | `node --version` | install Node LTS from [nodejs.org](https://nodejs.org) |
+| Git | `git --version` | install Git for your operating system |
+| Claude Code | `claude --version` | `npm install --global @anthropic-ai/claude-code` |
+| Claude login | `claude auth status` | `claude auth login` |
+| Telegram bot | token from BotFather | open [@BotFather](https://t.me/BotFather), then run `/newbot` |
+
+Docker, a cloud account, a domain, a webhook, and an open port are not needed.
 
 ## The manual route
 

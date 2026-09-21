@@ -10,29 +10,12 @@ Untuk agent lain yang sudah terpasang dan login, gunakan identifier preset yang 
 Jalankan `npx caraka start` di satu terminal. Jalankan `npx caraka web pair` di terminal terpisah.
 Jalur ini tidak memerlukan akun Telegram. Baca [panduan Web/PWA](web-guide.md) sebelum mengonfigurasi eksposur HTTPS.
 
-## Setup chat Telegram opsional
 
-Sisa panduan ini mendokumentasikan jalur Telegram opsional. Jalur itu memerlukan token bot. Jalur Web/PWA di atas tidak.
-
-## Prasyarat
-
-Caraka memakai software yang sudah ada di komputermu:
-
-| Kebutuhan | Cek | Perbaikan |
-|---|---|---|
-| Node.js 22+ | `node --version` | pasang Node LTS dari [nodejs.org](https://nodejs.org) |
-| Git | `git --version` | pasang Git untuk sistem operasimu |
-| Claude Code | `claude --version` | `npm install --global @anthropic-ai/claude-code` |
-| Login Claude | `claude auth status` | `claude auth login` |
-| Bot Telegram | token dari BotFather | buka [@BotFather](https://t.me/BotFather), lalu jalankan `/newbot` |
-
-Docker, akun cloud, domain, webhook, dan port terbuka tidak dibutuhkan.
-
-## Jalur tercepat: suruh coding agent yang memasangnya
+## Minta coding agent memasang Web/PWA
 
 Kalau ada coding agent yang berjalan di komputer tempat repository berada,
-tempel prompt ini ke sana. Ia memeriksa prasyarat, memasang yang kurang, lalu
-menyerahkan bagian token kembali kepadamu.
+tempel prompt ini ke sana. Ia memeriksa agent yang dipilih dan mengonfigurasi
+Web/PWA tanpa mengubah repository.
 
 ```text
 Pasang Caraka Web/PWA untuk repository di working directory saya saat ini.
@@ -56,14 +39,30 @@ Jalankan `npx caraka start` di satu terminal lokal. Di terminal lokal terpisah, 
 Jangan mengaktifkan provider, membuka port, memasang service, atau mengubah konfigurasi model atau provider milikmu sendiri.
 ```
 
-**Token tetap diketik di terminalmu sendiri dan tidak pernah masuk ke percakapan
-agent.** Wizard menyembunyikan input dan menulis token langsung ke
-`~/.caraka/secrets/telegram.token`. Transkrip chat, tool log, dan histori terminal
-bisa disimpan oleh klien coding agent, jadi memindahkan token lewat chat
-menghilangkan perlindungan itu. Prompt di atas melarangnya secara eksplisit.
+Prompt memilih agent yang terpasang dan sudah login lalu hanya mengonfigurasi
+Web/PWA. Prompt ini tidak mengonfigurasi Telegram. Perintah start di foreground
+memakai terminalnya, jadi perintah pairing dijalankan di terminal terpisah.
 
 Versi Inggris prompt ini beserta alasan lengkapnya ada di
 [prompt instalasi untuk coding agent](install-with-ai.md).
+
+## Setup chat Telegram opsional
+
+Sisa panduan ini mendokumentasikan jalur Telegram opsional. Jalur itu memerlukan token bot. Jalur Web/PWA di atas tidak.
+
+## Prasyarat
+
+Caraka memakai software yang sudah ada di komputermu:
+
+| Kebutuhan | Cek | Perbaikan |
+|---|---|---|
+| Node.js 22+ | `node --version` | pasang Node LTS dari [nodejs.org](https://nodejs.org) |
+| Git | `git --version` | pasang Git untuk sistem operasimu |
+| Claude Code | `claude --version` | `npm install --global @anthropic-ai/claude-code` |
+| Login Claude | `claude auth status` | `claude auth login` |
+| Bot Telegram | token dari BotFather | buka [@BotFather](https://t.me/BotFather), lalu jalankan `/newbot` |
+
+Docker, akun cloud, domain, webhook, dan port terbuka tidak dibutuhkan.
 
 ## Jalur manual
 

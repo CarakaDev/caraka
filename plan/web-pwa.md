@@ -321,3 +321,30 @@ The final-source site check is `/tmp/caraka-task4-fix1-site-check.log`.
 The final-source container output is `/tmp/caraka-task4-fix1-site-e2e-measure.log`.
 The existing guide hint, formatter configuration notice, and npm update notice are non-blocking output.
 No root-wide verification suite was repeated after content-only corrections.
+
+## Task 4 review fix round 2 evidence
+
+This scope corrects the remaining guide boundary, the base64url pairing assertion,
+and one baseline comment. It changes no executed site source.
+
+```text
+> node --import tsx --test --test-name-pattern='documented Web/PWA setup' test/web.test.ts
+ℹ tests 1
+ℹ pass 1
+ℹ fail 0
+> node --import tsx --test --test-name-pattern='every copy of the install prompt' test/unit.test.ts
+ℹ tests 1
+ℹ pass 1
+ℹ fail 0
+> npm run lint
+Found 0 warnings and 0 errors.
+All matched files use the correct format.
+No config found, using defaults.
+```
+
+The focused pairing result is `/tmp/caraka-task4-fix2-pair-green.log`.
+The prompt contract result is `/tmp/caraka-task4-fix2-prompt-contract.log`.
+The lint result is `/tmp/caraka-task4-fix2-lint.log`.
+The final-source site gate remains `/tmp/caraka-task4-fix1-site-e2e-measure.log`:
+143 passed with 2 expected skips. The round changed only a comment in the site tree,
+so it did not repeat that container suite.

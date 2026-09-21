@@ -343,7 +343,11 @@ test("documented Web/PWA setup keeps the Claude Code preset and prints a pairing
   assert.match(lines[0] ?? "", /Run caraka start, then caraka web pair/);
 
   await webCommand(["pair"]);
-  assert.match(lines[1] ?? "", /^http:\/\/127\.0\.0\.1:7720\/#pair=[A-Za-z0-9-]+$/);
+  const pairingUrl = /^http:\/\/127\.0\.0\.1:7720\/#pair=[A-Za-z0-9_-]+$/;
+  assert.match(lines[1] ?? "", pairingUrl);
+  const underscoreCode = Buffer.alloc(9, 255).toString("base64url");
+  assert.equal(underscoreCode, "____________");
+  assert.match(`http://127.0.0.1:7720/#pair=${underscoreCode}`, pairingUrl);
 });
 
 test("web init preserves malformed existing config bytes", async (t) => {
