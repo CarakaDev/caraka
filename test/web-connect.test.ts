@@ -241,14 +241,8 @@ test("provider plans refuse a conflicting Serve route and give portable install 
   assert.match(linuxInstall("tailscale", "fedora"), /Fedora or RHEL/);
   assert.match(linuxInstall("cloudflare", "ubuntu"), /cloudflare-main.gpg/);
   assert.match(linuxInstall("cloudflare", "fedora"), /cloudflared.repo/);
-  assert.match(shellPath("/tmp/operator space", "linux"), /^.*$/);
-  const apostrophe = String.fromCharCode(39);
-  assert.equal(
-    shellPath("/tmp/operator" + apostrophe + "s path", "linux").includes(
-      apostrophe + '"' + apostrophe,
-    ),
-    true,
-  );
+  assert.equal(shellPath("/tmp/operator space", "linux"), "'/tmp/operator space'");
+  assert.equal(shellPath("/tmp/operator's path", "linux"), "'/tmp/operator'\"'\"'s path'");
   assert.equal(shellPath("C:\\operator $()'s space", "win32"), "'C:\\operator $()''s space'");
 });
 
@@ -383,6 +377,8 @@ test("provider plans neutralize inherited DNS force, preserve configuration, and
     /configuration already exists/,
   );
   const { tailscaleConflict } = await import("../src/web/connect.js");
+  assert.equal(tailscaleConflict({}, "http://127.0.0.1:7720"), false);
+  assert.equal(tailscaleConflict({ Web: { route: "malformed" } }, "http://127.0.0.1:7720"), true);
   assert.equal(
     tailscaleConflict({ Web: { route: { Path: "/old" } } }, "http://127.0.0.1:7720"),
     true,
@@ -391,6 +387,18 @@ test("provider plans neutralize inherited DNS force, preserve configuration, and
     tailscaleConflict({ Web: { route: { Text: "old" } } }, "http://127.0.0.1:7720"),
     true,
   );
+  assert.equal(
+    tailscaleConflict(
+      { Web: { route: { Redirect: "https://old.example" } } },
+      "http://127.0.0.1:7720",
+    ),
+    true,
+  );
+  assert.equal(
+    tailscaleConflict({ Web: { route: { Unknown: "old" } } }, "http://127.0.0.1:7720"),
+    true,
+  );
+  assert.equal(tailscaleConflict({ occupied: true }, "http://127.0.0.1:7720"), true);
   assert.equal(tailscaleConflict(undefined, "http://127.0.0.1:7720"), true);
 });
 
@@ -509,4 +517,69 @@ test("push requires an HTTPS VAPID subject before it advertises availability", a
   const { validVapidSubject } = await import("../src/web/push.js");
   assert.equal(validVapidSubject("http://127.0.0.1:7720"), false);
   assert.equal(validVapidSubject("https://caraka.example.test"), true);
+});
+
+test("tailscale accepts an empty ServeConfig and applies only the expected route", async (t) => {
+  const { home, prior } = await configuredHome();
+  t.after(async () => {
+    process.env.CARAKA_HOME = prior;
+    await rm(home, { recursive: true, force: true });
+  });
+  const config = (await import("../src/config.js")).parseConfig(
+    await readFile(join(home, "config.yaml"), "utf8"),
+  );
+  const calls: string[][] = [];
+  const plan = await connect({
+    provider: "tailscale",
+    config,
+    root: home,
+    apply: true,
+    runner: async (_command, args) => {
+      calls.push(args);
+      if (args[0] === "status")
+        return {
+          code: 0,
+          stdout: JSON.stringify({
+            BackendState: "Running",
+            Self: { DNSName: "device.example.ts.net." },
+          }),
+          stderr: "",
+        };
+      return {
+        code: 0,
+        stdout: args[0] === "serve" && args[1] === "status" ? "{}" : "",
+        stderr: "",
+      };
+    },
+  });
+  assert.match(plan.lines.join("\n"), /Restart Caraka/);
+  assert.deepEqual(calls.at(-1), ["serve", "--bg", "--https=443", "http://127.0.0.1:7720"]);
+});
+
+test("cloudflare rejects explicit credentials when the named tunnel is absent", async (t) => {
+  const { home, prior } = await configuredHome();
+  t.after(async () => {
+    process.env.CARAKA_HOME = prior;
+    await rm(home, { recursive: true, force: true });
+  });
+  const config = (await import("../src/config.js")).parseConfig(
+    await readFile(join(home, "config.yaml"), "utf8"),
+  );
+  const calls: string[][] = [];
+  await assert.rejects(
+    connect({
+      provider: "cloudflare",
+      config,
+      root: home,
+      hostname: "caraka.example.test",
+      credentials: join(home, "outside-secrets.json"),
+      apply: true,
+      runner: async (_command, args) => {
+        calls.push(args);
+        return { code: 0, stdout: "[]", stderr: "" };
+      },
+    }),
+    /only reuse an existing named tunnel/,
+  );
+  assert.deepEqual(calls, [["tunnel", "list", "--output", "json"]]);
 });

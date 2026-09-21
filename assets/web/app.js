@@ -237,6 +237,7 @@ function clearPrivate() {
   sessionAbort = new AbortController();
   events?.close();
   events = null;
+  pushState = "idle";
   state = undefined;
   connected = false;
   pendingLoad = null;

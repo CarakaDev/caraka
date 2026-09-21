@@ -521,3 +521,49 @@ test("service worker shows generic activity and focuses the same origin", async 
   ]);
   expect(result.focused).toBe(true);
 });
+
+test("logout resets pending notifications before a new device pairs", async ({ page, server }) => {
+  await page.addInitScript(() => {
+    let resolvePermission: ((value: NotificationPermission) => void) | undefined;
+    Object.defineProperty(Notification, "requestPermission", {
+      configurable: true,
+      value: () => new Promise<NotificationPermission>((resolve) => (resolvePermission = resolve)),
+    });
+    Object.defineProperty(window, "resolveOldPushPermission", {
+      configurable: true,
+      value: (value: NotificationPermission) => resolvePermission?.(value),
+    });
+  });
+  await page.route("**/api/state", async (route) => {
+    try {
+      const response = await route.fetch();
+      const state = await response.json();
+      state.push = { available: true, publicKey: "AQ" };
+      await route.fulfill({ response, json: state });
+    } catch {
+      await route.abort();
+    }
+  });
+  await pair(page, server);
+  await page.getByRole("button", { name: "Devices & connection", exact: true }).first().click();
+  await page.getByRole("button", { name: "Enable notifications", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Enable notifications", exact: true }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Pair device", exact: true })).toBeVisible();
+  await page.locator("#pair-code").fill(server.channel.createPairCode());
+  await page.getByLabel("Device name", { exact: true }).fill("Re-paired browser");
+  await page.getByRole("button", { name: "Pair device", exact: true }).click();
+  await expect(page.getByLabel("Message", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Devices & connection", exact: true }).first().click();
+  const push = page.getByRole("button", { name: "Enable notifications", exact: true });
+  await expect(push).toBeEnabled();
+  await page.evaluate(() =>
+    (
+      window as Window & { resolveOldPushPermission(value: NotificationPermission): void }
+    ).resolveOldPushPermission("granted"),
+  );
+  await expect(push).toBeEnabled();
+  await expect(page.locator("#push-status")).toBeEmpty();
+});

@@ -106,40 +106,51 @@ export function tailscaleTarget(port: number) {
   return `http://127.0.0.1:${port}`;
 }
 
-function serveHandlers(value: unknown): {
-  valid: boolean;
-  handlers: Array<Record<string, unknown>>;
-} {
-  if (!value || typeof value !== "object") return { valid: false, handlers: [] };
-  const handlers: Array<Record<string, unknown>> = [];
-  const visit = (entry: unknown) => {
-    if (!entry || typeof entry !== "object") return;
+function occupiedHandler(value: unknown, target: string) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return true;
+  const handler = value as Record<string, unknown>;
+  const fields = Object.keys(handler);
+  if (fields.length !== 1 || fields[0] !== "Proxy") return true;
+  return handler.Proxy !== target;
+}
+
+function occupiedWeb(value: unknown, target: string) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return true;
+  for (const entry of Object.values(value as Record<string, unknown>)) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return true;
     const route = entry as Record<string, unknown>;
-    if ("Proxy" in route || "Path" in route || "Text" in route) handlers.push(route);
-    for (const child of Object.values(route)) visit(child);
-  };
-  visit(value);
-  return { valid: true, handlers };
+    if ("Handlers" in route) {
+      if (Object.keys(route).length !== 1 || !route.Handlers || typeof route.Handlers !== "object")
+        return true;
+      for (const handler of Object.values(route.Handlers as Record<string, unknown>))
+        if (occupiedHandler(handler, target)) return true;
+      continue;
+    }
+    if (occupiedHandler(route, target)) return true;
+  }
+  return false;
 }
 
 export function tailscaleConflict(status: Record<string, unknown> | undefined, target: string) {
-  if (!status || !("Web" in status)) return true;
-  const web = serveHandlers(status.Web);
-  if (!web.valid) return true;
+  if (!status || Array.isArray(status)) return true;
+  const known = new Set(["Web", "TCP", "AllowFunnel"]);
+  if (Object.keys(status).some((key) => !known.has(key))) return true;
+  if (status.Web !== undefined && occupiedWeb(status.Web, target)) return true;
   const tcp = status.TCP;
-  if (tcp !== undefined && typeof tcp !== "object") return true;
+  if (tcp !== undefined && (!tcp || typeof tcp !== "object" || Array.isArray(tcp))) return true;
   const tcp443 =
     tcp && typeof tcp === "object" ? (tcp as Record<string, unknown>)["443"] : undefined;
-  const incompatibleTcp =
-    tcp443 && typeof tcp443 === "object" && (tcp443 as Record<string, unknown>).HTTPS !== true;
-  if (incompatibleTcp) return true;
-  return web.handlers.some(
-    (handler) =>
-      "Path" in handler ||
-      "Text" in handler ||
-      typeof handler.Proxy !== "string" ||
-      handler.Proxy !== target,
-  );
+  if (tcp443 !== undefined) {
+    if (!tcp443 || typeof tcp443 !== "object" || Array.isArray(tcp443)) return true;
+    const fields = Object.keys(tcp443 as Record<string, unknown>);
+    if (
+      fields.length !== 1 ||
+      fields[0] !== "HTTPS" ||
+      (tcp443 as Record<string, unknown>).HTTPS !== true
+    )
+      return true;
+  }
+  return false;
 }
 
 export function cloudflareTunnel(output: string, name: string) {
@@ -257,7 +268,9 @@ export async function connect(input: ConnectInput): Promise<ConnectPlan> {
   }
   const origin = `https://${host}`;
   const storedCredentials = join(input.root, "secrets", "cloudflared", `${name}.json`);
-  const credentials = input.credentials ?? storedCredentials;
+  if (!id && input.credentials)
+    throw new Error("--credentials can only reuse an existing named tunnel.");
+  const credentials = id && input.credentials ? input.credentials : storedCredentials;
   const config = join(input.root, "secrets", "cloudflared", `${name}.yml`);
   const desiredConfig = (tunnelId: string) =>
     [
