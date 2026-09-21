@@ -136,6 +136,7 @@ export class WebChannel implements Channel {
     }));
     return {
       device: { id: device.id, name: device.name },
+      language: this.options.language,
       workspaces: this.options.config.workspaces ?? [],
       rooms,
       messages,

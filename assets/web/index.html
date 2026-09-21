@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <meta name="theme-color" content="#05080C" />
+    <title>Caraka</title>
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icon-512.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/app.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <section id="pairing" class="pairing">
+      <form id="pair-form" class="pair-card">
+        <div class="brand">
+          <img src="/icon-512.png" alt="" width="40" height="40" /><span>caraka</span>
+        </div>
+        <h1 data-i18n="pairTitle">Pair this device</h1>
+        <p data-i18n="pairHelp">
+          Run caraka web pair on your computer. Enter the terminal code to connect this browser.
+        </p>
+        <label for="pair-code" data-i18n="pairCode">Pairing code</label>
+        <input id="pair-code" required autocomplete="off" spellcheck="false" maxlength="128" />
+        <label for="device-name" data-i18n="deviceName">Device name</label>
+        <input id="device-name" required autocomplete="off" maxlength="80" />
+        <button type="submit" class="primary" id="pair-submit" data-i18n="pair">Pair device</button>
+        <p id="pair-error" role="alert"></p>
+        <button type="button" id="logout-retry" hidden data-i18n="retryLogout">
+          Retry sign-out
+        </button>
+      </form>
+    </section>
+    <div id="app" class="app" hidden>
+      <aside id="rail" class="rail">
+        <div class="brand">
+          <img src="/icon-512.png" alt="" width="36" height="36" /><span>caraka</span>
+        </div>
+        <div class="server">
+          <strong class="host"></strong>
+          <div class="connection"></div>
+        </div>
+        <button class="primary new-task" data-action="new" data-i18n="new">＋ New task</button>
+        <p class="section-label" data-i18n="sessions">Sessions</p>
+        <nav id="sessions" aria-label="Sessions"></nav>
+        <footer>
+          <button data-action="settings" data-i18n="settings">Devices &amp; connection</button
+          ><span id="current-device"></span>
+        </footer>
+      </aside>
+      <main>
+        <div class="mobile-header">
+          <button id="open-sessions" class="icon-button" aria-label="Sessions">☰</button>
+          <div class="brand">
+            <img src="/icon-512.png" alt="" width="28" height="28" /><span>caraka</span>
+          </div>
+          <button class="icon-button" data-action="settings" aria-label="Devices & connection">
+            ⚙
+          </button>
+        </div>
+        <div class="mobile-connection">
+          <span class="host"></span><span class="connection"></span>
+        </div>
+        <header class="conversation-header">
+          <div>
+            <h1 id="room-title"></h1>
+            <p id="room-detail"></p>
+          </div>
+          <div class="room-actions">
+            <span id="room-state"></span><button id="stop" data-i18n="stop">Stop</button>
+          </div>
+        </header>
+        <div id="connection" role="status"></div>
+        <div id="message-scroll" tabindex="0" aria-label="Conversation">
+          <div id="messages"></div>
+        </div>
+        <section class="compose-area">
+          <p id="error" role="alert"></p>
+          <p id="activity" role="status"></p>
+          <form id="composer">
+            <div id="workspace-row">
+              <label for="workspace" data-i18n="workspace">Workspace</label
+              ><select id="workspace"></select>
+            </div>
+            <div id="pending-files"></div>
+            <div class="compose-box">
+              <button type="button" id="attach" class="icon-button" aria-label="Attach files">
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l10-10a4 4 0 0 1 5.7 5.7l-10 10a2 2 0 0 1-2.8-2.8l9.2-9.2"
+                  />
+                </svg>
+              </button>
+              <input type="file" id="files" multiple hidden />
+              <textarea
+                id="draft"
+                aria-label="Message"
+                placeholder="Write a task…"
+                rows="1"
+                maxlength="100000"
+              ></textarea>
+              <button type="submit" id="send" class="primary icon-button" aria-label="Send">
+                ↑
+              </button>
+            </div>
+            <div class="compose-hint">
+              <span data-i18n="keyHint">Enter to send · Shift+Enter for a new line</span
+              ><span data-i18n="runHint">Tasks run on your computer.</span>
+            </div>
+          </form>
+        </section>
+      </main>
+    </div>
+    <dialog id="drawer" aria-labelledby="drawer-title">
+      <div class="dialog-heading">
+        <h2 id="drawer-title" data-i18n="sessions">Sessions</h2>
+        <button data-close="drawer" data-i18n="close">Close</button>
+      </div>
+      <button class="primary" data-action="new" data-i18n="new">＋ New task</button>
+      <nav id="drawer-sessions"></nav>
+    </dialog>
+    <dialog id="settings" aria-labelledby="settings-title">
+      <div class="dialog-heading">
+        <h2 id="settings-title" data-i18n="settings">Devices &amp; connection</h2>
+        <button data-close="settings" data-i18n="close">Close</button>
+      </div>
+      <p class="host"></p>
+      <p class="connection"></p>
+      <label for="language" data-i18n="language">Language</label
+      ><select id="language">
+        <option value="en">English</option>
+        <option value="id">Bahasa Indonesia</option>
+      </select>
+      <h3 data-i18n="devices">Paired devices</h3>
+      <p data-i18n="addDevice">To pair another device, run caraka web pair on your computer.</p>
+      <div id="devices"></div>
+      <h3 data-i18n="notifications">Notifications</h3>
+      <p id="push-status"></p>
+      <button id="push" data-i18n="enablePush">Enable notifications</button>
+      <h3 data-i18n="installTitle">Install Caraka</h3>
+      <p id="install-help" data-i18n="installHelp">
+        Use your browser menu to install Caraka or add it to your home screen, if supported.
+      </p>
+      <button id="install" hidden data-i18n="install">Install</button>
+      <p id="settings-error" role="alert"></p>
+      <button id="logout" data-i18n="logout">Sign out</button>
+    </dialog>
+  </body>
+</html>

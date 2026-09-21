@@ -25,6 +25,7 @@ gets `401 { "error": "authentication" }`.
   ```json
   {
     "device": { "id": "string", "name": "string" },
+    "language": "en|id",
     "workspaces": [{ "slug": "string", "path": "string", "agent": "string" }],
     "rooms": [
       {
@@ -53,6 +54,7 @@ gets `401 { "error": "authentication" }`.
   }
   ```
 
+  The `language` field contains the configured UI language (`en` or `id`).
   The `agent` field is optional. Each room session comes from the Gateway
   session table. Do not infer title or state in the browser. `buttons[].data`
   is an opaque button id. Download each attachment through its authenticated
@@ -79,5 +81,13 @@ gets `401 { "error": "authentication" }`.
 - `GET /api/push/key`, `POST /api/push`, and `DELETE /api/push` return 503 until
   Task 3 configures Web Push.
 
-The server serves only `/`, `/app.js`, `/app.css`, `/manifest.webmanifest`,
-`/sw.js`, and `/icon.svg`. Until Task 2 provides an allowed asset, it returns 503. Other asset paths return 404.
+The server serves `/`, `/app.js`, `/app.css`, `/manifest.webmanifest`, `/sw.js`,
+`/icon.svg`, `/icon-192.png`, `/icon-512.png`, `/fonts/public-sans.woff2`, and
+`/fonts/jetbrains-mono.woff2`. Font licenses are served at
+`/fonts/Public-Sans-LICENSE.txt` and `/fonts/JetBrains-Mono-LICENSE.txt`.
+Other asset paths return 404. Missing packaged assets return 503.
+
+The service worker caches only the explicit public app assets. Static fetches
+omit credentials. Private API requests never enter Cache Storage. Offline startup
+shows the pairing shell without saved messages. A disconnected open session keeps
+its visible messages and disables task and permission controls.

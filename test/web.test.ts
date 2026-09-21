@@ -177,7 +177,26 @@ test("web accepts bounded files and refuses unknown rooms", async (t) => {
     ).status,
     404,
   );
-  assert.equal((await fetch(f.base + "/")).status, 503);
+  const shell = await fetch(f.base + "/");
+  assert.equal(shell.status, 200);
+  assert.match(await shell.text(), /manifest.webmanifest/);
+  for (const path of [
+    "/app.js",
+    "/app.css",
+    "/sw.js",
+    "/manifest.webmanifest",
+    "/icon.svg",
+    "/icon-512.png",
+    "/icon-192.png",
+    "/fonts/public-sans.woff2",
+    "/fonts/jetbrains-mono.woff2",
+  ]) {
+    const asset = await fetch(f.base + path);
+    assert.equal(asset.status, 200, path);
+    assert.ok((await asset.arrayBuffer()).byteLength > 0, path);
+  }
+  const state = await (await fetch(f.base + "/api/state", { headers: { cookie } })).json();
+  assert.equal(state.language, "en");
 });
 
 test("web init preserves malformed existing config bytes", async (t) => {

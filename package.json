@@ -41,14 +41,15 @@
   "scripts": {
     "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "oxlint src test scripts && oxfmt --check src test scripts bin package.json tsconfig.json",
+    "lint": "oxlint src test scripts assets/web && oxfmt --check src test scripts bin assets/web package.json tsconfig.json",
     "test": "node --import tsx --test test/unit.test.ts && npm run web",
     "e2e": "node --import tsx --test test/e2e.test.ts",
     "scan:secrets": "bash scripts/scan-secrets.sh",
     "smoke": "npm run build && node scripts/smoke-claude.mjs && node scripts/smoke-cli.mjs claude-code cli && node scripts/smoke-cli.mjs codex && node scripts/smoke-cli.mjs aider && node scripts/smoke-cli.mjs goose",
-    "verify": "npm run scan:secrets && npm run lint && npm run typecheck && npm run build && npm test && npm run e2e && npm --prefix site run test",
+    "verify": "npm run scan:secrets && npm run lint && npm run typecheck && npm run build && npm test && npm run e2e && npm run web:browser && npm --prefix site run test",
     "prepublishOnly": "npm run verify",
-    "web": "node --import tsx --test test/web.test.ts"
+    "web": "node --import tsx --test test/web.test.ts",
+    "web:browser": "playwright test --config test/web-browser/playwright.config.ts"
   },
   "dependencies": {
     "@agentclientprotocol/claude-agent-acp": "0.63.0",
@@ -57,6 +58,7 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@types/node": "26.1.2",
     "oxfmt": "0.62.0",
     "oxlint": "1.77.0",

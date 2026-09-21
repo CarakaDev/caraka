@@ -338,6 +338,12 @@ export class WebServer {
       ["/manifest.webmanifest", "manifest.webmanifest"],
       ["/sw.js", "sw.js"],
       ["/icon.svg", "icon.svg"],
+      ["/icon-512.png", "icon-512.png"],
+      ["/icon-192.png", "icon-192.png"],
+      ["/fonts/public-sans.woff2", "fonts/public-sans.woff2"],
+      ["/fonts/jetbrains-mono.woff2", "fonts/jetbrains-mono.woff2"],
+      ["/fonts/Public-Sans-LICENSE.txt", "fonts/Public-Sans-LICENSE.txt"],
+      ["/fonts/JetBrains-Mono-LICENSE.txt", "fonts/JetBrains-Mono-LICENSE.txt"],
     ]);
     const asset = method === "GET" ? assets.get(url.pathname) : undefined;
     if (asset) {
@@ -352,9 +358,17 @@ export class WebServer {
             ? "image/svg+xml"
             : asset.endsWith(".webmanifest")
               ? "application/manifest+json"
-              : "text/html";
+              : asset.endsWith(".png")
+                ? "image/png"
+                : asset.endsWith(".woff2")
+                  ? "font/woff2"
+                  : asset.endsWith(".txt")
+                    ? "text/plain"
+                    : "text/html";
       response.writeHead(200, {
-        "content-type": `${type}; charset=utf-8`,
+        "content-type": type.startsWith("text/") ? `${type}; charset=utf-8` : type,
+        "content-security-policy":
+          "default-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
         "cache-control": "no-store",
         "x-content-type-options": "nosniff",
       });

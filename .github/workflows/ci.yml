@@ -42,6 +42,8 @@ jobs:
       - run: npm run build
       - run: npm test
       - run: npm run e2e
+      - run: npx playwright install --with-deps chromium
+      - run: npm run web:browser
 
   site:
     runs-on: ubuntu-latest
