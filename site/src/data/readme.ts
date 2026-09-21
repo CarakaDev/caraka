@@ -17,7 +17,7 @@ export const badges = [
   // roughly a minute after `npm publish` printed `+ caraka@1.3.1`. Wait for
   // `curl -s https://registry.npmjs.org/caraka` to name the new one before
   // touching this line. It gave `dist-tags.latest` 1.5.9 on 19 August 2026.
-  { k: 'npm', v: 'v1.5.10', tone: '#E2452C', ink: '#FFEDE7' },
+  { k: 'npm', v: 'v1.6.0', tone: '#E2452C', ink: '#FFEDE7' },
   { k: 'license', v: 'MIT', tone: '#8EEE98', ink: '#05300C' },
   { k: 'node', v: '≥22', tone: '#E2452C', ink: '#FFEDE7' },
   { k: 'protocol', v: 'ACP', tone: '#FF7A5E', ink: '#2B0D06' },
@@ -26,7 +26,7 @@ export const badges = [
   // above tracks. The README's own status badge is the same idea and is not the
   // source: it read v1.0 until 15 August 2026, five releases after that stopped
   // being true, and it is the badge a reader clicks to reach docs/roadmap.md.
-  // Both READMEs now read v1.5 with this line, and the badge is hard-coded
+  // Both READMEs now read v1.6 with this line, and the badge is hard-coded
   // rather than served by shields from a version anywhere, so it is swept by
   // hand like every other surface named in site/AGENTS.md.
   { k: 'status', v: 'v1.6', tone: '#FFD67E', ink: '#3A2A00' },
@@ -43,7 +43,7 @@ export const projects = [
   {
     name: 'caraka',
     desc: 'The envoy. A local bridge from chat or Web/PWA to the coding agent already on your machine, with sessions, approval before writes, and no new agent loop.',
-    // Comp line 271 says pre-alpha. 1.5.10 is the release in the CHANGELOG, and
+    // Comp line 271 says pre-alpha. 1.6.0 is the release in the CHANGELOG, and
     // the chip above shows the registry instead, after publication catches up.
     status: 'v1.6, unproven',
     tone: '#FFD67E',
