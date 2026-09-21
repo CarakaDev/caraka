@@ -1152,7 +1152,7 @@ function help() {
   caraka init web --workspace PATH --agent PRESET --language id|en
   caraka web pair                         Print a five-minute browser pairing URL
   caraka web connect tailscale [--apply|--check]
-  caraka web connect cloudflare --hostname HOST [--tunnel NAME] [--apply|--check]
+  caraka web connect cloudflare --hostname HOST [--tunnel NAME] [--credentials PATH] [--apply|--check]
   caraka doctor                          Check the installation without changing it
   caraka doctor --fix                    Also repair file modes, a missing directory, a stale PID file
   caraka start                           Run the long-polling gateway

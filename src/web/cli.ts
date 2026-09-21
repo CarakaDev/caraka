@@ -40,6 +40,7 @@ export async function webCommand(
       apply: args.includes("--apply"),
       ...(value(args, "--hostname") ? { hostname: value(args, "--hostname")! } : {}),
       ...(value(args, "--tunnel") ? { tunnel: value(args, "--tunnel")! } : {}),
+      ...(value(args, "--credentials") ? { credentials: value(args, "--credentials")! } : {}),
       ...(injected.runner ? { runner: injected.runner } : {}),
       saveOrigin: async (origin) => {
         await saveConfig({ ...loaded.config, web: { ...loaded.config.web!, origin } }, "");

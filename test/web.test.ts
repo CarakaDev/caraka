@@ -12,19 +12,7 @@ test("web push key and subscription bind to the authenticated device", async (t)
   });
   const cookie = paired.headers.get("set-cookie")?.split(";")[0] ?? "";
   const key = await fetch(f.base + "/api/push/key", { headers: { cookie } });
-  assert.equal(key.status, 200);
-  assert.equal(typeof (await key.json()).publicKey, "string");
-  assert.equal(
-    (
-      await post(
-        f.base,
-        "/api/push",
-        { endpoint: "https://127.0.0.1/push", keys: { p256dh: "p", auth: "a" } },
-        cookie,
-      )
-    ).status,
-    400,
-  );
+  assert.equal(key.status, 503);
   assert.equal(
     (
       await post(
@@ -34,16 +22,7 @@ test("web push key and subscription bind to the authenticated device", async (t)
         cookie,
       )
     ).status,
-    201,
-  );
-  assert.equal(
-    Number(f.store.db.prepare("SELECT count(*) AS total FROM web_push_subscriptions").get()!.total),
-    1,
-  );
-  assert.equal(
-    (await fetch(f.base + "/api/push", { method: "DELETE", headers: { cookie, origin: f.base } }))
-      .status,
-    200,
+    503,
   );
   assert.equal(
     Number(f.store.db.prepare("SELECT count(*) AS total FROM web_push_subscriptions").get()!.total),

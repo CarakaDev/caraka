@@ -52,7 +52,8 @@ test("pairs, sends, resumes, uploads, decides, stops and signs out through Gatew
   await page.getByRole("button", { name: "Devices & connection", exact: true }).first().click();
   await expect(
     page.getByRole("button", { name: "Enable notifications", exact: true }),
-  ).toBeEnabled();
+  ).toBeDisabled();
+  await expect(page.locator("#push-status")).toContainText("not available");
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page.getByRole("button", { name: "Pair device", exact: true })).toBeVisible();
   await expect(page.locator("#messages")).toBeEmpty();
@@ -294,7 +295,8 @@ test("settings revokes another device and exposes install and push availability"
     await expect(page.getByRole("dialog")).toContainText("Spare phone");
     await expect(
       page.getByRole("button", { name: "Enable notifications", exact: true }),
-    ).toBeEnabled();
+    ).toBeDisabled();
+    await expect(page.locator("#push-status")).toContainText("not available");
     await expect(page.locator("#install-help")).toContainText("browser menu");
     await page
       .locator("#devices > div")
@@ -389,4 +391,133 @@ test("failed explicit logout never restores the valid cookie on reconnect or his
   await expect(page.locator("#messages")).toBeEmpty();
   expect(requests).toEqual([]);
   await expect(page.getByRole("button", { name: "Retry connection", exact: true })).toBeHidden();
+});
+
+test("notification opt-in keeps pending and denied state during an SSE refresh", async ({
+  page,
+  server,
+}) => {
+  await page.addInitScript(() => {
+    let resolvePermission: ((value: NotificationPermission) => void) | undefined;
+    Object.defineProperty(Notification, "requestPermission", {
+      configurable: true,
+      value: () => new Promise<NotificationPermission>((resolve) => (resolvePermission = resolve)),
+    });
+    Object.defineProperty(window, "resolvePushPermission", {
+      configurable: true,
+      value: (value: NotificationPermission) => resolvePermission?.(value),
+    });
+  });
+  await page.route("**/api/state", async (route) => {
+    try {
+      const response = await route.fetch();
+      const state = await response.json();
+      state.push = { available: true, publicKey: "AQ" };
+      await route.fulfill({ response, json: state });
+    } catch {
+      await route.abort();
+    }
+  });
+  await pair(page, server);
+  await page.getByRole("button", { name: "Devices & connection", exact: true }).first().click();
+  const push = page.getByRole("button", { name: "Enable notifications", exact: true });
+  await expect(push).toBeEnabled();
+  await push.click();
+  await expect(push).toBeDisabled();
+  const current = await (await page.request.get(server.channel.url + "/api/state")).json();
+  await server.channel.sendText("web:" + current.rooms[0].id, "SSE during notification opt-in");
+  await expect(push).toBeDisabled();
+  await page.evaluate(() =>
+    (
+      window as Window & { resolvePushPermission(value: NotificationPermission): void }
+    ).resolvePushPermission("denied"),
+  );
+  await expect(page.locator("#push-status")).toContainText("blocked");
+  await expect(push).toBeDisabled();
+});
+
+test("notification subscription failure keeps a retry action", async ({ page, server }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(Notification, "requestPermission", {
+      configurable: true,
+      value: () => Promise.resolve("granted"),
+    });
+  });
+  await page.route("**/api/state", async (route) => {
+    try {
+      const response = await route.fetch();
+      const state = await response.json();
+      state.push = { available: true, publicKey: "AQ" };
+      await route.fulfill({ response, json: state });
+    } catch {
+      await route.abort();
+    }
+  });
+  await page.route("**/api/push/key", (route) =>
+    route.fulfill({ status: 200, json: { publicKey: "AQ" } }),
+  );
+  await pair(page, server);
+  await page.getByRole("button", { name: "Devices & connection", exact: true }).first().click();
+  const push = page.getByRole("button", { name: "Enable notifications", exact: true });
+  await push.click();
+  await expect(page.locator("#push-status")).toContainText("could not be enabled");
+  await expect(push).toBeEnabled();
+  await push.click();
+  await expect(push).toBeEnabled();
+});
+
+test("service worker shows generic activity and focuses the same origin", async ({
+  page,
+  server,
+}) => {
+  const source = await (await page.request.get(server.channel.url + "/sw.js")).text();
+  const result = await page.evaluate(async (worker) => {
+    const handlers: Record<string, (event: any) => void> = {};
+    const shown: any[] = [];
+    let focused = false;
+    const self = {
+      location: { origin: "https://caraka.example.test" },
+      addEventListener: (name: string, handler: (event: any) => void) => (handlers[name] = handler),
+      registration: {
+        showNotification: (title: string, options: unknown) => {
+          shown.push({ title, options });
+          return Promise.resolve();
+        },
+      },
+      clients: {
+        matchAll: () =>
+          Promise.resolve([
+            {
+              url: "https://caraka.example.test/room",
+              focus: () => {
+                focused = true;
+                return Promise.resolve();
+              },
+            },
+          ]),
+        openWindow: () => Promise.resolve(),
+      },
+    };
+    Function("self", worker)(self);
+    let done: Promise<unknown> = Promise.resolve();
+    handlers.push({ waitUntil: (promise: Promise<unknown>) => (done = promise) });
+    await done;
+    handlers.notificationclick({
+      notification: { close() {} },
+      waitUntil: (promise: Promise<unknown>) => (done = promise),
+    });
+    await done;
+    return { shown, focused };
+  }, source);
+  expect(result.shown).toEqual([
+    {
+      title: "Caraka",
+      options: {
+        body: "Task activity needs your attention.",
+        data: { url: "https://caraka.example.test/" },
+        tag: "caraka-activity",
+      },
+    },
+  ]);
+  expect(result.focused).toBe(true);
 });

@@ -11,6 +11,9 @@ const ENDPOINT_HOSTS = new Set([
   "wns2.notify.windows.com",
 ]);
 const KEY_LIMIT = 512;
+export const PUSH_ENDPOINT_LIMIT = 2_048;
+export const PUSH_SUBSCRIPTIONS_PER_DEVICE = 3;
+export const PUSH_SUBSCRIPTIONS_TOTAL = 100;
 const SEND_TIMEOUT_MS = 10_000;
 const PAYLOAD = JSON.stringify({ title: "Caraka", body: "Task activity needs your attention." });
 
@@ -29,11 +32,22 @@ function validKey(value: unknown) {
   return typeof value === "string" && value.length > 0 && value.length <= KEY_LIMIT;
 }
 
+export function validVapidSubject(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && Boolean(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
 export function validSubscription(input: unknown): input is StoredSubscription {
   if (!input || typeof input !== "object") return false;
   const value = input as { endpoint?: unknown; keys?: { p256dh?: unknown; auth?: unknown } };
   if (
     typeof value.endpoint !== "string" ||
+    value.endpoint.length === 0 ||
+    value.endpoint.length > PUSH_ENDPOINT_LIMIT ||
     !validKey(value.keys?.p256dh) ||
     !validKey(value.keys?.auth)
   )
@@ -50,6 +64,7 @@ export function validSubscription(input: unknown): input is StoredSubscription {
 export class PushService {
   private keys: VapidKeys | undefined;
   private failure = "Web Push is not configured.";
+  private active: Promise<void> | undefined;
   constructor(
     private readonly input: {
       store: Store;
@@ -75,6 +90,11 @@ export class PushService {
         await writeFile(this.input.keyPath, JSON.stringify(keys), { mode: 0o600 });
         await chmod(this.input.keyPath, 0o600);
       }
+      if (!validVapidSubject(this.input.origin)) {
+        this.keys = undefined;
+        this.failure = "Web Push needs an HTTPS web origin.";
+        return;
+      }
       this.keys = keys;
       this.failure = "";
     } catch {
@@ -90,10 +110,13 @@ export class PushService {
   subscribe(deviceId: string, input: unknown) {
     if (!validSubscription(input)) return false;
     const subscription = input as StoredSubscription;
-    this.input.store.db
+    const result = this.input.store.db
       .prepare(
         `INSERT INTO web_push_subscriptions(device_id,endpoint,p256dh,auth,created_at)
-         VALUES(?,?,?,?,?)
+         SELECT ?,?,?,?,?
+         WHERE EXISTS(SELECT 1 FROM web_push_subscriptions WHERE device_id = ? AND endpoint = ?)
+            OR ((SELECT count(*) FROM web_push_subscriptions WHERE device_id = ?) < ?
+                AND (SELECT count(*) FROM web_push_subscriptions) < ?)
          ON CONFLICT(device_id,endpoint) DO UPDATE SET p256dh = excluded.p256dh, auth = excluded.auth, created_at = excluded.created_at`,
       )
       .run(
@@ -102,8 +125,13 @@ export class PushService {
         subscription.keys.p256dh,
         subscription.keys.auth,
         Date.now(),
+        deviceId,
+        subscription.endpoint,
+        deviceId,
+        PUSH_SUBSCRIPTIONS_PER_DEVICE,
+        PUSH_SUBSCRIPTIONS_TOTAL,
       );
-    return true;
+    return result.changes > 0;
   }
   unsubscribe(deviceId: string) {
     this.input.store.db
@@ -112,13 +140,33 @@ export class PushService {
   }
   async notify() {
     if (!this.keys) return;
+    if (this.active) return this.active;
+    this.active = this.deliver().finally(() => {
+      this.active = undefined;
+    });
+    return this.active;
+  }
+  private async deliver() {
     const rows = this.input.store.db
       .prepare(
         `SELECT s.device_id AS deviceId,s.endpoint,s.p256dh,s.auth FROM web_push_subscriptions s
-         JOIN web_devices d ON d.id = s.device_id WHERE d.revoked_at IS NULL`,
+           JOIN web_devices d ON d.id = s.device_id WHERE d.revoked_at IS NULL
+           ORDER BY s.created_at LIMIT ?`,
       )
-      .all() as Array<{ deviceId: string; endpoint: string; p256dh: string; auth: string }>;
+      .all(PUSH_SUBSCRIPTIONS_TOTAL) as Array<{
+      deviceId: string;
+      endpoint: string;
+      p256dh: string;
+      auth: string;
+    }>;
     for (const row of rows) {
+      const eligible = this.input.store.db
+        .prepare(
+          `SELECT 1 FROM web_push_subscriptions s JOIN web_devices d ON d.id = s.device_id
+             WHERE s.device_id = ? AND s.endpoint = ? AND d.revoked_at IS NULL`,
+        )
+        .get(row.deviceId, row.endpoint);
+      if (!eligible) continue;
       try {
         await (this.input.send ?? webpush.sendNotification)(
           { endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } },
@@ -126,7 +174,7 @@ export class PushService {
           {
             TTL: 60,
             timeout: SEND_TIMEOUT_MS,
-            vapidDetails: { ...this.keys, subject: this.input.origin },
+            vapidDetails: { ...this.keys!, subject: this.input.origin },
           },
         );
       } catch (error) {

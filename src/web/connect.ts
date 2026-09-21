@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { access, mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { platform } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -8,16 +8,25 @@ import type { CarakaConfig } from "../config.js";
 const runFile = promisify(execFile);
 export type Provider = "tailscale" | "cloudflare";
 export type ProcessResult = { code: number; stdout: string; stderr: string };
-export type ProcessRunner = (command: string, args: string[]) => Promise<ProcessResult>;
+export type ProcessRunOptions = { env?: NodeJS.ProcessEnv };
+export type ProcessRunner = (
+  command: string,
+  args: string[],
+  options?: ProcessRunOptions,
+) => Promise<ProcessResult>;
 export type ConnectionCheck = {
   health: "passed" | "failed";
   privateApi: "passed" | "failed";
   phone: "manual";
 };
 
-export const systemRunner: ProcessRunner = async (command, args) => {
+export const systemRunner: ProcessRunner = async (command, args, options) => {
   try {
-    const result = await runFile(command, args, { encoding: "utf8", timeout: 15_000 });
+    const result = await runFile(command, args, {
+      encoding: "utf8",
+      timeout: 15_000,
+      ...(options?.env ? { env: options.env } : {}),
+    });
     return { code: 0, stdout: result.stdout, stderr: result.stderr };
   } catch (error) {
     const result = error as { code?: number; stdout?: string; stderr?: string };
@@ -44,19 +53,44 @@ function hostname(value: string | undefined) {
   return value.toLowerCase();
 }
 
-export function providerInstall(provider: Provider, os = platform()) {
+export function linuxInstall(provider: Provider, distribution = "") {
+  const distro = distribution.toLowerCase();
+  const deb = /debian|ubuntu|linuxmint/.test(distro);
+  const rpm = /fedora|rhel|centos|rocky|alma/.test(distro);
+  if (provider === "tailscale") {
+    if (deb)
+      return "Install Tailscale for Debian or Ubuntu: curl -fsSL https://tailscale.com/install.sh | sh";
+    if (rpm)
+      return "Install Tailscale for Fedora or RHEL: curl -fsSL https://tailscale.com/install.sh | sh";
+    return "Install Tailscale for your Linux distribution: https://tailscale.com/docs/install/linux";
+  }
+  if (deb)
+    return "Install cloudflared for Debian or Ubuntu: use cloudflare-main.gpg and the any main APT repository at https://pkg.cloudflare.com/index.html";
+  if (rpm)
+    return "Install cloudflared for Fedora or RHEL: use cloudflared.repo at https://pkg.cloudflare.com/index.html";
+  return "Install cloudflared for your Linux distribution: https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/downloads/";
+}
+
+export function providerInstall(provider: Provider, os = platform(), distribution = "") {
   if (provider === "tailscale") {
     if (os === "darwin") return "Install Tailscale: brew install --cask tailscale";
     if (os === "win32") return "Install Tailscale: winget install Tailscale.Tailscale";
-    return "Install Tailscale: curl -fsSL https://tailscale.com/install.sh | sh";
+    return linuxInstall(provider, distribution);
   }
   if (os === "darwin") return "Install cloudflared: brew install cloudflared";
   if (os === "win32") return "Install cloudflared: winget install Cloudflare.cloudflared";
-  return "Install cloudflared: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/";
+  return linuxInstall(provider, distribution);
+}
+
+async function providerInstallForHost(provider: Provider, os = platform()) {
+  if (os !== "linux") return providerInstall(provider, os);
+  const release = await readFile("/etc/os-release", "utf8").catch(() => "");
+  const distribution = /^ID=(.*)$/m.exec(release)?.[1]?.replaceAll('"', "") ?? "";
+  return providerInstall(provider, os, distribution);
 }
 
 export function shellPath(value: string, os: NodeJS.Platform) {
-  if (os === "win32") return '"' + value.replaceAll('"', '""') + '"';
+  if (os === "win32") return "'" + value.replaceAll("'", "''") + "'";
   const quote = String.fromCharCode(39);
   return quote + value.replaceAll(quote, quote + '"' + quote + '"' + quote) + quote;
 }
@@ -72,24 +106,40 @@ export function tailscaleTarget(port: number) {
   return `http://127.0.0.1:${port}`;
 }
 
-export function tailscaleConflict(status: Record<string, unknown> | undefined, target: string) {
-  const web = status?.Web;
-  const tcp = status?.TCP;
-  const proxies: string[] = [];
-  const visit = (value: unknown) => {
-    if (!value || typeof value !== "object") return;
-    const route = value as Record<string, unknown>;
-    if (typeof route.Proxy === "string") proxies.push(route.Proxy);
+function serveHandlers(value: unknown): {
+  valid: boolean;
+  handlers: Array<Record<string, unknown>>;
+} {
+  if (!value || typeof value !== "object") return { valid: false, handlers: [] };
+  const handlers: Array<Record<string, unknown>> = [];
+  const visit = (entry: unknown) => {
+    if (!entry || typeof entry !== "object") return;
+    const route = entry as Record<string, unknown>;
+    if ("Proxy" in route || "Path" in route || "Text" in route) handlers.push(route);
     for (const child of Object.values(route)) visit(child);
   };
-  visit(web);
+  visit(value);
+  return { valid: true, handlers };
+}
+
+export function tailscaleConflict(status: Record<string, unknown> | undefined, target: string) {
+  if (!status || !("Web" in status)) return true;
+  const web = serveHandlers(status.Web);
+  if (!web.valid) return true;
+  const tcp = status.TCP;
+  if (tcp !== undefined && typeof tcp !== "object") return true;
   const tcp443 =
     tcp && typeof tcp === "object" ? (tcp as Record<string, unknown>)["443"] : undefined;
-  // A TCP forwarder on 443 competes with HTTPS Serve. The HTTPS marker itself
-  // is expected when the Web map owns the port, so it does not reject Caraka.
   const incompatibleTcp =
     tcp443 && typeof tcp443 === "object" && (tcp443 as Record<string, unknown>).HTTPS !== true;
-  return Boolean(incompatibleTcp) || proxies.some((proxy) => proxy !== target);
+  if (incompatibleTcp) return true;
+  return web.handlers.some(
+    (handler) =>
+      "Path" in handler ||
+      "Text" in handler ||
+      typeof handler.Proxy !== "string" ||
+      handler.Proxy !== target,
+  );
 }
 
 export function cloudflareTunnel(output: string, name: string) {
@@ -116,6 +166,17 @@ export async function checkConnection(
   };
 }
 
+async function fileText(path: string) {
+  return readFile(path, "utf8").catch((error: NodeJS.ErrnoException) => {
+    if (error.code === "ENOENT") return undefined;
+    throw error;
+  });
+}
+
+function cloudflareEnvironment() {
+  return { ...process.env, TUNNEL_FORCE_PROVISIONING_DNS: "false" };
+}
+
 export type ConnectInput = {
   provider: Provider;
   config: CarakaConfig;
@@ -123,6 +184,7 @@ export type ConnectInput = {
   apply: boolean;
   hostname?: string;
   tunnel?: string;
+  credentials?: string;
   runner?: ProcessRunner;
   os?: NodeJS.Platform;
   saveOrigin?: (origin: string) => Promise<void>;
@@ -139,7 +201,7 @@ export async function connect(input: ConnectInput): Promise<ConnectPlan> {
     if (status.code !== 0 || serve.code !== 0)
       return {
         lines: [
-          providerInstall("tailscale", input.os),
+          await providerInstallForHost("tailscale", input.os),
           "Log in: tailscale login",
           "Run this command again after login.",
         ],
@@ -153,17 +215,16 @@ export async function connect(input: ConnectInput): Promise<ConnectPlan> {
     if (!dnsName)
       return { lines: ["Log in: tailscale login", "Run this command again after login."] };
     const target = tailscaleTarget(port);
-    const existing = json(serve.stdout);
-    if (tailscaleConflict(existing, target))
+    if (tailscaleConflict(json(serve.stdout), target))
       throw new Error(
-        `Tailscale Serve already owns an HTTPS route. Inspect it with \`tailscale serve status --json\`; repair that route before using Caraka.`,
+        "Tailscale Serve already owns an HTTPS route or has invalid state. Inspect it with `tailscale serve status --json`; repair that route before using Caraka.",
       );
     const origin = `https://${dnsName}`;
     const lines = [
       `Plan: tailscale serve --bg --https=443 ${target}`,
       `Web origin: ${origin}`,
       input.apply
-        ? "Applying the Tailscale Serve route."
+        ? "Applying the Tailscale Serve route. Restart Caraka after the origin changes."
         : "Run again with --apply to configure Tailscale Serve.",
     ];
     if (input.apply) {
@@ -178,11 +239,12 @@ export async function connect(input: ConnectInput): Promise<ConnectPlan> {
   const name = input.tunnel ?? "caraka-web";
   if (!/^[a-z0-9][a-z0-9-]{0,62}$/i.test(name))
     throw new Error("--tunnel must be a simple tunnel name.");
-  const listed = await runner("cloudflared", ["tunnel", "list", "--output", "json"]);
+  const cloudflared = { env: cloudflareEnvironment() };
+  const listed = await runner("cloudflared", ["tunnel", "list", "--output", "json"], cloudflared);
   if (listed.code !== 0)
     return {
       lines: [
-        providerInstall("cloudflare", input.os),
+        await providerInstallForHost("cloudflare", input.os),
         "Log in: cloudflared tunnel login",
         "Run this command again after login.",
       ],
@@ -194,8 +256,19 @@ export async function connect(input: ConnectInput): Promise<ConnectPlan> {
     throw new Error("cloudflared returned an invalid tunnel list.");
   }
   const origin = `https://${host}`;
-  const credentials = join(input.root, "secrets", "cloudflared", `${name}.json`);
+  const storedCredentials = join(input.root, "secrets", "cloudflared", `${name}.json`);
+  const credentials = input.credentials ?? storedCredentials;
   const config = join(input.root, "secrets", "cloudflared", `${name}.yml`);
+  const desiredConfig = (tunnelId: string) =>
+    [
+      `tunnel: ${tunnelId}`,
+      `credentials-file: ${credentials}`,
+      "ingress:",
+      `  - hostname: ${host}`,
+      `    service: ${tailscaleTarget(port)}`,
+      "  - service: http_status:404",
+      "",
+    ].join("\n");
   const lines = [
     "Cloudflare recommends remotely managed tunnels. Caraka supports the named local-management CLI flow.",
     id ? `Reuse named tunnel: ${name}` : `Create named tunnel: ${name}`,
@@ -203,58 +276,43 @@ export async function connect(input: ConnectInput): Promise<ConnectPlan> {
     `Run: cloudflared --config ${shellPath(config, input.os ?? platform())} tunnel run ${id ?? name}`,
     cloudflaredServiceStep(config, input.os ?? platform()),
     input.apply
-      ? "Applying the named tunnel plan."
+      ? "Applying the named tunnel plan. Restart Caraka after the origin changes."
       : "Run again with --apply to create the named tunnel and DNS route.",
   ];
   if (!input.apply) return { lines, origin };
+  const currentConfig = await fileText(config);
+  if (currentConfig !== undefined && (!id || currentConfig !== desiredConfig(id)))
+    throw new Error(
+      "Caraka ingress configuration already exists and differs from this plan. Inspect it and use a new tunnel name.",
+    );
   await mkdir(join(input.root, "secrets", "cloudflared"), { recursive: true, mode: 0o700 });
   if (!id) {
-    const created = await runner("cloudflared", [
-      "tunnel",
-      "create",
-      "--output",
-      "json",
-      "--credentials-file",
-      credentials,
-      name,
-    ]);
+    const created = await runner(
+      "cloudflared",
+      ["tunnel", "create", "--output", "json", "--credentials-file", credentials, name],
+      cloudflared,
+    );
     if (created.code !== 0)
       throw new Error(
         "cloudflared tunnel create failed. Complete cloudflared login and try again.",
       );
-    try {
-      id = (json(created.stdout)?.id as string | undefined) ?? undefined;
-    } catch {
-      id = undefined;
-    }
+    id = json(created.stdout)?.id as string | undefined;
     if (!id) throw new Error("cloudflared did not return a named tunnel id.");
-  } else if (
-    !(await access(credentials)
-      .then(() => true)
-      .catch(() => false))
-  ) {
-    throw new Error(
-      "Named tunnel credentials are absent under Caraka secrets. Run cloudflared login, then create the named tunnel again.",
-    );
+  } else {
+    const rawCredentials = await fileText(credentials);
+    const credential = rawCredentials ? json(rawCredentials) : undefined;
+    if (credential?.TunnelID !== id)
+      throw new Error(
+        "Named tunnel credentials are unavailable. Provide --credentials PATH to the existing tunnel credential file, or use a new --tunnel name.",
+      );
   }
-  const routed = await runner("cloudflared", ["tunnel", "route", "dns", id, host]);
+  const wanted = desiredConfig(id);
+  if (currentConfig === undefined) await writeFile(config, wanted, { mode: 0o600 });
+  const routed = await runner("cloudflared", ["tunnel", "route", "dns", id, host], cloudflared);
   if (routed.code !== 0)
     throw new Error(
       "cloudflared DNS route failed. Inspect the existing DNS record and do not overwrite it.",
     );
-  await writeFile(
-    config,
-    [
-      `tunnel: ${id}`,
-      `credentials-file: ${credentials}`,
-      "ingress:",
-      `  - hostname: ${host}`,
-      `    service: ${tailscaleTarget(port)}`,
-      "  - service: http_status:404",
-      "",
-    ].join("\n"),
-    { mode: 0o600 },
-  );
   await input.saveOrigin?.(origin);
   return { lines, origin };
 }

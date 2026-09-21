@@ -166,6 +166,7 @@ let selected = "",
   pairing = false,
   signingOut = false;
 let installPrompt = null;
+let pushState = "idle";
 let restoreSessionAllowed = !fragment,
   initialStateFailed = false;
 const drafts = new Map(),
@@ -436,6 +437,26 @@ function renderMessages(force) {
       .find((button) => button.dataset.decision === focusKey)
       ?.focus({ preventScroll: true });
 }
+function renderPush() {
+  const unavailable = !state?.push.available;
+  const unsupported = !("PushManager" in window) || !("serviceWorker" in navigator);
+  const message = unavailable
+    ? t("pushUnavailable")
+    : unsupported
+      ? t("pushUnsupported")
+      : pushState === "pending"
+        ? t("sending")
+        : pushState === "denied"
+          ? t("pushDenied")
+          : pushState === "enabled"
+            ? t("pushEnabled")
+            : pushState === "failed"
+              ? t("notificationFailed")
+              : "";
+  $("push-status").textContent = message;
+  $("push").disabled =
+    unavailable || unsupported || pushState === "pending" || pushState === "denied";
+}
 function renderFiles() {
   $("pending-files").replaceChildren();
   draftFor().files.forEach((file, index) => {
@@ -478,13 +499,7 @@ function render(force = false) {
     element.textContent = new URL(state.connection.origin).host;
   });
   $("current-device").textContent = `▣ ${state.device.name}`;
-  $("push-status").textContent = !state.push.available
-    ? t("pushUnavailable")
-    : !("PushManager" in window)
-      ? t("pushUnsupported")
-      : "";
-  $("push").disabled =
-    !state.push.available || !("PushManager" in window) || !("serviceWorker" in navigator);
+  renderPush();
   renderMessages(force);
   renderFiles();
   connection(connected);
@@ -805,14 +820,15 @@ window.addEventListener("appinstalled", () => {
   $("install").hidden = true;
 });
 $("push").addEventListener("click", async () => {
-  if (!state?.push.available) return;
+  if (!state?.push.available || pushState === "pending" || pushState === "denied") return;
   const generation = epoch;
-  $("push").disabled = true;
+  pushState = "pending";
+  renderPush();
   try {
     const permission = await Notification.requestPermission();
     if (generation !== epoch) return;
     if (permission !== "granted") {
-      $("push-status").textContent = t("pushDenied");
+      pushState = "denied";
       return;
     }
     const { publicKey } = await request("/api/push/key");
@@ -830,12 +846,11 @@ $("push").addEventListener("click", async () => {
       return;
     }
     await post("/api/push", subscription.toJSON());
-    $("push-status").textContent = t("pushEnabled");
+    pushState = "enabled";
   } catch (error) {
-    if (error.name !== "AbortError" && generation === epoch)
-      $("push-status").textContent = t("notificationFailed");
+    if (error.name !== "AbortError" && generation === epoch) pushState = "failed";
   } finally {
-    if (generation === epoch && state?.push.available) $("push").disabled = false;
+    if (generation === epoch) renderPush();
   }
 });
 translate();
