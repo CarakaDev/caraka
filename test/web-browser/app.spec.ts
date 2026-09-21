@@ -314,3 +314,77 @@ test("settings revokes another device and exposes install and push availability"
     await other.close();
   }
 });
+
+test("authenticated offline startup recovers on reconnect without sending another task", async ({
+  page,
+  context,
+  server,
+}) => {
+  await pair(page, server);
+  await send(page, "Task before offline startup");
+  await expect(page.locator("#messages")).toContainText("Task complete.");
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.reload();
+  await expect(page.locator("#messages")).toContainText("Task complete.");
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Pair this device" })).toBeVisible();
+  await expect(page.locator("#messages")).toBeEmpty();
+  await context.setOffline(false);
+  await expect(page.getByLabel("Message", { exact: true })).toBeVisible();
+  await expect(page.locator("#messages")).toContainText("Task before offline startup");
+  await expect(page.locator("#connection")).toContainText("Connected");
+  expect(server.prompts).toHaveLength(1);
+});
+
+test("initial transient state failure provides an explicit connection retry", async ({
+  page,
+  server,
+}) => {
+  await pair(page, server);
+  await send(page, "Task before server failure");
+  await expect(page.locator("#messages")).toContainText("Task complete.");
+  let requests = 0;
+  await page.route("**/api/state", async (route) => {
+    requests++;
+    if (requests === 1)
+      await route.fulfill({ status: 503, contentType: "application/json", body: "{}" });
+    else await route.continue();
+  });
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Retry connection", exact: true })).toBeVisible();
+  await expect(page.locator("#messages")).toBeEmpty();
+  expect(requests).toBe(1);
+  await page.getByRole("button", { name: "Retry connection", exact: true }).click();
+  await expect(page.getByLabel("Message", { exact: true })).toBeVisible();
+  await expect(page.locator("#messages")).toContainText("Task before server failure");
+  await expect(page.getByRole("button", { name: "Retry connection", exact: true })).toBeHidden();
+  expect(server.prompts).toHaveLength(1);
+});
+
+test("failed explicit logout never restores the valid cookie on reconnect or history restoration", async ({
+  page,
+  context,
+  server,
+}) => {
+  await pair(page, server);
+  await page.route("**/api/logout", (route) => route.abort());
+  await page.getByRole("button", { name: "Devices & connection", exact: true }).first().click();
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Retry sign-out", exact: true })).toBeVisible();
+  expect((await page.request.get(server.channel.url + "/api/state")).status()).toBe(200);
+  const requests: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/api/state") requests.push(request.url());
+  });
+  await context.setOffline(true);
+  await context.setOffline(false);
+  await page.evaluate(async () => {
+    window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }));
+    await fetch("/health");
+  });
+  await expect(page.getByRole("heading", { name: "Pair this device" })).toBeVisible();
+  await expect(page.locator("#messages")).toBeEmpty();
+  expect(requests).toEqual([]);
+  await expect(page.getByRole("button", { name: "Retry connection", exact: true })).toBeHidden();
+});

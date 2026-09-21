@@ -26,6 +26,7 @@ const strings = {
     install: "Install",
     logout: "Sign out",
     retryLogout: "Retry sign-out",
+    retryConnection: "Retry connection",
     connected: "● Connected",
     disconnected: "⊘ Disconnected · displayed messages may be out of date.",
     connecting: "◌ Connecting…",
@@ -95,6 +96,7 @@ const strings = {
     install: "Pasang",
     logout: "Keluar",
     retryLogout: "Coba keluar lagi",
+    retryConnection: "Coba sambungkan lagi",
     connected: "● Tersambung",
     disconnected: "⊘ Terputus · pesan yang tampil mungkin belum terbaru.",
     connecting: "◌ Menghubungkan…",
@@ -164,6 +166,8 @@ let selected = "",
   pairing = false,
   signingOut = false;
 let installPrompt = null;
+let restoreSessionAllowed = !fragment,
+  initialStateFailed = false;
 const drafts = new Map(),
   pendingDecisions = new Set(),
   usedDecisions = new Set();
@@ -223,6 +227,10 @@ const post = (path, data) =>
     body: JSON.stringify(data),
   });
 function clearPrivate() {
+  restoreSessionAllowed = false;
+  initialStateFailed = false;
+  $("state-retry").hidden = true;
+  $("state-retry").disabled = false;
   epoch += 1;
   sessionAbort.abort();
   sessionAbort = new AbortController();
@@ -482,12 +490,13 @@ function render(force = false) {
   connection(connected);
 }
 async function loadState() {
-  if (signingOut) return;
+  if (signingOut || !restoreSessionAllowed) return;
   if (pendingLoad) {
     reloadAgain = true;
     return pendingLoad;
   }
   const generation = epoch;
+  $("state-retry").disabled = true;
   const operation = (async () => {
     do {
       reloadAgain = false;
@@ -496,6 +505,9 @@ async function loadState() {
         if (generation !== epoch) return;
         const first = !state;
         state = fresh;
+        initialStateFailed = false;
+        $("state-retry").hidden = true;
+        $("pair-error").textContent = "";
         if (first) {
           language = ["en", "id"].includes(state.language) ? state.language : language;
           if (selected && !state.rooms.some((room) => room.id === selected)) selected = "";
@@ -508,7 +520,11 @@ async function loadState() {
       } catch (error) {
         if (error.name !== "AbortError" && generation === epoch) {
           connection(false);
-          if (!state) $("pair-error").textContent = t("failed");
+          if (!state) {
+            initialStateFailed = true;
+            $("pair-error").textContent = t("failed");
+            $("state-retry").hidden = false;
+          }
         }
       }
     } while (reloadAgain && generation === epoch);
@@ -518,6 +534,7 @@ async function loadState() {
     await operation;
   } finally {
     if (pendingLoad === operation) pendingLoad = null;
+    if (generation === epoch) $("state-retry").disabled = false;
   }
 }
 function startEvents() {
@@ -581,6 +598,7 @@ $("pair-form").addEventListener("submit", async (event) => {
       name: $("device-name").value.trim(),
     });
     $("pair-code").value = "";
+    restoreSessionAllowed = true;
     await loadState();
   } catch (error) {
     if (error.name !== "AbortError") $("pair-error").textContent = t("pairingFailed");
@@ -758,12 +776,16 @@ async function signOut() {
 $("logout").addEventListener("click", signOut);
 $("logout-retry").addEventListener("click", signOut);
 window.addEventListener("offline", () => connection(false));
+$("state-retry").addEventListener("click", () => {
+  if (initialStateFailed && restoreSessionAllowed) void loadState();
+});
 window.addEventListener("online", () => {
-  if (state) void loadState();
+  if (restoreSessionAllowed) void loadState();
 });
 window.addEventListener("pageshow", (event) => {
-  if (event.persisted) {
+  if (event.persisted && restoreSessionAllowed) {
     clearPrivate();
+    restoreSessionAllowed = true;
     void loadState();
   }
 });
