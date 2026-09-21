@@ -41,6 +41,7 @@ import { LocalMemory } from "./memory/local.js";
 import { DEFAULT_ENDPOINT as TITEN_ENDPOINT, TitenMemory, titenApiKey } from "./memory/titen.js";
 import { isServiceKind, serviceUnit } from "./service.js";
 import { Store } from "./store/db.js";
+import { webCommand } from "./web/cli.js";
 
 // Read rather than repeated. This was `const VERSION = "1.1.0"` until 1.1.1
 // shipped to npm announcing itself as 1.1.0: `npm version` moves package.json
@@ -185,7 +186,7 @@ export async function buildChannels(
   bind: { host: string; exposed: boolean } = { host: "127.0.0.1", exposed: false },
 ): Promise<[Channel, ...Channel[]]> {
   const built: Channel[] = [];
-  const { telegram, discord, whatsapp } = loaded.config;
+  const { telegram, discord, whatsapp, web } = loaded.config;
   if (telegram) built.push(new Telegram(loaded.token, fetch, undefined, language, telegram.topics));
   if (discord) {
     const { Discord } = await import("./channels/discord.js");
@@ -219,6 +220,19 @@ export async function buildChannels(
         },
         t: language,
         log: (action, result, details) => store.audit(action, result, details),
+      }),
+    );
+  }
+  if (web) {
+    const { WebChannel } = await import("./channels/web.js");
+    built.push(
+      new WebChannel({
+        config: { ...web, workspaces: workspaces(loaded.config) },
+        store,
+        scrub: (text) => store.scrubText(text),
+        paths: loaded.paths,
+        language: loaded.config.language ?? "en",
+        version: VERSION,
       }),
     );
   }
@@ -1135,6 +1149,8 @@ function help() {
     t("cli.help", {
       version: VERSION,
       body: `  caraka init [--workspace PATH]         Pair Telegram and Claude Code
+  caraka init web --workspace PATH --agent PRESET --language id|en
+  caraka web pair                         Print a five-minute browser pairing URL
   caraka doctor                          Check the installation without changing it
   caraka doctor --fix                    Also repair file modes, a missing directory, a stale PID file
   caraka start                           Run the long-polling gateway
@@ -1152,7 +1168,9 @@ function help() {
 export async function main(args: string[]) {
   try {
     const [subcommand] = args;
-    if (subcommand === "init") await init(args.slice(1));
+    if (subcommand === "init" && args[1] === "web") await webCommand(["init", ...args.slice(2)]);
+    else if (subcommand === "init") await init(args.slice(1));
+    else if (subcommand === "web") await webCommand(args.slice(1));
     else if (subcommand === "doctor") await doctor(args.slice(1));
     else if (subcommand === "start") await start(args.slice(1));
     else if (subcommand === "stop") await stopCommand();

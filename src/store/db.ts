@@ -138,6 +138,40 @@ export class Store {
         text TEXT NOT NULL,
         created_at INTEGER NOT NULL
       ) STRICT;
+      CREATE TABLE IF NOT EXISTS web_pair_codes (
+        hash TEXT PRIMARY KEY,
+        expires_at INTEGER NOT NULL
+      ) STRICT;
+      CREATE TABLE IF NOT EXISTS web_devices (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        token_hash TEXT NOT NULL UNIQUE,
+        created_at INTEGER NOT NULL,
+        revoked_at INTEGER
+      ) STRICT;
+      CREATE TABLE IF NOT EXISTS web_rooms (
+        id TEXT PRIMARY KEY,
+        workspace TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      ) STRICT;
+      CREATE TABLE IF NOT EXISTS web_messages (
+        id TEXT PRIMARY KEY,
+        room_id TEXT NOT NULL REFERENCES web_rooms(id),
+        client_id TEXT,
+        role TEXT NOT NULL CHECK(role IN ('user', 'assistant', 'system')),
+        text TEXT NOT NULL,
+        buttons TEXT NOT NULL DEFAULT '[]',
+        attachments TEXT NOT NULL DEFAULT '[]',
+        created_at INTEGER NOT NULL,
+        UNIQUE(room_id, client_id)
+      ) STRICT;
+      CREATE TABLE IF NOT EXISTS web_files (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        mime TEXT NOT NULL,
+        path TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      ) STRICT;
     `);
     // A file from before v0.4 has sessions without the two routing columns.
     // ponytail: two PRAGMA-guarded ALTERs instead of the numbered-migration
@@ -151,6 +185,9 @@ export class Store {
     // partial unique index is what makes AC-3.4 the database's promise rather
     // than the generator's: two undecided rows in one session cannot share a
     // code. SQLite counts NULLs as distinct, so the pre-v0.6 rows never collide.
+    const webMessageColumns = this.columns("web_messages");
+    if (!webMessageColumns.has("attachments"))
+      this.db.exec("ALTER TABLE web_messages ADD COLUMN attachments TEXT NOT NULL DEFAULT '[]'");
     const approvalColumns = this.columns("approvals");
     if (!approvalColumns.has("short_code"))
       this.db.exec("ALTER TABLE approvals ADD COLUMN short_code TEXT");
@@ -173,9 +210,13 @@ export class Store {
   // What a table already has, for the guarded ALTERs above. The table name is
   // a literal from this file and never a parameter from anywhere else, because
   // PRAGMA takes no bound value.
-  private columns(table: "sessions" | "approvals") {
+  private columns(table: "sessions" | "approvals" | "web_messages") {
     const rows = this.db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
     return new Set(rows.map((column) => column.name));
+  }
+
+  scrubText(text: string) {
+    return this.scrub(text);
   }
 
   memoryInsert(scope: string, kind: string, text: string) {

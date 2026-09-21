@@ -78,6 +78,26 @@ const configShape = {
       threads: z.boolean().default(true),
     })
     .optional(),
+  // A local web channel has one stable owner. Device credentials are records in
+  // SQLite, so the config carries no browser secret.
+  web: z
+    .object({
+      host: z.string().default("127.0.0.1"),
+      port: z.number().int().min(0).max(65535).default(7720),
+      origin: z.string().url(),
+      owner: z.string().min(1),
+    })
+    .superRefine((block, ctx) => {
+      const origin = new URL(block.origin);
+      const loopback = ["localhost", "127.0.0.1", "::1"].includes(origin.hostname);
+      if (origin.protocol !== "https:" && !loopback)
+        ctx.addIssue({
+          code: "custom",
+          path: ["origin"],
+          message: "web.origin needs HTTPS unless it is loopback.",
+        });
+    })
+    .optional(),
   // Additive as well, and the third channel to use `allowlists`. Two providers
   // sit behind one block because core's behaviour is identical either way apart
   // from `caps.edit` (FR-CHAN-03, `spec/whatsapp-v06.md` §6). No token lives
@@ -151,9 +171,9 @@ const configShape = {
 // on, and finding that out on the first task is finding it out too late.
 const configSchema = z
   .object(configShape)
-  .refine((config) => Boolean(config.telegram ?? config.discord ?? config.whatsapp), {
+  .refine((config) => Boolean(config.telegram ?? config.discord ?? config.whatsapp ?? config.web), {
     message:
-      "No channel is configured. Add a telegram:, discord: or whatsapp: block to config.yaml.",
+      "No channel is configured. Add a telegram:, discord:, whatsapp: or web: block to config.yaml.",
     path: ["telegram"],
   });
 
@@ -174,7 +194,7 @@ export type ChannelBlock = {
  * survives past `src/config.ts` (hard rule 1).
  */
 export function channelBlocks(config: CarakaConfig): Record<string, ChannelBlock> {
-  const { telegram, discord, whatsapp } = config;
+  const { telegram, discord, whatsapp, web } = config;
   const blocks: Record<string, ChannelBlock> = {};
   if (telegram)
     blocks.telegram = {
@@ -200,6 +220,7 @@ export function channelBlocks(config: CarakaConfig): Record<string, ChannelBlock
       threads: false,
       modes: whatsapp.modes,
     };
+  if (web) blocks.web = { allowFrom: [web.owner], allowChats: [], threads: false, modes: {} };
   return blocks;
 }
 
@@ -343,9 +364,13 @@ async function channelToken(variable: string, path: string) {
   return (fromEnv ?? (await readFile(path, "utf8"))).trim();
 }
 
+export function parseConfig(text: string) {
+  return configSchema.parse(parse(text));
+}
+
 export async function loadConfig() {
   const paths = carakaPaths();
-  const config = configSchema.parse(parse(await readFile(paths.config, "utf8")));
+  const config = parseConfig(await readFile(paths.config, "utf8"));
   // One token per configured channel, and none for a channel that is not.
   const token = config.telegram ? await channelToken("CARAKA_TELEGRAM_TOKEN", paths.token) : "";
   const discordToken = config.discord
