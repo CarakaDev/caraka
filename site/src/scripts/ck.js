@@ -87,9 +87,12 @@ document.addEventListener('click', async (e) => {
   // approach that holds on both, and it is why the scroll position has to be
   // restored by hand afterwards.
   let lockedAt = 0
+  let locked = false
   const setLock = (on) => {
     const root = document.documentElement
     const body = document.body
+    if (locked === on) return
+    locked = on
     if (on) {
       lockedAt = window.scrollY
       root.style.overflow = 'hidden'
@@ -106,6 +109,15 @@ document.addEventListener('click', async (e) => {
       window.scrollTo(0, lockedAt)
     }
   }
+
+  // The browser updates `details.open` before it queues `toggle`. The panel can
+  // become visible one task before the lock exists. Lock on the summary click,
+  // then let `toggle` cover keyboard and script changes.
+  document.addEventListener('click', (e) => {
+    const summary = e.target instanceof Element ? e.target.closest('.ck-menu-btn') : null
+    const details = summary?.closest('.ck-menu')
+    if (details instanceof HTMLDetailsElement) setLock(!details.open)
+  })
 
   document.addEventListener(
     'toggle',

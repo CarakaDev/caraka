@@ -258,9 +258,30 @@ Publication and deployment remain controller steps.
 
 ```text
 > npm run verify
-ℹ tests 191 / pass 191 / fail 0
-ℹ tests 27 / pass 27 / fail 0
-ℹ tests 136 / pass 136 / fail 0
-18 passed (web browser)
-35 passed (site unit)
+Found 0 warnings and 0 errors.
+ℹ tests 191
+ℹ pass 191
+ℹ fail 0
+ℹ tests 27
+ℹ pass 27
+ℹ fail 0
+ℹ tests 136
+ℹ pass 136
+ℹ fail 0
+18 passed (7.7s)
+35 passed (35)
 > npm --prefix site run check
+Found 0 warnings and 0 errors.
+Result (49 files):
+- 0 errors
+- 0 warnings
+- 1 hint
+35 passed (35)
+> podman run --rm --name caraka-site-release-e2e --security-opt label=disable --shm-size=1g -v /home/ramaaditya/Project/caraka/.worktrees/web-pwa:/work -w /work/site mcr.microsoft.com/playwright:v1.62.1-noble npm run e2e
+2 skipped
+143 passed (57.3s)
+```
+
+The final site check output is `/tmp/caraka-task4-site-check-followup.log`.
+The final container output is `/tmp/caraka-task4-site-e2e.log`.
+The release checklist remains in flight until controller publication evidence exists.

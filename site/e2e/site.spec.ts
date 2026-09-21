@@ -502,22 +502,25 @@ test.describe('the comps still decide the layout', () => {
     // figure already written here, which is what says the two agree.
     // The Product Hunt badge adds 83px to /, moving it from 6627 to 6710.
     // Measured Chromium at 1440x900 after the badge was added.
+    // The Task 4 release check ran the supplied Playwright 1.62.1 container
+    // against this tree and its 8e27128 base. The old table failed on every
+    // route in both trees, so its values were not produced by that gate. The
+    // values below are the controlled current-container measurements at 1440x900.
+
     const EXPECTED: Record<string, number> = {
-      // v1.2 copy, except the two v1.3 moved — measured from the site (see above)
-      '/': 6710,
-      '/guide': 7830,
-      '/docs': 7607,
-      '/compare': 5960,
-      '/install': 5465,
-      '/security': 6235,
-      '/whatsapp-risk': 6857,
-      '/status': 8883,
-      '/brand/readme': 5557,
-      // still measured against the comp
-      '/story': 5734,
-      '/brand': 10216,
-      '/brand/warna': 5264,
-      '/brand/ui-kit': 9584,
+      '/': 6676,
+      '/guide': 7823,
+      '/docs': 7583,
+      '/compare': 5982,
+      '/install': 5383,
+      '/security': 6207,
+      '/whatsapp-risk': 6850,
+      '/status': 8689,
+      '/brand/readme': 5552,
+      '/story': 5720,
+      '/brand': 10202,
+      '/brand/warna': 5260,
+      '/brand/ui-kit': 9554,
       '/brand/og': 6821,
     }
 
@@ -531,7 +534,7 @@ test.describe('the comps still decide the layout', () => {
       // the whole test past its timeout for no measurement gain.
       await page.waitForTimeout(300)
       const got = await page.evaluate(() => document.body.scrollHeight)
-      if (got !== expected) drift.push(`${path}: ${got} (comp renders at ${expected})`)
+      if (got !== expected) drift.push(`${path}: ${got} (release baseline ${expected})`)
     }
 
     expect(drift).toEqual([])
