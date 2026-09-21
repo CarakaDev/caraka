@@ -154,26 +154,26 @@ Use structured spawn argument arrays; never interpolate tokens into a shell.
 Connection configuration changes preserve other fields. Write credentials only
 under `secrets/`. The new `web` command is terminal-only.
 
-- [ ] Test provider status parsing and command generation with an injected
+- [x] Test provider status parsing and command generation with an injected
   process runner. Prove the default invokes no mutating provider commands.
-- [ ] Implement Tailscale detection, login guidance, Serve HTTPS setup, and
+- [x] Implement Tailscale detection, login guidance, Serve HTTPS setup, and
   persistent Serve configuration. Inspect existing Serve routes before applying;
   refuse conflicts and show a specific repair step. Missing binaries produce
   official installation commands appropriate to the detected OS.
-- [ ] Implement named Cloudflare tunnel setup using the selected hostname and
+- [x] Implement named Cloudflare tunnel setup using the selected hostname and
   explicit account authorization. Reuse existing credentials when present.
   Refuse Quick Tunnel as the persistent configuration. Print the exact service
   installation steps when elevation or a user login is still needed.
-- [ ] Add a check that requests the public health endpoint and verifies that
+- [x] Add a check that requests the public health endpoint and verifies that
   unauthenticated private API requests fail. Keep phone verification a distinct
   result; a server-side fetch does not prove mobile reachability.
-- [ ] Add Web Push with a maintained package and persistent VAPID keys. Validate
+- [x] Add Web Push with a maintained package and persistent VAPID keys. Validate
   subscription endpoints against SSRF, bound payloads, and expire dead
   subscriptions. Send generic notifications with no prompt, file path, or token.
   Notify on permission cards and finished results. Push failure cannot fail a run.
-- [ ] Test setup retries without overwriting existing state, missing login,
+- [x] Test setup retries without overwriting existing state, missing login,
   provider failure, revoked push subscriptions, and blocked private endpoints.
-- [ ] Document setup from a fresh machine and provide a coding-agent prompt.
+- [x] Document setup from a fresh machine and provide a coding-agent prompt.
   Explain login, phone steps, service startup, origin changes, revocation, and
   remaining provider verification. Update blueprint, roadmap, and PRD for the
   accepted product direction. Run focused tests and commit with the task report.
@@ -225,3 +225,28 @@ feature base `fe943ac`, including attachment support, and spec commit `a7efad7`.
 - A real Codex task and same-session resume passed before final package integration. The final package must repeat this proof.
 - Task 2 recorded one minor keyboard-focus issue. Task 4 will preserve session-button focus during SSE refresh.
 - Provider changes, physical phone installation, push delivery, and release publication are not yet verified.
+
+## Task 3 verification
+
+Task 3 is complete through `144ed1c`. Both scoped fix reviews closed all Important findings.
+The final commands produced these results:
+
+```text
+> npm run web
+# tests 26
+# pass 26
+# fail 0
+> npm run web:browser
+16 passed
+> npm run lint
+0 warnings, 0 errors
+> npm run typecheck
+exit 0
+> npm run build
+exit 0
+```
+
+Full outputs are `/tmp/caraka-task3-fix2-{web,browser,lint,typecheck,build}.log` on the development host.
+Tests cover provider plans, configuration preservation, bounded push, and device revocation.
+No live provider, DNS, service, phone, or OS notification check ran.
+Task 4 owns two remaining minor refinements: dismissed permission retry and positive HTTP push-route coverage.
