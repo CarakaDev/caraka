@@ -1,4 +1,5 @@
 import { stat, readFile } from "node:fs/promises";
+import { randomBytes } from "node:crypto";
 import { basename, resolve } from "node:path";
 import { carakaPaths, loadConfig, parseConfig, saveConfig, type CarakaConfig } from "../config.js";
 import { Store } from "../store/db.js";
@@ -57,8 +58,9 @@ export async function webCommand(args: string[]) {
   const workspace = resolve(value(args, "--workspace") ?? process.cwd());
   if ((await stat(workspace).catch(() => undefined))?.isDirectory() !== true)
     throw new Error(`Workspace does not exist: ${workspace}`);
-  const language = value(args, "--language") ?? "en";
-  if (language !== "id" && language !== "en") throw new Error("--language must be id or en.");
+  const language = value(args, "--language");
+  if (language !== undefined && language !== "id" && language !== "en")
+    throw new Error("--language must be id or en.");
   const agent = value(args, "--agent") ?? "claude-code";
   const paths = carakaPaths();
   let current: CarakaConfig | undefined;
@@ -69,7 +71,7 @@ export async function webCommand(args: string[]) {
   }
   const config: CarakaConfig = current ?? {
     version: 1,
-    language,
+    language: language ?? "en",
     workspace: { name: basename(workspace), path: workspace },
     workspaces: [{ slug: basename(workspace), path: workspace, agent }],
     agent: { adapter: "claude-agent-acp", adapterVersion: "0.63.0" },
@@ -77,13 +79,13 @@ export async function webCommand(args: string[]) {
   };
   const next: CarakaConfig = {
     ...config,
-    language,
+    language: language ?? config.language ?? "en",
     workspaces: config.workspaces ?? [{ slug: basename(workspace), path: workspace, agent }],
     web: config.web ?? {
       host: "127.0.0.1",
       port: 7720,
       origin: "http://127.0.0.1:7720",
-      owner: "web-owner",
+      owner: `web-${randomBytes(8).toString("hex")}`,
     },
   };
   await saveConfig(next, "");

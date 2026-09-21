@@ -7,6 +7,20 @@ import type { Store } from "../store/db.js";
 import { DEVICE_COOKIE, cookie, cookieValue, hash, same, token } from "./auth.js";
 
 const BODY_LIMIT = 20 * 1024 * 1024;
+export const WEB_SUBSCRIBER_LIMIT = 20;
+
+export function webServerOrigin(
+  configuredOrigin: string,
+  configuredPort: number,
+  listeningPort: number,
+) {
+  const configured = new URL(configuredOrigin);
+  return configuredPort === 0
+    ? `${configured.protocol}//${configured.hostname}:${listeningPort}`
+    : configured.origin;
+}
+
+class BodyTooLarge extends Error {}
 type Device = { id: string; name: string; token_hash: string; revoked_at: number | null };
 type Hooks = {
   pair(code: string, name: string): { id: string; token: string } | undefined;
@@ -50,18 +64,14 @@ export class WebServer {
       this.server.listen(this.input.port, this.input.host, () => resolve());
     });
     const address = this.server.address() as AddressInfo;
-    const configured = new URL(this.input.origin);
-    this.origin =
-      configured.port || this.input.port === 0
-        ? `${configured.protocol}//${configured.hostname}:${address.port}`
-        : this.input.origin.replace(/\/$/, "");
+    this.origin = webServerOrigin(this.input.origin, this.input.port, address.port);
   }
   async close() {
     for (const response of this.subscribers) response.end();
     await new Promise<void>((resolve) => this.server.close(() => resolve()));
   }
   invalidate() {
-    for (const response of this.subscribers) response.write("event: invalidate\\ndata: {}\\n\\n");
+    for (const response of this.subscribers) response.write("event: invalidate\ndata: {}\n\n");
   }
   private send(
     response: ServerResponse,
@@ -105,14 +115,21 @@ export class WebServer {
     return new Promise<Buffer>((resolve, reject) => {
       const parts: Buffer[] = [];
       let size = 0;
+      let ended = false;
       request.on("data", (part: Buffer) => {
+        if (ended) return;
         size += part.length;
         if (size > limit) {
-          reject(new Error("too large"));
-          request.destroy();
-        } else parts.push(part);
+          ended = true;
+          request.resume();
+          reject(new BodyTooLarge());
+          return;
+        }
+        parts.push(part);
       });
-      request.on("end", () => resolve(Buffer.concat(parts)));
+      request.on("end", () => {
+        if (!ended) resolve(Buffer.concat(parts));
+      });
       request.on("error", reject);
     });
   }
@@ -133,11 +150,19 @@ export class WebServer {
     return device;
   }
   private async handle(request: IncomingMessage, response: ServerResponse) {
+    try {
+      await this.route(request, response);
+    } catch (error) {
+      if (!response.headersSent)
+        this.send(response, error instanceof BodyTooLarge ? 413 : 400, { error: "body" });
+    }
+  }
+  private async route(request: IncomingMessage, response: ServerResponse) {
     const method = request.method ?? "GET";
     const url = new URL(request.url ?? "/", this.origin || this.input.origin);
+    if (!this.exactHost(request)) return this.send(response, 421, { error: "host" });
     if (method === "GET" && url.pathname === "/health")
       return this.send(response, 200, { ok: true });
-    if (!this.exactHost(request)) return this.send(response, 421, { error: "host" });
     if (method === "POST" && url.pathname === "/api/pair") {
       if (!this.exactOrigin(request)) return this.send(response, 403, { error: "origin" });
       const body = await this.json(request);
@@ -160,13 +185,15 @@ export class WebServer {
     if (method === "GET" && url.pathname === "/api/events") {
       const device = this.authenticated(request, response);
       if (!device) return;
+      if (this.subscribers.size >= WEB_SUBSCRIBER_LIMIT)
+        return this.send(response, 429, { error: "events busy" });
       response.writeHead(200, {
         "content-type": "text/event-stream",
         "cache-control": "no-store",
         connection: "keep-alive",
         "x-content-type-options": "nosniff",
       });
-      response.write("event: ready\\ndata: {}\\n\\n");
+      response.write("event: ready\ndata: {}\n\n");
       this.subscribers.add(response);
       request.once("close", () => this.subscribers.delete(response));
       return;
@@ -191,8 +218,17 @@ export class WebServer {
           roomId: result.roomId,
           replay: result.replay,
         });
-      } catch {
-        return this.send(response, 404, { error: "room or workspace" });
+      } catch (error) {
+        return this.send(
+          response,
+          error instanceof Error && error.name === "WebQueueFull" ? 429 : 404,
+          {
+            error:
+              error instanceof Error && error.name === "WebQueueFull"
+                ? "queue busy"
+                : "room, workspace, or file",
+          },
+        );
       }
     }
     if (method === "POST" && url.pathname === "/api/callback") {

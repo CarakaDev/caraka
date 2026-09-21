@@ -23,6 +23,14 @@ type WebConfig = {
   workspaces?: Array<{ slug: string; path: string; agent?: string | undefined }>;
 };
 type FileInput = { id: string; name: string; mime: string; path: string };
+export const WEB_INBOX_LIMIT = 100;
+
+export class WebQueueFull extends Error {
+  constructor() {
+    super("Web inbox is full");
+    this.name = "WebQueueFull";
+  }
+}
 
 export class WebChannel implements Channel {
   readonly id = "web";
@@ -121,7 +129,9 @@ export class WebChannel implements Channel {
       }>
     ).map((row) => ({
       ...row,
-      buttons: JSON.parse(row.buttons),
+      buttons: (JSON.parse(row.buttons) as Button[]).filter(
+        (button) => this.callbacks.get(button.id)?.messageId === row.id,
+      ),
       attachments: JSON.parse(row.attachments),
     }));
     return {
@@ -147,6 +157,17 @@ export class WebChannel implements Channel {
       .prepare("SELECT room_id AS roomId FROM web_messages WHERE client_id = ?")
       .get(input.clientId) as { roomId: string } | undefined;
     if (replay) return { roomId: replay.roomId, replay: true };
+    // Reject before persisting any room or message. Gateway cannot accept work
+    // after this bounded inbox reaches its capacity.
+    if (this.inbox.length >= WEB_INBOX_LIMIT) throw new WebQueueFull();
+    const files: FileInput[] = [];
+    for (const fileId of input.files ?? []) {
+      const file = this.options.store.db
+        .prepare("SELECT id,name,mime,path FROM web_files WHERE id = ?")
+        .get(fileId) as FileInput | undefined;
+      if (!file) throw new Error("file");
+      files.push(file);
+    }
     let roomId = input.roomId;
     if (roomId) {
       const found = this.options.store.db
@@ -174,16 +195,15 @@ export class WebChannel implements Channel {
         "user",
         this.options.scrub(input.text),
         "[]",
-        "[]",
+        JSON.stringify(
+          files.map((file) => ({
+            id: file.id,
+            name: this.options.scrub(file.name),
+            mime: file.mime,
+          })),
+        ),
         Date.now(),
       );
-    const files: FileInput[] = [];
-    for (const fileId of input.files ?? []) {
-      const file = this.options.store.db
-        .prepare("SELECT id,name,mime,path FROM web_files WHERE id = ?")
-        .get(fileId) as FileInput | undefined;
-      if (file) files.push(file);
-    }
     const messageId = `web-in-${id}`;
     this.files.set(messageId, files);
     const room = this.options.store.db
@@ -194,7 +214,7 @@ export class WebChannel implements Channel {
         message_id: messageId,
         from: { id: this.options.config.owner },
         chat: { id: `web:${roomId}`, type: "private" },
-        text: input.roomId ? input.text : `@${room.workspace} ${input.text}`,
+        text: input.roomId ? input.text : `@${JSON.stringify(room.workspace)} ${input.text}`,
         attachments: files.map((file) => ({ kind: "document", mime: file.mime })),
       },
     });
@@ -203,7 +223,8 @@ export class WebChannel implements Channel {
   }
   private callback(_device: unknown, input: { messageId: string; buttonId: string }) {
     const entry = this.callbacks.get(input.buttonId);
-    if (!entry || entry.messageId !== input.messageId) return false;
+    if (!entry || entry.messageId !== input.messageId || this.inbox.length >= WEB_INBOX_LIMIT)
+      return false;
     this.callbacks.delete(input.buttonId);
     this.inbox.push({
       callback_query: {
@@ -221,7 +242,10 @@ export class WebChannel implements Channel {
     return true;
   }
   private stop(_device: unknown, roomId: string) {
-    if (!this.options.store.db.prepare("SELECT id FROM web_rooms WHERE id = ?").get(roomId))
+    if (
+      this.inbox.length >= WEB_INBOX_LIMIT ||
+      !this.options.store.db.prepare("SELECT id FROM web_rooms WHERE id = ?").get(roomId)
+    )
       return false;
     this.inbox.push({
       message: {
@@ -242,7 +266,7 @@ export class WebChannel implements Channel {
     const file = this.files.get(String(message.message_id))?.[index];
     if (!file) return null;
     await copyFile(file.path, target);
-    return file.mime;
+    return target;
   }
   async setMyCommands(_commands: ChannelCommand[], _scopeId: string) {}
   private room(chatId: string) {
@@ -338,9 +362,10 @@ export class WebChannel implements Channel {
   }
   async answerCallback(_id: string, _text: string, _alert = false) {}
   async clearKeyboard(_chatId: string, messageId: string | number) {
-    this.options.store.db
-      .prepare("UPDATE web_messages SET buttons = [] WHERE id = ?")
-      .run(String(messageId));
+    const id = String(messageId);
+    for (const [buttonId, entry] of this.callbacks)
+      if (entry.messageId === id) this.callbacks.delete(buttonId);
+    this.options.store.db.prepare("UPDATE web_messages SET buttons = ? WHERE id = ?").run("[]", id);
     this.server.invalidate();
   }
   async direct(_principal: string) {

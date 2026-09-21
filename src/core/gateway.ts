@@ -630,14 +630,20 @@ export class Gateway {
       this.queueRun(message, text, own, create);
       return;
     }
-    // `\S+` rather than `[\w.-]+`, so an absolute path reaches the branch below
-    // instead of falling through as prompt text. The two cannot both match: the
-    // old character class could never be absolute. What the widening does change
-    // is that `@foo!bar`, which used to be an ordinary prompt, is now a workspace
-    // token nobody named.
-    const at = /^@(\S+)(?:\s+|$)/.exec(text);
+    // A quoted slug can contain spaces. An unquoted `\S+` token lets an
+    // absolute path reach the branch below instead of becoming prompt text.
+    // `@foo!bar` is an unknown workspace token, not an ordinary prompt.
+    const at = /^@("(?:\\.|[^"\\])*"|\S+)(?:\s+|$)/.exec(text);
     if (at) {
-      const token = at[1] ?? "";
+      const rawToken = at[1] ?? "";
+      let token = rawToken;
+      if (rawToken.startsWith('"')) {
+        try {
+          token = JSON.parse(rawToken) as string;
+        } catch {
+          token = rawToken;
+        }
+      }
       const rest = text.slice(at[0].length).trim();
       // The slug lookup keeps the token as typed — a slug never starts with a
       // tilde, and `ws.unknown` should quote what the person wrote. Only the

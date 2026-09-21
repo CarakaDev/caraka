@@ -90,6 +90,12 @@ const configShape = {
     .superRefine((block, ctx) => {
       const origin = new URL(block.origin);
       const loopback = ["localhost", "127.0.0.1", "::1"].includes(origin.hostname);
+      if (block.origin !== origin.origin)
+        ctx.addIssue({
+          code: "custom",
+          path: ["origin"],
+          message: "web.origin must be a URL origin without a path, query, or fragment.",
+        });
       if (origin.protocol !== "https:" && !loopback)
         ctx.addIssue({
           code: "custom",
