@@ -29,7 +29,10 @@ assets from the npm package. Local SQLite holds web messages and device hashes.
 - English technical sentences follow STE; interface text supports Indonesian and English.
 - End every commit with `Co-Authored-By: CADIS <agent@cadis.digital>` after a blank line.
 - Preserve unrelated changes in both original checkouts. All implementation runs on rama-tuf.
-- Do not publish npm or deploy the marketing site in this plan.
+- Prepare the npm release and site deployment after verification. Request final release approval with the concrete version and evidence.
+- Treat rama-tuf only as the development host. Product defaults must work on each user's own machine and account.
+- Derive machine labels, workspace paths, agents, and connection details from configuration or runtime data.
+- Test setup output for supported operating systems. Explain manual steps where automation is unavailable.
 
 ## Shared API
 
@@ -179,7 +182,7 @@ under `secrets/`. The new `web` command is terminal-only.
 checks remain separately marked unless performed on an explicitly selected
 installation. Documentation never calls synthetic provider tests live proof.
 
-### Task 4: Integrated verification and release preparation
+### Task 4: Integrated verification, npm release, and site deployment
 
 **Files:** Plan evidence, packaged file list, and implementation fixes from review.
 
@@ -190,7 +193,11 @@ installation. Documentation never calls synthetic provider tests live proof.
   workspace, then verify the returned answer and session resume.
 - [ ] Review the complete diff and repair security or behavior defects.
 - [ ] Commit verified changes. Keep spec and plan in flight until publication.
-  Present the exact branch and verification evidence for release approval.
+  Present the exact version, branch, package contents, and verification evidence for release approval.
+- [ ] Update public installation guidance and release metadata for the shipped web channel.
+  Keep the existing marketing design. Verify site changes through its required gates.
+- [ ] After release approval, publish npm and deploy the site. Verify registry files, fresh installation, and production pages.
+  Record package integrity, deployment version, and any unverified provider or phone checks.
 
 ## Evidence
 

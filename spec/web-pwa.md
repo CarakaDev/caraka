@@ -4,7 +4,8 @@ Tanggal: 21 September 2026. Status: disetujui untuk implementasi melalui percaka
 
 Rama meminta web/Android untuk mengendalikan coding agent di laptop/server.
 Rama menyetujui web/PWA lebih dulu, dengan bantuan setup Tailscale atau Cloudflare Tunnel.
-Rama meminta mulai bekerja dan memberi kebebasan untuk menyusun UI tanpa mockup darinya.
+Rama menyetujui mockup desktop dan HP, lalu meminta pekerjaan sampai deploy dan publikasi npm dengan persetujuan rilis akhir.
+Caraka adalah produk open source untuk mesin dan akun milik setiap pengguna. `rama-tuf` hanya host pengembangan dan pengujian.
 
 ## Lingkup
 
@@ -63,6 +64,8 @@ tanpa persetujuan rilis. Situs pemasaran tetap terpisah dari aplikasi lokal.
 - **AC-30** WHEN viewport berukuran 390×844 atau 1440×900, UI shall menampilkan pengiriman pesan dan navigasi sesi tanpa overflow horizontal.
 - **AC-31** WHILE pengguna menavigasi dengan keyboard, UI shall menyediakan fokus yang terlihat dan label kontrol.
 - **AC-32** WHEN service dimulai ulang, perangkat yang sah shall tetap dapat masuk tanpa memasangkan ulang.
+- **AC-33** WHEN pengguna memasang Caraka pada mesin dan akun mereka, UI serta setup shall memakai konfigurasi dan keadaan mesin tersebut.
+- **AC-34** IF sistem operasi atau penyedia membutuhkan langkah manual, THEN setup shall menjelaskan langkah yang sesuai tanpa mengklaim langkah tersebut sudah berhasil.
 
 ## Batas dan bukti
 
