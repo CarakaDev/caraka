@@ -14,7 +14,7 @@ assets from the npm package. Local SQLite holds web messages and device hashes.
 
 ## Global Constraints
 
-- Work only in `/home/ramaaditya/Project/caraka/caraka/.worktrees/web-pwa`.
+- Work only in `/home/ramaaditya/Project/caraka/.worktrees/web-pwa on rama-tuf`.
 - Core never branches on `channel.id`.
 - The existing dashboard remains read-only.
 - Every request that changes state checks its exact Origin.
@@ -28,7 +28,7 @@ assets from the npm package. Local SQLite holds web messages and device hashes.
 - Use Caraka colours and self-hosted fonts. Add no frontend framework.
 - English technical sentences follow STE; interface text supports Indonesian and English.
 - End every commit with `Co-Authored-By: CADIS <agent@cadis.digital>` after a blank line.
-- Preserve the source checkout's two modified README files.
+- Preserve unrelated changes in both original checkouts. All implementation runs on rama-tuf.
 - Do not publish npm or deploy the marketing site in this plan.
 
 ## Shared API
@@ -198,3 +198,10 @@ installation. Documentation never calls synthetic provider tests live proof.
 - Original checkout: two README edits existed before this work and remain there.
 - Titen resolution: `carakadev/caraka` is not registered. Continue from source;
   do not create a memory project or compile without a resolved project id.
+
+## Host handoff
+
+Rama selected `rama-tuf` before implementation. The worktree is
+`/home/ramaaditya/Project/caraka/.worktrees/web-pwa` on that host.
+The original remote checkout remains unchanged. The branch retains the inspected
+feature base `fe943ac`, including attachment support, and spec commit `a7efad7`.
