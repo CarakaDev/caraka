@@ -25,15 +25,17 @@
 
 ## Web/PWA without a chat account
 
-Initialize the local web channel in a repository you control:
+For Claude Code, initialize the local web channel in a repository you control:
 
 ```bash
-npx caraka init web --workspace "$PWD" --agent claude-agent-acp --language en
+npx caraka init web --workspace "$PWD" --agent claude-code --language en
 npx caraka start
 npx caraka web pair
 ```
 
-The listener binds loopback by default. Read [the Web/PWA guide](docs/web-guide.en.md) before you expose a configured HTTPS origin.
+Use the shipped preset identifier for another installed, signed-in agent. For example, use `codex` for Codex. Do not use `claude-agent-acp`; it is the Claude ACP command, not a preset.
+
+The listener binds loopback by default. Read [the Web/PWA guide](docs/web-guide.en.md) before you configure HTTPS exposure.
 
 ## What it is
 
@@ -80,20 +82,29 @@ Git, and that you yourself are installed and signed in. Fix only missing
 prerequisites without changing my repository.
 
 Preserve the repository and the agent or provider configuration already in use.
-Set up the local Web/PWA channel with this command in my local terminal:
+Identify the shipped Caraka preset for the coding agent that is installed and
+signed in. Use `claude-code` for Claude Code and `codex` for Codex. Do not use
+`claude-agent-acp`; it is the ACP command, not a preset.
 
-  npx caraka init web --workspace "$PWD" --agent claude-agent-acp --language en
+Set up the local Web/PWA channel in my local terminal. Run `npx caraka init web`
+with `--workspace "$PWD"`, `--agent` set to that preset identifier, and
+`--language en`.
 
 After I confirm init is complete, run `npx caraka doctor` and explain failed checks.
-Start with `npx caraka start`, then run `npx caraka web pair`. Keep the listener on loopback.
+Start `npx caraka start` in one local terminal. In a separate local terminal, run
+`npx caraka web pair`. Keep the listener on loopback.
 Do not enable a provider, open a port, install a service, or change your own model or provider configuration.
 ```
 
-The agent narrates each step and waits for you to approve it, so read what it proposes before you say yes. Create the bot token with [@BotFather](https://t.me/BotFather), and do not paste it into an issue or into an AI chat.
+The Web/PWA path does not use a Telegram account or bot token. The agent narrates each step and waits for your approval.
 
 Any coding agent can do the installing. What Caraka then runs is one of the nine it has a preset for, signed in, on Node.js 22+ with Git. Claude Code, Codex, aider, goose, and opencode are the ones verified here.
 
 Some coding-agent clients can hold an interactive terminal open for the wizard. If yours cannot, run the one `init` command yourself and let the agent continue with `doctor` and `start`. That boundary is what keeps the token out of the conversation transcript.
+
+### Optional Telegram chat setup
+
+Use this route only when you want Telegram chat. Create the token with [@BotFather](https://t.me/BotFather), and do not paste it into an issue or an AI chat.
 
 ### Or run the commands yourself
 

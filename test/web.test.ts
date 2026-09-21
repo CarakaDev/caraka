@@ -323,6 +323,29 @@ test("web accepts bounded files and refuses unknown rooms", async (t) => {
   assert.equal(state.language, "en");
 });
 
+test("documented Web/PWA setup keeps the Claude Code preset and prints a pairing URL", async (t) => {
+  const home = await mkdtemp(join(tmpdir(), "caraka-web-guide-"));
+  const prior = process.env.CARAKA_HOME;
+  const lines: string[] = [];
+  const original = console.log;
+  process.env.CARAKA_HOME = home;
+  console.log = (line: string) => lines.push(line);
+  t.after(async () => {
+    console.log = original;
+    if (prior === undefined) delete process.env.CARAKA_HOME;
+    else process.env.CARAKA_HOME = prior;
+    await rm(home, { recursive: true, force: true });
+  });
+
+  await webCommand(["init", "--workspace", home, "--agent", "claude-code", "--language", "en"]);
+  const config = parseConfig(await readFile(join(home, "config.yaml"), "utf8"));
+  assert.equal(config.workspaces?.[0]?.agent, "claude-code");
+  assert.match(lines[0] ?? "", /Run caraka start, then caraka web pair/);
+
+  await webCommand(["pair"]);
+  assert.match(lines[1] ?? "", /^http:\/\/127\.0\.0\.1:7720\/#pair=[A-Za-z0-9-]+$/);
+});
+
 test("web init preserves malformed existing config bytes", async (t) => {
   const home = await mkdtemp(join(tmpdir(), "caraka-web-init-"));
   const prior = process.env.CARAKA_HOME;

@@ -7036,7 +7036,7 @@ test("every copy of the install prompt is byte-identical to the others", async (
       "docs/install-with-ai.en.md",
       "docs/install-guide.en.md",
     ],
-    "Pasang Caraka untuk repository": [
+    "Pasang Caraka Web/PWA untuk repository": [
       "README.id.md",
       "docs/install-with-ai.md",
       "docs/install-with-ai.en.md",

@@ -5,9 +5,14 @@
 
 ## Web/PWA tanpa setup chat
 
-Jalankan `npx caraka init web --workspace "$PWD" --agent claude-agent-acp --language id` untuk memasang channel Web/PWA lokal.
-Lalu jalankan `npx caraka start` dan `npx caraka web pair`.
-Jalur ini tidak memerlukan akun Telegram. Baca [panduan Web/PWA](web-guide.md) sebelum mengonfigurasi origin HTTPS.
+Untuk Claude Code, jalankan `npx caraka init web --workspace "$PWD" --agent claude-code --language id` untuk memasang channel Web/PWA lokal.
+Untuk agent lain yang sudah terpasang dan login, gunakan identifier preset yang terkirim. Misalnya, gunakan `codex` untuk Codex. Jangan gunakan `claude-agent-acp`; itu perintah ACP Claude, bukan preset.
+Jalankan `npx caraka start` di satu terminal. Jalankan `npx caraka web pair` di terminal terpisah.
+Jalur ini tidak memerlukan akun Telegram. Baca [panduan Web/PWA](web-guide.md) sebelum mengonfigurasi eksposur HTTPS.
+
+## Setup chat Telegram opsional
+
+Sisa panduan ini mendokumentasikan jalur Telegram opsional. Jalur itu memerlukan token bot. Jalur Web/PWA di atas tidak.
 
 ## Prasyarat
 
@@ -30,23 +35,25 @@ tempel prompt ini ke sana. Ia memeriksa prasyarat, memasang yang kurang, lalu
 menyerahkan bagian token kembali kepadamu.
 
 ```text
-Pasang Caraka untuk repository di working directory saya saat ini.
+Pasang Caraka Web/PWA untuk repository di working directory saya saat ini.
 
 Baca https://github.com/CarakaDev/caraka lebih dulu. Verifikasi Node.js 22 atau
 lebih baru, Git, dan bahwa kamu sendiri sudah terpasang dan sudah login.
 Perbaiki hanya prasyarat yang kurang tanpa mengubah repository saya.
 
-Jangan pernah meminta saya menempel, membuka, atau mengulang token bot Telegram
-lewat chat, output command, log, atau berkas yang akan di-commit. Minta saya
-membuat bot lewat @BotFather, lalu berikan perintah ini untuk saya jalankan
-sendiri di terminal lokal:
+Pertahankan repository serta konfigurasi agent atau provider yang sudah dipakai.
+Temukan preset Caraka yang terkirim untuk coding agent yang sudah terpasang dan
+sudah login. Gunakan `claude-code` untuk Claude Code dan `codex` untuk Codex.
+Jangan gunakan `claude-agent-acp`; itu perintah ACP, bukan preset.
 
-  npx caraka init --workspace "$PWD"
+Pasang channel Web/PWA lokal di terminal lokal saya. Jalankan `npx caraka init web`
+dengan `--workspace "$PWD"`, `--agent` berisi identifier preset itu, dan
+`--language id`.
 
-Setelah saya mengonfirmasi init selesai, jalankan `npx caraka doctor`, jelaskan
-check yang gagal, lalu mulai dengan `npx caraka start`. Jangan mengaktifkan
-webhook, membuka port, memasang service, atau mengubah konfigurasi model atau
-provider milikmu sendiri.
+Setelah saya mengonfirmasi init selesai, jalankan `npx caraka doctor` dan jelaskan check yang gagal.
+Jalankan `npx caraka start` di satu terminal lokal. Di terminal lokal terpisah, jalankan
+`npx caraka web pair`. Pertahankan listener pada loopback.
+Jangan mengaktifkan provider, membuka port, memasang service, atau mengubah konfigurasi model atau provider milikmu sendiri.
 ```
 
 **Token tetap diketik di terminalmu sendiri dan tidak pernah masuk ke percakapan

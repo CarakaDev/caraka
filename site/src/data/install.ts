@@ -64,7 +64,7 @@ export const prices = [
 
 export const costNotes = [
   { tag: 'NO MODEL KEY', tone: '#8EEE98', bg: '#12100F', border: '#2B1612', t: 'Claude keeps its own authentication, model, tools, and sandbox.', range: r(0, 3, 24) },
-  { tag: 'LOOPBACK ONLY', tone: '#8EEE98', bg: '#0C1116', border: '#171C22', t: 'Nothing opens to the internet by default. The dashboard, WhatsApp webhook, and Web/PWA listener bind loopback until you configure an HTTPS origin.', range: r(1, 3, 24) },
+  { tag: 'LOOPBACK ONLY', tone: '#8EEE98', bg: '#0C1116', border: '#171C22', t: 'Nothing opens to the internet by default. Dashboard, WhatsApp webhook, and Web/PWA listeners bind loopback by default. Configure HTTPS exposure separately.', range: r(1, 3, 24) },
   { tag: 'PRIVATE TOKEN', tone: '#FFD67E', bg: '#0C1116', border: '#171C22', t: 'The bot token stays outside config.yaml in a mode-0600 file.', range: r(2, 3, 24) },
   { tag: 'ONE OPERATOR', tone: '#7A848F', bg: '#0C1116', border: '#171C22', t: 'One operator, deliberately. More than one workspace is supported, and @slug in front of a message picks which.', range: r(3, 3, 24) },
   // Comp lines 364-369 hold four pricing notes the port replaced with what init
@@ -88,8 +88,8 @@ export const paths = [
 // agent rather than naming one: "you yourself" and "your own model or provider
 // configuration" replaced the Claude Code and `claude auth status` lines this
 // text carried until 1.3.3. Any agent can install Caraka; only running it
-// afterwards needs a preset. The Web/PWA route keeps its pairing secret in the
-// local terminal and does not need a chat account.
+// afterwards needs a preset. The Web/PWA route has no Telegram token and does
+// not need a chat account.
 export const agentPrompt = `Install Caraka Web/PWA for the repository in my current working directory.
 
 Read https://github.com/CarakaDev/caraka first. Verify Node.js 22 or newer,
@@ -97,12 +97,17 @@ Git, and that you yourself are installed and signed in. Fix only missing
 prerequisites without changing my repository.
 
 Preserve the repository and the agent or provider configuration already in use.
-Set up the local Web/PWA channel with this command in my local terminal:
+Identify the shipped Caraka preset for the coding agent that is installed and
+signed in. Use \`claude-code\` for Claude Code and \`codex\` for Codex. Do not use
+\`claude-agent-acp\`; it is the ACP command, not a preset.
 
-  npx caraka init web --workspace "$PWD" --agent claude-agent-acp --language en
+Set up the local Web/PWA channel in my local terminal. Run \`npx caraka init web\`
+with \`--workspace "$PWD"\`, \`--agent\` set to that preset identifier, and
+\`--language en\`.
 
 After I confirm init is complete, run \`npx caraka doctor\` and explain failed checks.
-Start with \`npx caraka start\`, then run \`npx caraka web pair\`. Keep the listener on loopback.
+Start \`npx caraka start\` in one local terminal. In a separate local terminal, run
+\`npx caraka web pair\`. Keep the listener on loopback.
 Do not enable a provider, open a port, install a service, or change your own model or provider configuration.`
 
 export const scriptRules = [
@@ -110,7 +115,7 @@ export const scriptRules = [
   // named Claude moved with it at 1.3.3: the prompt now asks the agent to check
   // itself and to leave its own configuration alone.
   { t: 'The agent checks Node, Git, and its own sign-in first.', range: r(0, 2, 24) },
-  { t: 'The Telegram token never enters the AI conversation or a committed file.', range: r(1, 2, 24) },
+  { t: 'The Web/PWA path uses no Telegram token.', range: r(1, 2, 24) },
   { t: 'The user performs the private token step in the local init wizard.', range: r(2, 2, 24) },
   { t: 'The agent may continue with doctor after pairing is complete.', range: r(3, 2, 24) },
   { t: 'No webhook or listening port is enabled.', range: r(4, 2, 24) },

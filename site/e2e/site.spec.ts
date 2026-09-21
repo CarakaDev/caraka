@@ -503,17 +503,17 @@ test.describe('the comps still decide the layout', () => {
     // The Product Hunt badge adds 83px to /, moving it from 6627 to 6710.
     // Measured Chromium at 1440x900 after the badge was added.
     // The Task 4 release check ran the supplied Playwright 1.62.1 container
-    // against this tree and its 8e27128 base. The old table failed on every
+    // against this tree and its 8e27128 base. The old table failed on 13 routes
     // route in both trees, so its values were not produced by that gate. The
     // values below are the controlled current-container measurements at 1440x900.
 
     const EXPECTED: Record<string, number> = {
       '/': 6676,
       '/guide': 7823,
-      '/docs': 7583,
+      '/docs': 7505,
       '/compare': 5982,
-      '/install': 5383,
-      '/security': 6207,
+      '/install': 5501,
+      '/security': 6269,
       '/whatsapp-risk': 6850,
       '/status': 8689,
       '/brand/readme': 5552,

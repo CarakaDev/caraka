@@ -285,3 +285,39 @@ Result (49 files):
 The final site check output is `/tmp/caraka-task4-site-check-followup.log`.
 The final container output is `/tmp/caraka-task4-site-e2e.log`.
 The release checklist remains in flight until controller publication evidence exists.
+
+## Task 4 review fix round 1 evidence
+
+The review corrections remain local. Publication and deployment remain controller steps.
+
+```text
+> node --import tsx --test --test-name-pattern='documented Web/PWA setup' test/web.test.ts
+ℹ tests 1
+ℹ pass 1
+ℹ fail 0
+> node --import tsx --test --test-name-pattern='every copy of the install prompt' test/unit.test.ts
+ℹ tests 1
+ℹ pass 1
+ℹ fail 0
+> npm run lint
+Found 0 warnings and 0 errors.
+All matched files use the correct format.
+No config found, using defaults.
+> npm run build
+exit 0
+> npm --prefix site run check
+Found 0 warnings and 0 errors.
+Result (49 files):
+- 0 errors
+- 0 warnings
+- 1 hint
+35 passed (35)
+> podman run --rm --name caraka-site-task4-fix1-e2e-measure --security-opt label=disable --shm-size=1g -v /home/ramaaditya/Project/caraka/.worktrees/web-pwa:/work -w /work/site mcr.microsoft.com/playwright:v1.62.1-noble npm run e2e
+2 skipped
+143 passed (57.2s)
+```
+
+The final-source site check is `/tmp/caraka-task4-fix1-site-check.log`.
+The final-source container output is `/tmp/caraka-task4-fix1-site-e2e-measure.log`.
+The existing guide hint, formatter configuration notice, and npm update notice are non-blocking output.
+No root-wide verification suite was repeated after content-only corrections.

@@ -481,4 +481,3 @@ Finished in 67ms on 34 files using 16 threads.
 
 EXIT=0
 ```
-

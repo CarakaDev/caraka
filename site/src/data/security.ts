@@ -93,7 +93,7 @@ export const threats = [
   {
     id: 'T7',
     name: 'Gateway exposed to the internet',
-    control: 'Chat routes are outbound. Dashboard, Cloud API webhook, and Web/PWA listeners bind 127.0.0.1 by default. The Web/PWA route requires a short-lived pairing code and uses an HttpOnly cookie. A configured HTTPS origin must match Host and Origin checks. Push needs an operator-selected provider and credentials.',
+    control: 'Chat routes are outbound. Dashboard, Cloud API webhook, and Web/PWA listeners bind 127.0.0.1 by default. The Web/PWA route requires a short-lived pairing code and uses an HttpOnly cookie. A configured HTTPS origin must match Host and Origin checks. Attachment copies stay in Caraka’s private Web file cache; workspace access checks are separate. Push needs HTTPS, explicit browser permission, local VAPID keys in Caraka secrets, and the browser-selected push service. Connection-provider credentials are not push credentials.',
   },
   {
     id: 'T8',

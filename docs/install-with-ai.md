@@ -9,23 +9,25 @@ Prompt berbahasa Indonesia di bawah juga muncul sebagai langkah pertama di [pand
 ## Bahasa Indonesia
 
 ```text
-Pasang Caraka untuk repository di working directory saya saat ini.
+Pasang Caraka Web/PWA untuk repository di working directory saya saat ini.
 
 Baca https://github.com/CarakaDev/caraka lebih dulu. Verifikasi Node.js 22 atau
 lebih baru, Git, dan bahwa kamu sendiri sudah terpasang dan sudah login.
 Perbaiki hanya prasyarat yang kurang tanpa mengubah repository saya.
 
-Jangan pernah meminta saya menempel, membuka, atau mengulang token bot Telegram
-lewat chat, output command, log, atau berkas yang akan di-commit. Minta saya
-membuat bot lewat @BotFather, lalu berikan perintah ini untuk saya jalankan
-sendiri di terminal lokal:
+Pertahankan repository serta konfigurasi agent atau provider yang sudah dipakai.
+Temukan preset Caraka yang terkirim untuk coding agent yang sudah terpasang dan
+sudah login. Gunakan `claude-code` untuk Claude Code dan `codex` untuk Codex.
+Jangan gunakan `claude-agent-acp`; itu perintah ACP, bukan preset.
 
-  npx caraka init --workspace "$PWD"
+Pasang channel Web/PWA lokal di terminal lokal saya. Jalankan `npx caraka init web`
+dengan `--workspace "$PWD"`, `--agent` berisi identifier preset itu, dan
+`--language id`.
 
-Setelah saya mengonfirmasi init selesai, jalankan `npx caraka doctor`, jelaskan
-check yang gagal, lalu mulai dengan `npx caraka start`. Jangan mengaktifkan
-webhook, membuka port, memasang service, atau mengubah konfigurasi model atau
-provider milikmu sendiri.
+Setelah saya mengonfirmasi init selesai, jalankan `npx caraka doctor` dan jelaskan check yang gagal.
+Jalankan `npx caraka start` di satu terminal lokal. Di terminal lokal terpisah, jalankan
+`npx caraka web pair`. Pertahankan listener pada loopback.
+Jangan mengaktifkan provider, membuka port, memasang service, atau mengubah konfigurasi model atau provider milikmu sendiri.
 ```
 
 ## English
@@ -38,17 +40,22 @@ Git, and that you yourself are installed and signed in. Fix only missing
 prerequisites without changing my repository.
 
 Preserve the repository and the agent or provider configuration already in use.
-Set up the local Web/PWA channel with this command in my local terminal:
+Identify the shipped Caraka preset for the coding agent that is installed and
+signed in. Use `claude-code` for Claude Code and `codex` for Codex. Do not use
+`claude-agent-acp`; it is the ACP command, not a preset.
 
-  npx caraka init web --workspace "$PWD" --agent claude-agent-acp --language en
+Set up the local Web/PWA channel in my local terminal. Run `npx caraka init web`
+with `--workspace "$PWD"`, `--agent` set to that preset identifier, and
+`--language en`.
 
 After I confirm init is complete, run `npx caraka doctor` and explain failed checks.
-Start with `npx caraka start`, then run `npx caraka web pair`. Keep the listener on loopback.
+Start `npx caraka start` in one local terminal. In a separate local terminal, run
+`npx caraka web pair`. Keep the listener on loopback.
 Do not enable a provider, open a port, install a service, or change your own model or provider configuration.
 ```
 
-## Kenapa token tidak diberikan ke agent
+## Token Telegram opsional
 
-Transkrip chat, tool log, dan histori terminal bisa disimpan oleh klien coding agent. Wizard Caraka menyembunyikan input dan menulis token langsung ke `~/.caraka/secrets/telegram.token`. Memindahkan token melalui chat menghilangkan perlindungan itu.
+Prompt Web/PWA tidak memakai akun Telegram atau token. Bila nanti mengonfigurasi jalur Telegram opsional, simpan token BotFather di luar percakapan agent. Transkrip chat, tool log, dan histori terminal dapat menyimpan input. Wizard Telegram menyembunyikan input dan menulisnya ke `~/.caraka/secrets/telegram.token`.
 
-Jika klien menyediakan terminal interaktif yang benar-benar dapat diambil alih user, agent boleh membuka `npx caraka init` lalu berhenti saat prompt token muncul. Agent tidak boleh membaca atau mengulang input tersebut.
+Jika klien menyediakan terminal interaktif yang dapat diambil alih user, agent boleh membuka `npx caraka init` dan berhenti pada prompt token. Agent tidak boleh membaca atau mengulang input tersebut.

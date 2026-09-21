@@ -5,9 +5,14 @@
 
 ## Web/PWA without chat setup
 
-Run `npx caraka init web --workspace "$PWD" --agent claude-agent-acp --language en` to set up the local Web/PWA channel.
-Then run `npx caraka start` and `npx caraka web pair`.
-This path does not need a Telegram account. Read [the Web/PWA guide](web-guide.en.md) before you configure an HTTPS origin.
+For Claude Code, run `npx caraka init web --workspace "$PWD" --agent claude-code --language en` to set up the local Web/PWA channel.
+For another installed, signed-in agent, use its shipped preset identifier. For example, use `codex` for Codex. Do not use `claude-agent-acp`; it is the Claude ACP command, not a preset.
+Run `npx caraka start` in one terminal. Run `npx caraka web pair` in a separate terminal.
+This path does not need a Telegram account. Read [the Web/PWA guide](web-guide.en.md) before you configure HTTPS exposure.
+
+## Optional Telegram chat setup
+
+The remainder of this guide documents the optional Telegram route. It needs a bot token. The Web/PWA route above does not.
 
 ## Prerequisites
 
@@ -37,12 +42,17 @@ Git, and that you yourself are installed and signed in. Fix only missing
 prerequisites without changing my repository.
 
 Preserve the repository and the agent or provider configuration already in use.
-Set up the local Web/PWA channel with this command in my local terminal:
+Identify the shipped Caraka preset for the coding agent that is installed and
+signed in. Use `claude-code` for Claude Code and `codex` for Codex. Do not use
+`claude-agent-acp`; it is the ACP command, not a preset.
 
-  npx caraka init web --workspace "$PWD" --agent claude-agent-acp --language en
+Set up the local Web/PWA channel in my local terminal. Run `npx caraka init web`
+with `--workspace "$PWD"`, `--agent` set to that preset identifier, and
+`--language en`.
 
 After I confirm init is complete, run `npx caraka doctor` and explain failed checks.
-Start with `npx caraka start`, then run `npx caraka web pair`. Keep the listener on loopback.
+Start `npx caraka start` in one local terminal. In a separate local terminal, run
+`npx caraka web pair`. Keep the listener on loopback.
 Do not enable a provider, open a port, install a service, or change your own model or provider configuration.
 ```
 

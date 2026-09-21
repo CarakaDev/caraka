@@ -14,11 +14,11 @@ Do not use a Quick Tunnel. It is for development and does not support the SSE co
 
 ## Configure the web channel
 
-Run this command from a registered project folder:
+For Codex, run this command from a registered project folder:
 
     caraka init web --workspace /path/to/project --agent codex --language en
 
-This command creates loopback web configuration. Do not start Caraka until you apply an HTTPS connection.
+For another installed, signed-in agent, use its shipped preset identifier. This command creates loopback web configuration. Do not start Caraka until you apply an HTTPS connection.
 
 ## Select a connection
 

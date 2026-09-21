@@ -33,11 +33,12 @@ import MobileToc from '../components/MobileToc.astro'
         <p style="margin: 0 0 28px; max-width: 640px; font-size: clamp(15px, 1.9vw, 18px); line-height: 1.7; color: #95A0AB; text-wrap: pretty; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) .28s both;">Caraka v1.6 runs locally with the workspace and coding agent already on your machine. Start Web/PWA with init web, then pair one browser. Chat routes stay optional.</p>
 
         <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; animation: ck-rise .9s cubic-bezier(.2,.9,.3,1) .4s both;">
-          <button type="button" data-copy="npx caraka init" class="hv-ring-tint" style="display: flex; align-items: center; gap: 14px; padding: 16px 22px; background: #0C1116; border: 1px solid #292E35; border-radius: 11px; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: clamp(13px, 1.7vw, 15px); color: #E9EDF2; transition: border-color .2s, background .2s;">
-            <span style="color: #5D666F;">$</span><span>npx caraka init</span>
+          <button type="button" data-copy="npx caraka init web --workspace &quot;$PWD&quot; --agent claude-code --language en" class="hv-ring-tint" style="display: flex; align-items: center; gap: 14px; padding: 16px 22px; background: #0C1116; border: 1px solid #292E35; border-radius: 11px; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: clamp(13px, 1.7vw, 15px); color: #E9EDF2; transition: border-color .2s, background .2s;">
+            <span style="color: #5D666F;">$</span><span>npx caraka init web --workspace &quot;$PWD&quot; --agent claude-code --language en</span>
             <span data-copy-label="COPY" style="font-size: 11px; letter-spacing: .1em; color: #5D666F; min-width: 48px; text-align: right;">COPY</span>
           </button>
-          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5D666F;">no global install, no repo to clone</span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5D666F;">Claude Code example · no global install, no repo to clone</span>
+          <a href="https://github.com/CarakaDev/caraka/blob/main/docs/web-guide.en.md" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #FF7A5E; text-decoration: none;">READ THE ENGLISH WEB/PWA GUIDE ↗</a>
         </div>
       </div>
     </section>

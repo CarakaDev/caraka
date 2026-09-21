@@ -9,23 +9,25 @@ The English prompt below also appears as the first step of the [installation gui
 ## Bahasa Indonesia
 
 ```text
-Pasang Caraka untuk repository di working directory saya saat ini.
+Pasang Caraka Web/PWA untuk repository di working directory saya saat ini.
 
 Baca https://github.com/CarakaDev/caraka lebih dulu. Verifikasi Node.js 22 atau
 lebih baru, Git, dan bahwa kamu sendiri sudah terpasang dan sudah login.
 Perbaiki hanya prasyarat yang kurang tanpa mengubah repository saya.
 
-Jangan pernah meminta saya menempel, membuka, atau mengulang token bot Telegram
-lewat chat, output command, log, atau berkas yang akan di-commit. Minta saya
-membuat bot lewat @BotFather, lalu berikan perintah ini untuk saya jalankan
-sendiri di terminal lokal:
+Pertahankan repository serta konfigurasi agent atau provider yang sudah dipakai.
+Temukan preset Caraka yang terkirim untuk coding agent yang sudah terpasang dan
+sudah login. Gunakan `claude-code` untuk Claude Code dan `codex` untuk Codex.
+Jangan gunakan `claude-agent-acp`; itu perintah ACP, bukan preset.
 
-  npx caraka init --workspace "$PWD"
+Pasang channel Web/PWA lokal di terminal lokal saya. Jalankan `npx caraka init web`
+dengan `--workspace "$PWD"`, `--agent` berisi identifier preset itu, dan
+`--language id`.
 
-Setelah saya mengonfirmasi init selesai, jalankan `npx caraka doctor`, jelaskan
-check yang gagal, lalu mulai dengan `npx caraka start`. Jangan mengaktifkan
-webhook, membuka port, memasang service, atau mengubah konfigurasi model atau
-provider milikmu sendiri.
+Setelah saya mengonfirmasi init selesai, jalankan `npx caraka doctor` dan jelaskan check yang gagal.
+Jalankan `npx caraka start` di satu terminal lokal. Di terminal lokal terpisah, jalankan
+`npx caraka web pair`. Pertahankan listener pada loopback.
+Jangan mengaktifkan provider, membuka port, memasang service, atau mengubah konfigurasi model atau provider milikmu sendiri.
 ```
 
 ## English
@@ -38,17 +40,22 @@ Git, and that you yourself are installed and signed in. Fix only missing
 prerequisites without changing my repository.
 
 Preserve the repository and the agent or provider configuration already in use.
-Set up the local Web/PWA channel with this command in my local terminal:
+Identify the shipped Caraka preset for the coding agent that is installed and
+signed in. Use `claude-code` for Claude Code and `codex` for Codex. Do not use
+`claude-agent-acp`; it is the ACP command, not a preset.
 
-  npx caraka init web --workspace "$PWD" --agent claude-agent-acp --language en
+Set up the local Web/PWA channel in my local terminal. Run `npx caraka init web`
+with `--workspace "$PWD"`, `--agent` set to that preset identifier, and
+`--language en`.
 
 After I confirm init is complete, run `npx caraka doctor` and explain failed checks.
-Start with `npx caraka start`, then run `npx caraka web pair`. Keep the listener on loopback.
+Start `npx caraka start` in one local terminal. In a separate local terminal, run
+`npx caraka web pair`. Keep the listener on loopback.
 Do not enable a provider, open a port, install a service, or change your own model or provider configuration.
 ```
 
-## Why the token is not handed to the agent
+## Optional Telegram token
 
-Chat transcripts, tool logs, and terminal history can be kept by the coding agent's client. The Caraka wizard hides the input and writes the token straight to `~/.caraka/secrets/telegram.token`. Moving the token through chat throws that protection away.
+The Web/PWA prompt does not use a Telegram account or token. If you later configure the optional Telegram route, keep its BotFather token out of the agent conversation. Chat transcripts, tool logs, and terminal history can retain input. The Telegram wizard hides the input and writes it to `~/.caraka/secrets/telegram.token`.
 
-If the client offers an interactive terminal the user can genuinely take over, the agent may open `npx caraka init` and then stop when the token prompt appears. It must not read or repeat that input.
+If the client offers an interactive terminal the user can take over, the agent may open `npx caraka init` and stop at the token prompt. It must not read or repeat that input.

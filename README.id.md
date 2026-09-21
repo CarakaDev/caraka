@@ -25,15 +25,17 @@
 
 ## Web/PWA tanpa akun chat
 
-Inisialisasi channel web lokal di repository yang Anda kendalikan:
+Untuk Claude Code, inisialisasi channel web lokal di repository yang Anda kendalikan:
 
 ```bash
-npx caraka init web --workspace "$PWD" --agent claude-agent-acp --language id
+npx caraka init web --workspace "$PWD" --agent claude-code --language id
 npx caraka start
 npx caraka web pair
 ```
 
-Listener bind loopback secara default. Baca [panduan Web/PWA](docs/web-guide.md) sebelum mengekspos origin HTTPS yang dikonfigurasi.
+Gunakan identifier preset yang terkirim untuk agent lain yang sudah terpasang dan login. Misalnya, gunakan `codex` untuk Codex. Jangan gunakan `claude-agent-acp`; itu perintah ACP Claude, bukan preset.
+
+Listener bind loopback secara default. Baca [panduan Web/PWA](docs/web-guide.md) sebelum mengonfigurasi eksposur HTTPS.
 
 ## Apa ini
 
@@ -73,30 +75,36 @@ Ia **tidak punya agent loop, tidak punya tool, tidak punya model provider, dan t
 Tempel prompt ini ke coding agent mana pun yang berjalan di komputer tempat repository berada. Ia memeriksa prasyarat, memasang yang kurang, dan ditulis supaya agent tidak pernah meminta token Telegram dikirim lewat chat.
 
 ```text
-Pasang Caraka untuk repository di working directory saya saat ini.
+Pasang Caraka Web/PWA untuk repository di working directory saya saat ini.
 
 Baca https://github.com/CarakaDev/caraka lebih dulu. Verifikasi Node.js 22 atau
 lebih baru, Git, dan bahwa kamu sendiri sudah terpasang dan sudah login.
 Perbaiki hanya prasyarat yang kurang tanpa mengubah repository saya.
 
-Jangan pernah meminta saya menempel, membuka, atau mengulang token bot Telegram
-lewat chat, output command, log, atau berkas yang akan di-commit. Minta saya
-membuat bot lewat @BotFather, lalu berikan perintah ini untuk saya jalankan
-sendiri di terminal lokal:
+Pertahankan repository serta konfigurasi agent atau provider yang sudah dipakai.
+Temukan preset Caraka yang terkirim untuk coding agent yang sudah terpasang dan
+sudah login. Gunakan `claude-code` untuk Claude Code dan `codex` untuk Codex.
+Jangan gunakan `claude-agent-acp`; itu perintah ACP, bukan preset.
 
-  npx caraka init --workspace "$PWD"
+Pasang channel Web/PWA lokal di terminal lokal saya. Jalankan `npx caraka init web`
+dengan `--workspace "$PWD"`, `--agent` berisi identifier preset itu, dan
+`--language id`.
 
-Setelah saya mengonfirmasi init selesai, jalankan `npx caraka doctor`, jelaskan
-check yang gagal, lalu mulai dengan `npx caraka start`. Jangan mengaktifkan
-webhook, membuka port, memasang service, atau mengubah konfigurasi model atau
-provider milikmu sendiri.
+Setelah saya mengonfirmasi init selesai, jalankan `npx caraka doctor` dan jelaskan check yang gagal.
+Jalankan `npx caraka start` di satu terminal lokal. Di terminal lokal terpisah, jalankan
+`npx caraka web pair`. Pertahankan listener pada loopback.
+Jangan mengaktifkan provider, membuka port, memasang service, atau mengubah konfigurasi model atau provider milikmu sendiri.
 ```
 
-Agent menarasikan setiap langkah dan menunggu persetujuanmu, jadi baca dulu apa yang ia usulkan sebelum kamu mengiyakan. Buat token bot lewat [@BotFather](https://t.me/BotFather), dan jangan tempel token itu ke issue atau chat AI.
+Jalur Web/PWA tidak memakai akun Telegram atau token bot. Agent menarasikan setiap langkah dan menunggu persetujuanmu.
 
 Pemasangannya bisa dikerjakan coding agent mana pun. Yang kemudian dijalankan Caraka adalah satu dari tujuh agent yang punya preset di sini, sudah login, di atas Node.js 22+ dengan Git. Claude Code, Codex, aider, dan goose adalah yang pernah dijalankan di sini terhadap biner hidup.
 
 Beberapa klien coding agent bisa mempertahankan terminal interaktif untuk wizard. Jika klienmu tidak bisa, jalankan satu perintah `init` sendiri; agent dapat melanjutkan dengan `doctor` dan `start`. Batas ini menjaga token agar tidak masuk transkrip percakapan.
+
+### Setup chat Telegram opsional
+
+Gunakan jalur ini hanya bila Anda ingin chat Telegram. Buat token lewat [@BotFather](https://t.me/BotFather), dan jangan tempel ke issue atau chat AI.
 
 ### Atau jalankan perintahnya sendiri
 

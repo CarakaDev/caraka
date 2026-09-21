@@ -48,20 +48,15 @@ interface Chapter {
 export const chapters: Chapter[] = [
   {
     no: '01', id: 'quickstart', href: '#quickstart', label: 'Quickstart', title: 'Quickstart',
-    intro: 'Install from the repository you want the coding agent to work in. The Web/PWA wizard checks local prerequisites, then pairs one local browser.',
+    intro: 'For Claude Code, initialize Web/PWA in the repository that holds the work. Init writes local configuration. It does not check prerequisites or pair the browser.',
     term: [
-      { t: '$ npx caraka init web --workspace "$PWD"', tone: d },
-      { t: '$ npx caraka start', tone: d },
+      { t: '$ npx caraka init web --workspace "$PWD" --agent claude-code --language en', tone: d },
+      { t: '  Web configuration · loopback', tone: g, mark: '  ✓', markTone: '#8EEE98' },
       { t: '', tone: d },
-      { t: '  Workspace · current directory', tone: g, mark: '  ✓', markTone: '#8EEE98' },
-      { t: '  Claude login · ready', tone: g, mark: '  ✓', markTone: '#8EEE98' },
-      { t: '  Telegram · paired', tone: g, mark: '  ✓', markTone: '#8EEE98' },
-      { t: '  Secrets · mode 0600', tone: g, mark: '  ✓', markTone: '#8EEE98' },
-      { t: '', tone: d },
-      { t: '$ npx caraka doctor', tone: '#B2BCC6' },
-      { t: '$ npx caraka start', tone: '#FF7A5E' },
+      { t: '$ npx caraka start                         # terminal 1', tone: '#FF7A5E' },
+      { t: '$ npx caraka web pair                      # terminal 2', tone: '#B2BCC6' },
     ],
-    note: 'The token is entered in the terminal, never in config.yaml or an AI chat. Start keeps the gateway in the foreground until Ctrl-C.',
+    note: 'Use the matching shipped preset for another installed, signed-in agent. Start keeps the gateway in the foreground until Ctrl-C, so pairing runs in a separate terminal. Web/PWA needs no Telegram token.',
   },
   {
     no: '02', id: 'sessions', href: '#sessions', label: 'Sessions', title: 'Sessions & topics',
