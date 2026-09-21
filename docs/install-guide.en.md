@@ -3,6 +3,12 @@
 **Date:** 7 August 2026 · **Bahasa Indonesia:** [`install-guide.md`](install-guide.md)
 **Scope of this guide:** private Telegram → Claude Code, one operator, one workspace. Discord, WhatsApp, the other eight presets, and `workspaces[]` all ship in v1.0, but each one is written by hand into `config.yaml`; the `init` wizard sets up only the path above.
 
+## Web/PWA without chat setup
+
+Run `npx caraka init web --workspace "$PWD" --agent claude-agent-acp --language en` to set up the local Web/PWA channel.
+Then run `npx caraka start` and `npx caraka web pair`.
+This path does not need a Telegram account. Read [the Web/PWA guide](web-guide.en.md) before you configure an HTTPS origin.
+
 ## Prerequisites
 
 Caraka uses software that is already on your machine:
@@ -24,21 +30,20 @@ paste this prompt into it. It checks the prerequisites, installs what is
 missing, then hands the token part back to you.
 
 ```text
-Install Caraka for the repository in my current working directory.
+Install Caraka Web/PWA for the repository in my current working directory.
 
 Read https://github.com/CarakaDev/caraka first. Verify Node.js 22 or newer,
 Git, and that you yourself are installed and signed in. Fix only missing
 prerequisites without changing my repository.
 
-Never ask me to paste, reveal, or repeat the Telegram bot token in chat, command
-output, logs, or a committed file. Tell me to create a bot with @BotFather, then
-hand me this command to run myself in a local terminal:
+Preserve the repository and the agent or provider configuration already in use.
+Set up the local Web/PWA channel with this command in my local terminal:
 
-  npx caraka init --workspace "$PWD"
+  npx caraka init web --workspace "$PWD" --agent claude-agent-acp --language en
 
-After I confirm init is complete, run `npx caraka doctor`, explain failed
-checks, and start it with `npx caraka start`. Do not enable a webhook, open a
-port, install a service, or change your own model or provider configuration.
+After I confirm init is complete, run `npx caraka doctor` and explain failed checks.
+Start with `npx caraka start`, then run `npx caraka web pair`. Keep the listener on loopback.
+Do not enable a provider, open a port, install a service, or change your own model or provider configuration.
 ```
 
 **The token is still typed in your own terminal and never enters the agent's

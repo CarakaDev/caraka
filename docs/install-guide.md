@@ -3,6 +3,12 @@
 **Tanggal:** 7 Agustus 2026 · **English:** [`install-guide.en.md`](install-guide.en.md)
 **Lingkup panduan ini:** Telegram pribadi → Claude Code, satu operator, satu workspace. Discord, WhatsApp, delapan preset lainnya, dan `workspaces[]` sama-sama terkirim di v1.0, tetapi semuanya ditulis tangan ke `config.yaml`; wizard `init` hanya memasang jalur di atas.
 
+## Web/PWA tanpa setup chat
+
+Jalankan `npx caraka init web --workspace "$PWD" --agent claude-agent-acp --language id` untuk memasang channel Web/PWA lokal.
+Lalu jalankan `npx caraka start` dan `npx caraka web pair`.
+Jalur ini tidak memerlukan akun Telegram. Baca [panduan Web/PWA](web-guide.md) sebelum mengonfigurasi origin HTTPS.
+
 ## Prasyarat
 
 Caraka memakai software yang sudah ada di komputermu:

@@ -1,7 +1,7 @@
 {
   "name": "caraka",
-  "version": "1.5.10",
-  "description": "Send the task. Caraka runs it. — a thin bridge from Telegram to the coding agent already installed on your machine.",
+  "version": "1.6.0",
+  "description": "Send the task. Caraka runs it. — a local bridge from chat or Web/PWA to the coding agent on your machine.",
   "keywords": [
     "acp",
     "agent-client-protocol",
@@ -10,8 +10,10 @@
     "coding-agent",
     "developer-tools",
     "mcp",
+    "pwa",
     "telegram",
-    "telegram-bot"
+    "telegram-bot",
+    "web"
   ],
   "homepage": "https://caraka.dev",
   "bugs": {

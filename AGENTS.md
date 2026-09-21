@@ -94,6 +94,8 @@ Two more constraints shape every review:
 
 - **Graceful degradation.** Nothing hard-fails when a capability is missing. Topics unavailable falls back to linear mode. Memory down still replies. ACP absent falls back to the CLI driver. A rejected rich message falls back to MarkdownV2.
 
+
+  On 21 September 2026 Task 4 measured `src/` at **12,809 lines**, unchanged from its Web/PWA base. The release refinements add 11 lines in `assets/web/app.js` for focus retention and dismissed-permission retry. The source budget remains open debt.
 ## Repository map
 
 ```

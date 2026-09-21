@@ -4,6 +4,20 @@ All notable changes to this project are recorded here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [1.6.0] — 2026-09-21
+
+Caraka adds its local Web/PWA channel. The release remains unproven until the existing field gates have evidence.
+
+### Added
+
+- **Web/PWA channel.** Pair a browser from the local terminal. The authenticated listener serves sessions, Gateway tasks, approvals, attachments, files, devices, and a cache-safe installable shell.
+- **Optional Web Push and connection plans.** Push requires a configured HTTPS origin. Tailscale Serve and named Cloudflare Tunnel plans show the next action before they change provider state.
+
+### Changed
+
+- **Attachments and status work are included.** Agent files reach supported chat routes, input attachments use the guarded Gateway path, and session status remains visible through the added Web channel.
+
 ## [1.5.10] — 2026-09-03
 
 One report, and the machine it came from needed a restart to recover.

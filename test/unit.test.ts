@@ -3571,7 +3571,7 @@ test("Discord costs no dependency and is loaded only when it is configured", asy
   const manifest = JSON.parse(
     await readFile(new URL("../package.json", import.meta.url), "utf8"),
   ) as { dependencies: Record<string, string> };
-  assert.equal(Object.keys(manifest.dependencies).length, 4);
+  assert.equal(Object.keys(manifest.dependencies).length, 5);
   assert.equal(JSON.stringify(manifest).includes("discord.js"), false);
   const adapter = await readFile(new URL("../src/channels/discord.ts", import.meta.url), "utf8");
   // The name appears once, in the comment saying why it is not a dependency.
@@ -3596,7 +3596,7 @@ test("whatsapp costs no dependency either, and baileys is one import deeper", as
     peerDependenciesMeta: Record<string, { optional?: boolean }>;
     optionalDependencies?: Record<string, string>;
   };
-  assert.equal(Object.keys(manifest.dependencies).length, 4);
+  assert.equal(Object.keys(manifest.dependencies).length, 5);
   assert.equal(manifest.dependencies["@whiskeysockets/baileys"], undefined);
   assert.equal(manifest.optionalDependencies, undefined, "npm installs those by default");
   // Exact, because CI never installs it: a range would let an API change land
@@ -7030,7 +7030,7 @@ test("every copy of the install prompt is byte-identical to the others", async (
     (text.match(/```text\n[\s\S]*?```/g) ?? []).map((b) => b.slice(8, -3));
 
   const carriers = {
-    "Install Caraka for the repository": [
+    "Install Caraka Web/PWA for the repository": [
       "README.md",
       "docs/install-with-ai.md",
       "docs/install-with-ai.en.md",

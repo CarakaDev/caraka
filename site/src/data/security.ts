@@ -1,4 +1,4 @@
-// Security-page copy follows docs/security.md and the shipped v1.5 runtime.
+// Security-page copy follows docs/security.md and the v1.6 runtime.
 // Where a line below no longer matches design/mockups/Caraka Security.dc.html,
 // the comment above it names the comp line and what shipped instead. The comp
 // still decides how this page looks; it stopped deciding what is true of the
@@ -23,7 +23,7 @@ export const toc = [
 // WhatsApp Cloud API provider opens one. The tag keeps its promise by naming
 // where that listener binds instead of pretending it is absent.
 export const headline = [
-  { tag: 'NO OPEN PORT', t: 'Telegram is polled, Discord and Baileys hold outbound sockets, and the one webhook binds 127.0.0.1 until you say otherwise.' },
+  { tag: 'NO OPEN PORT', t: 'Chat routes are outbound. Dashboard, webhook, and Web/PWA listeners bind 127.0.0.1 until you configure otherwise.' },
   { tag: 'NO KEYS', t: 'Model API keys are never requested, stored, or transmitted. Those belong to your agent.' },
   { tag: 'NO TOOLS', t: 'Caraka ships no execution tools. Your coding agent owns the tool policy and the sandbox.' },
   { tag: 'NO MARKETPLACE', t: 'No plugin registry, no dynamic loading, no third-party skill supply chain.' },
@@ -93,7 +93,7 @@ export const threats = [
   {
     id: 'T7',
     name: 'Gateway exposed to the internet',
-    control: 'Telegram is polled, Discord and the Baileys provider hold outbound sockets, so those open nothing. Two listeners exist and both bind 127.0.0.1: caraka dashboard, GET only and read-only, and since v0.6 the Cloud API webhook, which verifies X-Hub-Signature-256 in constant time even on loopback. Binding either anywhere else needs an explicit flag, which prints a warning and writes an audit row first.',
+    control: 'Chat routes are outbound. Dashboard, Cloud API webhook, and Web/PWA listeners bind 127.0.0.1 by default. The Web/PWA route requires a short-lived pairing code and uses an HttpOnly cookie. A configured HTTPS origin must match Host and Origin checks. Push needs an operator-selected provider and credentials.',
   },
   {
     id: 'T8',
@@ -193,7 +193,7 @@ export const notClaimed = [
   // The same word the RELEASE STATE stat in src/data/status.ts and the maturity
   // row in src/data/compare.ts use. Reaching 1.1 means every phase carries
   // shipped code; it does not mean anyone outside this repository has run it.
-  'Caraka v1.5 is unproven. Every phase has shipped code and not one field gate has been answered by a person, so treat it as software that has not yet been attacked in the wild.',
+  'Caraka v1.6 is unproven. Every phase has shipped code and not one field gate has been answered by a person, so treat it as software that has not yet been attacked in the wild.',
   'Vulnerabilities in your coding agent, in Telegram, in Discord, or in WhatsApp are theirs to fix. We will help route the report.',
 ]
 

@@ -7,7 +7,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8EEE98?style=flat-square&labelColor=05080C" alt="MIT"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%E2%89%A522-E2452C?style=flat-square&labelColor=05080C" alt="node >= 22"></a>
   <a href="https://agentclientprotocol.com"><img src="https://img.shields.io/badge/protocol-ACP-FF7A5E?style=flat-square&labelColor=05080C" alt="ACP"></a>
-  <a href="docs/roadmap.md"><img src="https://img.shields.io/badge/status-v1.5-FFD67E?style=flat-square&labelColor=05080C" alt="v1.5"></a>
+  <a href="docs/roadmap.md"><img src="https://img.shields.io/badge/status-v1.6-FFD67E?style=flat-square&labelColor=05080C" alt="v1.6"></a>
 </p>
 
 <p align="center">
@@ -19,9 +19,21 @@
   <a href="README.id.md">🇮🇩 Bahasa Indonesia</a>
 </p>
 
-> **v1.5, unproven.** Telegram, Discord, and WhatsApp reach the coding agent on your machine over one contract, with nine agent presets, memory, more than one workspace, attachments, and a read-only dashboard on loopback. Five of the nine agents have completed a turn here against a live binary, over six routes. No Discord credential and no WhatsApp number has ever been used here, and not one field gate has been answered by anyone, the author included. The registry serves the current release.
+> **v1.6, unproven.** Telegram, Discord, WhatsApp, and Web/PWA reach the coding agent on your machine. Web tests prove the local contract. Provider and phone checks remain manual. No field gate has been answered by anyone, the author included.
 
 ---
+
+## Web/PWA without a chat account
+
+Initialize the local web channel in a repository you control:
+
+```bash
+npx caraka init web --workspace "$PWD" --agent claude-agent-acp --language en
+npx caraka start
+npx caraka web pair
+```
+
+The listener binds loopback by default. Read [the Web/PWA guide](docs/web-guide.en.md) before you expose a configured HTTPS origin.
 
 ## What it is
 
@@ -61,21 +73,20 @@ It has **no agent loop, no tools, no model provider, and no plugin marketplace.*
 Paste this into whichever coding agent runs on the machine that holds the repository. It checks the prerequisites, installs what is missing, and is written so the agent never asks you to send the Telegram token through chat.
 
 ```text
-Install Caraka for the repository in my current working directory.
+Install Caraka Web/PWA for the repository in my current working directory.
 
 Read https://github.com/CarakaDev/caraka first. Verify Node.js 22 or newer,
 Git, and that you yourself are installed and signed in. Fix only missing
 prerequisites without changing my repository.
 
-Never ask me to paste, reveal, or repeat the Telegram bot token in chat, command
-output, logs, or a committed file. Tell me to create a bot with @BotFather, then
-hand me this command to run myself in a local terminal:
+Preserve the repository and the agent or provider configuration already in use.
+Set up the local Web/PWA channel with this command in my local terminal:
 
-  npx caraka init --workspace "$PWD"
+  npx caraka init web --workspace "$PWD" --agent claude-agent-acp --language en
 
-After I confirm init is complete, run `npx caraka doctor`, explain failed
-checks, and start it with `npx caraka start`. Do not enable a webhook, open a
-port, install a service, or change your own model or provider configuration.
+After I confirm init is complete, run `npx caraka doctor` and explain failed checks.
+Start with `npx caraka start`, then run `npx caraka web pair`. Keep the listener on loopback.
+Do not enable a provider, open a port, install a service, or change your own model or provider configuration.
 ```
 
 The agent narrates each step and waits for you to approve it, so read what it proposes before you say yes. Create the bot token with [@BotFather](https://t.me/BotFather), and do not paste it into an issue or into an AI chat.
@@ -198,7 +209,7 @@ Both obeyed perfectly. Both were right according to the instructions they held. 
 
 That is why this project has approvals and an audit trail. See [docs/brand.md](docs/brand.md).
 
-## What v1.5 does not give you
+## What v1.6 does not give you
 
 **Proof that it works for anyone else.** Every phase of [roadmap.md](docs/roadmap.md) carries shipped code, and every phase still holds a gate that no repository can answer: a week of daily use, five recorded setup sessions, an A/B across twenty tasks, twenty beta developers, fourteen days on a real WhatsApp number. Each one was moved past its release by the owner's decision, with the date written down, rather than ticked. Reaching 1.0 says the code landed; it says nothing about use.
 

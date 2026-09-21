@@ -340,6 +340,11 @@ function choose(id) {
   $("draft").focus();
 }
 function renderSessions() {
+  const active = document.activeElement;
+  const focused =
+    active instanceof HTMLButtonElement && active.classList.contains("session")
+      ? { room: active.dataset.room, list: active.parentElement?.id }
+      : undefined;
   for (const id of ["sessions", "drawer-sessions"]) {
     const nav = $(id);
     nav.replaceChildren();
@@ -350,6 +355,7 @@ function renderSessions() {
         undefined,
         "session" + (selected === room.id ? " selected" : ""),
       );
+      button.dataset.room = room.id;
       button.setAttribute("aria-current", selected === room.id ? "true" : "false");
       const symbol = node(
         "span",
@@ -366,6 +372,11 @@ function renderSessions() {
       button.addEventListener("click", () => choose(room.id));
       nav.append(button);
     }
+  }
+  if (focused?.room && focused.list) {
+    [...$(focused.list).querySelectorAll(".session")]
+      .find((button) => button.dataset.room === focused.room)
+      ?.focus({ preventScroll: true });
   }
 }
 function safeText(element, text) {
@@ -829,7 +840,7 @@ $("push").addEventListener("click", async () => {
     const permission = await Notification.requestPermission();
     if (generation !== epoch) return;
     if (permission !== "granted") {
-      pushState = "denied";
+      pushState = permission === "denied" ? "denied" : "failed";
       return;
     }
     const { publicKey } = await request("/api/push/key");

@@ -233,9 +233,9 @@ The final commands produced these results:
 
 ```text
 > npm run web
-# tests 26
-# pass 26
-# fail 0
+ℹ tests 26
+ℹ pass 26
+ℹ fail 0
 > npm run web:browser
 16 passed
 > npm run lint
@@ -250,3 +250,17 @@ Full outputs are `/tmp/caraka-task3-fix2-{web,browser,lint,typecheck,build}.log`
 Tests cover provider plans, configuration preservation, bounded push, and device revocation.
 No live provider, DNS, service, phone, or OS notification check ran.
 Task 4 owns two remaining minor refinements: dismissed permission retry and positive HTTP push-route coverage.
+
+## Task 4 preparation evidence
+
+The release delegate completed the local release tree on 21 September 2026.
+Publication and deployment remain controller steps.
+
+```text
+> npm run verify
+ℹ tests 191 / pass 191 / fail 0
+ℹ tests 27 / pass 27 / fail 0
+ℹ tests 136 / pass 136 / fail 0
+18 passed (web browser)
+35 passed (site unit)
+> npm --prefix site run check

@@ -196,6 +196,21 @@ test("SSE refresh preserves focus, scroll, draft and pending permission controls
   await expect(page.locator("#messages")).toContainText("Decision: allow");
 });
 
+test("SSE refresh keeps focus on the selected session in the desktop rail", async ({
+  page,
+  server,
+}) => {
+  await pair(page, server);
+  await send(page, "Session focus marker");
+  const session = page.locator("#sessions button").filter({ hasText: "Session focus marker" });
+  await expect(session).toHaveCount(1);
+  await session.focus();
+  await expect(session).toBeFocused();
+  const current = await (await page.request.get(server.channel.url + "/api/state")).json();
+  await server.channel.sendText("web:" + current.rooms[0].id, "SSE refresh keeps session focus");
+  await expect(page.locator("#messages")).toContainText("SSE refresh keeps session focus");
+  await expect(session).toBeFocused();
+});
 test("sign out discards delayed state and aborts a pending upload", async ({ page, server }) => {
   await pair(page, server);
   await send(page, "Private transcript");
@@ -466,6 +481,30 @@ test("notification subscription failure keeps a retry action", async ({ page, se
   await expect(push).toBeEnabled();
 });
 
+test("dismissed notification permission keeps a retry action", async ({ page, server }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(Notification, "requestPermission", {
+      configurable: true,
+      value: () => Promise.resolve("default"),
+    });
+  });
+  await page.route("**/api/state", async (route) => {
+    try {
+      const response = await route.fetch();
+      const state = await response.json();
+      state.push = { available: true, publicKey: "AQ" };
+      await route.fulfill({ response, json: state });
+    } catch {
+      await route.abort();
+    }
+  });
+  await pair(page, server);
+  await page.getByRole("button", { name: "Devices & connection", exact: true }).first().click();
+  const push = page.getByRole("button", { name: "Enable notifications", exact: true });
+  await push.click();
+  await expect(page.locator("#push-status")).toContainText("could not be enabled");
+  await expect(push).toBeEnabled();
+});
 test("service worker shows generic activity and focuses the same origin", async ({
   page,
   server,

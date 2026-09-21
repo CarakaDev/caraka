@@ -45,14 +45,14 @@ import { parseConfig } from "../src/config.js";
 import { Gateway } from "../src/core/gateway.js";
 import type { AgentDriver, DriverRoute } from "../src/core/driver.js";
 
-async function fixture(start = true, workspaceSlug = "main") {
+async function fixture(start = true, workspaceSlug = "main", origin = "http://127.0.0.1") {
   const home = await mkdtemp(join(tmpdir(), "caraka-web-"));
   const store = new Store(join(home, "caraka.db"), createScrubber([]));
   const channel = new WebChannel({
     config: {
       host: "127.0.0.1",
       port: 0,
-      origin: "http://127.0.0.1",
+      origin,
       owner: "rama",
       workspaces: [{ slug: workspaceSlug, path: home }],
     },
@@ -83,6 +83,46 @@ async function rawStatus(url: string, host: string) {
   });
 }
 
+async function rawRequest(
+  url: string,
+  host: string,
+  origin: string,
+  method: string,
+  path: string,
+  body = "",
+  cookie = "",
+) {
+  return new Promise<{ status: number; cookie: string }>((resolve, reject) => {
+    const target = new URL(url);
+    const socket = connect(Number(target.port), target.hostname);
+    let response = "";
+    socket.once("connect", () => {
+      const headers = [
+        `${method} ${path} HTTP/1.1`,
+        `Host: ${host}`,
+        `Origin: ${origin}`,
+        "Connection: close",
+      ];
+      if (cookie) headers.push(`Cookie: ${cookie}`);
+      if (body)
+        headers.push(
+          "Content-Type: application/json",
+          `Content-Length: ${Buffer.byteLength(body)}`,
+        );
+      socket.end(headers.join("\r\n") + "\r\n\r\n" + body);
+    });
+    socket.on("data", (chunk: Buffer) => {
+      response += chunk.toString("utf8");
+    });
+    socket.once("end", () => {
+      const status = Number(/^HTTP\/1\.1 (\d+)/.exec(response)?.[1] ?? 0);
+      const cookie = /^set-cookie: ([^\r\n]+)/im.exec(response)?.[1] ?? "";
+      resolve({ status, cookie });
+    });
+    socket.once("error", reject);
+  });
+}
+
 async function post(base: string, path: string, body: unknown, cookie = "", origin = base) {
   return fetch(base + path, {
     method: "POST",
@@ -106,6 +146,58 @@ test("web pairing is one time and private routes need a device cookie", async (t
   assert.match(cookie, /^caraka_device=/);
   assert.equal((await post(f.base, "/api/pair", { code, name: "Replay" })).status, 401);
   assert.equal((await fetch(f.base + "/api/state", { headers: { cookie } })).status, 200);
+});
+
+test("HTTPS-configured Web Push routes subscribe and unsubscribe through the HTTP listener", async (t) => {
+  const f = await fixture(true, "main", "https://caraka.example.test");
+  t.after(async () => {
+    await f.channel.close();
+    f.store.close();
+    await rm(f.home, { recursive: true, force: true });
+  });
+  const base = `http://127.0.0.1:${new URL(f.base).port}`;
+  const paired = await rawRequest(
+    base,
+    new URL(f.base).host,
+    f.base,
+    "POST",
+    "/api/pair",
+    JSON.stringify({ code: f.channel.createPairCode(), name: "Phone" }),
+  );
+  assert.equal(paired.status, 200);
+  assert.match(paired.cookie, /; Secure$/);
+  const cookie = paired.cookie.split(";")[0] ?? "";
+  assert.equal(
+    (await rawRequest(base, new URL(f.base).host, f.base, "GET", "/api/push/key", "", cookie))
+      .status,
+    200,
+  );
+  const subscribed = await rawRequest(
+    base,
+    new URL(f.base).host,
+    f.base,
+    "POST",
+    "/api/push",
+    JSON.stringify({
+      endpoint: "https://fcm.googleapis.com/fcm/send/test",
+      keys: { p256dh: "p", auth: "a" },
+    }),
+    cookie,
+  );
+  assert.equal(subscribed.status, 201);
+  assert.equal(
+    Number(f.store.db.prepare("SELECT count(*) AS total FROM web_push_subscriptions").get()!.total),
+    1,
+  );
+  assert.equal(
+    (await rawRequest(base, new URL(f.base).host, f.base, "DELETE", "/api/push", "", cookie))
+      .status,
+    200,
+  );
+  assert.equal(
+    Number(f.store.db.prepare("SELECT count(*) AS total FROM web_push_subscriptions").get()!.total),
+    0,
+  );
 });
 
 test("web rejects a foreign Origin before a state change", async (t) => {

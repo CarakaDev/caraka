@@ -1,4 +1,4 @@
-// Documentation-page copy follows the shipped v1.5 implementation and docs/.
+// Documentation-page copy follows the v1.6 implementation and docs/.
 // design/mockups/Caraka Docs.dc.html decides the layout and stopped deciding
 // the content at v0.1: its chapter 05 is Memory, which arrived at v0.3 as a
 // provider rather than a chapter, and its row lists name commands that were
@@ -48,10 +48,10 @@ interface Chapter {
 export const chapters: Chapter[] = [
   {
     no: '01', id: 'quickstart', href: '#quickstart', label: 'Quickstart', title: 'Quickstart',
-    intro: 'Install from the repository you want the coding agent to work in. The wizard checks local prerequisites, validates the Telegram bot, then pairs one private operator.',
+    intro: 'Install from the repository you want the coding agent to work in. The Web/PWA wizard checks local prerequisites, then pairs one local browser.',
     term: [
-      { t: '$ claude auth status', tone: d },
-      { t: '$ npx caraka init', tone: d },
+      { t: '$ npx caraka init web --workspace "$PWD"', tone: d },
+      { t: '$ npx caraka start', tone: d },
       { t: '', tone: d },
       { t: '  Workspace · current directory', tone: g, mark: '  ✓', markTone: '#8EEE98' },
       { t: '  Claude login · ready', tone: g, mark: '  ✓', markTone: '#8EEE98' },

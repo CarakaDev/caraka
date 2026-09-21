@@ -20,7 +20,7 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.5.10', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.6.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Nine presets load; six routes across five agents have completed a turn
   // against a live binary here — Claude Code over ACP and over its CLI route,
@@ -31,7 +31,7 @@ export const stats = [
   // Telegram, Discord, WhatsApp — and WhatsApp counts as shipped code, not as a
   // linked number: none has ever been linked, which the cards below state in as
   // many words.
-  { n: '3', label: 'CHANNELS', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
+  { n: '4', label: 'CHANNELS', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
   { n: '1', label: 'PRIVATE OPERATOR', tone: '#B2BCC6', bg: '#0C1116', border: '#171C22' },
 ]
 
@@ -102,7 +102,7 @@ export const phases: Phase[] = [
   // seventeen more releases shipped inside it, so the page answered "v1.0" to a
   // reader looking at 1.5.5. The gate below is what keeps phase 7 open, not the
   // version, and roadmap.md now lists what shipped between the two numbers.
-  { n: '7', title: 'Public release · v1.0 → v1.5.10', dur: '2 weeks', live: true, ...shipped,
+  { n: '7', title: 'Public release · v1.0 → v1.6.0', dur: '2 weeks', live: true, ...shipped,
     q: 'Is it ready to be trusted by strangers?',
     gate: 'Every goal in prd.md is met and measured. Fifteen agents are not covered: nine presets ship and five have completed a turn against a live binary here, over six routes — Claude Code over ACP and over its CLI route, Codex and aider on the CLI, goose and opencode over ACP. Four have never run here at all. Taking the release to the Indonesian developer community and to the ACP ecosystem is the step nothing in a repository can perform.',
     range: r(7, 3, 26) },
@@ -133,6 +133,19 @@ export const releases = [
         'Watch the dashboard swap a panel in a real browser with the CSP live',
         'Run fourteen days on a real WhatsApp number with no ban and no manual relink, or publish the honest finding that makes Cloud API the default',
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
+      ] },
+    ] },
+  { v: '1.6.0', state: 'unproven', date: '21 September 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'ADDED', tone: '#FFD67E', items: [
+        'Web/PWA is a fourth local channel. A paired browser can create and resume Gateway tasks, answer approvals, transfer guarded files, manage devices, and install a cache-safe shell',
+        'Optional Web Push uses a configured HTTPS origin. Setup plans for Tailscale Serve and a named Cloudflare Tunnel show the requested operation before they change provider state',
+      ] },
+      { label: 'CHANGED', tone: '#FFD67E', items: [
+        'The release includes the attachment path and session status work already on this branch. Public guides now describe the chat-independent Web/PWA setup path',
+      ] },
+      { label: 'LIMITED', tone: '#FFD67E', items: [
+        'Provider, DNS, push delivery, and phone reachability remain manual checks. Web/PWA is not a native Android app, and every existing field gate remains open',
       ] },
     ] },
   { v: '1.5.10', state: 'unproven', date: '3 September 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
@@ -191,25 +204,13 @@ export const releases = [
         'An ordinary turn still writes two service messages. Those are different names, so nothing skips them; dropping one is a product decision about the status board rather than a bug fix',
       ] },
     ] },
-  { v: '1.5.6', state: 'unproven', date: '15 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
-    groups: [
-      { label: 'CHANGED', tone: '#FFD67E', items: [
-        'The release gate now reads this page. The test that fails on a version with a changelog heading and no card here has existed for several releases, but the gate a release runs never touched the site, so 1.4.2 and 1.5.0 both went out with their own version missing from it. CI said so hours after the push, and 1.5.0 was fixed sixteen hours later. The check runs before publish now, and it caught this release',
-        'The release line is held by a test rather than by sweeping. Every MIT · vX.Y, unproven on this site and the status badge on both READMEs must equal the version in package.json. That badge is the one a reader clicks to reach roadmap.md, and it read v1.0 for seventeen releases while four other surfaces read v1.5',
-        'Forty-one claims in roadmap.md and on this site now match the code. Seven presets became nine and four agents over five routes became five over six, because opencode and antigravity landed in 1.4.0 and no count moved with them. The install and guide pages said init scans PATH for the nine presets when it scans seven binaries and three presets are never looked for. The UI kit printed caraka ws add as the exact command for an empty state, and no such verb has ever existed',
-        'roadmap.md records what shipped after v1.0. The phase list stopped at phase 7, so seventeen releases appeared nowhere in it and this page answered v1.0 to a reader looking at 1.5.5',
-      ] },
-      { label: 'LIMITED', tone: '#FFD67E', items: [
-        'No file that npm ships changed. The package carries bin, dist, presets and the dashboard assets; the documentation and the changelog are not among them, and src did not move. Installing this over 1.5.5 changes nothing you can run. It exists so the newest tag in the registry belongs to a repository whose account of itself is accurate',
-        'Eleven boxes in roadmap.md are still open and not one was ticked. Every one is a field gate no repository can close, and what was wrong was the prose inside them rather than their state',
-      ] },
-    ] },
   { v: '1.5.5 → 0.0.0', state: 'in CHANGELOG.md', date: '7–14 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
     groups: [
       { label: 'WHERE THE FULL ENTRIES ARE', tone: '#FFD67E', items: [
         'CHANGELOG.md in the repository, linked at the foot of this page. It carries every release below at the length it was written in; what is here is one line each, and nothing has been dropped from the history',
       ] },
       { label: 'SHIPPED', tone: '#8EEE98', items: [
+        '1.5.6 · 15 August 2026 — release facts, status badges, and the gate moved together after prose drifted from the package',
         '1.5.5 · 14 August 2026 — a dropped send stranded a session as running for good, and a stored rollout the agent no longer had broke every turn after it',
         '1.5.4 · 14 August 2026 — nine sentences said Claude outright, on paths every task crosses, and the working line took the brand',
         '1.5.3 · 14 August 2026 — an installation whose config said agent: codex ran Claude, and said so',

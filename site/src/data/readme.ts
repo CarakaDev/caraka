@@ -17,7 +17,7 @@ export const badges = [
   // roughly a minute after `npm publish` printed `+ caraka@1.3.1`. Wait for
   // `curl -s https://registry.npmjs.org/caraka` to name the new one before
   // touching this line. It gave `dist-tags.latest` 1.5.9 on 19 August 2026.
-  { k: 'npm', v: 'v1.5.9', tone: '#E2452C', ink: '#FFEDE7' },
+  { k: 'npm', v: 'v1.5.10', tone: '#E2452C', ink: '#FFEDE7' },
   { k: 'license', v: 'MIT', tone: '#8EEE98', ink: '#05300C' },
   { k: 'node', v: '≥22', tone: '#E2452C', ink: '#FFEDE7' },
   { k: 'protocol', v: 'ACP', tone: '#FF7A5E', ink: '#2B0D06' },
@@ -29,7 +29,7 @@ export const badges = [
   // Both READMEs now read v1.5 with this line, and the badge is hard-coded
   // rather than served by shields from a version anywhere, so it is swept by
   // hand like every other surface named in site/AGENTS.md.
-  { k: 'status', v: 'v1.5', tone: '#FFD67E', ink: '#3A2A00' },
+  { k: 'status', v: 'v1.6', tone: '#FFD67E', ink: '#3A2A00' },
 ]
 
 export const legend = [
@@ -42,10 +42,10 @@ export const legend = [
 export const projects = [
   {
     name: 'caraka',
-    desc: 'The envoy. A thin bridge from Telegram, Discord, or WhatsApp to the coding agent already on your machine — sessions as topics, threads, or a header, approval before every write, nothing executed without a human in between.',
+    desc: 'The envoy. A local bridge from chat or Web/PWA to the coding agent already on your machine, with sessions, approval before writes, and no new agent loop.',
     // Comp line 271 says pre-alpha. 1.5.10 is the release in the CHANGELOG, and
     // the chip above shows the registry instead, after publication catches up.
-    status: 'v1.5, unproven',
+    status: 'v1.6, unproven',
     tone: '#FFD67E',
   },
   {

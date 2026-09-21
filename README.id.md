@@ -7,7 +7,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/lisensi-MIT-8EEE98?style=flat-square&labelColor=05080C" alt="MIT"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%E2%89%A522-E2452C?style=flat-square&labelColor=05080C" alt="node >= 22"></a>
   <a href="https://agentclientprotocol.com"><img src="https://img.shields.io/badge/protokol-ACP-FF7A5E?style=flat-square&labelColor=05080C" alt="ACP"></a>
-  <a href="docs/roadmap.md"><img src="https://img.shields.io/badge/status-v1.5-FFD67E?style=flat-square&labelColor=05080C" alt="v1.5"></a>
+  <a href="docs/roadmap.md"><img src="https://img.shields.io/badge/status-v1.6-FFD67E?style=flat-square&labelColor=05080C" alt="v1.6"></a>
 </p>
 
 <p align="center">
@@ -19,9 +19,21 @@
   <a href="README.md">🇬🇧 English</a>
 </p>
 
-> **v1.5, belum terbukti.** Telegram, Discord, dan WhatsApp sampai ke coding agent di mesinmu lewat satu kontrak yang sama, dengan sembilan preset agent, memori, lebih dari satu workspace, lampiran, dan dasbor read-only di loopback. Lima dari sembilan agent pernah menyelesaikan satu giliran di sini terhadap biner hidup, lewat enam jalur; tidak ada kredensial Discord maupun nomor WhatsApp yang pernah dipakai di sini, dan tidak satu pun gerbang lapangan pernah dijawab siapa pun, penulisnya termasuk. Registry menyajikan rilis yang berlaku.
+> **v1.6, belum terbukti.** Telegram, Discord, WhatsApp, dan Web/PWA sampai ke coding agent di mesinmu. Test web membuktikan kontrak lokal. Check provider dan telepon masih manual. Tidak satu pun gerbang lapangan pernah dijawab siapa pun, penulisnya termasuk.
 
 ---
+
+## Web/PWA tanpa akun chat
+
+Inisialisasi channel web lokal di repository yang Anda kendalikan:
+
+```bash
+npx caraka init web --workspace "$PWD" --agent claude-agent-acp --language id
+npx caraka start
+npx caraka web pair
+```
+
+Listener bind loopback secara default. Baca [panduan Web/PWA](docs/web-guide.md) sebelum mengekspos origin HTTPS yang dikonfigurasi.
 
 ## Apa ini
 
@@ -200,7 +212,7 @@ Keduanya patuh dengan sempurna. Keduanya benar menurut instruksi yang mereka peg
 
 Itulah sebabnya proyek ini punya approval dan jejak audit. Selengkapnya di [docs/brand.md](docs/brand.md).
 
-## Yang tidak diberikan v1.5
+## Yang tidak diberikan v1.6
 
 **Bukti bahwa ini bekerja untuk orang lain.** Setiap fase di [roadmap.md](docs/roadmap.md) membawa kode yang sudah dikirim, dan setiap fase masih memegang satu gerbang yang tidak bisa dijawab dari repositori: seminggu pemakaian harian, lima rekaman setup, uji A/B atas dua puluh tugas, dua puluh developer beta, empat belas hari di nomor WhatsApp sungguhan. Semuanya dipindah melewati rilisnya atas keputusan pemilik, dengan tanggalnya dicatat, bukan dicentang. Sampai di 1.0 berarti kodenya mendarat; ia tidak mengatakan apa pun soal pemakaian.
 
