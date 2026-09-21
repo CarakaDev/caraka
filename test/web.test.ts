@@ -31,6 +31,7 @@ test("web push key and subscription bind to the authenticated device", async (t)
 });
 
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { connect } from "node:net";
 import { tmpdir } from "node:os";
@@ -424,6 +425,67 @@ test("web init adds its workspace without replacing a singular legacy route", as
     { slug: "new-project", path: requested, agent: "codex" },
   ]);
   assert.deepEqual(saved.workspace, { name: "established-name", path: existing, driver: "cli" });
+});
+
+test("web CLI init assigns distinct routes to same-basename workspaces", async (t) => {
+  const home = await mkdtemp(join(tmpdir(), "caraka-web-init-slugs-"));
+  t.after(() => rm(home, { recursive: true, force: true }));
+  const first = join(home, "first", "app");
+  const occupied = join(home, "app-2");
+  const second = join(home, "second", "app");
+  await Promise.all([first, occupied, second].map((path) => mkdir(path, { recursive: true })));
+  const init = (path: string, agent: string) =>
+    execFileSync(
+      process.execPath,
+      [
+        "--import",
+        "tsx",
+        "--input-type=module",
+        "-e",
+        'import { main } from "./src/cli.ts"; await main(process.argv.slice(1));',
+        "init",
+        "web",
+        "--workspace",
+        path,
+        "--agent",
+        agent,
+      ],
+      { env: { ...process.env, CARAKA_HOME: home }, encoding: "utf8" },
+    );
+  init(first, "codex");
+  init(occupied, "claude-code");
+  const before = parseConfig(await readFile(join(home, "config.yaml"), "utf8"));
+  init(second, "codex");
+  const saved = parseConfig(await readFile(join(home, "config.yaml"), "utf8"));
+  const entries = workspaces(saved);
+  assert.deepEqual(entries, [
+    { slug: "app", path: first, agent: "codex" },
+    { slug: "app-2", path: occupied, agent: "claude-code" },
+    { slug: "app-3", path: second, agent: "codex" },
+  ]);
+  assert.deepEqual(entries.slice(0, 2), workspaces(before));
+  assert.deepEqual(saved.workspace, before.workspace);
+  init(second, "claude-code");
+  assert.deepEqual(
+    workspaces(parseConfig(await readFile(join(home, "config.yaml"), "utf8"))),
+    entries,
+  );
+  const scrub = createScrubber([]);
+  const store = new Store(join(home, "routes.db"), scrub);
+  t.after(() => store.close());
+  const gateway = new Gateway(
+    saved,
+    Buffer.alloc(32, 4),
+    [],
+    async () => {
+      throw new Error("Routing must not start an agent.");
+    },
+    store,
+    scrub,
+  );
+  for (const entry of entries)
+    assert.equal(gateway["workspaceBySlug"](entry.slug)?.path, entry.path);
+  assert.equal(gateway["home"].path, first);
 });
 
 test("web init rejects an unknown explicit preset and accepts a loader custom preset", async (t) => {

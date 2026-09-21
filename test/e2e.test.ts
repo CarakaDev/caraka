@@ -5567,6 +5567,7 @@ async function outboxRun(
     onSendAttachment?: (file: { bytes: Buffer; mimeType: string; name: string }) => Promise<void>;
     afterWrite?: (directory: string, root: string) => Promise<void>;
     text?: string;
+    answer?: string;
     fails?: boolean;
     settleMs?: number;
     /**
@@ -5584,7 +5585,7 @@ async function outboxRun(
     root,
     ...(options.sendsFiles === undefined ? {} : { sendsFiles: options.sendsFiles }),
     ...(options.onSendAttachment ? { onSendAttachment: options.onSendAttachment } : {}),
-    onPrompt: async (prompt) => {
+    onPrompt: async (prompt, route) => {
       const directory = outboxOf(prompt, root);
       seen.directory = directory;
       seen.mode = (await stat(directory)).mode & 0o777;
@@ -5601,6 +5602,14 @@ async function outboxRun(
       if (options.sealed) await chmod(directory, 0o400);
       await options.afterWrite?.(directory, root);
       if (options.fails) throw new Error("the agent died");
+      if (options.answer)
+        await route.update({
+          sessionId: "agent-session-1",
+          update: {
+            sessionUpdate: "agent_message_chunk",
+            content: { type: "text", text: options.answer },
+          },
+        });
       return { stopReason: "end_turn" as const };
     },
   });
@@ -5795,32 +5804,49 @@ test("a replaced outbox root cannot leave its replacement", async () => {
   await h.finish();
 });
 
-test("a leaf replaced during delivery is refused and the text answer still arrives", async () => {
+test("a leaf replaced during delivery is refused and the text answer still arrives", async (t) => {
+  let directory = "";
   let swapped = false;
-  const { h, seen } = await outboxRun(
+  let injectionError: unknown;
+  const sentBytes: Buffer[] = [];
+  const { h } = await outboxRun(
     [
       { name: "alpha.png", body: "a" },
       { name: "beta.png", body: "b" },
     ],
     {
+      answer: "The attachment task is complete.",
+      afterWrite: async (path) => {
+        directory = path;
+      },
       onSendAttachment: async (file) => {
+        sentBytes.push(file.bytes);
         if (file.name !== "alpha.png" || swapped) return;
-        swapped = true;
-        const beta = join(seen.directory, "beta.png");
-        await rename(beta, beta + ".retired");
-        await writeFile(beta, "replacement-marker");
+        try {
+          const beta = join(directory, "beta.png");
+          await rename(beta, beta + ".retired");
+          await writeFile(beta, "replacement-marker");
+          swapped = true;
+        } catch (error) {
+          injectionError = error;
+          throw error;
+        }
       },
     },
   );
-  assert.equal(swapped, true);
+  t.after(() => h.finish());
   assert.equal(
-    delivered(h).some((call) => call.endsWith(":alpha.png")),
-    false,
+    injectionError,
+    undefined,
+    "the replacement callback must complete without an error",
   );
-  assert.equal(delivered(h).length, 1);
+  assert.equal(swapped, true, "beta must be replaced during alpha delivery");
+  assert.deepEqual(delivered(h), ["sendAttachment:image/png:1:alpha.png"]);
   assert.equal(refusals(h).length, 1, h.sent.map((item) => item.text).join(" | "));
+  assert.match(refusals(h)[0]?.text ?? "", /beta\.png/);
+  assert.equal(Buffer.concat(sentBytes).includes(Buffer.from("replacement-marker")), false);
+  assert.ok(h.sent.some((item) => item.text.includes("The attachment task is complete.")));
   assert.equal(h.store.sessionFor("42", "")?.state, "done");
-  await h.finish();
 });
 
 test("a directory in the outbox is refused and never entered", async () => {

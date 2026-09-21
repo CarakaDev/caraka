@@ -357,3 +357,88 @@ so it did not repeat that container suite.
 - Site check passed with 0 errors, 0 warnings, and 1 existing hint. Log: /tmp/caraka-final-fix-site-check.log.
 - Official Playwright container passed 143 tests with 2 expected skips. Log: /tmp/caraka-final-fix-site-e2e.log.
 - src measures 12,901 lines, 4,901 above the 8,000 budget. Version remains 1.6.0. Publication, deployment, package proof, and real-agent proof remain controller work.
+
+## Release blocker correction — 22 September 2026
+
+Base: a6a1999b9222ca4135b3d58bc1a105eec02bc4cd.
+The bounded correction covers N1 and N2 from the final scoped review.
+
+1. Add a CLI regression for two folders named app and an occupied suffix.
+2. Prove each saved slug selects its own path through Gateway.
+3. Check repeated init and the first workspace route (AC-35 and AC-36).
+4. Strengthen the leaf regression and observe its fixture failure.
+5. Capture the directory before delivery and check replacement execution.
+6. Check alpha delivery, beta refusal, marker exclusion, and the final answer (AC-37 and AC-38).
+7. Back up the source and bypass the leaf guard for one test.
+   Restore the exact source bytes immediately after the test.
+8. Run focused tests and the root verification gate on final source.
+
+Keep all earlier accepted fixes. Reuse unchanged site E2E evidence: 143 passed, 2 expected skips.
+The source budget stays at 8,000 lines. Record the final count and command output below.
+
+### Correction results
+
+Both regressions failed before their corrections.
+The CLI test found a duplicate app slug.
+The strengthened leaf test found that the replacement callback had not completed.
+The corrected leaf test also failed with the leaf identity predicate bypassed.
+That mutation delivered beta.png with 18 replacement bytes.
+The source was restored byte for byte, then the leaf test passed.
+
+Logs on rama-tuf:
+
+- /tmp/caraka-release-blocker-red-routing.log
+- /tmp/caraka-release-blocker-red-fixture.log
+- /tmp/caraka-release-blocker-red-leaf-guard.log
+- /tmp/caraka-release-blocker-green-routing.log
+- /tmp/caraka-release-blocker-green-outbox.log
+- /tmp/caraka-release-blocker-green-restored-leaf.log
+- /tmp/caraka-release-blocker-verify.log
+
+Actual command output excerpts follow. Each named log retains full output.
+
+```text
+> node --import tsx --test --test-name-pattern='web CLI init assigns distinct|web init adds its workspace|web init rejects' test/web.test.ts
+ℹ tests 3
+ℹ pass 3
+ℹ fail 0
+> node --import tsx --test --test-name-pattern='a leaf replaced during delivery|a replaced outbox|a symlink in the outbox' test/e2e.test.ts
+ℹ tests 4
+ℹ pass 4
+ℹ fail 0
+> node --import tsx --test --test-name-pattern='a leaf replaced during delivery' test/e2e.test.ts
+ℹ tests 1
+ℹ pass 1
+ℹ fail 0
+> npm run verify
+clean: 360 tracked files, no credentials
+Found 0 warnings and 0 errors.
+All matched files use the correct format.
+ℹ tests 191
+ℹ pass 191
+ℹ fail 0
+ℹ tests 31
+ℹ pass 31
+ℹ fail 0
+ℹ tests 139
+ℹ pass 139
+ℹ fail 0
+18 passed (8.0s)
+35 passed (35)
+exit 0
+> git diff --check
+exit 0
+```
+
+The root gate passed once on the final corrected source.
+The existing formatter configuration notice remains non-blocking.
+The restored gateway has no diff against the base.
+Site files have no diff against the base.
+The retained site E2E log is /tmp/caraka-final-fix-site-e2e.log:
+143 passed with 2 expected skips.
+
+A recursive line count of every file under src gives 12,908 lines.
+This is 7 lines above the base and 4,908 above the unchanged 8,000-line budget.
+Version remains 1.6.0.
+The six earlier fixes remain in place.
+Controller review, package proof, publication, and deployment remain pending.

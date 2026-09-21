@@ -18,6 +18,8 @@ Di folder proyek yang terdaftar, jalankan:
 
     caraka init web --workspace /path/to/project --agent codex --language id
 
+Web init mempertahankan rute workspace yang sudah ada. Folder berbeda dengan nama sama mendapat slug berbeda, seperti app dan app-2. Init berulang untuk path yang sama tidak menambah entri.
+
 Perintah ini membuat konfigurasi web loopback. Jangan mulai Caraka sebelum Anda menerapkan koneksi HTTPS.
 
 ## Pilih koneksi

@@ -18,6 +18,8 @@ For Codex, run this command from a registered project folder:
 
     caraka init web --workspace /path/to/project --agent codex --language en
 
+Web init keeps existing workspace routes. Different folders with the same name receive distinct slugs, such as app and app-2. Repeating init for the same path does not add another entry.
+
 For another installed, signed-in agent, use its shipped preset identifier. This command creates loopback web configuration. Do not start Caraka until you apply an HTTPS connection.
 
 ## Select a connection

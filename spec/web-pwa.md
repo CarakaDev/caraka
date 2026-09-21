@@ -83,3 +83,12 @@ satu operator dan tidak membangun runtime agent. PWA adalah kanal resmi baru.
 Setup dan semua tes awal memakai direktori sementara. Pemasangan koneksi nyata
 pada mesin pengguna menunggu pilihan mesin dan penyedia; implementasi wizard
 tidak membuka instalasi lama ke internet.
+
+## Koreksi penghambat rilis — 22 September 2026
+
+- **AC-35** WHEN Web init menambah path dengan basename yang sudah dipakai, Caraka shall memberi slug unik tanpa mengubah entri lama.
+- **AC-36** WHEN Web init diulang untuk path yang sama, Caraka shall mempertahankan daftar workspace tanpa duplikat.
+- **AC-37** IF leaf lampiran diganti setelah enumerasi, THEN Gateway shall menolak leaf pengganti.
+- **AC-38** WHEN leaf pengganti ditolak, Gateway shall tetap mengirim jawaban teks agent.
+
+Koreksi terbatas pada routing init dan pembuktian regresi leaf. Enam koreksi sebelumnya tetap berlaku.

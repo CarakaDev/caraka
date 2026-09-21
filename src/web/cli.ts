@@ -136,9 +136,16 @@ export async function webCommand(
     language: language ?? config.language ?? "en",
     workspaces: (() => {
       const existing = workspaces(config);
-      return existing.some((entry) => entry.path === workspace)
-        ? existing
-        : [...existing, { slug: basename(workspace), path: workspace, agent }];
+      if (existing.some((entry) => entry.path === workspace)) return existing;
+      const base = basename(workspace);
+      let slug = base;
+      for (
+        let suffix = 2;
+        existing.some((entry) => entry.slug.toLowerCase() === slug.toLowerCase());
+        suffix++
+      )
+        slug = base + "-" + suffix;
+      return [...existing, { slug, path: workspace, agent }];
     })(),
     web: config.web ?? {
       host: "127.0.0.1",
