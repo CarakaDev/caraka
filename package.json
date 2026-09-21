@@ -48,18 +48,20 @@
     "smoke": "npm run build && node scripts/smoke-claude.mjs && node scripts/smoke-cli.mjs claude-code cli && node scripts/smoke-cli.mjs codex && node scripts/smoke-cli.mjs aider && node scripts/smoke-cli.mjs goose",
     "verify": "npm run scan:secrets && npm run lint && npm run typecheck && npm run build && npm test && npm run e2e && npm run web:browser && npm --prefix site run test",
     "prepublishOnly": "npm run verify",
-    "web": "node --import tsx --test test/web.test.ts",
+    "web": "node --import tsx --test test/web.test.ts test/web-connect.test.ts",
     "web:browser": "playwright test --config test/web-browser/playwright.config.ts"
   },
   "dependencies": {
     "@agentclientprotocol/claude-agent-acp": "0.63.0",
     "@agentclientprotocol/sdk": "1.3.0",
+    "web-push": "3.6.7",
     "yaml": "2.9.0",
     "zod": "4.4.3"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
     "@types/node": "26.1.2",
+    "@types/web-push": "3.6.4",
     "oxfmt": "0.62.0",
     "oxlint": "1.77.0",
     "tsx": "4.23.10",

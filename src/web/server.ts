@@ -38,6 +38,9 @@ type Hooks = {
   callback(device: Device, input: { messageId: string; buttonId: string }): boolean | "full";
   stop(device: Device, roomId: string): boolean | "full";
   invalidated(): void;
+  pushKey(): string | undefined;
+  pushSubscribe(device: Device, input: unknown): boolean;
+  pushRemove(device: Device): void;
 };
 
 export class WebServer {
@@ -326,10 +329,33 @@ export class WebServer {
       });
       return response.end(bytes);
     }
-    if (url.pathname.startsWith("/api/push")) {
+    if (method === "GET" && url.pathname === "/api/push/key") {
       const device = this.authenticated(request, response, method !== "GET");
       if (!device) return;
-      return this.send(response, 503, { available: false, message: "Web Push is not configured." });
+      const publicKey = this.input.hooks.pushKey();
+      return publicKey
+        ? this.send(response, 200, { publicKey })
+        : this.send(response, 503, { available: false, message: "Web Push is not configured." });
+    }
+    if (method === "POST" && url.pathname === "/api/push") {
+      const device = this.authenticated(request, response, true);
+      if (!device) return;
+      if (!this.input.hooks.pushKey())
+        return this.send(response, 503, {
+          available: false,
+          message: "Web Push is not configured.",
+        });
+      return this.send(
+        response,
+        this.input.hooks.pushSubscribe(device, await this.json(request)) ? 201 : 400,
+        {},
+      );
+    }
+    if (method === "DELETE" && url.pathname === "/api/push") {
+      const device = this.authenticated(request, response, true);
+      if (!device) return;
+      this.input.hooks.pushRemove(device);
+      return this.send(response, 200, {});
     }
     const assets = new Map([
       ["/", "index.html"],

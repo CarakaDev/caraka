@@ -50,7 +50,9 @@ test("pairs, sends, resumes, uploads, decides, stops and signs out through Gatew
   await page.getByRole("button", { name: "Stop", exact: true }).click();
   await expect.poll(() => server.cancellations.length).toBe(1);
   await page.getByRole("button", { name: "Devices & connection", exact: true }).first().click();
-  await expect(page.getByRole("dialog")).toContainText("Push is not available on this server.");
+  await expect(
+    page.getByRole("button", { name: "Enable notifications", exact: true }),
+  ).toBeEnabled();
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page.getByRole("button", { name: "Pair device", exact: true })).toBeVisible();
   await expect(page.locator("#messages")).toBeEmpty();
@@ -292,7 +294,7 @@ test("settings revokes another device and exposes install and push availability"
     await expect(page.getByRole("dialog")).toContainText("Spare phone");
     await expect(
       page.getByRole("button", { name: "Enable notifications", exact: true }),
-    ).toBeDisabled();
+    ).toBeEnabled();
     await expect(page.locator("#install-help")).toContainText("browser menu");
     await page
       .locator("#devices > div")

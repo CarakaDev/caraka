@@ -93,9 +93,9 @@ Nama ini adalah baris pertama aksara Jawa — *hana caraka*, "ada dua utusan" �
 
 ## 6. Batas produk
 
-**Ya:** kirim tugas dari chat · sesi ber-tab otomatis · streaming progres · approval lewat tombol · memori lintas sesi · banyak workspace · banyak agent.
+**Ya:** kirim tugas dari chat · sesi ber-tab otomatis · streaming progres · approval lewat tombol · memori lintas sesi · banyak workspace · banyak agent · channel Web/PWA dipasangkan per perangkat.
 
-**Tidak:** agent loop / tool / model provider sendiri · marketplace skill · companion app, voice, kamera · multi-tenant SaaS · menggantikan IDE.
+**Tidak:** agent loop / tool / model provider sendiri · marketplace skill · aplikasi native pendamping, voice, kamera · multi-tenant SaaS · menggantikan IDE.
 
 ---
 

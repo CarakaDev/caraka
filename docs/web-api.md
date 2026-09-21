@@ -50,7 +50,7 @@ gets `401 { "error": "authentication" }`.
       }
     ],
     "connection": { "state": "connected", "origin": "string" },
-    "push": { "available": false, "message": "string" }
+    "push": { "available": true }
   }
   ```
 
@@ -78,8 +78,8 @@ gets `401 { "error": "authentication" }`.
   subscriptions and returns 429 after that limit.
 - `POST /api/logout` revokes the current device. `GET /api/devices` lists active
   devices. `DELETE /api/devices/ID` revokes that device.
-- `GET /api/push/key`, `POST /api/push`, and `DELETE /api/push` return 503 until
-  Task 3 configures Web Push.
+- GET /api/push/key returns { publicKey: string } to an authenticated device. POST /api/push stores that device subscription. It returns 400 for unsupported or private endpoint hosts. DELETE /api/push removes subscriptions for the current device.
+- VAPID material is created once under secrets/ with private permissions. The server sends generic notifications only. It removes subscriptions after a push service returns 404 or 410. A revoked device never receives push.
 
 The server serves `/`, `/app.js`, `/app.css`, `/manifest.webmanifest`, `/sw.js`,
 `/icon.svg`, `/icon-192.png`, `/icon-512.png`, `/fonts/public-sans.woff2`, and

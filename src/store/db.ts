@@ -149,6 +149,14 @@ export class Store {
         created_at INTEGER NOT NULL,
         revoked_at INTEGER
       ) STRICT;
+      CREATE TABLE IF NOT EXISTS web_push_subscriptions (
+        device_id TEXT NOT NULL REFERENCES web_devices(id),
+        endpoint TEXT NOT NULL,
+        p256dh TEXT NOT NULL,
+        auth TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        PRIMARY KEY(device_id, endpoint)
+      ) STRICT;
       CREATE TABLE IF NOT EXISTS web_rooms (
         id TEXT PRIMARY KEY,
         workspace TEXT NOT NULL,

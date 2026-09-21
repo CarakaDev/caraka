@@ -1,3 +1,56 @@
+test("web push key and subscription bind to the authenticated device", async (t) => {
+  const f = await fixture();
+  t.after(async () => {
+    await f.channel.close();
+    f.store.close();
+    await rm(f.home, { recursive: true, force: true });
+  });
+  assert.equal((await fetch(f.base + "/api/push/key")).status, 401);
+  const paired = await post(f.base, "/api/pair", {
+    code: f.channel.createPairCode(),
+    name: "Phone",
+  });
+  const cookie = paired.headers.get("set-cookie")?.split(";")[0] ?? "";
+  const key = await fetch(f.base + "/api/push/key", { headers: { cookie } });
+  assert.equal(key.status, 200);
+  assert.equal(typeof (await key.json()).publicKey, "string");
+  assert.equal(
+    (
+      await post(
+        f.base,
+        "/api/push",
+        { endpoint: "https://127.0.0.1/push", keys: { p256dh: "p", auth: "a" } },
+        cookie,
+      )
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await post(
+        f.base,
+        "/api/push",
+        { endpoint: "https://fcm.googleapis.com/fcm/send/test", keys: { p256dh: "p", auth: "a" } },
+        cookie,
+      )
+    ).status,
+    201,
+  );
+  assert.equal(
+    Number(f.store.db.prepare("SELECT count(*) AS total FROM web_push_subscriptions").get()!.total),
+    1,
+  );
+  assert.equal(
+    (await fetch(f.base + "/api/push", { method: "DELETE", headers: { cookie, origin: f.base } }))
+      .status,
+    200,
+  );
+  assert.equal(
+    Number(f.store.db.prepare("SELECT count(*) AS total FROM web_push_subscriptions").get()!.total),
+    0,
+  );
+});
+
 import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { connect } from "node:net";

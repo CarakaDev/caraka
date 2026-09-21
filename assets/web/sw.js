@@ -55,3 +55,27 @@ self.addEventListener("fetch", (event) => {
     })(),
   );
 });
+self.addEventListener("push", (event) => {
+  event.waitUntil(
+    self.registration.showNotification("Caraka", {
+      body: "Task activity needs your attention.",
+      data: { url: self.location.origin + "/" },
+      tag: "caraka-activity",
+    }),
+  );
+});
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    (async () => {
+      const target = self.location.origin + "/";
+      for (const client of await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      })) {
+        if (client.url.startsWith(self.location.origin)) return client.focus();
+      }
+      return self.clients.openWindow(target);
+    })(),
+  );
+});

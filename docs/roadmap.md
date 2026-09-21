@@ -227,7 +227,16 @@ Yang tidak bergerak sama sekali di delapan belas rilis itu: tidak satu pun gerba
 
 Baris pertama tabel itu sudah meninggalkan jejak di kode tanpa menjadi kemampuan: skema preset menerima `driver: mcp`, tetapi tidak ada jalur yang membangunnya, dan preset yang menyebut nilai itu tanpa blok `acp:` maupun `command:` berhenti di galat `driver.none` (`src/cli.ts`). Nilainya cadangan nama, bukan driver.
 
-**Tidak akan pernah masuk:** marketplace plugin, agent runtime sendiri, tool eksekusi sendiri, aplikasi mobile, hosted multi-tenant.
+**Tidak akan pernah masuk:** marketplace plugin, agent runtime sendiri, tool eksekusi sendiri, aplikasi mobile native, hosted multi-tenant.
+
+## Channel Web/PWA
+
+- [x] Web/PWA memasangkan browser per perangkat. Pairing, cookie perangkat, SSE, dan Web Push diuji di repositori.
+- [x] Tailscale Serve dan Cloudflare Tunnel bernama memiliki rencana read-only. Perubahan hanya dilakukan dengan --apply.
+- [ ] Login provider, pemasangan service provider, DNS hidup, dan akses telepon tetap validasi manual pada instalasi operator.
+
+Dokumen setup ada di docs/web-guide.md dan docs/web-guide.en.md. Test provider serta push membuktikan kontrak lokal. Mereka tidak membuktikan tunnel hidup atau telepon dapat menjangkau origin.
+
 
 ---
 

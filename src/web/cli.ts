@@ -5,6 +5,7 @@ import { carakaPaths, loadConfig, parseConfig, saveConfig, type CarakaConfig } f
 import { Store } from "../store/db.js";
 import { WebChannel } from "../channels/web.js";
 import { createScrubber } from "../core/security.js";
+import { checkConnection, connect, type ProcessRunner } from "./connect.js";
 
 function value(args: string[], flag: string) {
   const index = args.indexOf(flag);
@@ -12,7 +13,41 @@ function value(args: string[], flag: string) {
 }
 
 /** Configure the web adapter without a chat account. It preserves existing blocks. */
-export async function webCommand(args: string[]) {
+export async function webCommand(
+  args: string[],
+  injected: { runner?: ProcessRunner; request?: typeof fetch } = {},
+) {
+  if (args[0] === "connect") {
+    const provider = args[1];
+    if (provider !== "tailscale" && provider !== "cloudflare")
+      throw new Error("Use `caraka web connect tailscale|cloudflare [--apply|--check]`.");
+    const loaded = await loadConfig();
+    if (!loaded.config.web) throw new Error("Web is not configured. Run `caraka init web` first.");
+    if (args.includes("--check")) {
+      if (args.includes("--apply")) throw new Error("Use --apply or --check, not both.");
+      const result = await checkConnection(loaded.config.web.origin, injected.request);
+      console.log(`Health: ${result.health}`);
+      console.log(`Private API rejection: ${result.privateApi}`);
+      console.log(
+        "Phone verification: manual. Open the paired origin from the phone and pair it there.",
+      );
+      return;
+    }
+    const plan = await connect({
+      provider,
+      config: loaded.config,
+      root: loaded.paths.root,
+      apply: args.includes("--apply"),
+      ...(value(args, "--hostname") ? { hostname: value(args, "--hostname")! } : {}),
+      ...(value(args, "--tunnel") ? { tunnel: value(args, "--tunnel")! } : {}),
+      ...(injected.runner ? { runner: injected.runner } : {}),
+      saveOrigin: async (origin) => {
+        await saveConfig({ ...loaded.config, web: { ...loaded.config.web!, origin } }, "");
+      },
+    });
+    for (const line of plan.lines) console.log(line);
+    return;
+  }
   if (args[0] === "pair") {
     const loaded = await loadConfig();
     if (!loaded.config.web) throw new Error("Web is not configured. Run `caraka init web` first.");

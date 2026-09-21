@@ -292,6 +292,7 @@ export function carakaPaths(root = process.env.CARAKA_HOME ?? join(homedir(), ".
     // sites and changes nothing.
     token: join(base, "secrets", "telegram.token"),
     discordToken: join(base, "secrets", "discord.token"),
+    webPushVapid: join(base, "secrets", "web-push-vapid.json"),
     // The Baileys auth state is a credential, not session state: whoever holds
     // the directory holds the WhatsApp session of that number
     // (`docs/security.md` §7), so it sits under `secrets/` at 0700.

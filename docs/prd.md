@@ -68,7 +68,7 @@ Tim enterprise yang butuh SSO/RBAC/compliance; pengguna non-teknis; orang yang m
 1. Bukan agent runtime — tidak ada reasoning loop.
 2. Tidak ada tool eksekusi sendiri (exec/fs/browser/PDF).
 3. Tidak ada marketplace skill/plugin.
-4. Tidak ada companion app, voice, kamera, canvas.
+4. Tidak ada aplikasi native pendamping, voice, kamera, canvas.
 5. Tidak ada abstraksi model provider — itu urusan coding agent.
 6. Tidak multi-tenant SaaS di v1.
 7. Tidak menggantikan IDE atau code review.
@@ -106,7 +106,7 @@ Tim enterprise yang butuh SSO/RBAC/compliance; pengguna non-teknis; orang yang m
 - Slack, Matrix
 
 ### Tidak akan (P3)
-- Marketplace, mobile app, hosted SaaS
+- Marketplace, aplikasi native mobile, hosted SaaS
 
 ---
 

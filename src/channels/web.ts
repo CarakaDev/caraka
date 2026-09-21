@@ -12,6 +12,7 @@ import type {
 import { drainInbox } from "../core/channel.js";
 import type { Store } from "../store/db.js";
 import { code, hash, PAIR_TTL_MS, token } from "../web/auth.js";
+import { PushService } from "../web/push.js";
 import { WebServer } from "../web/server.js";
 
 type Button = { id: string; text: string; data: string };
@@ -41,6 +42,7 @@ export class WebChannel implements Channel {
     string,
     { roomId: string; messageId?: string; data: string }
   >();
+  private readonly push: PushService;
   private readonly server: WebServer;
   private closed = false;
   constructor(
@@ -48,11 +50,17 @@ export class WebChannel implements Channel {
       config: WebConfig;
       store: Store;
       scrub: (text: string) => string;
-      paths: { root: string };
+      paths: { root: string; webPushVapid?: string };
       language: string;
       version: string;
     },
   ) {
+    this.push = new PushService({
+      store: options.store,
+      keyPath:
+        options.paths.webPushVapid ?? join(options.paths.root, "secrets", "web-push-vapid.json"),
+      origin: options.config.origin,
+    });
     this.server = new WebServer({
       host: options.config.host,
       port: options.config.port,
@@ -66,6 +74,9 @@ export class WebChannel implements Channel {
         callback: (device, input) => this.callback(device, input),
         stop: (device, roomId) => this.stop(device, roomId),
         invalidated: () => this.server.invalidate(),
+        pushKey: () => this.push.state().publicKey,
+        pushSubscribe: (device, input) => this.push.subscribe(device.id, input),
+        pushRemove: (device) => this.push.unsubscribe(device.id),
       },
     });
   }
@@ -73,6 +84,7 @@ export class WebChannel implements Channel {
     return this.server.url;
   }
   async start(signal?: AbortSignal) {
+    await this.push.start();
     await this.server.start();
     signal?.addEventListener("abort", () => void this.close(), { once: true });
   }
@@ -134,6 +146,7 @@ export class WebChannel implements Channel {
       ),
       attachments: JSON.parse(row.attachments),
     }));
+    const push = this.push.state();
     return {
       device: { id: device.id, name: device.name },
       language: this.options.language,
@@ -141,7 +154,9 @@ export class WebChannel implements Channel {
       rooms,
       messages,
       connection: { state: "connected", origin: this.url },
-      push: { available: false, message: "Web Push is not configured." },
+      push: push.available
+        ? { available: true }
+        : { available: false, message: push.message ?? "Web Push is not configured." },
     };
   }
   private async message(
@@ -313,10 +328,13 @@ export class WebChannel implements Channel {
         Date.now(),
       );
     this.server.invalidate();
+    if (buttons.length) void this.push.notify().catch(() => undefined);
     return { message_id: id };
   }
   async sendResult(chatId: string, markdown: string, threadId = "") {
-    return [await this.sendText(chatId, markdown, threadId)];
+    const result = await this.sendText(chatId, markdown, threadId);
+    void this.push.notify().catch(() => undefined);
+    return [result];
   }
   async sendAttachment(chatId: string, file: { bytes: Buffer; mimeType: string; name: string }) {
     const id = randomBytes(8).toString("hex");
