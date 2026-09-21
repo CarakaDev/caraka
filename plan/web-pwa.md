@@ -77,7 +77,7 @@ listener and the update signal for shutdown. Export `webCommand(args)` for local
 pairing, device administration, and initialization. `caraka init web` dispatches
 to it. `caraka start` starts configured channels, including web alone.
 
-- [ ] Write tests for one-time pairing, Origin rejection, revocation, replay,
+- [x] Write tests for one-time pairing, Origin rejection, revocation, replay,
   room ownership, attachment limits, and a fake-driver run through Gateway.
 
 ```ts
@@ -87,19 +87,19 @@ assert.equal((await post('/api/pair', { code, name: 'Replay' })).status, 401);
 assert.equal((await postFrom('https://other.invalid', '/api/stop', { roomId })).status, 403);
 ```
 
-- [ ] Run `node --import tsx --test test/web.test.ts` and record the expected failure.
-- [ ] Implement the API, bounded bodies, authenticated files, SSE invalidation,
+- [x] Run `node --import tsx --test test/web.test.ts` and record the expected failure.
+- [x] Implement the API, bounded bodies, authenticated files, SSE invalidation,
   device persistence, message idempotency, and Channel methods. Set security
   headers and validate Host against the configured origin. Bound subscriptions
   and request queues. The server ignores forwarded identity and protocol headers.
-- [ ] Add additive web config with default port 7720, loopback bind, explicit
+- [x] Add additive web config with default port 7720, loopback bind, explicit
   public origin, and one stable operator. Add `init web --workspace PATH --agent
   PRESET --language id|en`, preserving existing configuration. Reject workspace
   paths that do not exist. Print pairing codes only in the explicit terminal
   command, never from the daemon. Store code hashes with their expiry.
-- [ ] Add CLI integration without a core branch on channel identity. Keep the
+- [x] Add CLI integration without a core branch on channel identity. Keep the
   init path usable without Telegram. Add web tests to the verification script.
-- [ ] Run focused tests, lint, typecheck, and existing unit tests. Write the API
+- [x] Run focused tests, lint, typecheck, and existing unit tests. Write the API
   contract and task report, then commit the task.
 
 **AC proof:** AC-1–18 and AC-32 use HTTP tests and fake Gateway tests. AC-8 checks
@@ -116,17 +116,17 @@ test-only fixture. Change asset routing only if the API document requires it.
 Use fetch credentials and cookie auth. SSE triggers a state reload. Keep only
 navigation preferences in browser storage. Render all remote text as text nodes.
 
-- [ ] Read the implemented API and write browser flows for pairing, message
+- [x] Read the implemented API and write browser flows for pairing, message
   submission, session selection, callback, disconnect recovery, and sign-out.
-- [ ] Implement the desktop session rail and main conversation. On HP, show one
+- [x] Implement the desktop session rail and main conversation. On HP, show one
   panel with a sessions drawer and fixed composer. Use brand colours `#05080C`,
   `#0C1116`, `#171C22`, `#E9EDF2`, `#B2BCC6`, and brand red from `docs/brand.md`.
-- [ ] Use local Public Sans for UI and JetBrains Mono for code. Include font
+- [x] Use local Public Sans for UI and JetBrains Mono for code. Include font
   licenses. Keep status text with the glyph. Provide empty, busy, failed,
   disconnected, and approval states. Disable repeated submissions while pending.
-- [ ] Build device pairing and revocation controls, file upload/download, and
+- [x] Build device pairing and revocation controls, file upload/download, and
   push opt-in. Make unavailable push clear. Do not render unknown remote HTML.
-- [ ] Add the manifest and icons. The service worker caches an explicit list of
+- [x] Add the manifest and icons. The service worker caches an explicit list of
   public static assets; it never caches `/api/` or authenticated responses.
 
 ```js
@@ -135,7 +135,7 @@ const STATIC = new Set(['/', '/app.css', '/app.js', '/icon.svg']);
 if (request.method !== 'GET' || !STATIC.has(url.pathname)) return;
 ```
 
-- [ ] Verify at 390×844 and 1440×900. Exercise keyboard focus and no-motion mode.
+- [x] Verify at 390×844 and 1440×900. Exercise keyboard focus and no-motion mode.
   Record screenshots, focused test output, and the task report, then commit.
 
 **AC proof:** AC-9–24 and AC-30–31 use browser flows. A service-worker test checks
@@ -202,7 +202,8 @@ installation. Documentation never calls synthetic provider tests live proof.
 ## Evidence
 
 - Baseline: 191 unit tests pass after building the new worktree.
-- Original checkout: two README edits existed before this work and remain there.
+- Original local checkout: two README edits existed before this work and remain there.
+- Original remote checkout: its existing modified and untracked files remain outside this worktree.
 - Titen resolution: `carakadev/caraka` is not registered. Continue from source;
   do not create a memory project or compile without a resolved project id.
 
@@ -212,3 +213,15 @@ Rama selected `rama-tuf` before implementation. The worktree is
 `/home/ramaaditya/Project/caraka/.worktrees/web-pwa` on that host.
 The original remote checkout remains unchanged. The branch retains the inspected
 feature base `fe943ac`, including attachment support, and spec commit `a7efad7`.
+
+## Completed task evidence
+
+- Task 1: `346ffca`, `3e5d89d`, and `be073ce`. Independent review approved the final backend changes.
+- Task 1 checks: 191 existing unit tests and 12 web HTTP tests passed. Lint, types, and build passed.
+- Task 2: `80975d5` and `3fef69d`. Independent review approved the initial-load recovery fix.
+- Task 2 checks: 12 browser scenarios passed. They cover Gateway flows, offline recovery, revocation, retries, and logout races.
+- Desktop and mobile screenshots were inspected at 1440x900 and 390x844.
+- A fresh production-only installation served nine UI assets. Pairing and logout passed; anonymous API requests returned 401.
+- A real Codex task and same-session resume passed before final package integration. The final package must repeat this proof.
+- Task 2 recorded one minor keyboard-focus issue. Task 4 will preserve session-button focus during SSE refresh.
+- Provider changes, physical phone installation, push delivery, and release publication are not yet verified.
