@@ -348,3 +348,12 @@ The lint result is `/tmp/caraka-task4-fix2-lint.log`.
 The final-source site gate remains `/tmp/caraka-task4-fix1-site-e2e-measure.log`:
 143 passed with 2 expected skips. The round changed only a comment in the site tree,
 so it did not repeat that container suite.
+
+
+## Final fix wave — 22 September 2026
+
+- Commit 8f9d036 fixes I1-I3 and M1-M3.
+- Root verify passed: 191 unit, 30 Web, 139 E2E, 18 browser, and 35 site tests. Log: /tmp/caraka-final-fix-verify-2.log.
+- Site check passed with 0 errors, 0 warnings, and 1 existing hint. Log: /tmp/caraka-final-fix-site-check.log.
+- Official Playwright container passed 143 tests with 2 expected skips. Log: /tmp/caraka-final-fix-site-e2e.log.
+- src measures 12,901 lines, 4,901 above the 8,000 budget. Version remains 1.6.0. Publication, deployment, package proof, and real-agent proof remain controller work.
