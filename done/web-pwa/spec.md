@@ -92,3 +92,10 @@ tidak membuka instalasi lama ke internet.
 - **AC-38** WHEN leaf pengganti ditolak, Gateway shall tetap mengirim jawaban teks agent.
 
 Koreksi terbatas pada routing init dan pembuktian regresi leaf. Enam koreksi sebelumnya tetap berlaku.
+
+
+## Rilis
+
+Rilis `1.6.0` terbit pada 22 September 2026 (Asia/Jakarta).
+Paket npm dan situs produksi telah diverifikasi. Bukti lengkap tercatat di [plan.md](plan.md).
+Pengujian provider langsung, perangkat Android fisik, dan notifikasi OS tetap mengikuti batas bukti pada plan.

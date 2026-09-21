@@ -4,17 +4,19 @@
 
 **Goal:** Build a web/PWA channel and connection setup for one operator.
 
+**Status:** Published as 1.6.0 on 22 September 2026, Asia/Jakarta. Production checks passed.
+
 **Architecture:** The web adapter implements Channel and serves its own HTTP API.
 Gateway owns routing, agent runs, approval, and cancellation. The app uses static
 assets from the npm package. Local SQLite holds web messages and device hashes.
 
 **Tech Stack:** Node HTTP, TypeScript, SQLite, plain JavaScript, CSS, Web Push.
 
-**Spec:** `spec/web-pwa.md`
+**Spec:** [spec.md](spec.md)
 
 ## Global Constraints
 
-- Work only in `/home/ramaaditya/Project/caraka/.worktrees/web-pwa on rama-tuf`.
+- Work only in `/home/ramaaditya/Project/caraka/.worktrees/web-pwa` on `rama-tuf`.
 - Core never branches on `channel.id`.
 - The existing dashboard remains read-only.
 - Every request that changes state checks its exact Origin.
@@ -186,17 +188,17 @@ installation. Documentation never calls synthetic provider tests live proof.
 
 **Files:** Plan evidence, packaged file list, and implementation fixes from review.
 
-- [ ] Run `npm run verify` and record its full output path and result here.
-- [ ] Run web browser tests and inspect desktop/mobile screenshots.
-- [ ] Run `npm pack --dry-run --json` and confirm all web assets are shipped.
-- [ ] Run one real coding-agent turn through the web channel in a disposable
+- [x] Run `npm run verify` and record its full output path and result here.
+- [x] Run web browser tests and inspect desktop/mobile screenshots.
+- [x] Run `npm pack --dry-run --json` and confirm all web assets are shipped.
+- [x] Run one real coding-agent turn through the web channel in a disposable
   workspace, then verify the returned answer and session resume.
-- [ ] Review the complete diff and repair security or behavior defects.
-- [ ] Commit verified changes. Keep spec and plan in flight until publication.
+- [x] Review the complete diff and repair security or behavior defects.
+- [x] Commit verified changes. Keep spec and plan in flight until publication.
   Present the exact version, branch, package contents, and verification evidence for release approval.
-- [ ] Update public installation guidance and release metadata for the shipped web channel.
+- [x] Update public installation guidance and release metadata for the shipped web channel.
   Keep the existing marketing design. Verify site changes through its required gates.
-- [ ] After release approval, publish npm and deploy the site. Verify registry files, fresh installation, and production pages.
+- [x] After release approval, publish npm and deploy the site. Verify registry files, fresh installation, and production pages.
   Record package integrity, deployment version, and any unverified provider or phone checks.
 
 ## Evidence
@@ -442,3 +444,118 @@ This is 7 lines above the base and 4,908 above the unchanged 8,000-line budget.
 Version remains 1.6.0.
 The six earlier fixes remain in place.
 Controller review, package proof, publication, and deployment remain pending.
+
+
+## Release completion
+
+The owner approved npm publication through the standard browser authorization flow.
+The exact verified tarball was published as `caraka@1.6.0` with the `latest` tag.
+The canonical registry reported publication at `2026-09-21T18:28:04.808Z`.
+Registry metadata took time to appear after the publish command completed.
+The site npm badge changed only after the canonical registry named 1.6.0.
+
+Package source: `e10b6a06cf5c09f29b272dbbf8ba1dadda25e7d4`.
+Site badge commit: `fa4c2a621a747566ebf7e3066dae17b7fd7b0103`.
+Package members: 121. The required Web assets, fonts, and licenses are present.
+Package integrity: `sha512-CDhLBSKclYBvUj1K5O/l6/gb5dgq4xZ93RLQx5AbeyTiPm6kWuPQjVvZ+tYdX42fZJB1AvnsZhz1WFyseKVtxA==`.
+Package SHA-1: `91976a1d738f1777e2bde83332da72133a9e6657`.
+Registry integrity and SHA-1 match the tested tarball.
+A fresh registry installation passed the installed CLI, asset, authentication, and attachment checks.
+The exact local tarball also completed a real agent task and resumed the same session.
+The production dependency audit reported zero vulnerabilities.
+
+```text
+> npm publish <verified caraka-1.6.0.tgz> --access public
++ caraka@1.6.0
+> installed registry package checks
+version=1.6.0
+unknown_explicit_agent=rejected_before_config_write
+health=200; anonymous_api=401; static_assets=9
+pair=200; authenticated_state=200
+private_attachment=matched; unicode_filename=valid; cache=no-store
+logout=200; anonymous_state=401; anonymous_attachment=401
+> exact tarball real agent checks
+first_turn=done; spaced_workspace=matched
+resume=same_session; marker=matched
+> npm audit --omit=dev --audit-level=high
+vulnerabilities: info=0 low=0 moderate=0 high=0 critical=0
+> npm --prefix site run check
+0 errors; 0 warnings; 1 existing hint
+35 tests passed
+> site E2E in the official Playwright container
+143 passed (57.2s)
+2 expected skips
+> npm run scan:secrets
+clean: 360 tracked files, no credentials
+```
+
+The site browser run used `mcr.microsoft.com/playwright:v1.62.1-noble` through rootless Podman.
+The existing generated preview cache was preserved while the container built its own cache.
+No system libraries or unrelated services changed.
+
+### Production
+
+The site deployment serves `caraka.dev/*` from `caraka-site`.
+Worker version: `3b33b8e1-3f81-4b96-9001-138eeed0619f`, with 100 percent of traffic.
+The verified previous version remains `275b5888-abf1-4f90-9448-d065c2ea9258` for rollback.
+No rollback was required.
+
+```text
+> deployed provider verification
+route=caraka.dev/*; worker=caraka-site
+version=3b33b8e1-3f81-4b96-9001-138eeed0619f; percentage=100
+> production site verification
+pages=14; referenced bundled assets=2
+web_setup_pages=/docs,/install
+missing_page=404
+homepage_version=1.6.0
+status_version=1.6.0
+npm_badge_version=1.6.0
+```
+
+The homepage, status page, npm badge board, and install page match the built page text.
+The install page contains `caraka init web`; it has no patch-version label.
+The deployment changed the opaque route ID.
+The zone, route pattern, Worker, and expected deployed version remained correct.
+The verification helper now checks these semantic values instead of requiring the previous route ID.
+
+Source CI passed all four jobs on `e10b6a0`:
+https://github.com/CarakaDev/caraka/actions/runs/35637887018.
+The source and site commits retain the required CADIS trailer.
+Both original dirty checkouts remain outside the release worktree.
+Verified source bundles are retained beside the tarball.
+
+### Evidence paths
+
+These files remain on the development host:
+
+- `/tmp/caraka-release-package-4_j5w8xk/package-proof.json`
+- `/tmp/caraka-installed-proof-720jx2uy/proof.json`
+- `/tmp/caraka-release-package-4_j5w8xk/fresh-audit.json`
+- `/tmp/caraka-registry-metadata-z8pfukj3/proof.json`
+- `/tmp/caraka-registry-proof-uazws83u/proof.json`
+- `/tmp/caraka-published-site-check.log`
+- `/tmp/caraka-published-site-e2e.log`
+- `/tmp/caraka-site-deploy-5lalag9o/proof.json`
+- `/tmp/caraka-postdeploy-ys7t33hb/provider.json`
+- `/tmp/caraka-site-production-0yzpo2q8/proof.json`
+- `/tmp/caraka-release-package-4_j5w8xk/source.bundle`
+- `/tmp/caraka-release-package-4_j5w8xk/site-source.bundle`
+
+### Evidence limits
+
+The release remains `unproven` under the existing field gates.
+No real Tailscale or Cloudflare Tunnel setup, physical Android installation, or OS push delivery was claimed.
+Provider planning, configuration, and failure cases have automated coverage.
+A selected user installation must complete the documented provider and phone checks.
+Android uses the Web/PWA interface. This release contains no native APK.
+The source measure remains 12,908 lines, with 4,908 lines above the unchanged budget.
+
+
+### GitHub issue state
+
+Issue [#15](https://github.com/CarakaDev/caraka/issues/15) was closed as completed after source and release verification.
+Its process-group, cancellation, and disabled terminal-prompt corrections are included in this release.
+Issue [#16](https://github.com/CarakaDev/caraka/issues/16) remains open.
+The published Codex preset still selects a read-only sandbox for initial and resumed turns.
+The Web/PWA release does not implement the policy-dependent sandbox requested by that issue.
