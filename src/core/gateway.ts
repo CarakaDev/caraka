@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { statSync } from "node:fs";
-import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { constants, statSync } from "node:fs";
+import { lstat, mkdir, open, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { homedir, hostname } from "node:os";
 import { basename, isAbsolute, join, relative, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -1402,30 +1402,106 @@ export class Gateway {
    * run: the answer the agent already gave is still owed to the person who
    * asked.
    */
+  private async outboxChain(session: Session, directory: string) {
+    const workspace = this.workspaceOf(session);
+    if (!workspace) return undefined;
+    const root = join(workspace.path, OUTBOX_DIRECTORY);
+    if (resolve(directory) !== resolve(root, session.id)) return undefined;
+    const records: Array<{ path: string; dev: number; ino: number }> = [];
+    for (const path of [root, directory]) {
+      const entry = await lstat(path).catch(() => undefined);
+      if (!entry?.isDirectory() || entry.isSymbolicLink()) return undefined;
+      records.push({ path, dev: entry.dev, ino: entry.ino });
+    }
+    return records;
+  }
+
+  private async sameOutboxChain(records: Array<{ path: string; dev: number; ino: number }>) {
+    for (const record of records) {
+      const entry = await lstat(record.path).catch(() => undefined);
+      if (
+        !entry?.isDirectory() ||
+        entry.isSymbolicLink() ||
+        entry.dev !== record.dev ||
+        entry.ino !== record.ino
+      )
+        return false;
+    }
+    return true;
+  }
+
+  private async readOutboxFile(
+    path: string,
+    expected: {
+      dev: number;
+      ino: number;
+      size: number;
+      nlink: number;
+      mtimeMs: number;
+      ctimeMs: number;
+    },
+    chain: Array<{ path: string; dev: number; ino: number }>,
+  ) {
+    if (!(await this.sameOutboxChain(chain))) return undefined;
+    const same = (entry: Awaited<ReturnType<typeof lstat>> | undefined) =>
+      entry?.isFile() &&
+      !entry.isSymbolicLink() &&
+      entry.dev === expected.dev &&
+      entry.ino === expected.ino &&
+      entry.size === expected.size &&
+      entry.nlink === expected.nlink &&
+      entry.mtimeMs === expected.mtimeMs &&
+      entry.ctimeMs === expected.ctimeMs;
+    if (!same(await lstat(path).catch(() => undefined)) || expected.nlink !== 1) return undefined;
+    if (expected.size > OUTBOX_LIMIT) return { tooBig: expected.size };
+    const noFollow = typeof constants.O_NOFOLLOW === "number" ? constants.O_NOFOLLOW : 0;
+    let handle = await open(path, constants.O_RDONLY | noFollow).catch(() => undefined);
+    if (!handle && noFollow) handle = await open(path, constants.O_RDONLY).catch(() => undefined);
+    if (!handle) return undefined;
+    try {
+      if (!same(await handle.stat()) || !(await this.sameOutboxChain(chain))) return undefined;
+      const chunks: Buffer[] = [];
+      let size = 0;
+      while (size <= OUTBOX_LIMIT) {
+        const chunk = Buffer.allocUnsafe(Math.min(65_536, OUTBOX_LIMIT + 1 - size));
+        const { bytesRead } = await handle.read(chunk, 0, chunk.length, size);
+        if (bytesRead === 0) break;
+        chunks.push(chunk.subarray(0, bytesRead));
+        size += bytesRead;
+      }
+      if (size > OUTBOX_LIMIT) return { tooBig: size };
+      if (!same(await handle.stat()) || !(await this.sameOutboxChain(chain))) return undefined;
+      return { bytes: Buffer.concat(chunks, size) };
+    } finally {
+      await handle.close();
+    }
+  }
+
   private async emptyOutbox(session: Session, directory: string) {
+    const chain = await this.outboxChain(session, directory);
+    if (!chain) return 0;
     let images = 0;
-    // Names Caraka wrote itself, `.gitignore` among them, dropped before the
-    // count below rather than inside the loop. No sentence for them: the person
-    // in the chat did not ask about a file they cannot see.
     const listed = await readdir(directory, { withFileTypes: true }).catch(() => []);
+    if (!(await this.sameOutboxChain(chain))) return 0;
     const entries = listed.filter((entry) => !entry.name.startsWith("."));
-    // Said once, for the whole overflow, and the rest go with the run. One
-    // message per entry is what makes a count a cost here.
+    const snapshots = new Map(
+      await Promise.all(
+        entries.map(
+          async (entry) =>
+            [entry.name, await lstat(join(directory, entry.name)).catch(() => undefined)] as const,
+        ),
+      ),
+    );
+    if (!(await this.sameOutboxChain(chain))) return 0;
     if (entries.length > OUTBOX_FILES) {
       await this.sendToSession(
         session,
-        `${this.header(session)}${this.t("attach.outMany", {
-          count: entries.length,
-          max: OUTBOX_FILES,
-        })}`,
+        this.header(session) +
+          this.t("attach.outMany", { count: entries.length, max: OUTBOX_FILES }),
       );
       entries.length = OUTBOX_FILES;
     }
     for (const entry of entries) {
-      // The name reaches the chat, so it goes through the outbound scrubber like
-      // every other string. The extension is read off the entry rather than off
-      // the scrubbed copy, so a redaction inside a name cannot change what the
-      // file is.
       const name = this.scrub(entry.name);
       const mime = entry.isFile() ? outboundMime(entry.name) : null;
       if (!mime) {
@@ -1436,36 +1512,29 @@ export class Gateway {
         );
         continue;
       }
-      const path = join(directory, entry.name);
-      const size = await stat(path)
-        .then((it) => it.size)
-        .catch(() => null);
-      if (size === null) {
+      const snapshot = snapshots.get(entry.name);
+      if (!snapshot?.isFile() || snapshot.isSymbolicLink()) {
         await this.refuseFile(session, name, this.t("attach.outGone", { name }));
         continue;
       }
-      // `ceil` and not `round`: the file is above the ceiling by definition here,
-      // and rounding printed the ceiling itself as the file's own size for
-      // everything in the first half MiB past it.
-      if (size > OUTBOX_LIMIT) {
+      const result = await this.readOutboxFile(join(directory, entry.name), snapshot, chain);
+      if (!result) {
+        await this.refuseFile(session, name, this.t("attach.outGone", { name }));
+        continue;
+      }
+      if ("tooBig" in result) {
         await this.refuseFile(
           session,
           name,
-          this.t("attach.outTooBig", { name, size: Math.ceil(size / 1_048_576) }),
+          this.t("attach.outTooBig", { name, size: Math.ceil(result.tooBig / 1_048_576) }),
         );
         continue;
       }
-      const bytes = await readFile(path).catch(() => null);
-      if (!bytes) {
-        await this.refuseFile(session, name, this.t("attach.outGone", { name }));
-        continue;
-      }
-      if (await this.sendAttachment(session, { bytes, mimeType: mime, name }))
+      if (await this.sendAttachment(session, { bytes: result.bytes, mimeType: mime, name }))
         images += mime.startsWith("image/") ? 1 : 0;
     }
     return images;
   }
-
   /**
    * One refused entry: the audit row first, then the sentence, and no bytes in
    * between. The row carries the name and no sha256, because nothing was read.

@@ -31,7 +31,7 @@ test("web push key and subscription bind to the authenticated device", async (t)
 });
 
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { connect } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -41,8 +41,9 @@ import { Store } from "../src/store/db.js";
 import { WebChannel, WEB_INBOX_LIMIT } from "../src/channels/web.js";
 import { webCommand } from "../src/web/cli.js";
 import { WEB_SUBSCRIBER_LIMIT, webServerOrigin } from "../src/web/server.js";
-import { parseConfig } from "../src/config.js";
+import { parseConfig, workspaces } from "../src/config.js";
 import { Gateway } from "../src/core/gateway.js";
+import { loadPresets } from "../src/drivers/preset.js";
 import type { AgentDriver, DriverRoute } from "../src/core/driver.js";
 
 async function fixture(start = true, workspaceSlug = "main", origin = "http://127.0.0.1") {
@@ -278,7 +279,7 @@ test("web accepts bounded files and refuses unknown rooms", async (t) => {
     name: "Phone",
   });
   const cookie = paired.headers.get("set-cookie")?.split(";")[0] ?? "";
-  const uploaded = await fetch(f.base + "/api/files?name=note.txt", {
+  const uploaded = await fetch(f.base + "/api/files?name=laporan%20%C3%A9.txt", {
     method: "POST",
     headers: { cookie, origin: f.base, "content-type": "text/plain" },
     body: "hello",
@@ -286,10 +287,13 @@ test("web accepts bounded files and refuses unknown rooms", async (t) => {
   assert.equal(uploaded.status, 201);
   const file = (await uploaded.json()) as { id: string };
   assert.equal((await fetch(f.base + "/api/files/" + file.id)).status, 401);
+  const downloaded = await fetch(f.base + "/api/files/" + file.id, { headers: { cookie } });
+  assert.equal(downloaded.status, 200);
   assert.equal(
-    (await fetch(f.base + "/api/files/" + file.id, { headers: { cookie } })).status,
-    200,
+    downloaded.headers.get("content-disposition"),
+    "attachment; filename*=UTF-8''laporan%20%C3%A9.txt",
   );
+  assert.equal(await downloaded.text(), "hello");
   assert.equal(
     (
       await post(
@@ -391,6 +395,62 @@ test("web init preserves an existing language without a language flag", async (t
   assert.equal(parseConfig(await readFile(config, "utf8")).language, "id");
 });
 
+test("web init adds its workspace without replacing a singular legacy route", async (t) => {
+  const home = await mkdtemp(join(tmpdir(), "caraka-web-init-legacy-"));
+  const existing = join(home, "existing-project");
+  const requested = join(home, "new-project");
+  await Promise.all([mkdir(existing), mkdir(requested)]);
+  const prior = process.env.CARAKA_HOME;
+  process.env.CARAKA_HOME = home;
+  t.after(async () => {
+    if (prior === undefined) delete process.env.CARAKA_HOME;
+    else process.env.CARAKA_HOME = prior;
+    await rm(home, { recursive: true, force: true });
+  });
+  await writeFile(
+    join(home, "config.yaml"),
+    [
+      "version: 1",
+      `workspace: { name: established-name, path: ${existing}, driver: cli }`,
+      "telegram: { botUsername: bot, allowFrom: [owner], topics: false }",
+      "agent: { adapter: claude-agent-acp, adapterVersion: 0.63.0 }",
+      "memory: { provider: none, endpoint: http://127.0.0.1:8787 }",
+    ].join("\n"),
+  );
+  await webCommand(["init", "--workspace", requested, "--agent", "codex"]);
+  const saved = parseConfig(await readFile(join(home, "config.yaml"), "utf8"));
+  assert.deepEqual(workspaces(saved), [
+    { slug: "established-name", path: existing, driver: "cli" },
+    { slug: "new-project", path: requested, agent: "codex" },
+  ]);
+  assert.deepEqual(saved.workspace, { name: "established-name", path: existing, driver: "cli" });
+});
+
+test("web init rejects an unknown explicit preset and accepts a loader custom preset", async (t) => {
+  const home = await mkdtemp(join(tmpdir(), "caraka-web-init-preset-"));
+  const presets = await mkdtemp(join(tmpdir(), "caraka-web-custom-presets-"));
+  const prior = process.env.CARAKA_HOME;
+  process.env.CARAKA_HOME = home;
+  t.after(async () => {
+    if (prior === undefined) delete process.env.CARAKA_HOME;
+    else process.env.CARAKA_HOME = prior;
+    await rm(home, { recursive: true, force: true });
+    await rm(presets, { recursive: true, force: true });
+  });
+  await assert.rejects(
+    webCommand(["init", "--workspace", home, "--agent", "codxe"]),
+    /Unknown agent preset "codxe"\. Available choices: .+codex/,
+  );
+  await writeFile(
+    join(presets, "custom.yaml"),
+    "id: custom-agent\ndriver: cli\ncommand: custom-agent\n",
+  );
+  await webCommand(["init", "--workspace", home, "--agent", "custom-agent"], {
+    loadPresets: () => loadPresets(presets),
+  });
+  const saved = parseConfig(await readFile(join(home, "config.yaml"), "utf8"));
+  assert.equal(saved.workspaces?.[0]?.agent, "custom-agent");
+});
 test("web room reaches Gateway through a fake driver", async (t) => {
   const f = await fixture(false, "My Project");
   let prompted = false;

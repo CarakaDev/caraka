@@ -2,7 +2,16 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync } from "node:fs";
-import { chmod, mkdir, mkdtemp, readFile, stat, symlink, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rename,
+  stat,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -327,6 +336,7 @@ async function harness(
      * looks like.
      */
     sendsFiles?: false | "fails";
+    onSendAttachment?: (file: { bytes: Buffer; mimeType: string; name: string }) => Promise<void>;
     /**
      * Whether this channel can close and reopen a finished thread. Left out by
      * default, because a channel that has neither is what WhatsApp is and what
@@ -432,6 +442,7 @@ async function harness(
             _chatId: string,
             file: { bytes: Buffer; mimeType: string; name: string },
           ) => {
+            await options.onSendAttachment?.(file);
             if (options.sendsFiles === "fails") throw new Error("413 Payload Too Large");
             calls.push(`sendAttachment:${file.mimeType}:${file.bytes.byteLength}:${file.name}`);
             return { message_id: 99 };
@@ -5553,6 +5564,8 @@ async function outboxRun(
   entries: OutboxEntry[],
   options: {
     sendsFiles?: false | "fails";
+    onSendAttachment?: (file: { bytes: Buffer; mimeType: string; name: string }) => Promise<void>;
+    afterWrite?: (directory: string, root: string) => Promise<void>;
     text?: string;
     fails?: boolean;
     settleMs?: number;
@@ -5570,6 +5583,7 @@ async function outboxRun(
   const h = await harness({
     root,
     ...(options.sendsFiles === undefined ? {} : { sendsFiles: options.sendsFiles }),
+    ...(options.onSendAttachment ? { onSendAttachment: options.onSendAttachment } : {}),
     onPrompt: async (prompt) => {
       const directory = outboxOf(prompt, root);
       seen.directory = directory;
@@ -5585,6 +5599,7 @@ async function outboxRun(
         }
       }
       if (options.sealed) await chmod(directory, 0o400);
+      await options.afterWrite?.(directory, root);
       if (options.fails) throw new Error("the agent died");
       return { stopReason: "end_turn" as const };
     },
@@ -5738,6 +5753,73 @@ test("a symlink in the outbox is refused without being opened", async () => {
   const [row] = audits(h.store, "attachment.out");
   assert.equal(row?.result, "refused");
   assert.equal(JSON.parse(row?.details ?? "{}").sha256, undefined);
+  await h.finish();
+});
+
+test("a replaced outbox run directory cannot leave its replacement", async () => {
+  const { h } = await outboxRun([], {
+    afterWrite: async (directory, root) => {
+      const outside = join(root, "outside-run");
+      await rename(directory, directory + ".retired");
+      await mkdir(outside);
+      await writeFile(join(outside, "private.txt"), "outside-run-marker");
+      await symlink(outside, directory, "dir");
+    },
+  });
+  assert.deepEqual(delivered(h), []);
+  assert.equal(h.store.sessionFor("42", "")?.state, "done");
+  assert.equal(
+    h.sent.some((item) => item.text.includes("outside-run-marker")),
+    false,
+  );
+  await h.finish();
+});
+
+test("a replaced outbox root cannot leave its replacement", async () => {
+  const { h } = await outboxRun([], {
+    afterWrite: async (directory, root) => {
+      const outbox = dirname(directory);
+      const outside = join(root, "outside-root");
+      await mkdir(join(outside, basename(directory)), { recursive: true });
+      await writeFile(join(outside, basename(directory), "private.txt"), "outside-root-marker");
+      await rename(outbox, outbox + ".retired");
+      await symlink(outside, outbox, "dir");
+    },
+  });
+  assert.deepEqual(delivered(h), []);
+  assert.equal(h.store.sessionFor("42", "")?.state, "done");
+  assert.equal(
+    h.sent.some((item) => item.text.includes("outside-root-marker")),
+    false,
+  );
+  await h.finish();
+});
+
+test("a leaf replaced during delivery is refused and the text answer still arrives", async () => {
+  let swapped = false;
+  const { h, seen } = await outboxRun(
+    [
+      { name: "alpha.png", body: "a" },
+      { name: "beta.png", body: "b" },
+    ],
+    {
+      onSendAttachment: async (file) => {
+        if (file.name !== "alpha.png" || swapped) return;
+        swapped = true;
+        const beta = join(seen.directory, "beta.png");
+        await rename(beta, beta + ".retired");
+        await writeFile(beta, "replacement-marker");
+      },
+    },
+  );
+  assert.equal(swapped, true);
+  assert.equal(
+    delivered(h).some((call) => call.endsWith(":alpha.png")),
+    false,
+  );
+  assert.equal(delivered(h).length, 1);
+  assert.equal(refusals(h).length, 1, h.sent.map((item) => item.text).join(" | "));
+  assert.equal(h.store.sessionFor("42", "")?.state, "done");
   await h.finish();
 });
 

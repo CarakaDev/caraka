@@ -116,9 +116,9 @@ export const scriptRules = [
   // itself and to leave its own configuration alone.
   { t: 'The agent checks Node, Git, and its own sign-in first.', range: r(0, 2, 24) },
   { t: 'The Web/PWA path uses no Telegram token.', range: r(1, 2, 24) },
-  { t: 'The user performs the private token step in the local init wizard.', range: r(2, 2, 24) },
-  { t: 'The agent may continue with doctor after pairing is complete.', range: r(3, 2, 24) },
-  { t: 'No webhook or listening port is enabled.', range: r(4, 2, 24) },
+  { t: 'Run caraka init web for local Web/PWA setup.', range: r(2, 2, 24) },
+  { t: 'Run doctor after Web init. Explain checks for unused agents.', range: r(3, 2, 24) },
+  { t: 'Run caraka start in foreground. Run caraka web pair in another terminal. The listener stays on loopback.', range: r(4, 2, 24) },
   // Was "No background service is promised by v0.1", which v0.2 makes false:
   // `caraka service --print` exists (src/service.ts). What stays true is that
   // nothing installs it — no file is written and the package has no

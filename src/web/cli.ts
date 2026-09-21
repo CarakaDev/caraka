@@ -1,11 +1,21 @@
 import { stat, readFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { basename, resolve } from "node:path";
-import { carakaPaths, loadConfig, parseConfig, saveConfig, type CarakaConfig } from "../config.js";
+import {
+  carakaPaths,
+  loadConfig,
+  parseConfig,
+  saveConfig,
+  workspaces,
+  type CarakaConfig,
+} from "../config.js";
 import { Store } from "../store/db.js";
 import { WebChannel } from "../channels/web.js";
 import { createScrubber } from "../core/security.js";
 import { checkConnection, connect, type ProcessRunner } from "./connect.js";
+import { loadPresets, type AgentPreset } from "../drivers/preset.js";
+
+type PresetLoader = () => Promise<{ presets: Map<string, AgentPreset>; errors: string[] }>;
 
 function value(args: string[], flag: string) {
   const index = args.indexOf(flag);
@@ -15,7 +25,7 @@ function value(args: string[], flag: string) {
 /** Configure the web adapter without a chat account. It preserves existing blocks. */
 export async function webCommand(
   args: string[],
-  injected: { runner?: ProcessRunner; request?: typeof fetch } = {},
+  injected: { runner?: ProcessRunner; request?: typeof fetch; loadPresets?: PresetLoader } = {},
 ) {
   if (args[0] === "connect") {
     const provider = args[1];
@@ -97,7 +107,15 @@ export async function webCommand(
   const language = value(args, "--language");
   if (language !== undefined && language !== "id" && language !== "en")
     throw new Error("--language must be id or en.");
-  const agent = value(args, "--agent") ?? "claude-code";
+  const explicitAgent = value(args, "--agent");
+  if (explicitAgent) {
+    const { presets } = await (injected.loadPresets ?? loadPresets)();
+    if (!presets.has(explicitAgent)) {
+      const choices = [...presets.keys()].sort().join(", ") || "none";
+      throw new Error(`Unknown agent preset "${explicitAgent}". Available choices: ${choices}.`);
+    }
+  }
+  const agent = explicitAgent ?? "claude-code";
   const paths = carakaPaths();
   let current: CarakaConfig | undefined;
   try {
@@ -116,7 +134,12 @@ export async function webCommand(
   const next: CarakaConfig = {
     ...config,
     language: language ?? config.language ?? "en",
-    workspaces: config.workspaces ?? [{ slug: basename(workspace), path: workspace, agent }],
+    workspaces: (() => {
+      const existing = workspaces(config);
+      return existing.some((entry) => entry.path === workspace)
+        ? existing
+        : [...existing, { slug: basename(workspace), path: workspace, agent }];
+    })(),
     web: config.web ?? {
       host: "127.0.0.1",
       port: 7720,

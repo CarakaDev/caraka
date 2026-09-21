@@ -66,8 +66,8 @@ Docker, akun cloud, domain, webhook, dan port terbuka tidak dibutuhkan.
 
 ## Jalur manual
 
-Semua yang dilakukan prompt di atas bisa dijalankan sendiri. Masuk ke repository
-yang ingin dikerjakan Claude, lalu jalankan:
+Bagian ini mengonfigurasi jalur Telegram opsional secara manual. Bagian ini tidak
+mengulangi prompt Web/PWA. Masuk ke repository yang ingin dikerjakan Claude, lalu jalankan:
 
 ```bash
 cd /path/ke/repository

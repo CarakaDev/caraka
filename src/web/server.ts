@@ -323,7 +323,7 @@ export class WebServer {
       if (!bytes) return this.send(response, 404, { error: "file" });
       response.writeHead(200, {
         "content-type": file.mime,
-        "content-disposition": `attachment; filename*=UTF-8${encodeURIComponent(file.name)}`,
+        "content-disposition": `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`,
         "cache-control": "no-store",
         "x-content-type-options": "nosniff",
       });

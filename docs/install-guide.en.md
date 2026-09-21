@@ -66,8 +66,8 @@ Docker, a cloud account, a domain, a webhook, and an open port are not needed.
 
 ## The manual route
 
-Everything the prompt above does can be done by hand. Go into the repository
-you want Claude to work on, then run:
+This section configures the optional Telegram route by hand. It does not repeat
+the Web/PWA prompt. Go into the repository you want Claude to work on, then run:
 
 ```bash
 cd /path/to/repository

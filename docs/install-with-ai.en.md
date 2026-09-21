@@ -2,7 +2,7 @@
 
 **Bahasa Indonesia:** [`install-with-ai.md`](install-with-ai.md)
 
-This prompt can be pasted into a coding agent running on the machine that holds the repository. It keeps the installation work separate from entering the Telegram token.
+This prompt can be pasted into a coding agent on the machine that holds the repository. It sets up local Web/PWA without a Telegram token.
 
 The English prompt below also appears as the first step of the [installation guide](install-guide.en.md). If one of them changes, change both.
 
