@@ -270,6 +270,8 @@ npm run smoke   # Claude Code harus login; langkah codex dilewati bila codex tid
 
 Lihat [CONTRIBUTING.md](CONTRIBUTING.md). Laporan kerentanan ke `security@caraka.dev` — lihat [SECURITY.md](SECURITY.md).
 
+Kontributor: [@ariekoprasethio](https://github.com/ariekoprasethio).
+
 ## Lisensi
 
 MIT — lihat [LICENSE](LICENSE).

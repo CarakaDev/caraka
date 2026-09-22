@@ -271,6 +271,8 @@ npm run smoke   # five live runs: Claude Code over ACP and over its CLI route,
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Vulnerabilities go to `security@caraka.dev` — see [SECURITY.md](SECURITY.md).
 
+Contributor: [@ariekoprasethio](https://github.com/ariekoprasethio).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
