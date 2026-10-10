@@ -34,6 +34,17 @@ export const presetSchema = z
     imageArg: z.string().min(1).optional(),
     imageMode: z.enum(["repeat", "join"]).default("repeat"),
     env: z.record(z.string(), z.string()).default({}),
+    // The sandbox word the agent's own CLI takes for each policy mode. A preset
+    // that writes `{sandbox}` in `args` or `resumeArgs` must carry all three, so
+    // a mode with no word cannot start the agent unsandboxed.
+    sandbox: z
+      .object({
+        "read-only": z.string().min(1),
+        assisted: z.string().min(1),
+        trusted: z.string().min(1),
+      })
+      .strict()
+      .optional(),
     acp: z
       .object({
         command: z.string().min(1),
@@ -48,7 +59,13 @@ export const presetSchema = z
       .strict()
       .optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (preset) =>
+      preset.sandbox ||
+      ![...preset.args, ...(preset.resumeArgs ?? [])].some((arg) => arg.includes("{sandbox}")),
+    { path: ["sandbox"], message: "`{sandbox}` needs a `sandbox` map with all three modes" },
+  );
 
 export type AgentPreset = z.infer<typeof presetSchema>;
 

@@ -5,6 +5,17 @@ All notable changes to this project are recorded here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [Unreleased]
+
+### Fixed
+
+- **A Codex run follows the conversation's mode** ([issue #16]). A Telegram topic set to `assisted` in `telegram.modes` passed Caraka's policy gate, but the Codex preset always ran `--sandbox read-only` and resumed with `sandbox_mode="read-only"`, so Codex could never write. The preset now writes a `{sandbox}` slot on both lines, and a `sandbox` map gives each mode its word: `read-only` for `read-only`, `workspace-write` for `assisted` and `trusted`. A resumed session keeps the mode of its route. A conversation with no configured mode stays `read-only`. A preset that uses `{sandbox}` without all three words fails to load.
+- **`driver: acp` on an agent with no ACP route fails with a clear message** ([issue #16]). The Codex preset has no `acp:` block, and the old message said the ACP command `acp` was not found. `caraka start` now stops with exit code 78 before any channel starts, names the agent, and gives both fixes: remove `driver: acp`, or set `driver: cli`.
+
+### Changed
+
+- **A direct message can now write through Codex.** A direct message defaults to `assisted`, so Codex runs with `workspace-write` there. Codex has no permission seam on the CLI route, so it writes inside the workspace without an approval card; its own sandbox stops it outside the workspace. A group or topic stays `read-only` until `telegram.modes` names it.
+
 ## [1.6.0] — 2026-09-21
 
 Caraka adds its local Web/PWA channel. The release remains unproven until the existing field gates have evidence.
@@ -39,6 +50,7 @@ One report, and the machine it came from needed a restart to recover.
 - **A descendant that calls `setsid` still escapes**, and so does one that ignores SIGTERM after the agent itself has exited: the pid that names the group is then nobody's, and signalling a number the system may reuse is worse than the process left behind.
 - **Nothing here limits CPU or memory.** The report asked for that, and it is the operator's `cgroup`, `ulimit`, or systemd unit. A cap would have held the symptom at a ceiling and left every tree alive.
 
+[issue #16]: https://github.com/CarakaDev/caraka/issues/16
 [issue #15]: https://github.com/CarakaDev/caraka/issues/15
 
 ## [1.5.9] — 2026-08-19

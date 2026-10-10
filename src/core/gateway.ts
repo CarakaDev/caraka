@@ -1796,6 +1796,7 @@ export class Gateway {
         agentId,
         [compiled?.block, carried.block, prompt].filter(Boolean).join("\n\n"),
         {
+          mode,
           update: async (notification) => {
             this.recordFacts(session.id, notification);
             this.observeToolCall(notification, scope);

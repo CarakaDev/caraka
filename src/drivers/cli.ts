@@ -135,7 +135,17 @@ export class CliDriver implements AgentDriver {
     if (!state) throw new Error(this.t("driver.noSession"));
     const resume = state.turns > 0 && (this.preset.resumeArgs?.length ?? 0) > 0;
     const base = resume ? (this.preset.resumeArgs ?? []) : this.preset.args;
-    const argv = base.map((arg) => arg.replaceAll("{sessionId}", state.external ?? sessionId));
+    // Fail closed: a `{sandbox}` with no word for this mode never reaches the
+    // agent as a literal, and the agent never runs unsandboxed. The schema makes
+    // this unreachable for a loaded preset.
+    const sandbox = this.preset.sandbox?.[route.mode];
+    if (!sandbox && base.some((arg) => arg.includes("{sandbox}")))
+      throw new Error(this.t("driver.noSandbox", { agent: this.preset.id, mode: route.mode }));
+    const argv = base.map((arg) =>
+      arg
+        .replaceAll("{sessionId}", state.external ?? sessionId)
+        .replaceAll("{sandbox}", sandbox ?? ""),
+    );
     const viaArg =
       this.preset.input === "arg" &&
       prompt.length <= (this.preset.maxPromptArgChars ?? Number.POSITIVE_INFINITY);

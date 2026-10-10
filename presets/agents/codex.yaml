@@ -1,6 +1,9 @@
 # Codex CLI (OpenAI). Dari docs/api.md §1, dipangkas ke field yang dibaca kode.
-# `read-only` adalah kontrol keamanan (docs/security.md §7), bukan preferensi —
-# jangan dilonggarkan lewat preset.
+# The sandbox is the security control (docs/security.md §7). It follows the
+# conversation's policy mode through `{sandbox}` and the `sandbox` map below:
+# `read-only` stays read-only, and `assisted` or `trusted` let Codex write
+# inside the workspace. A conversation with no configured mode stays read-only.
+# Do not write a fixed value into `args` or `resumeArgs`: that breaks the map.
 #
 # Baris `resumeArgs` dulu menyalin bentuk `args` dan salah di dua tempat, dan
 # smoke hidup pertama terhadap codex-cli 0.147.0 pada 10 Agustus 2026 yang
@@ -14,8 +17,12 @@
 id: codex
 driver: cli
 command: codex
-args: ["exec", "--json", "--color", "never", "--sandbox", "read-only", "--skip-git-repo-check"]
-resumeArgs: ["exec", "resume", "{sessionId}", "--json", "--skip-git-repo-check", "-c", "sandbox_mode=\"read-only\""]
+args: ["exec", "--json", "--color", "never", "--sandbox", "{sandbox}", "--skip-git-repo-check"]
+resumeArgs: ["exec", "resume", "{sessionId}", "--json", "--skip-git-repo-check", "-c", "sandbox_mode=\"{sandbox}\""]
+sandbox:
+  read-only: read-only
+  assisted: workspace-write
+  trusted: workspace-write
 output: jsonl
 resumeOutput: jsonl
 sessionIdFields: ["thread_id", "session_id"]

@@ -2223,8 +2223,9 @@ function cliPreset(over: Record<string, unknown> = {}) {
   });
 }
 
-function textRoute(updates: string[]) {
+function textRoute(updates: string[], mode: PolicyMode = "read-only") {
   return {
+    mode,
     update(notification: AgentUpdate) {
       if (notification.update.sessionUpdate === "agent_message_chunk")
         updates.push(notification.update.content.text);
@@ -2276,9 +2277,16 @@ test("the nine shipped presets load, and every unverified flag says so", async (
   // before the model is reached. Both halves are pinned: the control must be
   // there, and the flag that broke it must not come back.
   const codex = shipped.presets.get("codex");
-  assert.deepEqual(codex?.args.slice(4, 6), ["--sandbox", "read-only"]);
-  assert.equal(codex?.resumeArgs?.includes('sandbox_mode="read-only"'), true);
+  // Since issue #16 the word follows the conversation mode: the control stays
+  // on both lines as a `{sandbox}` slot, and the map gives each mode its word.
+  assert.deepEqual(codex?.args.slice(4, 6), ["--sandbox", "{sandbox}"]);
+  assert.equal(codex?.resumeArgs?.includes('sandbox_mode="{sandbox}"'), true);
   assert.equal(codex?.resumeArgs?.includes("--color"), false);
+  assert.deepEqual(codex?.sandbox, {
+    "read-only": "read-only",
+    assisted: "workspace-write",
+    trusted: "workspace-write",
+  });
   // AC-3.3 on the aider route. `--no-auto-commits` is the same class of thing
   // as the codex sandbox: aider run in a user's repository commits by itself
   // after every edit, and `CliDriver` closes stdin, so each of aider's own
@@ -2540,6 +2548,84 @@ test("a CLI run that exits non-zero answers with scrubbed stderr", async () => {
 test("setMode on the CLI driver resolves and changes nothing", async () => {
   // AC-4.10, the precedent set by the unconnected ACP driver.
   assert.equal(await new CliDriver(cliPreset()).setMode(), undefined);
+});
+
+test("the CLI driver puts the conversation mode into the sandbox slot, first turn and resume", async () => {
+  // Issue #16. `assisted` and `trusted` write inside the workspace, `read-only`
+  // stays read-only, and the resume line carries the same word as the first.
+  const root = await mkdtemp(join(tmpdir(), "caraka-sandbox-"));
+  const sandbox = {
+    "read-only": "read-only",
+    assisted: "workspace-write",
+    trusted: "workspace-write",
+  };
+  const seen = async (mode: PolicyMode) => {
+    const record = join(root, `${mode}.jsonl`);
+    const driver = new CliDriver(
+      cliPreset({
+        args: [stubAgent, "--sandbox", "{sandbox}"],
+        resumeArgs: [stubAgent, "resume", "{sessionId}", "-c", 'sandbox_mode="{sandbox}"'],
+        sandbox,
+        output: "jsonl",
+        sessionIdFields: ["thread_id"],
+        env: {
+          FAKE_RECORD: record,
+          FAKE_STDOUT: '{"type":"thread.started","thread_id":"t-sandbox"}',
+        },
+      }),
+    );
+    const sid = await driver.session(null, root);
+    await driver.prompt(sid, "one", textRoute([], mode));
+    await driver.prompt(sid, "two", textRoute([], mode));
+    return (await readFile(record, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => (JSON.parse(line) as { argv: string[] }).argv);
+  };
+  const [assistedFirst, assistedResume] = await seen("assisted");
+  assert.ok(assistedFirst?.includes("workspace-write"));
+  assert.equal(assistedFirst?.includes("read-only"), false);
+  assert.ok(assistedResume?.includes('sandbox_mode="workspace-write"'));
+  const [trustedFirst] = await seen("trusted");
+  assert.ok(trustedFirst?.includes("workspace-write"));
+  const [lockedFirst, lockedResume] = await seen("read-only");
+  assert.ok(lockedFirst?.includes("read-only"));
+  assert.ok(lockedResume?.includes('sandbox_mode="read-only"'));
+  // AC-7: the schema makes this unreachable, and the driver still fails closed.
+  const bare = { ...cliPreset({ args: [stubAgent, "{sandbox}"], sandbox }), sandbox: undefined };
+  const driver = new CliDriver(bare);
+  await assert.rejects(
+    async () => driver.prompt(await driver.session(null, root), "x", textRoute([], "assisted")),
+    /no sandbox setting/,
+  );
+});
+
+test("a preset that writes the sandbox slot without a full mode map is refused", () => {
+  const base = { id: "x", driver: "cli", command: "x", args: ["--sandbox", "{sandbox}"] };
+  assert.throws(() => presetSchema.parse(base), /sandbox/);
+  assert.throws(
+    () => presetSchema.parse({ ...base, args: [], resumeArgs: ["-c", "m={sandbox}"] }),
+    /sandbox/,
+  );
+  assert.throws(() =>
+    presetSchema.parse({ ...base, sandbox: { "read-only": "r", assisted: "w" } }),
+  );
+  assert.ok(
+    presetSchema.parse({ ...base, sandbox: { "read-only": "r", assisted: "w", trusted: "w" } }),
+  );
+});
+
+test("a forced ACP route on an agent with no ACP block says so, and names both fixes", () => {
+  const en = translator();
+  const cliOnly = presetSchema.parse({ id: "codex", driver: "cli", command: process.execPath });
+  assert.throws(
+    () => buildDriver(cliOnly, "acp", en, createScrubber()),
+    (error: Error) =>
+      /Agent codex has no ACP route/.test(error.message) &&
+      error.message.includes("driver: acp") &&
+      error.message.includes("driver: cli") &&
+      !error.message.includes("was not found"),
+  );
 });
 
 test("driver selection: ACP when the adapter resolves, CLI otherwise, forced routes never cross", () => {

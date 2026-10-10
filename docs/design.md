@@ -172,7 +172,7 @@ output: json
 
 Parser: `json` → ambil field teks + session id; `jsonl` → baca aliran, ambil pesan agent terakhir + id thread; `text` → stdout apa adanya.
 
-Batasan yang dikomunikasikan jujur ke user: tanpa streaming, dan tanpa permission hook — persetujuan di jalur ini jatuh ke rem agent-nya sendiri, seperti sandbox codex (`--sandbox read-only`) dan konfirmasi bawaan aider. Kebijakan lokal level prompt yang dulu dijanjikan kalimat ini belum dibangun (dicatat 8 Agustus 2026, `driver-v04`); field config yang tampak seperti gerbangnya dicabut sampai gerbang itu ada di jalur run.
+Batasan yang dikomunikasikan jujur ke user: tanpa streaming, dan tanpa permission hook — persetujuan di jalur ini jatuh ke rem agent-nya sendiri, seperti sandbox codex (`read-only` di percakapan `read-only`, `workspace-write` di `assisted` dan `trusted`, sejak issue #16) dan konfirmasi bawaan aider. Kebijakan lokal level prompt yang dulu dijanjikan kalimat ini belum dibangun (dicatat 8 Agustus 2026, `driver-v04`); field config yang tampak seperti gerbangnya dicabut sampai gerbang itu ada di jalur run.
 
 ---
 

@@ -96,6 +96,8 @@ Two more constraints shape every review:
 
 
   On 21 September 2026 Task 4 measured `src/` at **12,809 lines**, unchanged from its Web/PWA base. The release refinements add 11 lines in `assets/web/app.js` for focus retention and dismissed-permission retry. The source budget remains open debt.
+
+  On 10 October 2026 `src/` measures **12,963 lines**, 4,963 over the ceiling. `codex-sandbox-ikut-mode` (issue #16) added 55, measured from the 12,908 the tree held on `main` when it started (`find src -name '*.ts' | xargs cat | wc -l`); 61 lines went in and 6 came out, 13 of the 61 are comment. It bought two things. The Codex sandbox follows the conversation's policy mode through a `{sandbox}` slot and a three-word map that the preset schema forces to be complete, and `DriverRoute` carries the mode so the CLI driver can fill the slot and fail closed when a word is missing. And `driver: acp` on an agent with no ACP route stops `caraka start` with exit 78, naming both fixes, where it used to print that a command called `acp` was not found. No deletion paid for it. The ceiling stays ~8,000.
 ## Repository map
 
 ```

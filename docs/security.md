@@ -144,6 +144,8 @@ Sampai v1.0.0 baris `grup (default)` adalah desain, bukan build: tidak ada gerba
 
 Sejak 8 Agustus 2026 gerbang itu ada. Mode dibaca sekali per pesan, dari peta `modes` di blok channel dan dari jenis container tempat pesan itu tiba — tidak pernah dari teksnya, dan tidak pernah dari channel mana yang menjawab. Container yang tidak disebut di peta itu memakai default di tabel: `assisted` di percakapan pribadi, `read-only` di setiap ruang. Di `read-only` permintaan izin yang bukan bacaan ditolak sebelum kartu digambar, jendela trust yang terbuka di percakapan lain tidak menutupinya, dan route yang memutuskan izinnya sendiri tidak menerima tugas itu sama sekali, karena tanpa seam permission tidak ada tempat bagi `read-only` untuk menolak. Yang menentukan "bukan bacaan" bukan hanya `kind` yang ditulis agent: sebuah permintaan ber-`kind` `read` yang membawa `command`, `content`, atau pasangan `old_string`/`new_string` tetap dibaca sebagai tulis, karena T2 berakhir dengan agent yang menulis label sesukanya. `/yolo` juga ditolak dari percakapan `read-only`, sebab jendelanya berlaku untuk seluruh workspace dan akan menaikkan otoritas percakapan lain yang bukan `read-only`. `trusted` tidak bisa ditulis di berkas: ia wajib punya jam (kontrol wajib 3), jadi skema menolaknya dan yang membukanya tetap `caraka trust` atau `/yolo` dari percakapan yang bukan `read-only`.
 
+Di rute CLI baris `assisted` berlaku berbeda: tidak ada seam permission, jadi tidak ada kartu untuk ⚠️. Preset Codex menjalankan agent dengan `workspace-write`, sehingga ia menulis di dalam workspace tanpa bertanya, dan sandbox Codex sendiri yang menahannya di luar workspace (§7). Percakapan yang tidak disebut di peta `modes` tetap `read-only`, dan di sana sandbox-nya `read-only`.
+
 Dua sel di baris `assisted` masih desain. Tabel menuliskan ❌ untuk `git push` dan deploy; yang dilakukan kode adalah mengirim kartu untuk keduanya, karena daftar berisiko tinggi berlaku lebih dulu dan tidak dibedakan per mode. Pemetaan role Discord → mode kebijakan (FR-AUTH-06) juga belum dibangun: kunci peta `modes` adalah id container, atau id principal di percakapan pribadi, bukan role — sebuah guild channel dipilih satu per satu. Sebuah role Discord tidak pernah, dalam keadaan apa pun, memberi otoritas approval (ADR-0008).
 
 **Daftar aksi berisiko tinggi** (selalu approval, apa pun modenya):
@@ -265,7 +267,7 @@ Prinsip: **warisi, jangan bangun ulang.**
 
 | Lapisan | Sumber |
 |---|---|
-| Sandbox eksekusi | Bawaan agent (mis. preset Codex kami memakai `--sandbox read-only` secara default) |
+| Sandbox eksekusi | Bawaan agent. Preset Codex mengikuti mode percakapan: `read-only` untuk `read-only`, `workspace-write` untuk `assisted` dan `trusted`. Di rute CLI tidak ada seam permission, jadi percakapan `assisted` menulis di dalam workspace tanpa kartu approval; sandbox Codex sendiri yang menjadi remnya |
 | Batas direktori | `cwd` dikunci ke root workspace, dan path di luar root itu adalah aksi berisiko tinggi: ia mempertahankan tombolnya di dalam jendela trust. Pemeriksaannya berjalan atas keluaran `resolve()`, bukan `realpath`, karena tool call yang membuat berkas menamai path yang belum ada dan `realpathSync` melempar ENOENT untuk path seperti itu. Symlink dan bind mount di bawah root karena itu tidak terlihat olehnya |
 | Deny-list path | Kebijakan kami, diterapkan sebelum approval ditawarkan |
 | Isolasi kuat (opsional) | Jalankan agent di container/VM per workspace — didokumentasikan, tidak diwajibkan |

@@ -3,6 +3,8 @@
 // aspirational interface in `docs/design.md`. Drivers import this file; core
 // never imports a driver (`AGENTS.md`: channels → core ← drivers).
 
+import type { PolicyMode } from "./security.js";
+
 /** A slash command the agent says it answers to. */
 export type AgentCommand = { name: string; description: string };
 
@@ -79,8 +81,12 @@ export type PermissionResponse = {
  */
 export const DEFAULT_AGENT = "claude-code";
 
-/** The per-prompt pair of callbacks the gateway hands a driver. */
+/**
+ * The per-prompt pair of callbacks the gateway hands a driver, and the policy
+ * mode of the conversation, so a route with its own sandbox can follow it.
+ */
 export type DriverRoute = {
+  mode: PolicyMode;
   update(notification: AgentUpdate): void | Promise<void>;
   permission(request: PermissionRequest): Promise<PermissionResponse>;
 };

@@ -85,6 +85,8 @@ export function buildDriver(
       asksPermission: preset.acp.asksPermission,
     });
   }
+  if (forced === "acp" && !preset.acp)
+    throw new Error(language("driver.noAcpRoute", { agent: preset.id }));
   if (forced === "acp")
     throw new Error(
       t("driver.acpMissing", { agent: preset.id, command: preset.acp?.command ?? "acp" }),
@@ -876,12 +878,25 @@ async function start(args: string[] = []) {
     process.exitCode = 78;
     return;
   }
+  const language = translator(loaded.config.language ?? "en");
+  const presetsFound = await loadPresets(undefined, language);
+  for (const problem of presetsFound.errors) console.error(problem);
+  // A workspace that forces ACP on an agent with no ACP route stops here, before
+  // the pid file exists and before any channel starts, rather than at the first
+  // message (issue #16).
+  for (const entry of workspaces(loaded.config)) {
+    const preset = presetsFound.presets.get(entry.agent || DEFAULT_AGENT);
+    if (entry.driver === "acp" && preset && !preset.acp) {
+      console.error(language("driver.noAcpRoute", { agent: preset.id }));
+      process.exitCode = 78;
+      return;
+    }
+  }
   await writeFile(loaded.paths.pid, `${process.pid}\n`, { mode: 0o600 });
   await chmod(loaded.paths.pid, 0o600);
 
   const scrub = createScrubber(startupSecrets(loaded));
   const store = new Store(loaded.paths.database, scrub);
-  const language = translator(loaded.config.language ?? "en");
   // `none` builds no provider at all; the gateway treats its absence as the
   // provider.
   const memory =
@@ -893,8 +908,6 @@ async function start(args: string[] = []) {
       : loaded.config.memory.provider === "local"
         ? new LocalMemory(store)
         : undefined;
-  const presetsFound = await loadPresets(undefined, language);
-  for (const problem of presetsFound.errors) console.error(problem);
   const gateway = new Gateway(
     loaded.config,
     loaded.approvalKey,
