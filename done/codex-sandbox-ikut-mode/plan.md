@@ -64,4 +64,22 @@ Dijalankan di `rama-tuf`, bukan di mesin ini:
 npm run verify
 ```
 
-HASIL GATE: diisi setelah run.
+Di `rama-tuf`, commit `e846803`, keluar 0:
+
+```
+clean: 364 tracked files, no credentials
+oxlint: 0 warnings, 0 errors; oxfmt --check bersih
+ℹ pass 194   ℹ fail 0   (unit)
+ℹ pass 31    ℹ fail 0   (web)
+ℹ pass 139   ℹ fail 0   (e2e)
+18 passed                (web:browser, Playwright)
+Tests 35 passed (35)     (site vitest)
+```
+
+Dua catatan jujur. Run pertama gagal di `oxfmt --check` pada `src/i18n.ts` (satu
+entri katalog yang muat satu baris); itu diperbaiki di commit `e846803`. Run
+kedua gagal 18 test Playwright karena Chromium belum terpasang di `rama-tuf`;
+`npx playwright install chromium` dijalankan di sana, dan run ketiga hijau.
+`tsc --noEmit` di mesin ini hanya melaporkan `web-push` tidak ditemukan,
+karena `node_modules` tidak ada di worktree; `npm run typecheck` di `rama-tuf`
+lulus.
