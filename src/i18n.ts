@@ -241,8 +241,7 @@ const en = {
     "Agent {agent}: the ACP command `{command}` was not found. Install it, or set `driver: cli` under `workspace` in config.yaml.",
   "driver.noAcpRoute":
     "Agent {agent} has no ACP route. Remove `driver: acp` from this workspace in config.yaml, or set `driver: cli`.",
-  "driver.noSandbox":
-    "Agent {agent} has no sandbox setting for {mode} mode, so it did not start.",
+  "driver.noSandbox": "Agent {agent} has no sandbox setting for {mode} mode, so it did not start.",
   "driver.cliMissing":
     "Agent {agent}: its preset has no CLI command. Install the ACP adapter, or remove `driver: cli` from config.yaml.",
   "driver.none":
