@@ -20,7 +20,7 @@ import { r } from '../lib/anim'
 // carries shipped code, and not one of the field gates has been run by a
 // person. `Closed beta` said the first half and hid the second.
 export const stats = [
-  { n: '1.6.0', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
+  { n: '1.6.1', label: 'CURRENT VERSION', tone: '#FF7A5E', bg: '#12100F', border: '#2B1612' },
   { n: 'Unproven', label: 'RELEASE STATE', tone: '#FFD67E', bg: '#0C1116', border: '#171C22' },
   // Nine presets load; six routes across five agents have completed a turn
   // against a live binary here — Claude Code over ACP and over its CLI route,
@@ -102,7 +102,7 @@ export const phases: Phase[] = [
   // seventeen more releases shipped inside it, so the page answered "v1.0" to a
   // reader looking at 1.5.5. The gate below is what keeps phase 7 open, not the
   // version, and roadmap.md now lists what shipped between the two numbers.
-  { n: '7', title: 'Public release · v1.0 → v1.6.0', dur: '2 weeks', live: true, ...shipped,
+  { n: '7', title: 'Public release · v1.0 → v1.6.1', dur: '2 weeks', live: true, ...shipped,
     q: 'Is it ready to be trusted by strangers?',
     gate: 'Every goal in prd.md is met and measured. Fifteen agents are not covered: nine presets ship and five have completed a turn against a live binary here, over six routes — Claude Code over ACP and over its CLI route, Codex and aider on the CLI, goose and opencode over ACP. Four have never run here at all. Taking the release to the Indonesian developer community and to the ACP ecosystem is the step nothing in a repository can perform.',
     range: r(7, 3, 26) },
@@ -133,6 +133,16 @@ export const releases = [
         'Watch the dashboard swap a panel in a real browser with the CSP live',
         'Run fourteen days on a real WhatsApp number with no ban and no manual relink, or publish the honest finding that makes Cloud API the default',
         'Take the release to the Indonesian developer community and to the ACP ecosystem',
+      ] },
+    ] },
+  { v: '1.6.1', state: 'unproven', date: '10 October 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
+    groups: [
+      { label: 'FIXED', tone: '#FFD67E', items: [
+        'A Codex run follows the conversation\u2019s mode. A topic set to assisted passed the policy gate, but Codex always ran read-only, so it could never write. Each mode now picks its own Codex setting: read-only stays read-only, and assisted and trusted write inside the workspace. A resumed session keeps the mode of its route, and a conversation with no configured mode stays read-only',
+        'An agent set to driver: acp with no ACP route now stops caraka start with exit code 78, before any channel starts. The message names the agent and gives both fixes: remove driver: acp, or set driver: cli. The old message said the command acp was not found',
+      ] },
+      { label: 'CHANGED', tone: '#FFD67E', items: [
+        'A direct message can now write through Codex. A direct message defaults to assisted, so Codex writes inside the workspace without an approval card, and its own sandbox stops it outside the workspace. A group or topic stays read-only until its mode is set',
       ] },
     ] },
   { v: '1.6.0', state: 'unproven', date: '21 September 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
@@ -187,29 +197,13 @@ export const releases = [
         'Memory saved remains in the final answer. Caraka writes it after the agent finishes to name the observation the run stored; it is not a streaming fragment or tool output',
       ] },
     ] },
-  { v: '1.5.7', state: 'unproven', date: '15 August 2026', tone: '#8EEE98', chipBg: '#0E1F14', chipInk: '#8EEE98', headBg: '#0E1216', border: '#171C22', range: r(1, 4, 28),
-    groups: [
-      { label: 'FIXED', tone: '#FFD67E', items: [
-        'A name the topic already carried was written again. Reported from outside: every time I give it work it renames the topic again, even though it is already in that topic. What the reporter sees is not the glyph but the cost of it \u2014 every rename writes a service message into the transcript, so a redundant one is litter in the room they are working in. Four paths sent a name the topic already had: /stop and the thirty-minute timeout each cancel a run that then reports itself cancelled, /close writes done on a session whose last run already ended there, and two approvals arriving together each fire twice',
-        'The guard sits below the state write, not above it. The state write bumps the row timestamp and the route lookup orders by it, so returning early on an unchanged state would quietly change which session a later message resolves to. It is keyed on the rendered name rather than the state, so a second turn still moves from running to done',
-        'A 429 held the run instead of the glyph. The retry loop slept for less than the channel asked \u2014 which is how the next 429 is earned \u2014 and never gave up, and four of the five callers await it, so one rate limit on a rename held the run itself. The wait is honoured in full now and a budget ends the loop: past it the topic loses its glyph rather than the run being held. Renaming a Discord thread is limited to a couple of calls per ten minutes, which one ordinary turn already spent',
-      ] },
-      { label: 'ADDED', tone: '#8EEE98', items: [
-        'An image the agent produced reaches the chat. It did not exist, and the hole ran through three layers: the core update type declared content as text only, the reader returned the empty string for anything else, and no channel method could put bytes in a chat. A turn whose only output was a picture reported that it finished without output \u2014 the agent drew the chart and the person who asked was told nothing had been made',
-        'The tool-call path too, which was lost twice over: it was declared without its content field and its update kind was not declared at all, and that is where an image is usually born, because an agent that draws a chart draws it inside a tool',
-      ] },
-      { label: 'LIMITED', tone: '#FFD67E', items: [
-        'A channel without the method answers with a sentence naming what arrived. WhatsApp is that channel: its API needs upload-then-send, its transport seam types the payload as a string, and every write passes the funnel holding five ban mitigations. No number has ever been linked to this code',
-        'Bytes cannot pass the secret scrubber. A secret rendered into a picture leaves as a picture, and that is recorded as a limit rather than a gap to close',
-        'An ordinary turn still writes two service messages. Those are different names, so nothing skips them; dropping one is a product decision about the status board rather than a bug fix',
-      ] },
-    ] },
-  { v: '1.5.6 → 0.0.0', state: 'in CHANGELOG.md', date: '7–15 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
+  { v: '1.5.7 → 0.0.0', state: 'in CHANGELOG.md', date: '7–15 August 2026', tone: '#B2BCC6', chipBg: '#171C22', chipInk: '#7A848F', headBg: '#0E1216', border: '#171C22', range: r(2, 4, 28),
     groups: [
       { label: 'WHERE THE FULL ENTRIES ARE', tone: '#FFD67E', items: [
         'CHANGELOG.md in the repository, linked at the foot of this page. It carries every release below at the length it was written in; what is here is one line each, and nothing has been dropped from the history',
       ] },
       { label: 'SHIPPED', tone: '#8EEE98', items: [
+        '1.5.7 · 15 August 2026 — a topic name was written again when it had not changed, a 429 held the run, and an image the agent made never reached the chat',
         '1.5.6 · 15 August 2026 — release facts, status badges, and the gate moved together after prose drifted from the package',
         '1.5.5 · 14 August 2026 — a dropped send stranded a session as running for good, and a stored rollout the agent no longer had broke every turn after it',
         '1.5.4 · 14 August 2026 — nine sentences said Claude outright, on paths every task crosses, and the working line took the brand',

@@ -5,7 +5,9 @@ All notable changes to this project are recorded here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [Unreleased]
+## [1.6.1] — 2026-10-10
+
+A Codex run now follows the conversation's mode, and a bad `driver: acp` stops with a clear message.
 
 ### Fixed
 

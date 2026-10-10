@@ -43,7 +43,7 @@ export const projects = [
   {
     name: 'caraka',
     desc: 'The envoy. A local bridge from chat or Web/PWA to the coding agent already on your machine, with sessions, approval before writes, and no new agent loop.',
-    // Comp line 271 says pre-alpha. 1.6.0 is the release in the CHANGELOG, and
+    // Comp line 271 says pre-alpha. 1.6.1 is the release in the CHANGELOG, and
     // the chip above shows the registry instead, after publication catches up.
     status: 'v1.6, unproven',
     tone: '#FFD67E',
