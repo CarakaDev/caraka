@@ -500,6 +500,11 @@ test.describe('the comps still decide the layout', () => {
     // `webServer` block cannot bind it. The script makes the same measurement
     // this test makes, and every other route in the table came back at the
     // figure already written here, which is what says the two agree.
+    //
+    // 1.6.1 moved /status −376 to 8313. Its card went on and 1.5.7's came off
+    // into the archive line, and the card is a short one. Measured Chromium at
+    // 1440x900 on a second machine, where the clean 63188ed tree gave 8689 for
+    // /status, the figure written before this release.
     // The Product Hunt badge adds 83px to /, moving it from 6627 to 6710.
     // Measured Chromium at 1440x900 after the badge was added.
     // The Task 4 release check ran the supplied Playwright 1.62.1 container
@@ -515,7 +520,7 @@ test.describe('the comps still decide the layout', () => {
       '/install': 5501,
       '/security': 6269,
       '/whatsapp-risk': 6850,
-      '/status': 8689,
+      '/status': 8313,
       '/brand/readme': 5552,
       '/story': 5720,
       '/brand': 10202,
