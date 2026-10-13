@@ -512,14 +512,23 @@ test.describe('the comps still decide the layout', () => {
     // in both trees, so its values were not produced by that gate. The
     // values below are the controlled current-container measurements at 1440x900.
 
+    // /privacy is the fifteenth entry and the third route here that never had a
+    // comp: it renders docs/privacy.md and docs/privacy.id.md, and it borrows the
+    // security page's shapes and stylesheet. Its first baseline is the measured
+    // value below, Chromium at 1440x900 against a clean `npm run build`. The
+    // landing footer took a Privacy link, and the row wrapped
+    // onto a second line: / +43 to 6719. Measured with the link removed, / came
+    // back to 6676, so the 43px is the link and nothing else.
+
     const EXPECTED: Record<string, number> = {
-      '/': 6676,
+      '/': 6719,
       '/guide': 7823,
       '/docs': 7505,
       '/compare': 5982,
       '/install': 5501,
       '/security': 6269,
       '/whatsapp-risk': 6850,
+      '/privacy': 4971,
       '/status': 8313,
       '/brand/readme': 5552,
       '/story': 5720,

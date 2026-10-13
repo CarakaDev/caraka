@@ -42,6 +42,7 @@ export type PageKey =
   | 'compare'
   | 'security'
   | 'whatsappRisk'
+  | 'privacy'
   | 'status'
   | 'story'
   | 'brand'
@@ -154,6 +155,18 @@ export const PAGES: Record<PageKey, PageMeta> = {
       'The baileys provider links a real WhatsApp account as a device. What is known about the ban risk, where each figure comes from, and when to pick Cloud API.',
     ogHeadline: 'What you are wagering, · before you wager it.',
     ogKicker: 'WHATSAPP RISK',
+  },
+  privacy: {
+    path: '/privacy',
+    lang: 'en',
+    title: 'Privacy policy — caraka',
+    // The page renders docs/privacy.md and docs/privacy.id.md. `lang` is `en`
+    // because the site declares one language per route; the Indonesian text is
+    // a second block on the same page, marked lang="id" on its own wrapper.
+    description:
+      'Caraka has no account, no cloud, and no server run by the developer. What the Android app sends, what it stores, and how to delete it.',
+    ogHeadline: 'No account. No cloud. · No data sent to us.',
+    ogKicker: 'PRIVACY POLICY',
   },
   status: {
     path: '/status',

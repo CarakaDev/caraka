@@ -1,0 +1,30 @@
+---
+// One run of inline text from src/lib/policy.ts: text, code, bold, link.
+// Relative links in a policy file point at sibling files in docs/. The two
+// language files point at each other, and on this site both live on one page,
+// so those become anchors; any other relative link goes to the file in the repo.
+import type { Inline } from '../lib/policy'
+import { SITE } from '../lib/site'
+
+interface Props {
+  parts: Inline[]
+}
+
+const { parts } = Astro.props
+
+const ANCHORS: Record<string, string> = { 'privacy.md': '#main', 'privacy.id.md': '#id' }
+const href = (h: string) =>
+  /^(https?:|mailto:|#)/.test(h) ? h : ANCHORS[h] ?? `${SITE.repo}/blob/main/docs/${h}`
+---
+
+{parts.map((p) =>
+  p.k === 'code' ? (
+    <span style="color: #B2BCC6; font-family: 'JetBrains Mono', monospace; font-size: .88em; overflow-wrap: anywhere;">{p.v}</span>
+  ) : p.k === 'bold' ? (
+    <span style="color: #D2D8DF; font-weight: 600;">{p.v}</span>
+  ) : p.k === 'link' ? (
+    <a href={href(p.href)} class="hv-ink" style="color: #FF7A5E; text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere;">{p.v}</a>
+  ) : (
+    p.v
+  ),
+)}

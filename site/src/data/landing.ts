@@ -203,6 +203,7 @@ export const footerLinks = [
   { label: 'Install', href: '/install' },
   { label: 'Security', href: '/security' },
   { label: 'Status', href: '/status' },
+  { label: 'Privacy', href: '/privacy' },
   // One entry rather than five: /brand is the kit, and it links the other four
   // boards. The UI kit is a detail inside it, not a peer of Docs.
   { label: 'Brand', href: '/brand' },
