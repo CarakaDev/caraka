@@ -528,7 +528,7 @@ test.describe('the comps still decide the layout', () => {
       '/install': 5501,
       '/security': 6269,
       '/whatsapp-risk': 6850,
-      '/privacy': 4971,
+      '/privacy': 5098,
       '/status': 8313,
       '/brand/readme': 5552,
       '/story': 5720,

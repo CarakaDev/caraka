@@ -26,7 +26,7 @@ Saat Anda menekan Putuskan, aplikasi memanggil logout di server Anda. Lalu aplik
 
 ## Kamera dan kode QR
 
-Aplikasi tidak punya izin kamera. Untuk memindai kode QR pairing, aplikasi memakai Google code scanner dari Google Play services. Pemindai itu berjalan di perangkat Anda.
+Aplikasi tidak punya izin kamera. Untuk memindai kode QR pairing, aplikasi memakai Google code scanner dari Google Play services. Pemindai membaca gambar di perangkat Anda, dan Google tidak menyimpan gambar atau hasilnya. Google Play services dapat mengirim data diagnostik pemindai ke Google: model perangkat, versi Android, versi aplikasi, dan angka performa.
 
 ## Google Play
 

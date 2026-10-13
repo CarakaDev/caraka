@@ -26,7 +26,7 @@ When you tap Disconnect, the app calls logout on your server. Then it deletes al
 
 ## Camera and QR codes
 
-The app has no camera permission. To scan a pairing QR code, it uses Google code scanner from Google Play services. The scanner runs on your device.
+The app has no camera permission. To scan a pairing QR code, it uses Google code scanner from Google Play services. The scanner reads the image on your device, and Google does not store the image or the result. Google Play services can send Google diagnostic data about the scanner: device model, Android version, app version, and performance numbers.
 
 ## Google Play
 

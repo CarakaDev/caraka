@@ -83,7 +83,7 @@ Rincian 53 yang gagal:
 
 Chromium, Firefox, dan Chrome seluler: semua uji lain lulus, termasuk `/privacy` di rute, menu, daftar isi, dan luapan.
 
-Baseline baru: `/privacy` 4971 (pertama kali), `/` 6676 ke 6719 (+43 dari tautan footer; diukur ulang tanpa tautan, hasilnya 6676).
+Baseline baru: `/privacy` 4971 (pertama kali; 5098 setelah paragraf diagnostik pemindai ditambahkan, diukur di container Playwright 1.62.1), `/` 6676 ke 6719 (+43 dari tautan footer; diukur ulang tanpa tautan, hasilnya 6676).
 
 Bukti halaman: `site/dist/privacy/index.html` ada, memuat `halo@caraka.dev` dan `lang="id"`.
 
