@@ -21,8 +21,8 @@ android {
         applicationId = "dev.caraka.android"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
     }
 
     flavorDimensions += "data"
@@ -92,6 +92,8 @@ dependencies {
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.core.ktx)
     implementation(libs.core.splashscreen)
+    // Override the old fragment 1.0.0 that play-services-base pulls in.
+    implementation(libs.fragment)
     implementation(libs.coroutines.android)
     implementation(libs.serialization.json)
     implementation(libs.okhttp)

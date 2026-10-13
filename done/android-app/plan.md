@@ -138,3 +138,14 @@ Build `demo`, 1080x2400, di `scratchpad/store/raw/`: `01-splash` sampai `09-devi
 ## 6. Rilis
 
 13 Oktober 2026: aplikasi `dev.caraka.android` 1.0.0 (versionCode 1) dikirim ke review Google Play, track Production, 178 negara. Listing memakai 7 tangkapan layar dan feature graphic yang diberi label "dibuat dengan AI". Mode demo disediakan agar peninjau bisa membuka semua layar tanpa server.
+
+## 7. Perbaikan rekomendasi Play (1.0.1)
+
+Play Console memberi empat rekomendasi untuk rilis 1.0.0. Rilis 1.0.1 (versionCode 2) memperbaikinya.
+
+| Rekomendasi | Penyebab | Perbaikan |
+|---|---|---|
+| `androidx.fragment` lama | `play-services-code-scanner` membawa `play-services-base`, yang memakai `fragment:1.0.0` | Tambah `androidx.fragment:fragment:1.9.1` sebagai dependensi langsung |
+| Edge-to-edge tidak tampil untuk semua pengguna | `enableEdgeToEdge()` dipanggil setelah `super.onCreate` | Panggil sebelum `super.onCreate` |
+| API edge-to-edge usang | Tema memakai `android:statusBarColor` dan `android:navigationBarColor` | Hapus dua atribut itu. Bilah transparan hanya lewat `enableEdgeToEdge()` |
+| Batasan orientasi dan ukuran | Manifest gabungan memuat `screenOrientation="portrait"` pada `GmsBarcodeScanningDelegateActivity` | Manifest kita menghapus atribut itu dan menambah `resizeableActivity="true"` |

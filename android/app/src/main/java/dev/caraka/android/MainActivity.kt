@@ -22,11 +22,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
-        super.onCreate(savedInstanceState)
+        // Call before super.onCreate. This API makes the system bars transparent.
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
         )
+        super.onCreate(savedInstanceState)
         setContent {
             CarakaTheme {
                 CompositionLocalProvider(LocalReduceMotion provides reduceMotion) {
