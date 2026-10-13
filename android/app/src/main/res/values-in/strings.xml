@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="splash_label">Caraka</string>
+    <string name="splash_boot">MEMBUKA GERBANG</string>
+    <string name="splash_tag_a">Kirim tugasnya.</string>
+    <string name="splash_tag_b">Caraka yang jalankan.</string>
+
+    <string name="connect_title">Sambungkan mesin</string>
+    <string name="connect_help">Jalankan <xliff:g id="cmd">npx caraka web pair</xliff:g> di server atau laptop. Lalu pindai kode yang muncul, atau tempel tautannya.</string>
+    <string name="scan_qr">Pindai kode QR</string>
+    <string name="paste_link">Tempel tautan</string>
+    <string name="or_manual">atau masukkan manual</string>
+    <string name="machine_address">Alamat mesin</string>
+    <string name="pair_code">Kode pasangan</string>
+    <string name="connect">Sambungkan</string>
+    <string name="connecting">Menyambung…</string>
+    <string name="signed_out">Perangkat ini tidak lagi terhubung. Ambil kode baru dari komputer.</string>
+    <string name="err_https">Alamat harus diawali https://.</string>
+    <string name="err_address">Alamat ini tampak salah. Periksa lalu coba lagi.</string>
+    <string name="err_pair">Pemasangan gagal. Jalankan caraka web pair untuk kode baru, lalu coba lagi.</string>
+    <string name="err_unreachable">Mesin tidak menjawab. Periksa alamat dan koneksi.</string>
+    <string name="err_not_caraka">Ini bukan tautan pemasangan Caraka.</string>
+    <string name="err_scan">Pemindai tidak bisa dibuka. Tempel tautannya saja.</string>
+
+    <string name="rooms_title">Sesi</string>
+    <string name="new_session">Sesi baru</string>
+    <string name="no_sessions">Belum ada sesi. Mulai satu untuk mengirim tugas pertama.</string>
+    <string name="no_workspace">Belum ada ruang kerja. Tambahkan ruang kerja di komputer terlebih dahulu.</string>
+    <string name="pick_workspace">Pilih ruang kerja</string>
+    <string name="conn_connected">tersambung</string>
+    <string name="conn_connecting">menyambung</string>
+    <string name="conn_reconnecting">menyambung ulang</string>
+
+    <string name="back">Kembali</string>
+    <string name="state_idle">Siap</string>
+    <string name="state_running">Berjalan</string>
+    <string name="state_awaiting">Menunggu izin</string>
+    <string name="state_done">Selesai</string>
+    <string name="state_failed">Gagal</string>
+    <string name="state_cancelled">Dibatalkan</string>
+    <string name="state_unknown">Menunggu sesi</string>
+    <string name="new_hint">Sesi baru di %1$s. Tulis tugas pertama di bawah.</string>
+    <string name="no_messages">Belum ada pesan.</string>
+    <string name="placeholder_task">Tulis tugas…</string>
+    <string name="placeholder_followup">Tulis pesan lanjutan…</string>
+    <string name="message">Pesan</string>
+    <string name="send">Kirim</string>
+    <string name="stop">Hentikan</string>
+    <string name="attach">Lampirkan berkas</string>
+    <string name="remove_file">Hapus berkas</string>
+    <string name="sending">Mengirim…</string>
+    <string name="typing">Caraka sedang mengetik</string>
+    <string name="offline_hint">Menyambung ulang. Pengiriman dijeda dan pesan mungkin belum terbaru.</string>
+    <string name="err_file_large">Ukuran setiap berkas maksimal 20 MiB.</string>
+    <string name="err_busy">Mesin sedang sibuk. Coba lagi sebentar.</string>
+    <string name="err_failed">Permintaan gagal. Periksa koneksi dan coba lagi.</string>
+    <string name="err_pick">Berkas ini tidak bisa dibaca.</string>
+    <string name="permission_title">Perlu izin</string>
+    <string name="card_expired">Keputusan ini sudah tidak tersedia. Buka sesi lagi.</string>
+
+    <string name="loading">Memuat…</string>
+    <string name="save">Simpan</string>
+    <string name="saved">Tersimpan.</string>
+    <string name="save_hint">Jenis berkas ini tidak punya pratinjau. Simpan untuk membukanya dengan aplikasi lain.</string>
+    <string name="err_save">Berkas tidak bisa disimpan.</string>
+    <string name="err_open_file">Berkas tidak bisa dibuka. Coba lagi.</string>
+    <string name="md_view">Tampilan</string>
+    <string name="md_source">Sumber</string>
+    <string name="pdf_page">Halaman %1$d dari %2$d</string>
+
+    <string name="devices_title">Perangkat dan koneksi</string>
+    <string name="connection">Koneksi</string>
+    <string name="paired_devices">Perangkat terhubung</string>
+    <string name="this_device">Perangkat ini</string>
+    <string name="revoke">Cabut akses</string>
+    <string name="revoke_title">Cabut akses %1$s?</string>
+    <string name="revoke_body">Perangkat ini kehilangan akses ke mesinmu.</string>
+    <string name="add_device_hint">Untuk menghubungkan perangkat lain, jalankan caraka web pair di komputer.</string>
+    <string name="err_devices">Daftar perangkat tidak bisa dimuat.</string>
+    <string name="retry">Coba lagi</string>
+    <string name="disconnect">Putuskan</string>
+    <string name="disconnect_title">Putuskan perangkat ini?</string>
+    <string name="disconnect_body">Aplikasi keluar dan menghapus semua yang tersimpan di ponsel ini. Kamu perlu kode baru untuk menyambung lagi.</string>
+    <string name="cancel">Batal</string>
+</resources>

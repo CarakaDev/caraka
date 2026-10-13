@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="app_name" translatable="false">Caraka</string>
+
+    <string name="splash_label">Caraka</string>
+    <string name="splash_boot">OPENING THE GATE</string>
+    <string name="splash_tag_a">Send the task.</string>
+    <string name="splash_tag_b">Caraka runs it.</string>
+
+    <string name="connect_title">Connect a machine</string>
+    <string name="connect_help">Run <xliff:g id="cmd">npx caraka web pair</xliff:g> on your server or laptop. Then scan the code it shows, or paste the link.</string>
+    <string name="scan_qr">Scan QR code</string>
+    <string name="paste_link">Paste link</string>
+    <string name="or_manual">or enter it by hand</string>
+    <string name="machine_address">Machine address</string>
+    <string name="pair_code">Pairing code</string>
+    <string name="connect">Connect</string>
+    <string name="connecting">Connecting…</string>
+    <string name="signed_out">This device is no longer paired. Get a new code from your computer.</string>
+    <string name="err_https">The address must start with https://.</string>
+    <string name="err_address">This address does not look right. Check it and try again.</string>
+    <string name="err_pair">Pairing failed. Run caraka web pair for a new code, then try again.</string>
+    <string name="err_unreachable">The machine did not answer. Check the address and your connection.</string>
+    <string name="err_not_caraka">This is not a Caraka pairing link.</string>
+    <string name="err_scan">The scanner could not start. Paste the link instead.</string>
+
+    <string name="rooms_title">Sessions</string>
+    <string name="new_session">New session</string>
+    <string name="no_sessions">No sessions yet. Start one to send your first task.</string>
+    <string name="no_workspace">No workspace is registered. Add a workspace on your computer first.</string>
+    <string name="pick_workspace">Choose a workspace</string>
+    <string name="conn_connected">connected</string>
+    <string name="conn_connecting">connecting</string>
+    <string name="conn_reconnecting">reconnecting</string>
+
+    <string name="back">Back</string>
+    <string name="state_idle">Idle</string>
+    <string name="state_running">Running</string>
+    <string name="state_awaiting">Waiting for permission</string>
+    <string name="state_done">Done</string>
+    <string name="state_failed">Failed</string>
+    <string name="state_cancelled">Cancelled</string>
+    <string name="state_unknown">Waiting for session</string>
+    <string name="new_hint">New session in %1$s. Write your first task below.</string>
+    <string name="no_messages">No messages yet.</string>
+    <string name="placeholder_task">Write a task…</string>
+    <string name="placeholder_followup">Write a follow-up…</string>
+    <string name="message">Message</string>
+    <string name="send">Send</string>
+    <string name="stop">Stop</string>
+    <string name="attach">Attach files</string>
+    <string name="remove_file">Remove file</string>
+    <string name="sending">Sending…</string>
+    <string name="typing">Caraka is typing</string>
+    <string name="offline_hint">Reconnecting. Sending is paused and the messages may be out of date.</string>
+    <string name="err_file_large">Files must be 20 MiB or smaller.</string>
+    <string name="err_busy">The machine is busy. Try again shortly.</string>
+    <string name="err_failed">The request failed. Check the connection and try again.</string>
+    <string name="err_pick">This file could not be read.</string>
+    <string name="permission_title">Permission required</string>
+    <string name="card_expired">This decision is no longer available. Open the session again.</string>
+
+    <string name="loading">Loading…</string>
+    <string name="save">Save</string>
+    <string name="saved">Saved.</string>
+    <string name="save_hint">This file type has no preview. Save it to open it with another app.</string>
+    <string name="err_save">The file could not be saved.</string>
+    <string name="err_open_file">The file could not be opened. Try again.</string>
+    <string name="md_view">View</string>
+    <string name="md_source">Source</string>
+    <string name="pdf_page">Page %1$d of %2$d</string>
+
+    <string name="devices_title">Devices and connection</string>
+    <string name="connection">Connection</string>
+    <string name="paired_devices">Paired devices</string>
+    <string name="this_device">This device</string>
+    <string name="revoke">Revoke</string>
+    <string name="revoke_title">Revoke %1$s?</string>
+    <string name="revoke_body">This device loses access to your machine.</string>
+    <string name="add_device_hint">To pair another device, run caraka web pair on your computer.</string>
+    <string name="err_devices">The device list could not be loaded.</string>
+    <string name="retry">Try again</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="disconnect_title">Disconnect this device?</string>
+    <string name="disconnect_body">The app signs out and removes everything it saved on this phone. You need a new code to connect again.</string>
+    <string name="cancel">Cancel</string>
+</resources>
