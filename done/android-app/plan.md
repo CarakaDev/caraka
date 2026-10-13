@@ -1,6 +1,6 @@
 # Plan — aplikasi Android Caraka
 
-**Spec:** [`../../spec/android-app/spec.md`](../../spec/android-app/spec.md) · **Standar:** [`standards/ears.md`](../../standards/ears.md)
+**Spec:** [`spec.md`](../../spec/android-app/spec.md) · **Standar:** [`standards/ears.md`](../../standards/ears.md)
 
 ## 1. Bentuk
 
@@ -134,3 +134,7 @@ Build `demo`, 1080x2400, di `scratchpad/store/raw/`: `01-splash` sampai `09-devi
 ### Gate akhir
 
 `:app:testProdDebugUnitTest :app:lintProdRelease :app:bundleProdRelease :app:assembleDemoDebug :app:assembleProdDebug`: BUILD SUCCESSFUL. 40 test, 0 gagal. Tidak ada FATAL EXCEPTION aplikasi di logcat.
+
+## 6. Rilis
+
+13 Oktober 2026: aplikasi `dev.caraka.android` 1.0.0 (versionCode 1) dikirim ke review Google Play, track Production, 178 negara. Listing memakai 7 tangkapan layar dan feature graphic yang diberi label "dibuat dengan AI". Mode demo disediakan agar peninjau bisa membuka semua layar tanpa server.
