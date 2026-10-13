@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -63,8 +62,8 @@ class DemoModeTest {
         assertEquals(before, real.calls)
         mode.logout()
         assertEquals(before, real.calls)
-        assertFalse(mode.ui.value.demo)
-        assertEquals(Phase.Unpaired, awaitValue { mode.ui.value.takeIf { it.phase == Phase.Unpaired } }.phase)
+        // The UI flow updates on another thread, so wait for it.
+        assertEquals(Phase.Unpaired, awaitValue { mode.ui.value.takeIf { it.phase == Phase.Unpaired && !it.demo } }.phase)
     }
 
     @Test

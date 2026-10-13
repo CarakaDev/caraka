@@ -39,6 +39,7 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -133,13 +134,18 @@ fun ConnectScreen(vm: AppViewModel) {
             .padding(horizontal = 24.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Header is centred: logo, wordmark, title, help text.
+        Column(
+            Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Image(painterResource(R.drawable.ic_logo), contentDescription = null, modifier = Modifier.size(60.dp))
                 Text("caraka", color = Brand.Text, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.8).sp)
             }
-            Text(t(R.string.connect_title), color = Brand.Text, fontSize = 26.sp, fontWeight = FontWeight.Bold)
-            Text(t(R.string.connect_help), color = Brand.Muted, fontSize = 15.sp, lineHeight = 22.sp)
+            Text(t(R.string.connect_title), color = Brand.Text, fontSize = 26.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+            Text(t(R.string.connect_help), color = Brand.Muted, fontSize = 15.sp, lineHeight = 22.sp, textAlign = TextAlign.Center)
         }
 
         if (ui.notice == Notice.SignedOut) {
