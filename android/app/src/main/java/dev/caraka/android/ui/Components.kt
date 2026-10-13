@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -75,6 +76,9 @@ fun statusLabel(state: String?): String = when (state) {
     SessionStatus.CANCELLED -> t(R.string.state_cancelled)
     else -> t(R.string.state_unknown)
 }
+
+/** Text presentation only. Without it the pause glyph turns into a coloured emoji. */
+fun glyphText(state: String?): String = SessionStatus.glyph(state) + "\uFE0E"
 
 fun statusColor(state: String?): Color = Color(SessionStatus.color(state))
 
@@ -144,6 +148,7 @@ fun CkField(
     placeholder: String = "",
     mono: Boolean = false,
     keyboard: KeyboardOptions = KeyboardOptions.Default,
+    actions: KeyboardActions = KeyboardActions.Default,
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(label, color = Brand.Muted, fontSize = 13.sp, fontWeight = FontWeight.Medium)
@@ -158,6 +163,7 @@ fun CkField(
             singleLine = true,
             textStyle = style,
             keyboardOptions = keyboard,
+            keyboardActions = actions,
             cursorBrush = SolidColor(Brand.Coral),
             visualTransformation = VisualTransformation.None,
             modifier = Modifier
@@ -212,7 +218,7 @@ fun StatusGlyph(state: String?, modifier: Modifier = Modifier) {
             )
             Box(Modifier.size(22.dp).border(1.5.dp, Brand.Gold, CircleShape))
         }
-        Text(SessionStatus.glyph(state), color = color, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Text(glyphText(state), color = color, fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
 }
 

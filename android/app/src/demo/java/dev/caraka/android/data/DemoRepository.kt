@@ -22,7 +22,8 @@ import java.util.UUID
 class DemoRepository(private val context: Context) : CarakaRepository {
     private val indonesian = Locale.getDefault().language == "id"
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val now = System.currentTimeMillis()
+    /** Noon today, so store screenshots show times that match a 12:00 status bar. */
+    private val now = java.time.LocalDate.now().atTime(12, 0).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
     private val minute = 60_000L
 
     private fun tr(en: String, indo: String) = if (indonesian) indo else en
@@ -38,6 +39,34 @@ class DemoRepository(private val context: Context) : CarakaRepository {
 
     private val _ui = MutableStateFlow(initial())
     override val ui: StateFlow<AppUi> = _ui.asStateFlow()
+
+    /** One assistant message in "bridge-mobile" keeps growing, so the caret and typing dots show. */
+    private val growingText = tr(
+        "The server now listens on port 8787. Next I forward each event as one line and add a test for the reconnect path.",
+        "Server kini mendengarkan di port 8787. Berikutnya saya teruskan tiap event sebagai satu baris dan menambah test untuk jalur sambung ulang.",
+    )
+
+    init {
+        scope.launch {
+            val words = growingText.split(' ')
+            while (true) {
+                for (n in 1..words.size) {
+                    val text = words.take(n).joinToString(" ")
+                    _ui.update { s ->
+                        val has = s.messages.any { it.id == "m10" }
+                        s.copy(
+                            messages = if (has) s.messages.map { if (it.id == "m10") it.copy(text = text) else it }
+                            else s.messages + Message("m10", "r2", "assistant", text, createdAt = now - 19 * minute),
+                        )
+                    }
+                    delay(if (n < 14) 120 else 1_000)
+                }
+                delay(6_000)
+                _ui.update { s -> s.copy(messages = s.messages.filterNot { it.id == "m10" }) }
+                delay(3_000)
+            }
+        }
+    }
 
     private fun initial(): AppUi {
         val rooms = listOf(

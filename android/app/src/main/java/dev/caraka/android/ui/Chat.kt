@@ -112,10 +112,18 @@ fun ChatScreen(vm: AppViewModel, ui: AppUi, screen: Screen.Chat, locale: Locale)
 
     val listState = rememberLazyListState()
     val total = messages.size + if (typing) 1 else 0
+    // The list opens at the newest message, also after the viewer closes.
+    var opened by remember { mutableStateOf(false) }
     LaunchedEffect(total, lastLen) {
         if (total > 0) {
             val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            if (lastVisible >= total - 3) listState.animateScrollToItem(total - 1)
+            if (!opened) {
+                listState.scrollToItem(total - 1, scrollOffset = 1_000_000)
+                opened = true
+            } else if (lastVisible >= total - 3) {
+                // A large offset is clamped to the end, so a tall last message shows its bottom.
+                listState.animateScrollToItem(total - 1, scrollOffset = 1_000_000)
+            }
         }
     }
 
@@ -132,7 +140,7 @@ fun ChatScreen(vm: AppViewModel, ui: AppUi, screen: Screen.Chat, locale: Locale)
 
     Column(Modifier.fillMaxSize().background(Brand.Bg).safeDrawingPadding()) {
         // Header
-        Row(Modifier.fillMaxWidth().padding(end = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().padding(end = 12.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             CkIconButton(Icons.AutoMirrored.Filled.ArrowBack, t(R.string.back), onClick = { vm.back() })
             Column(Modifier.weight(1f)) {
                 Text(
@@ -145,11 +153,11 @@ fun ChatScreen(vm: AppViewModel, ui: AppUi, screen: Screen.Chat, locale: Locale)
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    modifier = Modifier.padding(top = 4.dp).semantics { liveRegion = LiveRegionMode.Polite },
                 ) {
                     if (room != null) {
                         StatusGlyph(state)
-                        Text(statusLabel(state), color = statusColor(state), fontSize = 12.sp, fontFamily = JetBrainsMono, modifier = Modifier.padding(start = 2.dp))
+                        Text(statusLabel(state), color = statusColor(state), fontSize = 12.sp, fontFamily = JetBrainsMono, modifier = Modifier.padding(start = 6.dp))
                     } else {
                         Text(t(R.string.new_session), color = Brand.Muted, fontSize = 12.sp, fontFamily = JetBrainsMono)
                     }
@@ -240,7 +248,7 @@ fun ChatScreen(vm: AppViewModel, ui: AppUi, screen: Screen.Chat, locale: Locale)
         val canSend = connected && !draft.sending && (draft.text.isNotBlank() || draft.files.isNotEmpty())
         val showStop = room != null && SessionStatus.isBusy(state) && draft.text.isBlank() && draft.files.isEmpty()
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.Bottom,
         ) {
             CkIconButton(Icons.Filled.Add, t(R.string.attach), onClick = { picker.launch("*/*") }, enabled = connected && !draft.sending)
@@ -371,7 +379,7 @@ private fun PermissionCard(message: Message, enabled: Boolean, expired: Boolean,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(SessionStatus.glyph(SessionStatus.AWAITING_APPROVAL), color = if (expired) Brand.Dim else Brand.Gold, fontSize = 16.sp)
+            Text(glyphText(SessionStatus.AWAITING_APPROVAL), color = if (expired) Brand.Dim else Brand.Gold, fontSize = 16.sp)
             Text(
                 t(R.string.permission_title),
                 color = if (expired) Brand.Dim else Brand.Gold,

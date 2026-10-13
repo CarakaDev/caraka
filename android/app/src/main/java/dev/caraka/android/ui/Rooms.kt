@@ -160,14 +160,26 @@ fun ConnectionLine(ui: AppUi) {
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(7.dp).background(color, CircleShape))
+        val name = ui.device?.name
+        if (name != null) {
+            Text(
+                name,
+                color = Brand.Muted,
+                fontSize = 12.sp,
+                fontFamily = JetBrainsMono,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 6.dp).weight(1f, fill = false),
+            )
+        }
         Text(
-            (ui.device?.name?.let { "$it · " } ?: "") + label,
+            (if (name != null) " · " else "") + label,
             color = Brand.Muted,
             fontSize = 12.sp,
             fontFamily = JetBrainsMono,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(start = 6.dp),
+            softWrap = false,
+            modifier = Modifier.padding(start = if (name != null) 0.dp else 6.dp),
         )
     }
 }

@@ -19,7 +19,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -173,14 +175,15 @@ fun ConnectScreen(vm: AppViewModel) {
             },
             label = t(R.string.machine_address),
             placeholder = "vps-rama.tail-net.ts.net",
-            keyboard = KeyboardOptions(keyboardType = KeyboardType.Uri),
+            keyboard = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
         )
         CkField(
             value = code,
             onChange = { code = it.trim(); error = null },
             label = t(R.string.pair_code),
             mono = true,
-            keyboard = KeyboardOptions(keyboardType = KeyboardType.Ascii),
+            keyboard = KeyboardOptions(keyboardType = KeyboardType.Ascii, imeAction = ImeAction.Go),
+            actions = KeyboardActions(onGo = { if (!busy && origin.isNotBlank() && code.isNotBlank()) connectChecked() }),
         )
 
         error?.let {

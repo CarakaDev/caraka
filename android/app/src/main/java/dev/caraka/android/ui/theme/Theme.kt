@@ -9,7 +9,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.unit.sp
 import dev.caraka.android.R
 
@@ -28,18 +30,23 @@ object Brand {
     val Gold = Color(0xFFFFD67E)
 }
 
+/** The font files are variable. Each weight needs its own axis value, or text stays thin. */
+@OptIn(ExperimentalTextApi::class)
+private fun variable(res: Int, weight: FontWeight) =
+    Font(res, weight, variationSettings = FontVariation.Settings(FontVariation.weight(weight.weight)))
+
 val PublicSans = FontFamily(
-    Font(R.font.public_sans, FontWeight.Normal),
-    Font(R.font.public_sans, FontWeight.Medium),
-    Font(R.font.public_sans, FontWeight.SemiBold),
-    Font(R.font.public_sans, FontWeight.Bold),
-    Font(R.font.public_sans, FontWeight.ExtraBold),
+    variable(R.font.public_sans, FontWeight.Normal),
+    variable(R.font.public_sans, FontWeight.Medium),
+    variable(R.font.public_sans, FontWeight.SemiBold),
+    variable(R.font.public_sans, FontWeight.Bold),
+    variable(R.font.public_sans, FontWeight.ExtraBold),
 )
 
 val JetBrainsMono = FontFamily(
-    Font(R.font.jetbrains_mono, FontWeight.Normal),
-    Font(R.font.jetbrains_mono, FontWeight.Medium),
-    Font(R.font.jetbrains_mono, FontWeight.SemiBold),
+    variable(R.font.jetbrains_mono, FontWeight.Normal),
+    variable(R.font.jetbrains_mono, FontWeight.Medium),
+    variable(R.font.jetbrains_mono, FontWeight.SemiBold),
 )
 
 /** True when the system asks for no animation. Every animation shows its end state then. */

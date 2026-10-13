@@ -119,7 +119,7 @@ fun MarkdownText(source: String, modifier: Modifier = Modifier, caret: Boolean =
                 is MdBlock.Items -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     block.items.forEachIndexed { i, item ->
                         Row {
-                            Text(if (block.ordered) "${i + 1}." else "•", color = Brand.Coral, fontSize = 15.sp, modifier = Modifier.width(24.dp))
+                            Text(if (block.ordered) "${i + 1}." else "•", color = Brand.Coral, fontSize = if (block.ordered) 15.sp else 20.sp, modifier = Modifier.width(24.dp))
                             Text(
                                 inline(item, if (i == block.items.lastIndex) tail else null),
                                 color = color,
