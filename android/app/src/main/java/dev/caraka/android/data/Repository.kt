@@ -19,6 +19,8 @@ data class AppUi(
     val messages: List<Message> = emptyList(),
     val connectivity: Connectivity = Connectivity.Connecting,
     val notice: Notice? = null,
+    /** True while the sample data is shown. */
+    val demo: Boolean = false,
 )
 
 sealed interface PairResult {
@@ -47,6 +49,12 @@ interface CarakaRepository {
     suspend fun fetchFile(attachment: Attachment): File
     suspend fun devices(): List<PairedDevice>
     suspend fun revokeDevice(id: String)
+
+    /** Switches to local sample data. No network call follows. */
+    fun enterDemo()
+
+    /** Leaves the sample data and returns to the connect screen. */
+    fun exitDemo()
 
     /** Revokes this device, then wipes every local trace. */
     suspend fun logout()

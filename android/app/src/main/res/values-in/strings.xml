@@ -82,4 +82,10 @@
     <string name="disconnect_title">Putuskan perangkat ini?</string>
     <string name="disconnect_body">Aplikasi keluar dan menghapus semua yang tersimpan di ponsel ini. Kamu perlu kode baru untuk menyambung lagi.</string>
     <string name="cancel">Batal</string>
+    <string name="privacy_policy">Kebijakan privasi</string>
+    <string name="open_source_licenses">Lisensi open source</string>
+    <string name="close">Tutup</string>
+    <string name="try_demo">Coba demo</string>
+    <string name="demo_banner">Demo dengan data contoh. Tidak ada yang keluar dari HP ini.</string>
+    <string name="exit_demo">Keluar demo</string>
 </resources>

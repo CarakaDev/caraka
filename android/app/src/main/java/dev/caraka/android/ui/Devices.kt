@@ -117,6 +117,10 @@ fun DevicesScreen(vm: AppViewModel, ui: AppUi) {
             }
             Text(t(R.string.add_device_hint), color = Brand.Muted, fontSize = 13.sp, lineHeight = 19.sp)
             CkButton(t(R.string.disconnect), onClick = { confirmLogout = true }, danger = true, modifier = Modifier.fillMaxWidth())
+            Column {
+                PrivacyPolicyLink()
+                LicensesLink()
+            }
             Box(Modifier.size(8.dp))
         }
     }

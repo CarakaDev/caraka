@@ -81,6 +81,10 @@ class RealRepository(
         filesDir.deleteRecursively()
     }
 
+    override fun enterDemo() = Unit
+
+    override fun exitDemo() = Unit
+
     @Synchronized
     override fun setForeground(active: Boolean) {
         foreground = active

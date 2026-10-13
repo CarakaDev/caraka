@@ -1,11 +1,11 @@
 package dev.caraka.android.data
 
-import android.content.Context
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,11 +15,18 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.InputStream
 import java.util.Locale
 import java.util.UUID
 
-/** Sample sessions for store screenshots. It never touches the network. */
-class DemoRepository(private val context: Context) : CarakaRepository {
+/**
+ * Sample sessions. It never touches the network and it keeps nothing on disk
+ * except sample files in the cache folder. It has no link to CarakaApi.
+ */
+class DemoRepository(
+    private val openAsset: (String) -> InputStream,
+    private val cacheDir: File,
+) : CarakaRepository {
     private val indonesian = Locale.getDefault().language == "id"
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     /** Noon today, so store screenshots show times that match a 12:00 status bar. */
@@ -46,8 +53,15 @@ class DemoRepository(private val context: Context) : CarakaRepository {
         "Server kini mendengarkan di port 8787. Berikutnya saya teruskan tiap event sebagai satu baris dan menambah test untuk jalur sambung ulang.",
     )
 
+    private var animation: Job? = null
+
     init {
-        scope.launch {
+        startAnimation()
+    }
+
+    private fun startAnimation() {
+        animation?.cancel()
+        animation = scope.launch {
             val words = growingText.split(' ')
             while (true) {
                 for (n in 1..words.size) {
@@ -101,6 +115,7 @@ class DemoRepository(private val context: Context) : CarakaRepository {
             rooms = rooms,
             messages = messages,
             connectivity = Connectivity.Connected,
+            demo = true,
         )
     }
 
@@ -108,8 +123,18 @@ class DemoRepository(private val context: Context) : CarakaRepository {
     override fun setForeground(active: Boolean) = Unit
 
     override suspend fun pair(origin: String, code: String): PairResult {
-        _ui.value = initial()
+        enterDemo()
         return PairResult.Success
+    }
+
+    override fun enterDemo() {
+        _ui.value = initial()
+        startAnimation()
+    }
+
+    override fun exitDemo() {
+        animation?.cancel()
+        _ui.value = AppUi(phase = Phase.Unpaired)
     }
 
     override suspend fun sendMessage(message: OutgoingMessage): MessageResult {
@@ -154,7 +179,7 @@ class DemoRepository(private val context: Context) : CarakaRepository {
     override suspend fun upload(file: FileSource): Attachment = Attachment(UUID.randomUUID().toString().take(8), file.name, file.mime)
 
     override suspend fun fetchFile(attachment: Attachment): File = withContext(Dispatchers.IO) {
-        val dir = File(context.cacheDir, "demo").apply { mkdirs() }
+        val dir = File(cacheDir, "demo").apply { mkdirs() }
         val target = File(dir, safeName(attachment.name))
         if (target.isFile && target.length() > 0) return@withContext target
         when (attachment.id) {
@@ -169,7 +194,7 @@ class DemoRepository(private val context: Context) : CarakaRepository {
     }
 
     private fun copyAsset(asset: String, target: File) {
-        context.assets.open(asset).use { input -> target.outputStream().use { input.copyTo(it) } }
+        openAsset(asset).use { input -> target.outputStream().use { input.copyTo(it) } }
     }
 
     private fun markdownSample(): String = tr(
@@ -195,7 +220,5 @@ class DemoRepository(private val context: Context) : CarakaRepository {
 
     override suspend fun revokeDevice(id: String) = Unit
 
-    override suspend fun logout() {
-        _ui.value = AppUi(phase = Phase.Unpaired)
-    }
+    override suspend fun logout() = exitDemo()
 }

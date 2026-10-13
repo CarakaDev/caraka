@@ -84,4 +84,10 @@
     <string name="disconnect_title">Disconnect this device?</string>
     <string name="disconnect_body">The app signs out and removes everything it saved on this phone. You need a new code to connect again.</string>
     <string name="cancel">Cancel</string>
+    <string name="privacy_policy">Privacy policy</string>
+    <string name="open_source_licenses">Open source licenses</string>
+    <string name="close">Close</string>
+    <string name="try_demo">Try a demo</string>
+    <string name="demo_banner">Demo with sample data. Nothing leaves this phone.</string>
+    <string name="exit_demo">Exit demo</string>
 </resources>

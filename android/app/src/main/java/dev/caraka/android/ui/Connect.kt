@@ -209,5 +209,9 @@ fun ConnectScreen(vm: AppViewModel) {
             enabled = !busy && origin.isNotBlank() && code.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         )
+
+        CkButton(t(R.string.try_demo), onClick = { vm.enterDemo() }, primary = false, modifier = Modifier.fillMaxWidth())
+
+        PrivacyPolicyLink(Modifier.align(Alignment.CenterHorizontally))
     }
 }

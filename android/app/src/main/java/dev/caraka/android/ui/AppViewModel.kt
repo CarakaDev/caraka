@@ -227,6 +227,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun enterDemo() = repo.enterDemo()
+
+    fun exitDemo() = repo.exitDemo()
+
     fun logout() {
         viewModelScope.launch { repo.logout() }
     }

@@ -9,6 +9,24 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import dev.caraka.android.R
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -41,7 +59,10 @@ fun CarakaRoot(vm: AppViewModel = viewModel()) {
     }
 
     CompositionLocalProvider(LocalStrings provides strings) {
-        Box(Modifier.fillMaxSize().background(Brand.Bg)) {
+        val banner = ui.demo && root != Root.Splash
+        Column(Modifier.fillMaxSize().background(Brand.Bg)) {
+            if (banner) DemoBanner(onExit = { vm.exitDemo() })
+            Box(Modifier.weight(1f).fillMaxWidth().then(if (banner) Modifier.consumeWindowInsets(WindowInsets.safeDrawing.only(WindowInsetsSides.Top)) else Modifier)) {
             AnimatedContent(
                 targetState = root,
                 transitionSpec = { fadeIn() togetherWith fadeOut() },
@@ -61,6 +82,25 @@ fun CarakaRoot(vm: AppViewModel = viewModel()) {
                     }
                 }
             }
+            }
+        }
+    }
+}
+
+/** A slim bar above every screen while the sample data is shown. */
+@Composable
+private fun DemoBanner(onExit: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(Brand.Surface)
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
+            .padding(start = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(t(R.string.demo_banner), color = Brand.Muted, fontSize = 12.sp, lineHeight = 16.sp, modifier = Modifier.weight(1f).padding(vertical = 6.dp))
+        TextButton(onClick = onExit, modifier = Modifier.heightIn(min = 48.dp)) {
+            Text(t(R.string.exit_demo), color = Brand.Coral, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
